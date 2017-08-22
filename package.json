@@ -1,8 +1,8 @@
 {
   "name": "seneca-browser",
   "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
+  "description": "Seneca for the browser.",
+  "main": "browser.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "browserify": "browserify -o seneca.js -e seneca-browser.js -s Seneca",
@@ -21,6 +21,8 @@
   },
   "homepage": "https://github.com/rjrodger/seneca-browser#readme",
   "dependencies": {
+    "jsonic": "^0.3.0",
+    "patrun": "^0.5.1"
   },
   "devDependencies": {
     "seneca": "^3.4.2",
