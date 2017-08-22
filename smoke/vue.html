@@ -1,0 +1,36 @@
+<html>
+  <head>
+  </head>
+  
+  <body>
+    <style>
+      div {
+        border: 1px solid black;
+      }
+    </style>
+
+    <div id="first">
+      <b>first</b><br>
+      <input v-model="msg">
+      <button v-on:click="act">act</button>
+      <button v-on:click="show">show</button>
+    </div>
+
+    <br>
+
+    <div id="second">
+      <b>second</b><br>
+      <p>{{res}}</p>
+    </div>
+
+    <div id="third">
+      <b>third</b><br>
+      <p><i>{{show}}</i></p>
+    </div>
+
+    
+    <script src="https://unpkg.com/vue"></script>
+    <script src="seneca.js"></script>
+    <script src="vue-app.js"></script>
+  </body>
+</html>

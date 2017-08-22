@@ -14,6 +14,10 @@ seneca.add('a:1', function (msg, reply) {
   reply({x: 1 + msg.x})
 })
 
+seneca.add('b:1', function (msg, reply) {
+  reply({x: 2 + msg.x})
+})
+
 seneca.ready(function () {
   var handler = seneca.export('browser/handler')
 
