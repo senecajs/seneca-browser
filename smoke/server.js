@@ -9,7 +9,7 @@ var seneca = Seneca({legacy:{transport:false}})
     .listen({type:'browser', pin:'a:*'})
 
 var tu = seneca.export('transport/utils')
-    
+
 seneca.add('a:1', function (msg, reply) {
   reply({x: 1 + msg.x})
 })
@@ -36,8 +36,8 @@ seneca.ready(function () {
     }
   })
 
-  server.route({ 
-    method: 'POST', path: '/seneca', 
+  server.route({
+    method: 'POST', path: '/seneca',
     handler: function( request, reply ) {
       handler(request.payload, reply)
     }
@@ -45,5 +45,5 @@ seneca.ready(function () {
 
 
 
-  server.start(console.log)      
+  server.start(console.log)
 })
