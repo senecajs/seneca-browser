@@ -3,11 +3,20 @@
     <input v-model="msg">
     <button v-on:click="act">act</button>
     <button v-on:click="yo">show</button>
+    <secondsection :res="res"></secondsection>
+    <thirdsection :show="show"></thirdsection>
   </div>
+
 </template>
 
 <script>
+import Second from './second.vue';
+import Third from './third.vue';
 export default {
+  components: {
+    secondsection: Second,
+    thirdsection: Third
+  },
   data() {
     return{
       msg: 'a:1,x:3',
@@ -19,14 +28,15 @@ export default {
 
     act: function () {
       app.$options.seneca.act(this.msg, function(err, out) {
-        this.act({cm:'second', res:out})
-        //console.log(res)
+        this.act({cm:'second', res:JSON.stringify(out)})
+        this.res = JSON.stringify(out.x);
+
       })
     },
 
     yo: function () {
       app.$options.seneca.act({ann:'show', show:JSON.stringify(this.msg)})
-      console.log(JSON.stringify(this.msg))
+      this.show = JSON.stringify(this.msg);
     }
   },
 

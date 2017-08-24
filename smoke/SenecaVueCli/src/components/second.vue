@@ -9,25 +9,29 @@
 
 export default {
 
+  props:['res'],
+
   data() {
     return{
-      res:'',
     }
   },
 
-  mounted () {
-    window.addEventListener("load", function(evt) {
-      var self = this
-      console.log('second')
-      console.log(app.$options.seneca)
-      console.log('second')
-      app.$options.seneca
-        .add('cm:second', function(msg, reply) {
-          self.res = msg.res.x
-          console.log(self.res)
-          reply()
-        })
-    })
+  methods:{
+    callthisafterplease: function(){
+      window.addEventListener("load", function(evt) {
+        var self = this
+        app.$options.seneca
+          .add('cm:second', function(msg, reply) {
+            self.res = msg.res.x
+            reply()
+          })
+      })
+
+    }
+  },
+
+  beforeMount () {
+      this.callthisafterplease()
   },
 
 }

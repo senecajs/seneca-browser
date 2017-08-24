@@ -9,24 +9,28 @@
 
 export default {
 
+  props:['show'],
+
   data() {
     return{
-      show: ''
     }
   },
 
+  methods: {
+    callthisafter: function(){
+      window.onload =  function () {
+      var self = this
+      app.$options.seneca
+        .add('ann:show', function(msg, reply) {
+          self.show = msg.show
+          reply()
+        })
+    }
+  }
+},
+
   mounted () {
-    window.onload =  function () {
-        var self = this
-        console.log('third')
-        console.log(app.$options.seneca)
-        console.log('third')
-        app.$options.seneca
-          .add('ann:show', function(msg, reply) {
-            self.show = msg.show
-            reply()
-          })
-      }
+        this.callthisafter()
   }
 
 
