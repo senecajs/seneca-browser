@@ -15,7 +15,7 @@ seneca = Seneca()
     .client({type:'browser', pin:'a:*'})
     .client({type:'browser', pin:'b:*'})
 
-console.log(seneca)
+// console.log(seneca)
 
 const router =  new VueRouter({
   routes,
@@ -33,6 +33,6 @@ const app = new Vue({
 Vue.use(VueRouter);
 Vue.use(seneca);
 
-console.log(app.$options.seneca)
+// console.log(app.$options.seneca)
 
 global.app = app; //Define you app variable globally

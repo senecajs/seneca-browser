@@ -1,6 +1,7 @@
 <template>
-  <div class="hello">
+  <div id="third">
     <b>third</b><br>
+    <p><i>{{show}}</i></p>
   </div>
 </template>
 
@@ -8,6 +9,25 @@
 
 export default {
 
+  data() {
+    return{
+      show: ''
+    }
+  },
+
+  mounted () {
+    window.onload =  function () {
+        var self = this
+        console.log('third')
+        console.log(app.$options.seneca)
+        console.log('third')
+        app.$options.seneca
+          .add('ann:show', function(msg, reply) {
+            self.show = msg.show
+            reply()
+          })
+      }
+  }
 
 
 }

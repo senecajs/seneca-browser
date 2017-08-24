@@ -18,14 +18,15 @@ export default {
   methods: {
 
     act: function () {
-      console.log('high ')
       app.$options.seneca.act(this.msg, function(err, out) {
         this.act({cm:'second', res:out})
+        //console.log(res)
       })
     },
 
     yo: function () {
       app.$options.seneca.act({ann:'show', show:JSON.stringify(this.msg)})
+      console.log(JSON.stringify(this.msg))
     }
   },
 
