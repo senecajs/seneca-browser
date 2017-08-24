@@ -2,8 +2,8 @@
   <div class="hello">
     <b>first</b><br>
     <input v-model="msg">
-    <button v-on:click="yo">yo</button>
     <button v-on:click="act">act</button>
+    <button v-on:click="yo">show</button>
     <div id="second">
       <b>second</b><br>
       <p>{{res}}</p>
@@ -17,14 +17,14 @@
 </template>
 
 <script>
-import seneca2 from './seneca/seneca.js'
-import senecatest from './seneca/senecatest.js'
-
-var seneca;
-seneca = Seneca()
-    .test('print')
-    .client({type:'browser', pin:'a:*'})
-    .client({type:'browser', pin:'b:*'})
+// import seneca2 from './seneca/seneca.js'
+// import senecatest from './seneca/senecatest.js'
+//
+// var seneca;
+// seneca = Seneca()
+//     .test('print')
+//     .client({type:'browser', pin:'a:*'})
+//     .client({type:'browser', pin:'b:*'})
 
 export default {
 
