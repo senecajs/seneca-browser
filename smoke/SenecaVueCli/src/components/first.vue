@@ -3,7 +3,7 @@
     <input v-model="msg">
     <button v-on:click="act">act</button>
     <button v-on:click="yo">show</button>
-    <secondsection :res="res"></secondsection>
+    <secondsection :res="res" @passValue="res = $event"></secondsection>
     <thirdsection :show="show"></thirdsection>
   </div>
 
@@ -27,10 +27,11 @@ export default {
   methods: {
 
     act: function () {
+      var self = this
       app.$options.seneca.act(this.msg, function(err, out) {
-        this.act({cm:'second', res:JSON.stringify(out)})
-        this.res = JSON.stringify(out.x);
-
+        this.act({cm:'second', res:out})
+        var x = Object.values(out)
+        self.res = x[0]
       })
     },
 

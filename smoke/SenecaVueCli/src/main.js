@@ -33,6 +33,6 @@ const app = new Vue({
 Vue.use(VueRouter);
 Vue.use(seneca);
 
-// console.log(app.$options.seneca)
+console.log(app)
 
 global.app = app; //Define you app variable globally

@@ -22,7 +22,7 @@ export default {
         var self = this
         app.$options.seneca
           .add('cm:second', function(msg, reply) {
-            self.res = msg.res.x
+            this.res = msg.res.x
             reply()
           })
       })
