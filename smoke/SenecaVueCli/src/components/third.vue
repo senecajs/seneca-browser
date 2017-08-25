@@ -1,36 +1,35 @@
 <template>
-  <div id="third">
-    <b>third</b><br>
-    <p><i>{{show}}</i></p>
-  </div>
+<div id="third">
+  <b>Child Component 2 ~ Third</b><br>
+  <p><i>{{show}}</i></p>
+</div>
 </template>
 
 <script>
-
 export default {
 
-  props:['show'],
+  props: ['show'],
 
   data() {
-    return{
-    }
+    return {}
   },
 
   methods: {
-    callthisafter: function(){
-      window.onload =  function () {
-      var self = this
-      app.$options.seneca
-        .add('ann:show', function(msg, reply) {
-          self.show = msg.show
-          reply()
-        })
+    callthisafter: function() {
+      var yo = this;
+      window.onload = function() {
+        var self = this
+        app.$options.seneca.add('ann:show', function(msg, reply) {
+            self.show = msg.show
+            yo.$emit('passValue',self.show)
+            reply()
+          })
+      }
     }
-  }
-},
+  },
 
-  mounted () {
-        this.callthisafter()
+  mounted() {
+    this.callthisafter()
   }
 
 
@@ -39,7 +38,8 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h1, h2 {
+h1,
+h2 {
   font-weight: normal;
 }
 
@@ -55,5 +55,8 @@ li {
 
 a {
   color: #42b983;
+}
+#third{
+  background-color: #4286f4;
 }
 </style>

@@ -1,13 +1,11 @@
 <template>
-
-  <div class="container">
-                <div class="row">
-                    <div class="header">
-                      <firstsection></firstsection>
-                    </div>
-                </div>
-              </div>
-
+<div class="container">
+  <div class="row">
+    <div class="header">
+      <firstsection></firstsection>
+    </div>
+  </div>
+</div>
 </template>
 
 <script>

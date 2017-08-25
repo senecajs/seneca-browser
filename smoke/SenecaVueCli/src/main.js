@@ -11,7 +11,7 @@ Vue.config.productionTip = false
 
 var seneca;
 seneca = Seneca()
-    //.test('print')
+    .test('print')
     .client({type:'browser', pin:'a:*'})
     .client({type:'browser', pin:'b:*'})
 
@@ -33,6 +33,6 @@ const app = new Vue({
 Vue.use(VueRouter);
 Vue.use(seneca);
 
-console.log(app)
+//console.log(app)
 
 global.app = app; //Define you app variable globally

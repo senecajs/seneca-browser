@@ -1,12 +1,13 @@
 <template>
-  <div class="test">
-    <input v-model="msg">
-    <button v-on:click="act">act</button>
-    <button v-on:click="yo">show</button>
-    <secondsection :res="res" @passValue="res = $event"></secondsection>
-    <thirdsection :show="show"></thirdsection>
-  </div>
-
+<div id="first">
+  <b>Parent Component ~ First </b><br>
+  <input v-model="msg">
+  <button v-on:click="act">Act</button>
+  <button v-on:click="yo">Show</button>
+  <button v-on:click="clear">Clear</button>
+  <secondsection :res="res"></secondsection>
+  <thirdsection :show="show" @passValue="show = $event"></thirdsection>
+</div>
 </template>
 
 <script>
@@ -18,26 +19,37 @@ export default {
     thirdsection: Third
   },
   data() {
-    return{
+    return {
       msg: 'a:1,x:3',
-      res:'',
+      res: '',
       show: ''
     }
   },
   methods: {
 
-    act: function () {
+    act: function() {
       var self = this
       app.$options.seneca.act(this.msg, function(err, out) {
-        this.act({cm:'second', res:out})
+        this.act({
+          cm: 'second',
+          res: out
+        })
         var x = Object.values(out)
         self.res = x[0]
       })
     },
 
-    yo: function () {
-      app.$options.seneca.act({ann:'show', show:JSON.stringify(this.msg)})
-      this.show = JSON.stringify(this.msg);
+    yo: function() {
+      app.$options.seneca.act({
+        ann: 'show',
+        show: JSON.stringify(this.msg)
+      })
+    },
+
+    clear: function(){
+      this.msg = '',
+      this.res = '',
+      this.show = ''
     }
   },
 
@@ -47,7 +59,8 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h1, h2 {
+h1,
+h2 {
   font-weight: normal;
 }
 
@@ -63,5 +76,8 @@ li {
 
 a {
   color: #42b983;
+}
+#first{
+  background-color: #6e42f4;
 }
 </style>
