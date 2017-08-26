@@ -4,20 +4,22 @@
   <input v-model="msg">
   <button v-on:click="act">Act</button>
   <button v-on:click="yo">Show</button>
-  <button v-on:click="clear">Clear</button>
-  <secondsection :res="res"></secondsection>
-  <thirdsection :show="show" @passValue="show = $event"></thirdsection>
+  <!-- <button v-on:click="clear">Clear</button> -->
+  <!-- <secondsection :res="res"></secondsection>
+  <thirdsection :show="show" @passValue="show = $event"></thirdsection> -->
 </div>
 </template>
 
 <script>
-import Second from './second.vue';
-import Third from './third.vue';
+// import Second from './second.vue';
+// import Third from './third.vue';
+// export default {
+//   components: {
+//     secondsection: Second,
+//     thirdsection: Third
+//   },
+
 export default {
-  components: {
-    secondsection: Second,
-    thirdsection: Third
-  },
   data() {
     return {
       msg: 'a:1,x:3',
@@ -34,8 +36,8 @@ export default {
           cm: 'second',
           res: out
         })
-        var x = Object.values(out)
-        self.res = x[0]
+        // var x = Object.values(out)
+        // self.res = x[0]
       })
     },
 
@@ -46,11 +48,11 @@ export default {
       })
     },
 
-    clear: function(){
-      this.msg = '',
-      this.res = '',
-      this.show = ''
-    }
+    // clear: function(){
+    //   this.msg = '',
+    //   this.res = '',
+    //   this.show = ''
+    // }
   },
 
 

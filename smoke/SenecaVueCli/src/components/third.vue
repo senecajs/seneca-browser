@@ -8,11 +8,14 @@
 <script>
 export default {
 
-  props: ['show'],
+  // props: ['show'],
 
   data() {
-    return {}
+    return {
+      show: ''
+    }
   },
+
 
   methods: {
     callthisafter: function() {
@@ -20,8 +23,8 @@ export default {
       window.onload = function() {
         var self = this
         app.$options.seneca.add('ann:show', function(msg, reply) {
-            self.show = msg.show
-            yo.$emit('passValue',self.show)
+            yo.show = msg.show
+            //yo.$emit('passValue',self.show)
             reply()
           })
       }
