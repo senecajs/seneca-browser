@@ -9,6 +9,8 @@ import senecatest from './seneca/senecatest.js'
 
 Vue.config.productionTip = false
 
+Vue.config.devtools = true
+
 var seneca;
 seneca = Seneca()
     .test('print')
