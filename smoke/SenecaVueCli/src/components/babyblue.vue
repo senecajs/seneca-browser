@@ -1,33 +1,31 @@
 <template>
     <div id="second">
-      <h2>Blue</h2>
+      <h2>BabyBlue</h2>
+      <h5>Prop Value</h5>
       <p>{{res}}</p>
-      <babybluesection :res="res"></babybluesection>
+      <h5>Total</h5>
+      <p>{{total}}</p>
     </div>
 </template>
 
 <script>
-import BabyBlue from './babyblue.vue';
 
 export default {
-  components: {
-    babybluesection: BabyBlue,
-  },
+
+  props:['res'],
 
   data() {
     return {
-      res: ''
+      total: 0,
     }
   },
+  watch: {
+      // whenever res changes, this function will run
+      res: function (newVal) {
+        this.total + Number(newVal)
+      }
+    },
 
-  mounted () {
-    var blue = this;
-    this.$options.parent.$options.parent.$options.seneca.add('cm:second', function(msg, reply) {
-            blue.res = msg.res.x
-            reply()
-    })
-
-  },
 
 }
 </script>
