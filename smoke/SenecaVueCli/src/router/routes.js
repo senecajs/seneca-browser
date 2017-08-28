@@ -1,10 +1,10 @@
-import First from '.././components/first.vue';
-import Second from '.././components/second.vue';
-import Third from '.././components/third.vue';
+import Red from '.././components/red.vue';
+import Blue from '.././components/blue.vue';
+import Green from '.././components/green.vue';
 
 
 export const routes = [
-  { path: '/first', component: First },
-  { path: '/second', component: Second },
-  { path: '/third', component: Third },
+  { path: '/red', component: Red },
+  { path: '/blue', component: Blue },
+  { path: '/green', component: Green },
 ];

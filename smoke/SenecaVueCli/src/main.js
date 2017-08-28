@@ -15,12 +15,14 @@ seneca = Seneca()
     .client({type:'browser', pin:'a:*'})
     .client({type:'browser', pin:'b:*'})
 
-// console.log(seneca)
-
 const router =  new VueRouter({
   routes,
   mode: 'history'
 });
+
+
+Vue.use(VueRouter);
+Vue.use(seneca);
 
 /* eslint-disable no-new */
 const app = new Vue({
@@ -29,10 +31,3 @@ const app = new Vue({
   seneca,
   render: h => h(App)
 });
-
-Vue.use(VueRouter);
-Vue.use(seneca);
-
-//console.log(app)
-
-global.app = app; //Define you app variable globally

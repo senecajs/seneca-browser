@@ -2,24 +2,25 @@
 <div class="container">
   <div class="row">
     <div class="header">
-      <firstsection></firstsection>
-      <secondsection></secondsection>
-      <thirdsection></thirdsection>
+      <redsection></redsection>
+      <bluesection></bluesection>
+      <greensection></greensection>
     </div>
   </div>
 </div>
 </template>
 
 <script>
-import First from './components/first.vue';
-import Second from './components/second.vue';
-import Third from './components/third.vue';
+import Red from './components/red.vue';
+import Blue from './components/blue.vue';
+import Green from './components/green.vue';
+
 export default {
   components: {
-    firstsection: First,
-    secondsection: Second,
-    thirdsection: Third
-  },
+    redsection: Red,
+    bluesection: Blue,
+    greensection: Green
+  }
 }
 
 </script>

@@ -1,6 +1,6 @@
 <template>
 <div id="first">
-  <b>Parent Component ~ First </b><br>
+  <h1>Red</h1>
   <input v-model="msg">
   <button v-on:click="act">Act</button>
   <button v-on:click="yo">Show</button>
@@ -11,49 +11,30 @@
 </template>
 
 <script>
-// import Second from './second.vue';
-// import Third from './third.vue';
-// export default {
-//   components: {
-//     secondsection: Second,
-//     thirdsection: Third
-//   },
-
 export default {
   data() {
     return {
       msg: 'a:1,x:3',
-      res: '',
-      show: ''
     }
   },
   methods: {
 
     act: function() {
-      var self = this
-      app.$options.seneca.act(this.msg, function(err, out) {
+      this.$options.parent.$options.parent.$options.seneca.act(this.msg, function(err, out) {
         this.act({
           cm: 'second',
           res: out
         })
-        // var x = Object.values(out)
-        // self.res = x[0]
       })
     },
 
     yo: function() {
-      app.$options.seneca.act({
+      this.$options.parent.$options.parent.$options.seneca.act({
         ann: 'show',
         show: JSON.stringify(this.msg)
       })
     },
-
-    // clear: function(){
-    //   this.msg = '',
-    //   this.res = '',
-    //   this.show = ''
-    // }
-  },
+  }
 
 
 }
@@ -80,6 +61,6 @@ a {
   color: #42b983;
 }
 #first{
-  background-color: #6e42f4;
+  background-color: #FF3333;
 }
 </style>

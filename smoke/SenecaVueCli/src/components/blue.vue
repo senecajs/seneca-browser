@@ -1,6 +1,6 @@
 <template>
     <div id="second">
-      <b>Child Component 1 ~ Second</b><br>
+      <h2>Blue</h2>
       <p>{{res}}</p>
     </div>
 </template>
@@ -9,31 +9,19 @@
 
 export default {
 
-  // props:['res'],
-
   data() {
     return {
       res: ''
     }
   },
 
-  methods:{
-    callthisafterplease: function(){
-      var second = this;
-      window.addEventListener("load", function(evt) {
-        var self = this
-        app.$options.seneca
-          .add('cm:second', function(msg, reply) {
-            second.res = msg.res.x
+  mounted () {
+    var blue = this;
+    this.$options.parent.$options.parent.$options.seneca.add('cm:second', function(msg, reply) {
+            blue.res = msg.res.x
             reply()
-          })
-      })
+    })
 
-    }
-  },
-
-  beforeMount () {
-      this.callthisafterplease()
   },
 
 }
@@ -58,6 +46,6 @@ a {
   color: #42b983;
 }
 #second {
-  background-color: #f4428c;
+  background-color: #0529CB;
 }
 </style>
