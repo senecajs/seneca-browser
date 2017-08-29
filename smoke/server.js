@@ -7,6 +7,7 @@ var seneca = Seneca({legacy:{transport:false}})
     .test('print')
     .use('../')
     .listen({type:'browser', pin:'a:*'})
+    .listen({type:'browser', pin:'b:*'})
 
 var tu = seneca.export('transport/utils')
 
@@ -31,7 +32,7 @@ seneca.ready(function () {
     path: '/{path*}',
     handler: {
       directory: {
-        path: __dirname,
+        path: "../smoke/SenecaVueCli/dist/",
       }
     }
   })
