@@ -22,7 +22,7 @@ export default {
   watch: {
       // whenever res changes, this function will run
       res: function (newVal) {
-        this.total + Number(newVal)
+        this.total += Number(newVal)
       }
     },
 
@@ -49,6 +49,6 @@ a {
   color: #42b983;
 }
 #second {
-  background-color: #0529CB;
+  background-color: #05ADCB;
 }
 </style>
