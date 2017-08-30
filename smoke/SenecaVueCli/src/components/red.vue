@@ -3,7 +3,7 @@
   <h1>Red</h1>
   <input v-model="msg">
   <button v-on:click="act">Act</button>
-  <button v-on:click="yo">Show</button>
+  <button v-on:click="show">Show</button>
   <!-- <button v-on:click="clear">Clear</button> -->
   <!-- <secondsection :res="res"></secondsection>
   <thirdsection :show="show" @passValue="show = $event"></thirdsection> -->
@@ -20,16 +20,18 @@ export default {
   methods: {
 
     act: function() {
-      this.$options.parent.$options.parent.$options.seneca.act(this.msg, function(err, out) {
+      var seneca = this.$options.parent.$options.parent.$options.seneca;
+      seneca.act(this.msg, function(err, out) {
         this.act({
-          cm: 'second',
+          cm: 'blue',
           res: out
         })
       })
     },
 
-    yo: function() {
-      this.$options.parent.$options.parent.$options.seneca.act({
+    show: function() {
+      var seneca = this.$options.parent.$options.parent.$options.seneca;
+      seneca.act({
         ann: 'show',
         show: JSON.stringify(this.msg)
       })

@@ -22,7 +22,8 @@ export default {
 
   mounted () {
     var blue = this;
-    this.$options.parent.$options.parent.$options.seneca.add('cm:second', function(msg, reply) {
+    var seneca = this.$options.parent.$options.parent.$options.seneca;
+    seneca.add('cm:blue', function(msg, reply) {
             blue.res = msg.res.x
             reply()
     })
