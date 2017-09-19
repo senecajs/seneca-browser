@@ -32,7 +32,7 @@ seneca.ready(function () {
     path: '/{path*}',
     handler: {
       directory: {
-        path: "../smoke/SenecaVueCli/dist/",
+        path: "./SenecaVueCli/dist/",
       }
     }
   })
