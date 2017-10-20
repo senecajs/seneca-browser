@@ -4,7 +4,8 @@
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "lab -P test -I fetch",
+    "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
     "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify",
     "smoke": "node smoke/server.js"
@@ -27,6 +28,9 @@
     "browserify": "^14.4.0",
     "browserify-fs": "^1.0.0",
     "hapi": "^16.5.2",
-    "inert": "^4.2.1"
+    "inert": "^4.2.1",
+    "code": "^4.1.0",
+    "lab": "^14.3.1",
+    "prettier": "^1.7.4"
   }
 }

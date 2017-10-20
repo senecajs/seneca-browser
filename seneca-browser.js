@@ -102118,7 +102118,7 @@ function Node (value, prev, next, list) {
 var Timers = require('timers')
 var SenecaModule = require('seneca')
 
-global.setImmediate = Timers.setImmediate
+global.setImmediate = global.setImmediate || Timers.setImmediate
 
 var SenecaExport = function(options, more_options) {
   options = options || {}
@@ -102139,7 +102139,7 @@ var SenecaExport = function(options, more_options) {
         send: function(msg, reply, meta) {
           fetch('/seneca', {
 	    method: 'post',
-	    body: tu.stringifyJSON(tu.externalize_msg(seneca, msg))
+	    body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta))
 
           }).then(function(response) { 
             if(response.ok) {
