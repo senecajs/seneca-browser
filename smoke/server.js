@@ -7,9 +7,10 @@ var seneca = Seneca({legacy:{transport:false}})
     .test('print')
     .use('../')
     .listen({type:'browser', pin:'a:*'})
+    .listen({type:'browser', pin:'b:*'})
 
 var tu = seneca.export('transport/utils')
-    
+
 seneca.add('a:1', function (msg, reply) {
   reply({x: 1 + msg.x})
 })
@@ -31,13 +32,13 @@ seneca.ready(function () {
     path: '/{path*}',
     handler: {
       directory: {
-        path: __dirname,
+        path: "./SenecaVueCli/dist/",
       }
     }
   })
 
-  server.route({ 
-    method: 'POST', path: '/seneca', 
+  server.route({
+    method: 'POST', path: '/seneca',
     handler: function( request, reply ) {
       handler(request.payload, reply)
     }
@@ -45,5 +46,5 @@ seneca.ready(function () {
 
 
 
-  server.start(console.log)      
+  server.start(console.log)
 })
