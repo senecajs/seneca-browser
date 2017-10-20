@@ -5,7 +5,7 @@ var Inert = require('inert')
 
 var seneca = Seneca({legacy:{transport:false}})
     .test('print')
-    .use('../')
+    .use('handler')
     .listen({type:'browser', pin:'a:*'})
 
 var tu = seneca.export('transport/utils')
@@ -19,7 +19,7 @@ seneca.add('b:1', function (msg, reply) {
 })
 
 seneca.ready(function () {
-  var handler = seneca.export('browser/handler')
+  var handler = seneca.export('handler')
 
   var server = new Hapi.Server()
   server.connection({port: 8080})
@@ -33,6 +33,14 @@ seneca.ready(function () {
       directory: {
         path: __dirname,
       }
+    }
+  })
+
+  server.route({
+    method: 'GET',
+    path: '/seneca-browser.js',
+    handler: {
+      file: __dirname + '/../seneca-browser.js'
     }
   })
 
