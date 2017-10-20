@@ -2,13 +2,13 @@
   "name": "seneca-browser",
   "version": "0.0.1",
   "description": "Seneca for the browser.",
-  "main": "browser.js",
+  "main": "seneca-browser.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "browserify": "browserify -o seneca.js -e seneca-browser.js -s Seneca",
-    "build-smoke": "cp seneca.js smoke",
-    "build": "npm run browserify; npm run build-smoke",
-    "smoke": "npm run build-smoke; node smoke/server.js"
+    "test": "lab -P test -I fetch",
+    "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
+    "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
+    "build": "npm run browserify",
+    "smoke": "node smoke/server.js"
   },
   "repository": {
     "type": "git",
@@ -21,15 +21,16 @@
   },
   "homepage": "https://github.com/rjrodger/seneca-browser#readme",
   "dependencies": {
-    "jsonic": "^0.3.0",
-    "patrun": "^0.5.1"
   },
   "devDependencies": {
-    "seneca": "^3.4.2",
+    "seneca": "^3.4.3",
     "timers": "^0.1.1",
     "browserify": "^14.4.0",
     "browserify-fs": "^1.0.0",
     "hapi": "^16.5.2",
-    "inert": "^4.2.1"
+    "inert": "^4.2.1",
+    "code": "^4.1.0",
+    "lab": "^14.3.1",
+    "prettier": "^1.7.4"
   }
 }
