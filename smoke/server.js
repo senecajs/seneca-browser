@@ -36,7 +36,7 @@ seneca.ready(function () {
     path: '/{path*}',
     handler: {
       directory: {
-        path: "./SenecaVueCli/dist/",
+        path: __dirname,
       }
     }
   })
