@@ -20,17 +20,22 @@
     "url": "https://github.com/rjrodger/seneca-browser/issues"
   },
   "homepage": "https://github.com/rjrodger/seneca-browser#readme",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
-    "seneca": "^3.4.3",
-    "timers": "^0.1.1",
-    "browserify": "^14.4.0",
+    "browserify": "^14.5.0",
     "browserify-fs": "^1.0.0",
+    "code": "^4.1.0",
     "hapi": "^16.5.2",
     "inert": "^4.2.1",
-    "code": "^4.1.0",
     "lab": "^14.3.1",
-    "prettier": "^1.7.4"
-  }
+    "prettier": "^1.7.4",
+    "seneca": "^3.4.3",
+    "seneca-handler": "0.0.1",
+    "timers": "^0.1.1"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "seneca-browser.js"
+  ]
 }
