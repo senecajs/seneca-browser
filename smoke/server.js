@@ -9,7 +9,6 @@ var seneca = Seneca({legacy:{transport:false}})
     .use('handler')
     .listen({type:'browser', pin:['a:*','c:*']})
 
-var tu = seneca.export('transport/utils')
 
 seneca.add('a:1', function (msg, reply) {
   reply({x: 1 + msg.x})
