@@ -10,7 +10,8 @@ var SenecaExport = function(options, more_options) {
 
   var seneca = SenecaModule(options, more_options)
 
-  seneca.use(function browser() {
+  seneca.use(function browser(options) {
+    options.endpoint = options.endpoint || '/seneca'
     this.add('role:transport,hook:client,type:browser', hook_client_browser)
 
     var tu = this.export('transport/utils')
@@ -20,7 +21,7 @@ var SenecaExport = function(options, more_options) {
 
       reply({
         send: function(msg, reply, meta) {
-          fetch('/seneca', {
+          fetch(options.endpoint, {
             credentials: 'same-origin',
             method: 'post',
             body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta))
