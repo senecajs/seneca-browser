@@ -1,14 +1,16 @@
 {
   "name": "seneca-browser",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
-    "test": "lab -P test -I fetch",
+    "test": "lab -P test -I fetch,BigUint64Array,BigInt64Array,BigInt,URL,URLSearchParams",
     "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
     "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify",
-    "smoke": "node smoke/server.js"
+    "smoke": "node smoke/server.js",
+    "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"`; echo TAG: v$REPO_VERSION; git commit -a -m v$REPO_VERSION; git push; git tag v$REPO_VERSION; git push --tags;",
+    "repo-publish": "npm run repo-tag; npm publish --access public"
   },
   "repository": {
     "type": "git",

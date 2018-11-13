@@ -15662,7 +15662,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.4.0",
-      "/Users/georgi/Sites/seneca-all/seneca-browser"
+      "/Users/richard/Projects/seneca-folder/browser"
     ]
   ],
   "_development": true,
@@ -15688,7 +15688,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.0.tgz",
   "_spec": "6.4.0",
-  "_where": "/Users/georgi/Sites/seneca-all/seneca-browser",
+  "_where": "/Users/richard/Projects/seneca-folder/browser",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -95872,7 +95872,7 @@ module.exports={
   "_args": [
     [
       "seneca@3.4.3",
-      "/Users/georgi/Sites/seneca-all/seneca-browser"
+      "/Users/richard/Projects/seneca-folder/browser"
     ]
   ],
   "_development": true,
@@ -95899,7 +95899,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/seneca/-/seneca-3.4.3.tgz",
   "_spec": "3.4.3",
-  "_where": "/Users/georgi/Sites/seneca-all/seneca-browser",
+  "_where": "/Users/richard/Projects/seneca-folder/browser",
   "author": {
     "name": "Richard Rodger",
     "url": "http://richardrodger.com/"
