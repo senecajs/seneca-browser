@@ -1,6 +1,6 @@
 {
   "name": "seneca-browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
@@ -9,6 +9,8 @@
     "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify",
     "smoke": "node smoke/server.js",
+    "clean-yarn": "rm -rf node_modules yarn.lock",
+    "clean-npm": "rm -rf node_modules package-lock.json",
     "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"`; echo TAG: v$REPO_VERSION; git commit -a -m v$REPO_VERSION; git push; git tag v$REPO_VERSION; git push --tags;",
     "repo-publish": "npm run repo-tag; npm publish --access public"
   },
@@ -24,16 +26,18 @@
   "homepage": "https://github.com/rjrodger/seneca-browser#readme",
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^14.5.0",
-    "browserify-fs": "^1.0.0",
-    "code": "^4.1.0",
-    "hapi": "^16.5.2",
-    "inert": "^4.2.1",
-    "lab": "^14.3.1",
-    "prettier": "^1.7.4",
-    "seneca": "^3.4.3",
-    "seneca-handler": "0.0.1",
-    "timers": "^0.1.1"
+    "browserify": "16",
+    "browserify-fs": "1",
+    "code": "5",
+    "hapi": "17",
+    "inert": "5",
+    "lab": "18",
+    "prettier": "1",
+    "seneca": "3.8.0-rc3",
+    "@seneca/hapi": "0",
+    "@seneca/external": "0",
+    "seneca-promisify": "0",
+    "timers": "0"
   },
   "files": [
     "README.md",

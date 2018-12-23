@@ -22,12 +22,14 @@ global.fetch = function(url, spec) {
   })
 }
 
-lab.test('happy', fin => {
-  SenecaBrowser()
-    .test(fin)
-    .client({ type: 'browser', pin: 'a:*' })
-    .act('a:1,x:2', function(ignore, out) {
-      expect(out.y).equal(3)
-      fin()
-    })
+lab.test('happy', async () => {
+  await new Promise(function(resolve, reject) {
+    SenecaBrowser()
+      .test(reject)
+      .client({ type: 'browser', pin: 'a:*' })
+      .act('a:1,x:2', function(ignore, out) {
+        expect(out.y).equal(3)
+        resolve()
+      })
+  })
 })

@@ -3,10 +3,10 @@ var Hapi = require('hapi')
 var Inert = require('inert')
 
 var seneca = Seneca({ legacy: { transport: false } })
-  .test('print')
-
-  .use('handler')
-  .listen({ type: 'browser', pin: ['a:*', 'c:*'] })
+    .test('print')
+    .use('seneca-promisify')
+    .use('@seneca/hapi')
+    .use('@seneca/external',{pins:['a:*', 'c:*']})
 
 seneca.add('a:1', function(msg, reply) {
   reply({ x: 1 + msg.x })
@@ -20,13 +20,13 @@ seneca.add('c:1', function(msg, reply) {
   reply(new Error('foo'))
 })
 
-seneca.ready(function() {
-  var handler = seneca.export('handler')
+seneca.ready(async function() {
+  var handler = seneca.export('hapi/action_handler')
 
-  var server = new Hapi.Server()
-  server.connection({ port: 8080 })
+  var server = new Hapi.Server({ port: 8080 })
+  //server.connection({ port: 8080 })
 
-  server.register(Inert)
+  await server.register(Inert)
 
   server.route({
     method: 'GET',
@@ -49,17 +49,23 @@ seneca.ready(function() {
   server.route({
     method: 'POST',
     path: '/seneca',
+    handler: handler
+    /*
     handler: function(request, reply) {
       handler(request.payload, reply)
     }
+*/
   })
 
   server.route({
     method: 'POST',
     path: '/api/seneca',
+    handler: handler
+/*
     handler: function(request, reply) {
       handler(request.payload, reply)
     }
+*/
   })
 
   server.start(console.log)
