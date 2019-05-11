@@ -109,7 +109,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"../asn1":2,"inherits":120,"vm":272}],4:[function(require,module,exports){
+},{"../asn1":2,"inherits":118,"vm":292}],4:[function(require,module,exports){
 var inherits = require('inherits');
 var Reporter = require('../base').Reporter;
 var Buffer = require('buffer').Buffer;
@@ -227,7 +227,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base":5,"buffer":63,"inherits":120}],5:[function(require,module,exports){
+},{"../base":5,"buffer":61,"inherits":118}],5:[function(require,module,exports){
 var base = exports;
 
 base.Reporter = require('./reporter').Reporter;
@@ -871,7 +871,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '\(\)\+,\-\.\/:=\?]*$/.test(str);
 };
 
-},{"../base":5,"minimalistic-assert":129}],7:[function(require,module,exports){
+},{"../base":5,"minimalistic-assert":128}],7:[function(require,module,exports){
 var inherits = require('inherits');
 
 function Reporter(options) {
@@ -994,7 +994,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":120}],8:[function(require,module,exports){
+},{"inherits":118}],8:[function(require,module,exports){
 var constants = require('../constants');
 
 exports.tagClass = {
@@ -1385,7 +1385,7 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../../asn1":2,"inherits":120}],11:[function(require,module,exports){
+},{"../../asn1":2,"inherits":118}],11:[function(require,module,exports){
 var decoders = exports;
 
 decoders.der = require('./der');
@@ -1442,7 +1442,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":10,"buffer":63,"inherits":120}],13:[function(require,module,exports){
+},{"./der":10,"buffer":61,"inherits":118}],13:[function(require,module,exports){
 var inherits = require('inherits');
 var Buffer = require('buffer').Buffer;
 
@@ -1739,7 +1739,7 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../../asn1":2,"buffer":63,"inherits":120}],14:[function(require,module,exports){
+},{"../../asn1":2,"buffer":61,"inherits":118}],14:[function(require,module,exports){
 var encoders = exports;
 
 encoders.der = require('./der');
@@ -1768,9 +1768,11 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":13,"inherits":120}],16:[function(require,module,exports){
+},{"./der":13,"inherits":118}],16:[function(require,module,exports){
 (function (global){
 'use strict';
+
+var objectAssign = require('object-assign');
 
 // compare and isBuffer taken from https://github.com/feross/buffer/blob/680e9e5e488f22aac27599a57dc844a6315928dd/index.js
 // original notice:
@@ -1813,6 +1815,8 @@ function isBuffer(b) {
 }
 
 // based on node assert, original notice:
+// NB: The URL to the CommonJS spec is kept just for tradition.
+//     node-assert has evolved a lot since then, both in API and behavior.
 
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
@@ -2253,6 +2257,18 @@ assert.doesNotThrow = function(block, /*optional*/error, /*optional*/message) {
 
 assert.ifError = function(err) { if (err) throw err; };
 
+// Expose a strict only variant of assert
+function strict(value, message) {
+  if (!value) fail(value, true, message, '==', strict);
+}
+assert.strict = objectAssign(strict, assert, {
+  equal: assert.strictEqual,
+  deepEqual: assert.deepStrictEqual,
+  notEqual: assert.notStrictEqual,
+  notDeepEqual: assert.notDeepStrictEqual
+});
+assert.strict.strict = assert.strict;
+
 var objectKeys = Object.keys || function (obj) {
   var keys = [];
   for (var key in obj) {
@@ -2262,7 +2278,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"util/":19}],17:[function(require,module,exports){
+},{"object-assign":136,"util/":19}],17:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -2884,7 +2900,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":18,"_process":191,"inherits":17}],20:[function(require,module,exports){
+},{"./support/isBuffer":18,"_process":192,"inherits":17}],20:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -2984,7 +3000,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":100,"precond":187,"util":271}],22:[function(require,module,exports){
+},{"events":98,"precond":188,"util":291}],22:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3176,7 +3192,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":21,"./strategy/fibonacci":24,"events":100,"precond":187,"util":271}],23:[function(require,module,exports){
+},{"./backoff":21,"./strategy/fibonacci":24,"events":98,"precond":188,"util":291}],23:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3219,7 +3235,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":25,"precond":187,"util":271}],24:[function(require,module,exports){
+},{"./strategy":25,"precond":188,"util":291}],24:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3249,7 +3265,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":25,"util":271}],25:[function(require,module,exports){
+},{"./strategy":25,"util":291}],25:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3331,7 +3347,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":100,"util":271}],26:[function(require,module,exports){
+},{"events":98,"util":291}],26:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -7212,7 +7228,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":228}],31:[function(require,module,exports){
+},{"safe-buffer":215}],31:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -7331,7 +7347,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":30,"./ghash":35,"./incr32":36,"buffer-xor":62,"cipher-base":65,"inherits":120,"safe-buffer":228}],32:[function(require,module,exports){
+},{"./aes":30,"./ghash":35,"./incr32":36,"buffer-xor":60,"cipher-base":63,"inherits":118,"safe-buffer":215}],32:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -7472,7 +7488,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":30,"./authCipher":31,"./modes":43,"./streamCipher":46,"cipher-base":65,"evp_bytestokey":101,"inherits":120,"safe-buffer":228}],34:[function(require,module,exports){
+},{"./aes":30,"./authCipher":31,"./modes":43,"./streamCipher":46,"cipher-base":63,"evp_bytestokey":99,"inherits":118,"safe-buffer":215}],34:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -7588,7 +7604,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":30,"./authCipher":31,"./modes":43,"./streamCipher":46,"cipher-base":65,"evp_bytestokey":101,"inherits":120,"safe-buffer":228}],35:[function(require,module,exports){
+},{"./aes":30,"./authCipher":31,"./modes":43,"./streamCipher":46,"cipher-base":63,"evp_bytestokey":99,"inherits":118,"safe-buffer":215}],35:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -7679,7 +7695,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":228}],36:[function(require,module,exports){
+},{"safe-buffer":215}],36:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -7715,7 +7731,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":62}],38:[function(require,module,exports){
+},{"buffer-xor":60}],38:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -7750,7 +7766,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":62,"safe-buffer":228}],39:[function(require,module,exports){
+},{"buffer-xor":60,"safe-buffer":215}],39:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -7794,7 +7810,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":228}],40:[function(require,module,exports){
+},{"safe-buffer":215}],40:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -7821,7 +7837,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":228}],41:[function(require,module,exports){
+},{"safe-buffer":215}],41:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -7853,7 +7869,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":36,"buffer-xor":62,"safe-buffer":228}],42:[function(require,module,exports){
+},{"../incr32":36,"buffer-xor":60,"safe-buffer":215}],42:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -8095,7 +8111,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":63,"buffer-xor":62}],46:[function(require,module,exports){
+},{"buffer":61,"buffer-xor":60}],46:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -8124,7 +8140,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":30,"cipher-base":65,"inherits":120,"safe-buffer":228}],47:[function(require,module,exports){
+},{"./aes":30,"cipher-base":63,"inherits":118,"safe-buffer":215}],47:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -8193,7 +8209,7 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":32,"browserify-aes/modes":43,"browserify-des":48,"browserify-des/modes":49,"evp_bytestokey":101}],48:[function(require,module,exports){
+},{"browserify-aes/browser":32,"browserify-aes/modes":43,"browserify-des":48,"browserify-des/modes":49,"evp_bytestokey":99}],48:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
@@ -8245,7 +8261,7 @@ DES.prototype._final = function () {
   return Buffer.from(this._des.final())
 }
 
-},{"cipher-base":65,"des.js":73,"inherits":120,"safe-buffer":228}],49:[function(require,module,exports){
+},{"cipher-base":63,"des.js":71,"inherits":118,"safe-buffer":215}],49:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -8315,7 +8331,7 @@ function getr(priv) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":27,"buffer":63,"randombytes":208}],51:[function(require,module,exports){
+},{"bn.js":27,"buffer":61,"randombytes":210}],51:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
 },{"./browser/algorithms.json":52}],52:[function(require,module,exports){
@@ -8577,7 +8593,7 @@ module.exports = {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./algorithms.json":52,"./sign":55,"./verify":56,"buffer":63,"create-hash":68,"inherits":120,"stream":258}],55:[function(require,module,exports){
+},{"./algorithms.json":52,"./sign":55,"./verify":56,"buffer":61,"create-hash":66,"inherits":118,"stream":243}],55:[function(require,module,exports){
 (function (Buffer){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var createHmac = require('create-hmac')
@@ -8726,7 +8742,7 @@ module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
 }).call(this,require("buffer").Buffer)
-},{"./curves.json":53,"bn.js":27,"browserify-rsa":50,"buffer":63,"create-hmac":70,"elliptic":83,"parse-asn1":179}],56:[function(require,module,exports){
+},{"./curves.json":53,"bn.js":27,"browserify-rsa":50,"buffer":61,"create-hmac":68,"elliptic":81,"parse-asn1":180}],56:[function(require,module,exports){
 (function (Buffer){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var BN = require('bn.js')
@@ -8813,7 +8829,7 @@ function checkValue (b, q) {
 module.exports = verify
 
 }).call(this,require("buffer").Buffer)
-},{"./curves.json":53,"bn.js":27,"buffer":63,"elliptic":83,"parse-asn1":179}],57:[function(require,module,exports){
+},{"./curves.json":53,"bn.js":27,"buffer":61,"elliptic":81,"parse-asn1":180}],57:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 /* eslint camelcase: "off" */
@@ -9225,7 +9241,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":191,"assert":16,"buffer":63,"pako/lib/zlib/constants":166,"pako/lib/zlib/deflate.js":168,"pako/lib/zlib/inflate.js":170,"pako/lib/zlib/zstream":174}],58:[function(require,module,exports){
+},{"_process":192,"assert":16,"buffer":61,"pako/lib/zlib/constants":167,"pako/lib/zlib/deflate.js":169,"pako/lib/zlib/inflate.js":171,"pako/lib/zlib/zstream":175}],58:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -9837,843 +9853,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this,require('_process'))
-},{"./binding":57,"_process":191,"assert":16,"buffer":63,"stream":258,"util":271}],59:[function(require,module,exports){
+},{"./binding":57,"_process":192,"assert":16,"buffer":61,"stream":243,"util":291}],59:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
 },{"dup":29}],60:[function(require,module,exports){
-(function (global){
-/*! https://mths.be/punycode v1.4.1 by @mathias */
-;(function(root) {
-
-	/** Detect free variables */
-	var freeExports = typeof exports == 'object' && exports &&
-		!exports.nodeType && exports;
-	var freeModule = typeof module == 'object' && module &&
-		!module.nodeType && module;
-	var freeGlobal = typeof global == 'object' && global;
-	if (
-		freeGlobal.global === freeGlobal ||
-		freeGlobal.window === freeGlobal ||
-		freeGlobal.self === freeGlobal
-	) {
-		root = freeGlobal;
-	}
-
-	/**
-	 * The `punycode` object.
-	 * @name punycode
-	 * @type Object
-	 */
-	var punycode,
-
-	/** Highest positive signed 32-bit float value */
-	maxInt = 2147483647, // aka. 0x7FFFFFFF or 2^31-1
-
-	/** Bootstring parameters */
-	base = 36,
-	tMin = 1,
-	tMax = 26,
-	skew = 38,
-	damp = 700,
-	initialBias = 72,
-	initialN = 128, // 0x80
-	delimiter = '-', // '\x2D'
-
-	/** Regular expressions */
-	regexPunycode = /^xn--/,
-	regexNonASCII = /[^\x20-\x7E]/, // unprintable ASCII chars + non-ASCII chars
-	regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g, // RFC 3490 separators
-
-	/** Error messages */
-	errors = {
-		'overflow': 'Overflow: input needs wider integers to process',
-		'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
-		'invalid-input': 'Invalid input'
-	},
-
-	/** Convenience shortcuts */
-	baseMinusTMin = base - tMin,
-	floor = Math.floor,
-	stringFromCharCode = String.fromCharCode,
-
-	/** Temporary variable */
-	key;
-
-	/*--------------------------------------------------------------------------*/
-
-	/**
-	 * A generic error utility function.
-	 * @private
-	 * @param {String} type The error type.
-	 * @returns {Error} Throws a `RangeError` with the applicable error message.
-	 */
-	function error(type) {
-		throw new RangeError(errors[type]);
-	}
-
-	/**
-	 * A generic `Array#map` utility function.
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} callback The function that gets called for every array
-	 * item.
-	 * @returns {Array} A new array of values returned by the callback function.
-	 */
-	function map(array, fn) {
-		var length = array.length;
-		var result = [];
-		while (length--) {
-			result[length] = fn(array[length]);
-		}
-		return result;
-	}
-
-	/**
-	 * A simple `Array#map`-like wrapper to work with domain name strings or email
-	 * addresses.
-	 * @private
-	 * @param {String} domain The domain name or email address.
-	 * @param {Function} callback The function that gets called for every
-	 * character.
-	 * @returns {Array} A new string of characters returned by the callback
-	 * function.
-	 */
-	function mapDomain(string, fn) {
-		var parts = string.split('@');
-		var result = '';
-		if (parts.length > 1) {
-			// In email addresses, only the domain name should be punycoded. Leave
-			// the local part (i.e. everything up to `@`) intact.
-			result = parts[0] + '@';
-			string = parts[1];
-		}
-		// Avoid `split(regex)` for IE8 compatibility. See #17.
-		string = string.replace(regexSeparators, '\x2E');
-		var labels = string.split('.');
-		var encoded = map(labels, fn).join('.');
-		return result + encoded;
-	}
-
-	/**
-	 * Creates an array containing the numeric code points of each Unicode
-	 * character in the string. While JavaScript uses UCS-2 internally,
-	 * this function will convert a pair of surrogate halves (each of which
-	 * UCS-2 exposes as separate characters) into a single code point,
-	 * matching UTF-16.
-	 * @see `punycode.ucs2.encode`
-	 * @see <https://mathiasbynens.be/notes/javascript-encoding>
-	 * @memberOf punycode.ucs2
-	 * @name decode
-	 * @param {String} string The Unicode input string (UCS-2).
-	 * @returns {Array} The new array of code points.
-	 */
-	function ucs2decode(string) {
-		var output = [],
-		    counter = 0,
-		    length = string.length,
-		    value,
-		    extra;
-		while (counter < length) {
-			value = string.charCodeAt(counter++);
-			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
-				// high surrogate, and there is a next character
-				extra = string.charCodeAt(counter++);
-				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
-					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
-				} else {
-					// unmatched surrogate; only append this code unit, in case the next
-					// code unit is the high surrogate of a surrogate pair
-					output.push(value);
-					counter--;
-				}
-			} else {
-				output.push(value);
-			}
-		}
-		return output;
-	}
-
-	/**
-	 * Creates a string based on an array of numeric code points.
-	 * @see `punycode.ucs2.decode`
-	 * @memberOf punycode.ucs2
-	 * @name encode
-	 * @param {Array} codePoints The array of numeric code points.
-	 * @returns {String} The new Unicode string (UCS-2).
-	 */
-	function ucs2encode(array) {
-		return map(array, function(value) {
-			var output = '';
-			if (value > 0xFFFF) {
-				value -= 0x10000;
-				output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
-				value = 0xDC00 | value & 0x3FF;
-			}
-			output += stringFromCharCode(value);
-			return output;
-		}).join('');
-	}
-
-	/**
-	 * Converts a basic code point into a digit/integer.
-	 * @see `digitToBasic()`
-	 * @private
-	 * @param {Number} codePoint The basic numeric code point value.
-	 * @returns {Number} The numeric value of a basic code point (for use in
-	 * representing integers) in the range `0` to `base - 1`, or `base` if
-	 * the code point does not represent a value.
-	 */
-	function basicToDigit(codePoint) {
-		if (codePoint - 48 < 10) {
-			return codePoint - 22;
-		}
-		if (codePoint - 65 < 26) {
-			return codePoint - 65;
-		}
-		if (codePoint - 97 < 26) {
-			return codePoint - 97;
-		}
-		return base;
-	}
-
-	/**
-	 * Converts a digit/integer into a basic code point.
-	 * @see `basicToDigit()`
-	 * @private
-	 * @param {Number} digit The numeric value of a basic code point.
-	 * @returns {Number} The basic code point whose value (when used for
-	 * representing integers) is `digit`, which needs to be in the range
-	 * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
-	 * used; else, the lowercase form is used. The behavior is undefined
-	 * if `flag` is non-zero and `digit` has no uppercase form.
-	 */
-	function digitToBasic(digit, flag) {
-		//  0..25 map to ASCII a..z or A..Z
-		// 26..35 map to ASCII 0..9
-		return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
-	}
-
-	/**
-	 * Bias adaptation function as per section 3.4 of RFC 3492.
-	 * https://tools.ietf.org/html/rfc3492#section-3.4
-	 * @private
-	 */
-	function adapt(delta, numPoints, firstTime) {
-		var k = 0;
-		delta = firstTime ? floor(delta / damp) : delta >> 1;
-		delta += floor(delta / numPoints);
-		for (/* no initialization */; delta > baseMinusTMin * tMax >> 1; k += base) {
-			delta = floor(delta / baseMinusTMin);
-		}
-		return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
-	}
-
-	/**
-	 * Converts a Punycode string of ASCII-only symbols to a string of Unicode
-	 * symbols.
-	 * @memberOf punycode
-	 * @param {String} input The Punycode string of ASCII-only symbols.
-	 * @returns {String} The resulting string of Unicode symbols.
-	 */
-	function decode(input) {
-		// Don't use UCS-2
-		var output = [],
-		    inputLength = input.length,
-		    out,
-		    i = 0,
-		    n = initialN,
-		    bias = initialBias,
-		    basic,
-		    j,
-		    index,
-		    oldi,
-		    w,
-		    k,
-		    digit,
-		    t,
-		    /** Cached calculation results */
-		    baseMinusT;
-
-		// Handle the basic code points: let `basic` be the number of input code
-		// points before the last delimiter, or `0` if there is none, then copy
-		// the first basic code points to the output.
-
-		basic = input.lastIndexOf(delimiter);
-		if (basic < 0) {
-			basic = 0;
-		}
-
-		for (j = 0; j < basic; ++j) {
-			// if it's not a basic code point
-			if (input.charCodeAt(j) >= 0x80) {
-				error('not-basic');
-			}
-			output.push(input.charCodeAt(j));
-		}
-
-		// Main decoding loop: start just after the last delimiter if any basic code
-		// points were copied; start at the beginning otherwise.
-
-		for (index = basic > 0 ? basic + 1 : 0; index < inputLength; /* no final expression */) {
-
-			// `index` is the index of the next character to be consumed.
-			// Decode a generalized variable-length integer into `delta`,
-			// which gets added to `i`. The overflow checking is easier
-			// if we increase `i` as we go, then subtract off its starting
-			// value at the end to obtain `delta`.
-			for (oldi = i, w = 1, k = base; /* no condition */; k += base) {
-
-				if (index >= inputLength) {
-					error('invalid-input');
-				}
-
-				digit = basicToDigit(input.charCodeAt(index++));
-
-				if (digit >= base || digit > floor((maxInt - i) / w)) {
-					error('overflow');
-				}
-
-				i += digit * w;
-				t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-
-				if (digit < t) {
-					break;
-				}
-
-				baseMinusT = base - t;
-				if (w > floor(maxInt / baseMinusT)) {
-					error('overflow');
-				}
-
-				w *= baseMinusT;
-
-			}
-
-			out = output.length + 1;
-			bias = adapt(i - oldi, out, oldi == 0);
-
-			// `i` was supposed to wrap around from `out` to `0`,
-			// incrementing `n` each time, so we'll fix that now:
-			if (floor(i / out) > maxInt - n) {
-				error('overflow');
-			}
-
-			n += floor(i / out);
-			i %= out;
-
-			// Insert `n` at position `i` of the output
-			output.splice(i++, 0, n);
-
-		}
-
-		return ucs2encode(output);
-	}
-
-	/**
-	 * Converts a string of Unicode symbols (e.g. a domain name label) to a
-	 * Punycode string of ASCII-only symbols.
-	 * @memberOf punycode
-	 * @param {String} input The string of Unicode symbols.
-	 * @returns {String} The resulting Punycode string of ASCII-only symbols.
-	 */
-	function encode(input) {
-		var n,
-		    delta,
-		    handledCPCount,
-		    basicLength,
-		    bias,
-		    j,
-		    m,
-		    q,
-		    k,
-		    t,
-		    currentValue,
-		    output = [],
-		    /** `inputLength` will hold the number of code points in `input`. */
-		    inputLength,
-		    /** Cached calculation results */
-		    handledCPCountPlusOne,
-		    baseMinusT,
-		    qMinusT;
-
-		// Convert the input in UCS-2 to Unicode
-		input = ucs2decode(input);
-
-		// Cache the length
-		inputLength = input.length;
-
-		// Initialize the state
-		n = initialN;
-		delta = 0;
-		bias = initialBias;
-
-		// Handle the basic code points
-		for (j = 0; j < inputLength; ++j) {
-			currentValue = input[j];
-			if (currentValue < 0x80) {
-				output.push(stringFromCharCode(currentValue));
-			}
-		}
-
-		handledCPCount = basicLength = output.length;
-
-		// `handledCPCount` is the number of code points that have been handled;
-		// `basicLength` is the number of basic code points.
-
-		// Finish the basic string - if it is not empty - with a delimiter
-		if (basicLength) {
-			output.push(delimiter);
-		}
-
-		// Main encoding loop:
-		while (handledCPCount < inputLength) {
-
-			// All non-basic code points < n have been handled already. Find the next
-			// larger one:
-			for (m = maxInt, j = 0; j < inputLength; ++j) {
-				currentValue = input[j];
-				if (currentValue >= n && currentValue < m) {
-					m = currentValue;
-				}
-			}
-
-			// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
-			// but guard against overflow
-			handledCPCountPlusOne = handledCPCount + 1;
-			if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
-				error('overflow');
-			}
-
-			delta += (m - n) * handledCPCountPlusOne;
-			n = m;
-
-			for (j = 0; j < inputLength; ++j) {
-				currentValue = input[j];
-
-				if (currentValue < n && ++delta > maxInt) {
-					error('overflow');
-				}
-
-				if (currentValue == n) {
-					// Represent delta as a generalized variable-length integer
-					for (q = delta, k = base; /* no condition */; k += base) {
-						t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-						if (q < t) {
-							break;
-						}
-						qMinusT = q - t;
-						baseMinusT = base - t;
-						output.push(
-							stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
-						);
-						q = floor(qMinusT / baseMinusT);
-					}
-
-					output.push(stringFromCharCode(digitToBasic(q, 0)));
-					bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
-					delta = 0;
-					++handledCPCount;
-				}
-			}
-
-			++delta;
-			++n;
-
-		}
-		return output.join('');
-	}
-
-	/**
-	 * Converts a Punycode string representing a domain name or an email address
-	 * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
-	 * it doesn't matter if you call it on a string that has already been
-	 * converted to Unicode.
-	 * @memberOf punycode
-	 * @param {String} input The Punycoded domain name or email address to
-	 * convert to Unicode.
-	 * @returns {String} The Unicode representation of the given Punycode
-	 * string.
-	 */
-	function toUnicode(input) {
-		return mapDomain(input, function(string) {
-			return regexPunycode.test(string)
-				? decode(string.slice(4).toLowerCase())
-				: string;
-		});
-	}
-
-	/**
-	 * Converts a Unicode string representing a domain name or an email address to
-	 * Punycode. Only the non-ASCII parts of the domain name will be converted,
-	 * i.e. it doesn't matter if you call it with a domain that's already in
-	 * ASCII.
-	 * @memberOf punycode
-	 * @param {String} input The domain name or email address to convert, as a
-	 * Unicode string.
-	 * @returns {String} The Punycode representation of the given domain name or
-	 * email address.
-	 */
-	function toASCII(input) {
-		return mapDomain(input, function(string) {
-			return regexNonASCII.test(string)
-				? 'xn--' + encode(string)
-				: string;
-		});
-	}
-
-	/*--------------------------------------------------------------------------*/
-
-	/** Define the public API */
-	punycode = {
-		/**
-		 * A string representing the current Punycode.js version number.
-		 * @memberOf punycode
-		 * @type String
-		 */
-		'version': '1.4.1',
-		/**
-		 * An object of methods to convert from JavaScript's internal character
-		 * representation (UCS-2) to Unicode code points, and back.
-		 * @see <https://mathiasbynens.be/notes/javascript-encoding>
-		 * @memberOf punycode
-		 * @type Object
-		 */
-		'ucs2': {
-			'decode': ucs2decode,
-			'encode': ucs2encode
-		},
-		'decode': decode,
-		'encode': encode,
-		'toASCII': toASCII,
-		'toUnicode': toUnicode
-	};
-
-	/** Expose `punycode` */
-	// Some AMD build optimizers, like r.js, check for specific condition patterns
-	// like the following:
-	if (
-		typeof define == 'function' &&
-		typeof define.amd == 'object' &&
-		define.amd
-	) {
-		define('punycode', function() {
-			return punycode;
-		});
-	} else if (freeExports && freeModule) {
-		if (module.exports == freeExports) {
-			// in Node.js, io.js, or RingoJS v0.8.0+
-			freeModule.exports = punycode;
-		} else {
-			// in Narwhal or RingoJS v0.7.0-
-			for (key in punycode) {
-				punycode.hasOwnProperty(key) && (freeExports[key] = punycode[key]);
-			}
-		}
-	} else {
-		// in Rhino or a web browser
-		root.punycode = punycode;
-	}
-
-}(this));
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],61:[function(require,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-'use strict';
-
-/*<replacement>*/
-
-var Buffer = require('safe-buffer').Buffer;
-/*</replacement>*/
-
-var isEncoding = Buffer.isEncoding || function (encoding) {
-  encoding = '' + encoding;
-  switch (encoding && encoding.toLowerCase()) {
-    case 'hex':case 'utf8':case 'utf-8':case 'ascii':case 'binary':case 'base64':case 'ucs2':case 'ucs-2':case 'utf16le':case 'utf-16le':case 'raw':
-      return true;
-    default:
-      return false;
-  }
-};
-
-function _normalizeEncoding(enc) {
-  if (!enc) return 'utf8';
-  var retried;
-  while (true) {
-    switch (enc) {
-      case 'utf8':
-      case 'utf-8':
-        return 'utf8';
-      case 'ucs2':
-      case 'ucs-2':
-      case 'utf16le':
-      case 'utf-16le':
-        return 'utf16le';
-      case 'latin1':
-      case 'binary':
-        return 'latin1';
-      case 'base64':
-      case 'ascii':
-      case 'hex':
-        return enc;
-      default:
-        if (retried) return; // undefined
-        enc = ('' + enc).toLowerCase();
-        retried = true;
-    }
-  }
-};
-
-// Do not cache `Buffer.isEncoding` when checking encoding names as some
-// modules monkey-patch it to support additional encodings
-function normalizeEncoding(enc) {
-  var nenc = _normalizeEncoding(enc);
-  if (typeof nenc !== 'string' && (Buffer.isEncoding === isEncoding || !isEncoding(enc))) throw new Error('Unknown encoding: ' + enc);
-  return nenc || enc;
-}
-
-// StringDecoder provides an interface for efficiently splitting a series of
-// buffers into a series of JS strings without breaking apart multi-byte
-// characters.
-exports.StringDecoder = StringDecoder;
-function StringDecoder(encoding) {
-  this.encoding = normalizeEncoding(encoding);
-  var nb;
-  switch (this.encoding) {
-    case 'utf16le':
-      this.text = utf16Text;
-      this.end = utf16End;
-      nb = 4;
-      break;
-    case 'utf8':
-      this.fillLast = utf8FillLast;
-      nb = 4;
-      break;
-    case 'base64':
-      this.text = base64Text;
-      this.end = base64End;
-      nb = 3;
-      break;
-    default:
-      this.write = simpleWrite;
-      this.end = simpleEnd;
-      return;
-  }
-  this.lastNeed = 0;
-  this.lastTotal = 0;
-  this.lastChar = Buffer.allocUnsafe(nb);
-}
-
-StringDecoder.prototype.write = function (buf) {
-  if (buf.length === 0) return '';
-  var r;
-  var i;
-  if (this.lastNeed) {
-    r = this.fillLast(buf);
-    if (r === undefined) return '';
-    i = this.lastNeed;
-    this.lastNeed = 0;
-  } else {
-    i = 0;
-  }
-  if (i < buf.length) return r ? r + this.text(buf, i) : this.text(buf, i);
-  return r || '';
-};
-
-StringDecoder.prototype.end = utf8End;
-
-// Returns only complete characters in a Buffer
-StringDecoder.prototype.text = utf8Text;
-
-// Attempts to complete a partial non-UTF-8 character using bytes from a Buffer
-StringDecoder.prototype.fillLast = function (buf) {
-  if (this.lastNeed <= buf.length) {
-    buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, this.lastNeed);
-    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
-  }
-  buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, buf.length);
-  this.lastNeed -= buf.length;
-};
-
-// Checks the type of a UTF-8 byte, whether it's ASCII, a leading byte, or a
-// continuation byte. If an invalid byte is detected, -2 is returned.
-function utf8CheckByte(byte) {
-  if (byte <= 0x7F) return 0;else if (byte >> 5 === 0x06) return 2;else if (byte >> 4 === 0x0E) return 3;else if (byte >> 3 === 0x1E) return 4;
-  return byte >> 6 === 0x02 ? -1 : -2;
-}
-
-// Checks at most 3 bytes at the end of a Buffer in order to detect an
-// incomplete multi-byte UTF-8 character. The total number of bytes (2, 3, or 4)
-// needed to complete the UTF-8 character (if applicable) are returned.
-function utf8CheckIncomplete(self, buf, i) {
-  var j = buf.length - 1;
-  if (j < i) return 0;
-  var nb = utf8CheckByte(buf[j]);
-  if (nb >= 0) {
-    if (nb > 0) self.lastNeed = nb - 1;
-    return nb;
-  }
-  if (--j < i || nb === -2) return 0;
-  nb = utf8CheckByte(buf[j]);
-  if (nb >= 0) {
-    if (nb > 0) self.lastNeed = nb - 2;
-    return nb;
-  }
-  if (--j < i || nb === -2) return 0;
-  nb = utf8CheckByte(buf[j]);
-  if (nb >= 0) {
-    if (nb > 0) {
-      if (nb === 2) nb = 0;else self.lastNeed = nb - 3;
-    }
-    return nb;
-  }
-  return 0;
-}
-
-// Validates as many continuation bytes for a multi-byte UTF-8 character as
-// needed or are available. If we see a non-continuation byte where we expect
-// one, we "replace" the validated continuation bytes we've seen so far with
-// a single UTF-8 replacement character ('\ufffd'), to match v8's UTF-8 decoding
-// behavior. The continuation byte check is included three times in the case
-// where all of the continuation bytes for a character exist in the same buffer.
-// It is also done this way as a slight performance increase instead of using a
-// loop.
-function utf8CheckExtraBytes(self, buf, p) {
-  if ((buf[0] & 0xC0) !== 0x80) {
-    self.lastNeed = 0;
-    return '\ufffd';
-  }
-  if (self.lastNeed > 1 && buf.length > 1) {
-    if ((buf[1] & 0xC0) !== 0x80) {
-      self.lastNeed = 1;
-      return '\ufffd';
-    }
-    if (self.lastNeed > 2 && buf.length > 2) {
-      if ((buf[2] & 0xC0) !== 0x80) {
-        self.lastNeed = 2;
-        return '\ufffd';
-      }
-    }
-  }
-}
-
-// Attempts to complete a multi-byte UTF-8 character using bytes from a Buffer.
-function utf8FillLast(buf) {
-  var p = this.lastTotal - this.lastNeed;
-  var r = utf8CheckExtraBytes(this, buf, p);
-  if (r !== undefined) return r;
-  if (this.lastNeed <= buf.length) {
-    buf.copy(this.lastChar, p, 0, this.lastNeed);
-    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
-  }
-  buf.copy(this.lastChar, p, 0, buf.length);
-  this.lastNeed -= buf.length;
-}
-
-// Returns all complete UTF-8 characters in a Buffer. If the Buffer ended on a
-// partial character, the character's bytes are buffered until the required
-// number of bytes are available.
-function utf8Text(buf, i) {
-  var total = utf8CheckIncomplete(this, buf, i);
-  if (!this.lastNeed) return buf.toString('utf8', i);
-  this.lastTotal = total;
-  var end = buf.length - (total - this.lastNeed);
-  buf.copy(this.lastChar, 0, end);
-  return buf.toString('utf8', i, end);
-}
-
-// For UTF-8, a replacement character is added when ending on a partial
-// character.
-function utf8End(buf) {
-  var r = buf && buf.length ? this.write(buf) : '';
-  if (this.lastNeed) return r + '\ufffd';
-  return r;
-}
-
-// UTF-16LE typically needs two bytes per character, but even if we have an even
-// number of bytes available, we need to check if we end on a leading/high
-// surrogate. In that case, we need to wait for the next two bytes in order to
-// decode the last character properly.
-function utf16Text(buf, i) {
-  if ((buf.length - i) % 2 === 0) {
-    var r = buf.toString('utf16le', i);
-    if (r) {
-      var c = r.charCodeAt(r.length - 1);
-      if (c >= 0xD800 && c <= 0xDBFF) {
-        this.lastNeed = 2;
-        this.lastTotal = 4;
-        this.lastChar[0] = buf[buf.length - 2];
-        this.lastChar[1] = buf[buf.length - 1];
-        return r.slice(0, -1);
-      }
-    }
-    return r;
-  }
-  this.lastNeed = 1;
-  this.lastTotal = 2;
-  this.lastChar[0] = buf[buf.length - 1];
-  return buf.toString('utf16le', i, buf.length - 1);
-}
-
-// For UTF-16LE we do not explicitly append special replacement characters if we
-// end on a partial character, we simply let v8 handle that.
-function utf16End(buf) {
-  var r = buf && buf.length ? this.write(buf) : '';
-  if (this.lastNeed) {
-    var end = this.lastTotal - this.lastNeed;
-    return r + this.lastChar.toString('utf16le', 0, end);
-  }
-  return r;
-}
-
-function base64Text(buf, i) {
-  var n = (buf.length - i) % 3;
-  if (n === 0) return buf.toString('base64', i);
-  this.lastNeed = 3 - n;
-  this.lastTotal = 3;
-  if (n === 1) {
-    this.lastChar[0] = buf[buf.length - 1];
-  } else {
-    this.lastChar[0] = buf[buf.length - 2];
-    this.lastChar[1] = buf[buf.length - 1];
-  }
-  return buf.toString('base64', i, buf.length - n);
-}
-
-function base64End(buf) {
-  var r = buf && buf.length ? this.write(buf) : '';
-  if (this.lastNeed) return r + this.lastChar.toString('base64', 0, 3 - this.lastNeed);
-  return r;
-}
-
-// Pass bytes on through for single-byte encodings (e.g. ascii, latin1, hex)
-function simpleWrite(buf) {
-  return buf.toString(this.encoding);
-}
-
-function simpleEnd(buf) {
-  return buf && buf.length ? this.write(buf) : '';
-}
-},{"safe-buffer":228}],62:[function(require,module,exports){
 (function (Buffer){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -10687,7 +9869,8 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":63}],63:[function(require,module,exports){
+},{"buffer":61}],61:[function(require,module,exports){
+(function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -12466,7 +11649,8 @@ function numberIsNaN (obj) {
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-},{"base64-js":26,"ieee754":119}],64:[function(require,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"base64-js":26,"buffer":61,"ieee754":117}],62:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -12532,7 +11716,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],65:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -12633,7 +11817,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":120,"safe-buffer":228,"stream":258,"string_decoder":61}],66:[function(require,module,exports){
+},{"inherits":118,"safe-buffer":215,"stream":243,"string_decoder":272}],64:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -12744,7 +11928,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":121}],67:[function(require,module,exports){
+},{"../../is-buffer/index.js":119}],65:[function(require,module,exports){
 (function (Buffer){
 var elliptic = require('elliptic')
 var BN = require('bn.js')
@@ -12872,7 +12056,7 @@ function formatReturnValue (bn, enc, len) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":27,"buffer":63,"elliptic":83}],68:[function(require,module,exports){
+},{"bn.js":27,"buffer":61,"elliptic":81}],66:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -12904,14 +12088,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":65,"inherits":120,"md5.js":127,"ripemd160":226,"sha.js":250}],69:[function(require,module,exports){
+},{"cipher-base":63,"inherits":118,"md5.js":126,"ripemd160":213,"sha.js":235}],67:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":127}],70:[function(require,module,exports){
+},{"md5.js":126}],68:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -12975,7 +12159,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":71,"cipher-base":65,"create-hash/md5":69,"inherits":120,"ripemd160":226,"safe-buffer":228,"sha.js":250}],71:[function(require,module,exports){
+},{"./legacy":69,"cipher-base":63,"create-hash/md5":67,"inherits":118,"ripemd160":213,"safe-buffer":215,"sha.js":235}],69:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -13023,7 +12207,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":65,"inherits":120,"safe-buffer":228}],72:[function(require,module,exports){
+},{"cipher-base":63,"inherits":118,"safe-buffer":215}],70:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -13122,7 +12306,7 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":47,"browserify-sign":54,"browserify-sign/algos":51,"create-ecdh":67,"create-hash":68,"create-hmac":70,"diffie-hellman":79,"pbkdf2":182,"public-encrypt":194,"randombytes":208,"randomfill":209}],73:[function(require,module,exports){
+},{"browserify-cipher":47,"browserify-sign":54,"browserify-sign/algos":51,"create-ecdh":65,"create-hash":66,"create-hmac":68,"diffie-hellman":77,"pbkdf2":183,"public-encrypt":195,"randombytes":210,"randomfill":211}],71:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -13131,7 +12315,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":74,"./des/cipher":75,"./des/des":76,"./des/ede":77,"./des/utils":78}],74:[function(require,module,exports){
+},{"./des/cbc":72,"./des/cipher":73,"./des/des":74,"./des/ede":75,"./des/utils":76}],72:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -13198,7 +12382,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":120,"minimalistic-assert":129}],75:[function(require,module,exports){
+},{"inherits":118,"minimalistic-assert":128}],73:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -13341,7 +12525,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":129}],76:[function(require,module,exports){
+},{"minimalistic-assert":128}],74:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -13486,7 +12670,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"../des":73,"inherits":120,"minimalistic-assert":129}],77:[function(require,module,exports){
+},{"../des":71,"inherits":118,"minimalistic-assert":128}],75:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -13543,7 +12727,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"../des":73,"inherits":120,"minimalistic-assert":129}],78:[function(require,module,exports){
+},{"../des":71,"inherits":118,"minimalistic-assert":128}],76:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -13801,7 +12985,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],79:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 (function (Buffer){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -13847,7 +13031,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this,require("buffer").Buffer)
-},{"./lib/dh":80,"./lib/generatePrime":81,"./lib/primes.json":82,"buffer":63}],80:[function(require,module,exports){
+},{"./lib/dh":78,"./lib/generatePrime":79,"./lib/primes.json":80,"buffer":61}],78:[function(require,module,exports){
 (function (Buffer){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -14015,7 +13199,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./generatePrime":81,"bn.js":27,"buffer":63,"miller-rabin":128,"randombytes":208}],81:[function(require,module,exports){
+},{"./generatePrime":79,"bn.js":27,"buffer":61,"miller-rabin":127,"randombytes":210}],79:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -14122,7 +13306,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":27,"miller-rabin":128,"randombytes":208}],82:[function(require,module,exports){
+},{"bn.js":27,"miller-rabin":127,"randombytes":210}],80:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -14157,7 +13341,7 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],83:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -14172,7 +13356,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":98,"./elliptic/curve":86,"./elliptic/curves":89,"./elliptic/ec":90,"./elliptic/eddsa":93,"./elliptic/utils":97,"brorand":28}],84:[function(require,module,exports){
+},{"../package.json":96,"./elliptic/curve":84,"./elliptic/curves":87,"./elliptic/ec":88,"./elliptic/eddsa":91,"./elliptic/utils":95,"brorand":28}],82:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -14549,7 +13733,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../../elliptic":83,"bn.js":27}],85:[function(require,module,exports){
+},{"../../elliptic":81,"bn.js":27}],83:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -14984,7 +14168,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../../elliptic":83,"../curve":86,"bn.js":27,"inherits":120}],86:[function(require,module,exports){
+},{"../../elliptic":81,"../curve":84,"bn.js":27,"inherits":118}],84:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -14994,7 +14178,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":84,"./edwards":85,"./mont":87,"./short":88}],87:[function(require,module,exports){
+},{"./base":82,"./edwards":83,"./mont":85,"./short":86}],85:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -15176,7 +14360,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../../elliptic":83,"../curve":86,"bn.js":27,"inherits":120}],88:[function(require,module,exports){
+},{"../../elliptic":81,"../curve":84,"bn.js":27,"inherits":118}],86:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -16115,7 +15299,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../../elliptic":83,"../curve":86,"bn.js":27,"inherits":120}],89:[function(require,module,exports){
+},{"../../elliptic":81,"../curve":84,"bn.js":27,"inherits":118}],87:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -16322,7 +15506,7 @@ defineCurve('secp256k1', {
   ]
 });
 
-},{"../elliptic":83,"./precomputed/secp256k1":96,"hash.js":105}],90:[function(require,module,exports){
+},{"../elliptic":81,"./precomputed/secp256k1":94,"hash.js":103}],88:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -16564,7 +15748,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../../elliptic":83,"./key":91,"./signature":92,"bn.js":27,"hmac-drbg":117}],91:[function(require,module,exports){
+},{"../../elliptic":81,"./key":89,"./signature":90,"bn.js":27,"hmac-drbg":115}],89:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -16685,7 +15869,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../../elliptic":83,"bn.js":27}],92:[function(require,module,exports){
+},{"../../elliptic":81,"bn.js":27}],90:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -16822,7 +16006,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../../elliptic":83,"bn.js":27}],93:[function(require,module,exports){
+},{"../../elliptic":81,"bn.js":27}],91:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -16942,7 +16126,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../../elliptic":83,"./key":94,"./signature":95,"hash.js":105}],94:[function(require,module,exports){
+},{"../../elliptic":81,"./key":92,"./signature":93,"hash.js":103}],92:[function(require,module,exports){
 'use strict';
 
 var elliptic = require('../../elliptic');
@@ -17040,7 +16224,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../../elliptic":83}],95:[function(require,module,exports){
+},{"../../elliptic":81}],93:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -17108,7 +16292,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../../elliptic":83,"bn.js":27}],96:[function(require,module,exports){
+},{"../../elliptic":81,"bn.js":27}],94:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -17890,7 +17074,7 @@ module.exports = {
   }
 };
 
-},{}],97:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -18012,39 +17196,51 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":27,"minimalistic-assert":129,"minimalistic-crypto-utils":130}],98:[function(require,module,exports){
+},{"bn.js":27,"minimalistic-assert":128,"minimalistic-crypto-utils":129}],96:[function(require,module,exports){
 module.exports={
-  "name": "elliptic",
-  "version": "6.4.1",
-  "description": "EC cryptography",
-  "main": "lib/elliptic.js",
-  "files": [
-    "lib"
-  ],
-  "scripts": {
-    "jscs": "jscs benchmarks/*.js lib/*.js lib/**/*.js lib/**/**/*.js test/index.js",
-    "jshint": "jscs benchmarks/*.js lib/*.js lib/**/*.js lib/**/**/*.js test/index.js",
-    "lint": "npm run jscs && npm run jshint",
-    "unit": "istanbul test _mocha --reporter=spec test/index.js",
-    "test": "npm run lint && npm run unit",
-    "version": "grunt dist && git add dist/"
+  "_from": "elliptic@^6.0.0",
+  "_id": "elliptic@6.4.1",
+  "_inBundle": false,
+  "_integrity": "sha512-BsXLz5sqX8OHcsh7CqBMztyXARmGQ3LWPtGjJi6DiJHq5C/qvi9P3OqgswKSDftbu8+IoI/QDTAm2fFnQ9SZSQ==",
+  "_location": "/elliptic",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "elliptic@^6.0.0",
+    "name": "elliptic",
+    "escapedName": "elliptic",
+    "rawSpec": "^6.0.0",
+    "saveSpec": null,
+    "fetchSpec": "^6.0.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:indutny/elliptic"
-  },
-  "keywords": [
-    "EC",
-    "Elliptic",
-    "curve",
-    "Cryptography"
+  "_requiredBy": [
+    "/browserify-sign",
+    "/create-ecdh"
   ],
-  "author": "Fedor Indutny <fedor@indutny.com>",
-  "license": "MIT",
+  "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.1.tgz",
+  "_shasum": "c2d0b7776911b86722c632c3c06c60f2f819939a",
+  "_spec": "elliptic@^6.0.0",
+  "_where": "/Users/richard/Projects/seneca/browser/node_modules/browserify-sign",
+  "author": {
+    "name": "Fedor Indutny",
+    "email": "fedor@indutny.com"
+  },
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
-  "homepage": "https://github.com/indutny/elliptic",
+  "bundleDependencies": false,
+  "dependencies": {
+    "bn.js": "^4.4.0",
+    "brorand": "^1.0.1",
+    "hash.js": "^1.0.0",
+    "hmac-drbg": "^1.0.0",
+    "inherits": "^2.0.1",
+    "minimalistic-assert": "^1.0.0",
+    "minimalistic-crypto-utils": "^1.0.0"
+  },
+  "deprecated": false,
+  "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
     "coveralls": "^2.11.3",
@@ -18061,18 +17257,35 @@ module.exports={
     "jshint": "^2.6.0",
     "mocha": "^2.1.0"
   },
-  "dependencies": {
-    "bn.js": "^4.4.0",
-    "brorand": "^1.0.1",
-    "hash.js": "^1.0.0",
-    "hmac-drbg": "^1.0.0",
-    "inherits": "^2.0.1",
-    "minimalistic-assert": "^1.0.0",
-    "minimalistic-crypto-utils": "^1.0.0"
-  }
+  "files": [
+    "lib"
+  ],
+  "homepage": "https://github.com/indutny/elliptic",
+  "keywords": [
+    "EC",
+    "Elliptic",
+    "curve",
+    "Cryptography"
+  ],
+  "license": "MIT",
+  "main": "lib/elliptic.js",
+  "name": "elliptic",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/indutny/elliptic.git"
+  },
+  "scripts": {
+    "jscs": "jscs benchmarks/*.js lib/*.js lib/**/*.js lib/**/**/*.js test/index.js",
+    "jshint": "jscs benchmarks/*.js lib/*.js lib/**/*.js lib/**/**/*.js test/index.js",
+    "lint": "npm run jscs && npm run jshint",
+    "test": "npm run lint && npm run unit",
+    "unit": "istanbul test _mocha --reporter=spec test/index.js",
+    "version": "grunt dist && git add dist/"
+  },
+  "version": "6.4.1"
 }
 
-},{}],99:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 /* Copyright (c) 2014-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -18124,10 +17337,10 @@ function eraro(options) {
     false === options.prefix
       ? ''
       : _.isString(options.prefix)
-        ? options.prefix
-        : _.isString(options.package)
-          ? options.package + ': '
-          : ''
+      ? options.prefix
+      : _.isString(options.package)
+      ? options.package + ': '
+      : ''
 
   var packaje = options.package || 'unknown'
   var callmodule = options.module || module
@@ -18155,18 +17368,18 @@ function eraro(options) {
     code = _.isString(code)
       ? code
       : ex
+      ? ex.code
         ? ex.code
-          ? ex.code
-          : ex.message
-            ? ex.message
-            : 'unknown'
+        : ex.message
+        ? ex.message
         : 'unknown'
+      : 'unknown'
 
     details = _.isObject(details)
       ? details
       : _.isObject(msg) && !_.isString(msg)
-        ? msg
-        : {}
+      ? msg
+      : {}
 
     msg = _.isString(msg) ? msg : null
     msg = buildmessage(
@@ -18209,6 +17422,10 @@ function eraro(options) {
   }
 
   errormaker.callpoint = callpoint
+
+  errormaker.has = function(code) {
+    return !!msgmap[code]
+  }
 
   return errormaker
 }
@@ -18282,10 +17499,10 @@ function buildmessage(
     (_.isString(msg)
       ? msg
       : _.isString(msgmap[code])
-        ? msgmap[code]
-        : ex
-          ? originalmsg(options.override, ex)
-          : code)
+      ? msgmap[code]
+      : ex
+      ? originalmsg(options.override, ex)
+      : code)
 
   // These are the inserts.
   var valmap = _.extend({}, details, { code: code })
@@ -18347,7 +17564,7 @@ function originalmsg(override, ex) {
   return ex.message
 }
 
-},{"lodash":125,"util":271}],100:[function(require,module,exports){
+},{"lodash":124,"util":291}],98:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -18872,7 +18089,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],101:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -18919,7 +18136,7 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":127,"safe-buffer":228}],102:[function(require,module,exports){
+},{"md5.js":126,"safe-buffer":215}],100:[function(require,module,exports){
 (function (setImmediate){
 /* Copyright (c) 2014-2016 Richard Rodger, MIT License */
 'use strict'
@@ -19299,7 +18516,7 @@ function GateExecutor (options, instance_counter) {
 module.exports = make_GateExecutor
 
 }).call(this,require("timers").setImmediate)
-},{"assert":16,"timers":264}],103:[function(require,module,exports){
+},{"assert":16,"timers":284}],101:[function(require,module,exports){
 /* Copyright (c) 2011-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -19446,7 +18663,7 @@ module.exports = make_GateExecutor
   }
 }.call(this))
 
-},{"lodash":125}],104:[function(require,module,exports){
+},{"lodash":124}],102:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
@@ -19543,7 +18760,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":120,"safe-buffer":228,"stream":258}],105:[function(require,module,exports){
+},{"inherits":118,"safe-buffer":215,"stream":243}],103:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -19560,7 +18777,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":106,"./hash/hmac":107,"./hash/ripemd":108,"./hash/sha":109,"./hash/utils":116}],106:[function(require,module,exports){
+},{"./hash/common":104,"./hash/hmac":105,"./hash/ripemd":106,"./hash/sha":107,"./hash/utils":114}],104:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -19654,7 +18871,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":116,"minimalistic-assert":129}],107:[function(require,module,exports){
+},{"./utils":114,"minimalistic-assert":128}],105:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -19703,7 +18920,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":116,"minimalistic-assert":129}],108:[function(require,module,exports){
+},{"./utils":114,"minimalistic-assert":128}],106:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -19851,7 +19068,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":106,"./utils":116}],109:[function(require,module,exports){
+},{"./common":104,"./utils":114}],107:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -19860,7 +19077,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":110,"./sha/224":111,"./sha/256":112,"./sha/384":113,"./sha/512":114}],110:[function(require,module,exports){
+},{"./sha/1":108,"./sha/224":109,"./sha/256":110,"./sha/384":111,"./sha/512":112}],108:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19936,7 +19153,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":106,"../utils":116,"./common":115}],111:[function(require,module,exports){
+},{"../common":104,"../utils":114,"./common":113}],109:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19968,7 +19185,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":116,"./256":112}],112:[function(require,module,exports){
+},{"../utils":114,"./256":110}],110:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -20075,7 +19292,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":106,"../utils":116,"./common":115,"minimalistic-assert":129}],113:[function(require,module,exports){
+},{"../common":104,"../utils":114,"./common":113,"minimalistic-assert":128}],111:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -20112,7 +19329,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":116,"./512":114}],114:[function(require,module,exports){
+},{"../utils":114,"./512":112}],112:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -20444,7 +19661,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":106,"../utils":116,"minimalistic-assert":129}],115:[function(require,module,exports){
+},{"../common":104,"../utils":114,"minimalistic-assert":128}],113:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -20495,7 +19712,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":116}],116:[function(require,module,exports){
+},{"../utils":114}],114:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -20775,7 +19992,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":120,"minimalistic-assert":129}],117:[function(require,module,exports){
+},{"inherits":118,"minimalistic-assert":128}],115:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -20890,7 +20107,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":105,"minimalistic-assert":129,"minimalistic-crypto-utils":130}],118:[function(require,module,exports){
+},{"hash.js":103,"minimalistic-assert":128,"minimalistic-crypto-utils":129}],116:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -20923,7 +20140,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":259,"url":266}],119:[function(require,module,exports){
+},{"http":258,"url":286}],117:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -21009,9 +20226,9 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],120:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],121:[function(require,module,exports){
+},{"dup":17}],119:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -21034,7 +20251,14 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],122:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+},{}],121:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -22537,7 +21761,7 @@ exports.diagnoses = internals.validate.diagnoses = (function () {
 exports.normalize = internals.normalize;
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":63,"punycode":60,"util":271}],123:[function(require,module,exports){
+},{"buffer":61,"punycode":201,"util":291}],122:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -22566,7 +21790,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],124:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License, https://github.com/rjrodger/jsonic */
 "use strict";
 
@@ -24780,7 +24004,7 @@ var jsonic_parser = (function() {
 
 
 
-},{}],125:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -41891,7 +41115,7 @@ var jsonic_parser = (function() {
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],126:[function(require,module,exports){
+},{}],125:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -42363,7 +41587,7 @@ function Entry (key, value, length, now, maxAge) {
 }
 
 }).call(this,require('_process'))
-},{"_process":191,"pseudomap":192,"util":271,"yallist":281}],127:[function(require,module,exports){
+},{"_process":192,"pseudomap":193,"util":291,"yallist":301}],126:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
@@ -42511,7 +41735,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-},{"hash-base":104,"inherits":120,"safe-buffer":228}],128:[function(require,module,exports){
+},{"hash-base":102,"inherits":118,"safe-buffer":215}],127:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -42628,7 +41852,7 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":27,"brorand":28}],129:[function(require,module,exports){
+},{"bn.js":27,"brorand":28}],128:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -42641,7 +41865,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],130:[function(require,module,exports){
+},{}],129:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -42701,7 +41925,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],131:[function(require,module,exports){
+},{}],130:[function(require,module,exports){
 module.exports = function (args, opts) {
     if (!opts) opts = {};
     
@@ -42939,7 +42163,7 @@ function isNumber (x) {
 }
 
 
-},{}],132:[function(require,module,exports){
+},{}],131:[function(require,module,exports){
 var through = require('through2')
 var split = require('split2')
 var EOL = require('os').EOL
@@ -42972,7 +42196,7 @@ function serialize (opts) {
   })
 }
 
-},{"json-stringify-safe":123,"os":163,"split2":257,"through2":263}],133:[function(require,module,exports){
+},{"json-stringify-safe":122,"os":164,"split2":242,"through2":283}],132:[function(require,module,exports){
 /* Copyright (c) 2013 Richard Rodger, MIT License */
 "use strict";
 
@@ -43120,7 +42344,282 @@ nid.__defaults = defaults
 
 module.exports = nid
 
-},{}],134:[function(require,module,exports){
+},{}],133:[function(require,module,exports){
+/* Copyright (c) 2014-2018 Richard Rodger, MIT License */
+/* jshint node:true, asi:true, eqnull:true */
+
+// Create JavaScript Error objects with code strings, context details,
+// and templated messages.
+'use strict'
+
+// #### System modules
+var util = require('util')
+
+// #### External modules
+var _ = require('lodash')
+
+// #### Exports
+module.exports = eraro
+
+// #### Create an _eraro_ function
+// Parameters:
+//
+//   * _options_ : (optional) Object; properties:
+//      * _package_ : (optional) String; package name to mark Error objects
+//      * _prefix_  : (optional) Boolean/String; If false, then no prefix is used; If not defined, the package name is used
+//      * _module_  : (optional) Object; _module_ object to use as starting point for _require_ calls
+//      * _msgmap_  : (optional) Object; map codes to message templates
+//      * _inspect_ : (optional) Boolean; If true, _util.inspect_ is called on values; default: true.
+//
+// Returns: Function
+//
+// The created function has parameters:
+//
+//   * _exception_ : (optional) Error; the original exception to be wrapped
+//   * _code_ : (optional) String; code value
+//   * _message_ : (optional) String; error message, will be processed as a template
+//   * _details_ : (optional) Object; contextual details of the error, used to insert details into message
+//
+// and returns an Error object (to be thrown or used in a callback, as needed).
+// The returned Error object has the following additional properties:
+//
+//   * _code_: String; the code string
+//   * _package_: String; the package name
+//   * _**package-name**_: Boolean (true); a convenience marker for the package
+//   * _msg_: String; the generated message, may differ from original exception message (if any)
+//   * _details_: Object; contextual details of error
+//   * _callpoint_: String; first line of stacktrace that is external to eraro and calling module
+function eraro(options) {
+  options = options || {}
+
+  var msgprefix =
+    false === options.prefix
+      ? ''
+      : _.isString(options.prefix)
+        ? options.prefix
+        : _.isString(options.package)
+          ? options.package + ': '
+          : ''
+
+  var packaje = options.package || 'unknown'
+  var callmodule = options.module || module
+  var msgmap = options.msgmap || {}
+  var inspect = null == options.inspect ? true : !!options.inspect
+
+  var markers = [module.filename]
+
+  var filename = callmodule.filename
+  if (filename) markers.push(filename)
+
+  var errormaker = function(ex, code, msg, details) {
+    var internalex = false
+
+    if (util.isError(ex)) {
+      if (ex.eraro && !options.override) return ex
+    } else {
+      internalex = true
+      ex = null
+      code = arguments[0]
+      msg = arguments[1]
+      details = arguments[2]
+    }
+
+    code = _.isString(code)
+      ? code
+      : ex
+        ? ex.code
+          ? ex.code
+          : ex.message
+            ? ex.message
+            : 'unknown'
+        : 'unknown'
+
+    details = _.isObject(details)
+      ? details
+      : _.isObject(msg) && !_.isString(msg)
+        ? msg
+        : {}
+
+    msg = _.isString(msg) ? msg : null
+    msg = buildmessage(
+      options,
+      msg,
+      msgmap,
+      msgprefix,
+      inspect,
+      code,
+      details,
+      ex
+    )
+
+    var err = new Error(msg)
+
+    if (ex) {
+      details.orig$ = null == details.orig$ ? ex : details.orig$
+      details.message$ =
+        null == details.message$ ? ex.message : details.message$
+
+      // drag along properties from original exception
+      for (var p in ex) {
+        err[p] = ex[p]
+      }
+    }
+
+    err.eraro = true
+
+    err.orig = ex // orig
+    err.code = code
+    err[packaje] = true
+    err.package = packaje
+    err.msg = msg
+    err.details = details
+
+    err.stack = ex ? ex.stack : err.stack
+    err.callpoint = callpoint(err, markers)
+
+    return err
+  }
+
+  errormaker.callpoint = callpoint
+
+  return errormaker
+}
+
+// #### Find the first external stack trace line.
+// Parameters:
+//
+//   * _error_ : (optional) Error; provides the stack
+//   * _markers_ : (optional) Array[String]; ignore lines containing these strings
+//
+// Returns: String; stack trace line, with indent removed
+function callpoint(error, markers) {
+  markers = _.isArray(markers) ? markers : []
+
+  var stack = error ? error.stack : null
+  var out = ''
+
+  if (stack) {
+    var lines = stack.split('\n')
+    var done = false
+    var i
+
+    line_loop: for (i = 1; i < lines.length; i++) {
+      var line = lines[i]
+
+      var found = false
+      for (var j = 0; j < markers.length; j++) {
+        if (_.isString(markers[j])) {
+          found = -1 != line.indexOf(markers[j])
+          if (found) break
+        }
+      }
+
+      if (!found) break line_loop
+    }
+
+    out = _.isString(lines[i]) ? lines[i].substring(4) : out
+  }
+
+  return out
+}
+
+// #### Build the message string from a template by inserting details
+// Uses the underscore template function with default settings.
+// The original message (_msg_) has priority over messages from the _msgmap_.
+// If no message can be found, the _code_ is used as a message.
+// If an insert property is not defined, it is replaced with _[name?]_ in the message.
+// As a convenience, _util_ and ___ are made available in the templates.
+//
+// Parameters:
+//
+//   * _msg_ : (required) String; message template
+//   * _msgmap_ : (required) Object; map codes to message templates
+//   * _msgprefix_: (required) String; prefix for all messages, useful as indentification of error origin
+//   * _code_: (required) String; error code
+//   * _details_: (required) Object; error details providing context
+//
+// Returns: String; human readable error message
+function buildmessage(
+  options,
+  msg,
+  msgmap,
+  msgprefix,
+  inspect,
+  code,
+  details,
+  ex
+) {
+  var message =
+    msgprefix +
+    (_.isString(msg)
+      ? msg
+      : _.isString(msgmap[code])
+        ? msgmap[code]
+        : ex
+          ? originalmsg(options.override, ex)
+          : code)
+
+  // These are the inserts.
+  var valmap = _.extend({}, details, { code: code })
+
+  // Workaround to prevent underscore blowing up if properties are not
+  // found.  Reserved words and undefined need to be suffixed with $
+  // in the template interpolates.
+
+  var valstrmap = { util: util, _: _ }
+  _.each(valmap, function(val, key) {
+    /* jshint evil:true */
+    try {
+      eval('var ' + key + ';')
+    } catch (e) {
+      key = key + '$'
+    }
+    if ({ undefined: 1, NaN: 1 }[key]) {
+      key = key + '$'
+    }
+    valstrmap[key] = inspect && !_.isString(val) ? util.inspect(val) : val
+  })
+
+  var done = false
+  while (!done) {
+    try {
+      var tm = _.template(message)
+      message = tm(valstrmap)
+      done = true
+    } catch (e) {
+      if (e instanceof ReferenceError) {
+        var m = /ReferenceError:\s+(.*?)\s+/.exec(e.toString())
+        if (m && m[1]) {
+          valstrmap[m[1]] = '[' + m[1] + '?]'
+        } else done = true
+      }
+
+      // Some other error - give up and just dump the properties at
+      // the end of the template.
+      else {
+        done = true
+        message =
+          message +
+          ' VALUES:' +
+          util.inspect(valmap, { depth: 2 }) +
+          ' TEMPLATE ERROR: ' +
+          e
+      }
+    }
+  }
+
+  return message
+}
+
+function originalmsg(override, ex) {
+  if (!ex) return
+
+  if (override && ex.eraro && ex.orig) return ex.orig.message
+
+  return ex.message
+}
+
+},{"lodash":124,"util":291}],134:[function(require,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -44560,7 +44059,99 @@ module.exports.compile = function( spec ) {
 }
 
 
-},{"./norma-parser":134,"eraro":99,"lodash":125,"util":271}],136:[function(require,module,exports){
+},{"./norma-parser":134,"eraro":133,"lodash":124,"util":291}],136:[function(require,module,exports){
+/*
+object-assign
+(c) Sindre Sorhus
+@license MIT
+*/
+
+'use strict';
+/* eslint-disable no-unused-vars */
+var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+function toObject(val) {
+	if (val === null || val === undefined) {
+		throw new TypeError('Object.assign cannot be called with null or undefined');
+	}
+
+	return Object(val);
+}
+
+function shouldUseNative() {
+	try {
+		if (!Object.assign) {
+			return false;
+		}
+
+		// Detect buggy property enumeration order in older V8 versions.
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=4118
+		var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
+		test1[5] = 'de';
+		if (Object.getOwnPropertyNames(test1)[0] === '5') {
+			return false;
+		}
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+		var test2 = {};
+		for (var i = 0; i < 10; i++) {
+			test2['_' + String.fromCharCode(i)] = i;
+		}
+		var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
+			return test2[n];
+		});
+		if (order2.join('') !== '0123456789') {
+			return false;
+		}
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+		var test3 = {};
+		'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
+			test3[letter] = letter;
+		});
+		if (Object.keys(Object.assign({}, test3)).join('') !==
+				'abcdefghijklmnopqrst') {
+			return false;
+		}
+
+		return true;
+	} catch (err) {
+		// We don't expect any of the above to throw, but better to be safe.
+		return false;
+	}
+}
+
+module.exports = shouldUseNative() ? Object.assign : function (target, source) {
+	var from;
+	var to = toObject(target);
+	var symbols;
+
+	for (var s = 1; s < arguments.length; s++) {
+		from = Object(arguments[s]);
+
+		for (var key in from) {
+			if (hasOwnProperty.call(from, key)) {
+				to[key] = from[key];
+			}
+		}
+
+		if (getOwnPropertySymbols) {
+			symbols = getOwnPropertySymbols(from);
+			for (var i = 0; i < symbols.length; i++) {
+				if (propIsEnumerable.call(from, symbols[i])) {
+					to[symbols[i]] = from[symbols[i]];
+				}
+			}
+		}
+	}
+
+	return to;
+};
+
+},{}],137:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -44732,7 +44323,7 @@ internals.safeCharCodes = (function () {
 }());
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":63}],137:[function(require,module,exports){
+},{"buffer":61}],138:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 
@@ -45714,7 +45305,7 @@ exports.shallow = function (source) {
 };
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./escape":136,"_process":191,"buffer":63,"crypto":72,"path":180,"util":271}],138:[function(require,module,exports){
+},{"./escape":137,"_process":192,"buffer":61,"crypto":70,"path":181,"util":291}],139:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -45780,7 +45371,7 @@ exports.ref = function (id) {
     return Ref.isRef(id) ? id : Ref.create(id);
 };
 
-},{"./ref":142,"hoek":137}],139:[function(require,module,exports){
+},{"./ref":143,"hoek":138}],140:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -46139,7 +45730,7 @@ internals.annotate = function (stripColorCodes) {
     return message;
 };
 
-},{"./language":141,"hoek":137}],140:[function(require,module,exports){
+},{"./language":142,"hoek":138}],141:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -46575,7 +46166,7 @@ internals.root = function () {
 
 module.exports = internals.root();
 
-},{"../package.json":159,"./cast":138,"./errors":139,"./ref":142,"./types/alternatives":145,"./types/any":146,"./types/array":147,"./types/binary":148,"./types/boolean":149,"./types/date":150,"./types/func":151,"./types/lazy":152,"./types/number":153,"./types/object":154,"./types/string":155,"hoek":137}],141:[function(require,module,exports){
+},{"../package.json":160,"./cast":139,"./errors":140,"./ref":143,"./types/alternatives":146,"./types/any":147,"./types/array":148,"./types/binary":149,"./types/boolean":150,"./types/date":151,"./types/func":152,"./types/lazy":153,"./types/number":154,"./types/object":155,"./types/string":156,"hoek":138}],142:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -46733,7 +46324,7 @@ exports.errors = {
     }
 };
 
-},{}],142:[function(require,module,exports){
+},{}],143:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -46788,7 +46379,7 @@ exports.push = function (array, ref) {
     }
 };
 
-},{"hoek":137}],143:[function(require,module,exports){
+},{"hoek":138}],144:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -46815,7 +46406,7 @@ exports.options = Joi.object({
     escapeHtml: Joi.boolean()
 }).strict();
 
-},{"../":140}],144:[function(require,module,exports){
+},{"../":141}],145:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -46930,7 +46521,7 @@ module.exports = class Set {
 };
 
 }).call(this,{"isBuffer":require("../../../../is-buffer/index.js")})
-},{"../../../../is-buffer/index.js":121,"./ref":142}],145:[function(require,module,exports){
+},{"../../../../is-buffer/index.js":119,"./ref":143}],146:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -47120,7 +46711,7 @@ internals.Alternatives = class extends Any {
 
 module.exports = new internals.Alternatives();
 
-},{"../../cast":138,"../../ref":142,"../any":146,"hoek":137}],146:[function(require,module,exports){
+},{"../../cast":139,"../../ref":143,"../any":147,"hoek":138}],147:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -48039,7 +47630,7 @@ internals.concatSettings = function (target, source) {
     return obj;
 };
 
-},{"../../cast":138,"../../errors":139,"../../ref":142,"../../schemas":143,"../../set":144,"../alternatives":145,"hoek":137}],147:[function(require,module,exports){
+},{"../../cast":139,"../../errors":140,"../../ref":143,"../../schemas":144,"../../set":145,"../alternatives":146,"hoek":138}],148:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -48699,7 +48290,7 @@ internals.safeParse = function (value, result) {
 
 module.exports = new internals.Array();
 
-},{"../../cast":138,"../../ref":142,"../any":146,"hoek":137}],148:[function(require,module,exports){
+},{"../../cast":139,"../../ref":143,"../any":147,"hoek":138}],149:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -48803,7 +48394,7 @@ internals.Binary = class extends Any {
 module.exports = new internals.Binary();
 
 }).call(this,require("buffer").Buffer)
-},{"../any":146,"buffer":63,"hoek":137}],149:[function(require,module,exports){
+},{"../any":147,"buffer":61,"hoek":138}],150:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -48903,7 +48494,7 @@ internals.Boolean = class extends Any {
 
 module.exports = new internals.Boolean();
 
-},{"../../set":144,"../any":146,"hoek":137}],150:[function(require,module,exports){
+},{"../../set":145,"../any":147,"hoek":138}],151:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -49082,7 +48673,7 @@ internals.Date.prototype.max = internals.compare('max', (value, date) => value <
 
 module.exports = new internals.Date();
 
-},{"../../ref":142,"../any":146,"hoek":137}],151:[function(require,module,exports){
+},{"../../ref":143,"../any":147,"hoek":138}],152:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -49174,7 +48765,7 @@ internals.Func = class extends ObjectType.constructor {
 
 module.exports = new internals.Func();
 
-},{"../../ref":142,"../object":154,"hoek":137}],152:[function(require,module,exports){
+},{"../../ref":143,"../object":155,"hoek":138}],153:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -49229,7 +48820,7 @@ internals.Lazy = class extends Any {
 
 module.exports = new internals.Lazy();
 
-},{"../any":146,"hoek":137}],153:[function(require,module,exports){
+},{"../any":147,"hoek":138}],154:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -49404,7 +48995,7 @@ internals.Number.prototype.less = internals.compare('less', (value, limit) => va
 
 module.exports = new internals.Number();
 
-},{"../../ref":142,"../any":146,"hoek":137}],154:[function(require,module,exports){
+},{"../../ref":143,"../any":147,"hoek":138}],155:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -50302,7 +49893,7 @@ internals.nand = function (value, peers, parent, state, options) {
 
 module.exports = new internals.Object();
 
-},{"../../cast":138,"../../errors":139,"../any":146,"hoek":137,"topo":160}],155:[function(require,module,exports){
+},{"../../cast":139,"../../errors":140,"../any":147,"hoek":138,"topo":161}],156:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -50938,7 +50529,7 @@ internals.String.prototype.uuid = internals.String.prototype.guid;
 module.exports = new internals.String();
 
 }).call(this,require("buffer").Buffer)
-},{"../../ref":142,"../any":146,"../date":150,"./ip":156,"./uri":158,"buffer":63,"hoek":137,"isemail":122,"net":59}],156:[function(require,module,exports){
+},{"../../ref":143,"../any":147,"../date":151,"./ip":157,"./uri":159,"buffer":61,"hoek":138,"isemail":121,"net":59}],157:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -50994,7 +50585,7 @@ internals.Ip.createIpRegex = function (versions, cidr) {
 
 module.exports = internals.Ip;
 
-},{"./rfc3986":157}],157:[function(require,module,exports){
+},{"./rfc3986":158}],158:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -51205,7 +50796,7 @@ internals.generate();
 
 module.exports = internals.rfc3986;
 
-},{}],158:[function(require,module,exports){
+},{}],159:[function(require,module,exports){
 'use strict';
 
 // Load Modules
@@ -51253,42 +50844,73 @@ const internals = {
 
 module.exports = internals.Uri;
 
-},{"./rfc3986":157}],159:[function(require,module,exports){
+},{"./rfc3986":158}],160:[function(require,module,exports){
 module.exports={
-  "name": "joi",
-  "description": "Object schema validation",
-  "version": "12.0.0",
-  "homepage": "https://github.com/hapijs/joi",
-  "repository": "git://github.com/hapijs/joi",
-  "main": "lib/index.js",
-  "keywords": [
-    "hapi",
-    "schema",
-    "validation"
-  ],
-  "engines": {
-    "node": ">=4.0.0"
+  "_from": "joi@12.0",
+  "_id": "joi@12.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-z0FNlV4NGgjQN1fdtHYXf5kmgludM65fG/JlXzU6+rwkt9U5UWuXVYnXa2FpK0u6+qBuCmrm5byPNuiiddAHvQ==",
+  "_location": "/optioner/joi",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "joi@12.0",
+    "name": "joi",
+    "escapedName": "joi",
+    "rawSpec": "12.0",
+    "saveSpec": null,
+    "fetchSpec": "12.0"
   },
+  "_requiredBy": [
+    "/optioner"
+  ],
+  "_resolved": "https://registry.npmjs.org/joi/-/joi-12.0.0.tgz",
+  "_shasum": "46f55e68f4d9628f01bbb695902c8b307ad8d33a",
+  "_spec": "joi@12.0",
+  "_where": "/Users/richard/Projects/seneca/browser/node_modules/optioner",
+  "bugs": {
+    "url": "https://github.com/hapijs/joi/issues"
+  },
+  "bundleDependencies": false,
   "dependencies": {
     "hoek": "4.x.x",
     "isemail": "3.x.x",
     "topo": "2.x.x"
   },
+  "deprecated": false,
+  "description": "Object schema validation",
   "devDependencies": {
     "hapitoc": "1.x.x",
     "lab": "14.x.x"
   },
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "homepage": "https://github.com/hapijs/joi",
+  "keywords": [
+    "hapi",
+    "schema",
+    "validation"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "lib/index.js",
+  "name": "joi",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hapijs/joi.git"
+  },
   "scripts": {
     "test": "lab -t 100 -a code -L",
-    "test-debug": "lab -a code",
     "test-cov-html": "lab -r html -o coverage.html -a code",
+    "test-debug": "lab -a code",
     "toc": "hapitoc",
     "version": "npm run toc && git add API.md README.md"
   },
-  "license": "BSD-3-Clause"
+  "version": "12.0.0"
 }
 
-},{}],160:[function(require,module,exports){
+},{}],161:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -51519,7 +51141,7 @@ internals.Topo.prototype._sort = function () {
     this.nodes = sortedNodes;
 };
 
-},{"hoek":137}],161:[function(require,module,exports){
+},{"hoek":138}],162:[function(require,module,exports){
 /*
   MIT License,
   Copyright (c) 2016-2018, Richard Rodger and other contributors.
@@ -51712,7 +51334,7 @@ function obj2arr(work, ctxt) {
   return work
 }
 
-},{"hoek":137,"joi":140,"util":271}],162:[function(require,module,exports){
+},{"hoek":138,"joi":141,"util":291}],163:[function(require,module,exports){
 /* Copyright (c) 2016 Richard Rodger and other contributors, MIT License */
 'use strict'
 
@@ -51845,7 +51467,7 @@ function contains (all, some) {
   return true
 }
 
-},{"assert":16}],163:[function(require,module,exports){
+},{"assert":16}],164:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -51896,7 +51518,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],164:[function(require,module,exports){
+},{}],165:[function(require,module,exports){
 'use strict';
 
 
@@ -52003,7 +51625,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],165:[function(require,module,exports){
+},{}],166:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -52056,7 +51678,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],166:[function(require,module,exports){
+},{}],167:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -52126,7 +51748,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],167:[function(require,module,exports){
+},{}],168:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -52187,7 +51809,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],168:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -53644,7 +53266,7 @@ function deflate(strm, flush) {
                     (!s.gzhead.extra ? 0 : 4) +
                     (!s.gzhead.name ? 0 : 8) +
                     (!s.gzhead.comment ? 0 : 16)
-                );
+        );
         put_byte(s, s.gzhead.time & 0xff);
         put_byte(s, (s.gzhead.time >> 8) & 0xff);
         put_byte(s, (s.gzhead.time >> 16) & 0xff);
@@ -54063,7 +53685,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":164,"./adler32":165,"./crc32":167,"./messages":172,"./trees":173}],169:[function(require,module,exports){
+},{"../utils/common":165,"./adler32":166,"./crc32":168,"./messages":173,"./trees":174}],170:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -54410,7 +54032,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],170:[function(require,module,exports){
+},{}],171:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55968,7 +55590,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":164,"./adler32":165,"./crc32":167,"./inffast":169,"./inftrees":171}],171:[function(require,module,exports){
+},{"../utils/common":165,"./adler32":166,"./crc32":168,"./inffast":170,"./inftrees":172}],172:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56313,7 +55935,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":164}],172:[function(require,module,exports){
+},{"../utils/common":165}],173:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56347,7 +55969,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],173:[function(require,module,exports){
+},{}],174:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56368,6 +55990,8 @@ module.exports = {
 // 2. Altered source versions must be plainly marked as such, and must not be
 //   misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
+
+/* eslint-disable space-unary-ops */
 
 var utils = require('../utils/common');
 
@@ -57569,7 +57193,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":164}],174:[function(require,module,exports){
+},{"../utils/common":165}],175:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -57618,7 +57242,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],175:[function(require,module,exports){
+},{}],176:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -57632,7 +57256,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],176:[function(require,module,exports){
+},{}],177:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -57756,7 +57380,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":177,"asn1.js":2}],177:[function(require,module,exports){
+},{"./certificate":178,"asn1.js":2}],178:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -57781,7 +57405,8 @@ var AttributeTypeValue = asn.define('AttributeTypeValue', function () {
 var AlgorithmIdentifier = asn.define('AlgorithmIdentifier', function () {
   this.seq().obj(
     this.key('algorithm').objid(),
-    this.key('parameters').optional()
+    this.key('parameters').optional(),
+    this.key('curve').objid().optional()
   )
 })
 
@@ -57823,7 +57448,7 @@ var Extension = asn.define('Extension', function () {
 
 var TBSCertificate = asn.define('TBSCertificate', function () {
   this.seq().obj(
-    this.key('version').explicit(0).int(),
+    this.key('version').explicit(0).int().optional(),
     this.key('serialNumber').int(),
     this.key('signature').use(AlgorithmIdentifier),
     this.key('issuer').use(Name),
@@ -57846,14 +57471,14 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":2}],178:[function(require,module,exports){
-(function (Buffer){
+},{"asn1.js":2}],179:[function(require,module,exports){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r\+\/\=]+)[\n\r]+/m
-var startRegex = /^-----BEGIN ((?:.* KEY)|CERTIFICATE)-----/m
-var fullRegex = /^-----BEGIN ((?:.* KEY)|CERTIFICATE)-----([0-9A-z\n\r\+\/\=]+)-----END \1-----$/m
+var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
+var fullRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----([0-9A-z\n\r\+\/\=]+)-----END \1-----$/m
 var evp = require('evp_bytestokey')
 var ciphers = require('browserify-aes')
+var Buffer = require('safe-buffer').Buffer
 module.exports = function (okey, password) {
   var key = okey.toString()
   var match = key.match(findProc)
@@ -57863,8 +57488,8 @@ module.exports = function (okey, password) {
     decrypted = new Buffer(match2[2].replace(/[\r\n]/g, ''), 'base64')
   } else {
     var suite = 'aes' + match[1]
-    var iv = new Buffer(match[2], 'hex')
-    var cipherText = new Buffer(match[3].replace(/[\r\n]/g, ''), 'base64')
+    var iv = Buffer.from(match[2], 'hex')
+    var cipherText = Buffer.from(match[3].replace(/[\r\n]/g, ''), 'base64')
     var cipherKey = evp(password, iv.slice(0, 8), parseInt(match[1], 10)).key
     var out = []
     var cipher = ciphers.createDecipheriv(suite, cipherKey, iv)
@@ -57879,14 +57504,13 @@ module.exports = function (okey, password) {
   }
 }
 
-}).call(this,require("buffer").Buffer)
-},{"browserify-aes":32,"buffer":63,"evp_bytestokey":101}],179:[function(require,module,exports){
-(function (Buffer){
+},{"browserify-aes":32,"evp_bytestokey":99,"safe-buffer":215}],180:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
 var ciphers = require('browserify-aes')
 var compat = require('pbkdf2')
+var Buffer = require('safe-buffer').Buffer
 module.exports = parseKeys
 
 function parseKeys (buffer) {
@@ -57896,7 +57520,7 @@ function parseKeys (buffer) {
     buffer = buffer.key
   }
   if (typeof buffer === 'string') {
-    buffer = new Buffer(buffer)
+    buffer = Buffer.from(buffer)
   }
 
   var stripped = fixProc(buffer, password)
@@ -57981,7 +57605,7 @@ function decrypt (data, password) {
   var iv = data.algorithm.decrypt.cipher.iv
   var cipherText = data.subjectPrivateKey
   var keylen = parseInt(algo.split('-')[1], 10) / 8
-  var key = compat.pbkdf2Sync(password, salt, iters, keylen)
+  var key = compat.pbkdf2Sync(password, salt, iters, keylen, 'sha1')
   var cipher = ciphers.createDecipheriv(algo, key, iv)
   var out = []
   out.push(cipher.update(cipherText))
@@ -57989,8 +57613,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-}).call(this,require("buffer").Buffer)
-},{"./aesid.json":175,"./asn1":176,"./fixProc":178,"browserify-aes":32,"buffer":63,"pbkdf2":182}],180:[function(require,module,exports){
+},{"./aesid.json":176,"./asn1":177,"./fixProc":179,"browserify-aes":32,"pbkdf2":183,"safe-buffer":215}],181:[function(require,module,exports){
 (function (process){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -58296,7 +57919,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":191}],181:[function(require,module,exports){
+},{"_process":192}],182:[function(require,module,exports){
 /* Copyright (c) 2013-2016 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
 
 ;(function() {
@@ -58690,11 +58313,11 @@ var substr = 'ab'.substr(-1) === 'b'
   }
 }.call(this))
 
-},{"gex":103,"lodash":125}],182:[function(require,module,exports){
+},{"gex":101,"lodash":124}],183:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":183,"./lib/sync":186}],183:[function(require,module,exports){
+},{"./lib/async":184,"./lib/sync":187}],184:[function(require,module,exports){
 (function (process,global){
 var checkParameters = require('./precondition')
 var defaultEncoding = require('./default-encoding')
@@ -58798,7 +58421,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":184,"./precondition":185,"./sync":186,"_process":191,"safe-buffer":228}],184:[function(require,module,exports){
+},{"./default-encoding":185,"./precondition":186,"./sync":187,"_process":192,"safe-buffer":215}],185:[function(require,module,exports){
 (function (process){
 var defaultEncoding
 /* istanbul ignore next */
@@ -58812,7 +58435,7 @@ if (process.browser) {
 module.exports = defaultEncoding
 
 }).call(this,require('_process'))
-},{"_process":191}],185:[function(require,module,exports){
+},{"_process":192}],186:[function(require,module,exports){
 (function (Buffer){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
@@ -58844,7 +58467,7 @@ module.exports = function (password, salt, iterations, keylen) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":121}],186:[function(require,module,exports){
+},{"../../is-buffer/index.js":119}],187:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var RIPEMD160 = require('ripemd160')
 var sha = require('sha.js')
@@ -58950,14 +58573,14 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":184,"./precondition":185,"create-hash/md5":69,"ripemd160":226,"safe-buffer":228,"sha.js":250}],187:[function(require,module,exports){
+},{"./default-encoding":185,"./precondition":186,"create-hash/md5":67,"ripemd160":213,"safe-buffer":215,"sha.js":235}],188:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
 module.exports = require('./lib/checks');
-},{"./lib/checks":188}],188:[function(require,module,exports){
+},{"./lib/checks":189}],189:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -59053,7 +58676,7 @@ module.exports.checkIsBoolean = typeCheck('boolean');
 module.exports.checkIsFunction = typeCheck('function');
 module.exports.checkIsObject = typeCheck('object');
 
-},{"./errors":189,"util":271}],189:[function(require,module,exports){
+},{"./errors":190,"util":291}],190:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -59079,7 +58702,7 @@ IllegalStateError.prototype.name = 'IllegalStateError';
 
 module.exports.IllegalStateError = IllegalStateError;
 module.exports.IllegalArgumentError = IllegalArgumentError;
-},{"util":271}],190:[function(require,module,exports){
+},{"util":291}],191:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -59127,7 +58750,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this,require('_process'))
-},{"_process":191}],191:[function(require,module,exports){
+},{"_process":192}],192:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -59313,7 +58936,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],192:[function(require,module,exports){
+},{}],193:[function(require,module,exports){
 (function (process){
 if (process.env.npm_package_name === 'pseudomap' &&
     process.env.npm_lifecycle_script === 'test')
@@ -59326,7 +58949,7 @@ if (typeof Map === 'function' && !process.env.TEST_PSEUDOMAP) {
 }
 
 }).call(this,require('_process'))
-},{"./pseudomap":193,"_process":191}],193:[function(require,module,exports){
+},{"./pseudomap":194,"_process":192}],194:[function(require,module,exports){
 var hasOwnProperty = Object.prototype.hasOwnProperty
 
 module.exports = PseudoMap
@@ -59441,7 +59064,7 @@ function set (data, k, v) {
   data[key] = new Entry(k, v, key)
 }
 
-},{}],194:[function(require,module,exports){
+},{}],195:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt')
 exports.privateDecrypt = require('./privateDecrypt')
 
@@ -59453,7 +59076,7 @@ exports.publicDecrypt = function publicDecrypt (key, buf) {
   return exports.privateDecrypt(key, buf, true)
 }
 
-},{"./privateDecrypt":196,"./publicEncrypt":197}],195:[function(require,module,exports){
+},{"./privateDecrypt":197,"./publicEncrypt":198}],196:[function(require,module,exports){
 var createHash = require('create-hash')
 var Buffer = require('safe-buffer').Buffer
 
@@ -59474,7 +59097,7 @@ function i2ops (c) {
   return out
 }
 
-},{"create-hash":68,"safe-buffer":228}],196:[function(require,module,exports){
+},{"create-hash":66,"safe-buffer":215}],197:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var mgf = require('./mgf')
 var xor = require('./xor')
@@ -59581,7 +59204,7 @@ function compare (a, b) {
   return dif
 }
 
-},{"./mgf":195,"./withPublic":198,"./xor":199,"bn.js":27,"browserify-rsa":50,"create-hash":68,"parse-asn1":179,"safe-buffer":228}],197:[function(require,module,exports){
+},{"./mgf":196,"./withPublic":199,"./xor":200,"bn.js":27,"browserify-rsa":50,"create-hash":66,"parse-asn1":180,"safe-buffer":215}],198:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var randomBytes = require('randombytes')
 var createHash = require('create-hash')
@@ -59671,7 +59294,7 @@ function nonZero (len) {
   return out
 }
 
-},{"./mgf":195,"./withPublic":198,"./xor":199,"bn.js":27,"browserify-rsa":50,"create-hash":68,"parse-asn1":179,"randombytes":208,"safe-buffer":228}],198:[function(require,module,exports){
+},{"./mgf":196,"./withPublic":199,"./xor":200,"bn.js":27,"browserify-rsa":50,"create-hash":66,"parse-asn1":180,"randombytes":210,"safe-buffer":215}],199:[function(require,module,exports){
 var BN = require('bn.js')
 var Buffer = require('safe-buffer').Buffer
 
@@ -59685,7 +59308,7 @@ function withPublic (paddedMsg, key) {
 
 module.exports = withPublic
 
-},{"bn.js":27,"safe-buffer":228}],199:[function(require,module,exports){
+},{"bn.js":27,"safe-buffer":215}],200:[function(require,module,exports){
 module.exports = function xor (a, b) {
   var len = a.length
   var i = -1
@@ -59695,7 +59318,544 @@ module.exports = function xor (a, b) {
   return a
 }
 
-},{}],200:[function(require,module,exports){
+},{}],201:[function(require,module,exports){
+(function (global){
+/*! https://mths.be/punycode v1.4.1 by @mathias */
+;(function(root) {
+
+	/** Detect free variables */
+	var freeExports = typeof exports == 'object' && exports &&
+		!exports.nodeType && exports;
+	var freeModule = typeof module == 'object' && module &&
+		!module.nodeType && module;
+	var freeGlobal = typeof global == 'object' && global;
+	if (
+		freeGlobal.global === freeGlobal ||
+		freeGlobal.window === freeGlobal ||
+		freeGlobal.self === freeGlobal
+	) {
+		root = freeGlobal;
+	}
+
+	/**
+	 * The `punycode` object.
+	 * @name punycode
+	 * @type Object
+	 */
+	var punycode,
+
+	/** Highest positive signed 32-bit float value */
+	maxInt = 2147483647, // aka. 0x7FFFFFFF or 2^31-1
+
+	/** Bootstring parameters */
+	base = 36,
+	tMin = 1,
+	tMax = 26,
+	skew = 38,
+	damp = 700,
+	initialBias = 72,
+	initialN = 128, // 0x80
+	delimiter = '-', // '\x2D'
+
+	/** Regular expressions */
+	regexPunycode = /^xn--/,
+	regexNonASCII = /[^\x20-\x7E]/, // unprintable ASCII chars + non-ASCII chars
+	regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g, // RFC 3490 separators
+
+	/** Error messages */
+	errors = {
+		'overflow': 'Overflow: input needs wider integers to process',
+		'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
+		'invalid-input': 'Invalid input'
+	},
+
+	/** Convenience shortcuts */
+	baseMinusTMin = base - tMin,
+	floor = Math.floor,
+	stringFromCharCode = String.fromCharCode,
+
+	/** Temporary variable */
+	key;
+
+	/*--------------------------------------------------------------------------*/
+
+	/**
+	 * A generic error utility function.
+	 * @private
+	 * @param {String} type The error type.
+	 * @returns {Error} Throws a `RangeError` with the applicable error message.
+	 */
+	function error(type) {
+		throw new RangeError(errors[type]);
+	}
+
+	/**
+	 * A generic `Array#map` utility function.
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} callback The function that gets called for every array
+	 * item.
+	 * @returns {Array} A new array of values returned by the callback function.
+	 */
+	function map(array, fn) {
+		var length = array.length;
+		var result = [];
+		while (length--) {
+			result[length] = fn(array[length]);
+		}
+		return result;
+	}
+
+	/**
+	 * A simple `Array#map`-like wrapper to work with domain name strings or email
+	 * addresses.
+	 * @private
+	 * @param {String} domain The domain name or email address.
+	 * @param {Function} callback The function that gets called for every
+	 * character.
+	 * @returns {Array} A new string of characters returned by the callback
+	 * function.
+	 */
+	function mapDomain(string, fn) {
+		var parts = string.split('@');
+		var result = '';
+		if (parts.length > 1) {
+			// In email addresses, only the domain name should be punycoded. Leave
+			// the local part (i.e. everything up to `@`) intact.
+			result = parts[0] + '@';
+			string = parts[1];
+		}
+		// Avoid `split(regex)` for IE8 compatibility. See #17.
+		string = string.replace(regexSeparators, '\x2E');
+		var labels = string.split('.');
+		var encoded = map(labels, fn).join('.');
+		return result + encoded;
+	}
+
+	/**
+	 * Creates an array containing the numeric code points of each Unicode
+	 * character in the string. While JavaScript uses UCS-2 internally,
+	 * this function will convert a pair of surrogate halves (each of which
+	 * UCS-2 exposes as separate characters) into a single code point,
+	 * matching UTF-16.
+	 * @see `punycode.ucs2.encode`
+	 * @see <https://mathiasbynens.be/notes/javascript-encoding>
+	 * @memberOf punycode.ucs2
+	 * @name decode
+	 * @param {String} string The Unicode input string (UCS-2).
+	 * @returns {Array} The new array of code points.
+	 */
+	function ucs2decode(string) {
+		var output = [],
+		    counter = 0,
+		    length = string.length,
+		    value,
+		    extra;
+		while (counter < length) {
+			value = string.charCodeAt(counter++);
+			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
+				// high surrogate, and there is a next character
+				extra = string.charCodeAt(counter++);
+				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
+					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
+				} else {
+					// unmatched surrogate; only append this code unit, in case the next
+					// code unit is the high surrogate of a surrogate pair
+					output.push(value);
+					counter--;
+				}
+			} else {
+				output.push(value);
+			}
+		}
+		return output;
+	}
+
+	/**
+	 * Creates a string based on an array of numeric code points.
+	 * @see `punycode.ucs2.decode`
+	 * @memberOf punycode.ucs2
+	 * @name encode
+	 * @param {Array} codePoints The array of numeric code points.
+	 * @returns {String} The new Unicode string (UCS-2).
+	 */
+	function ucs2encode(array) {
+		return map(array, function(value) {
+			var output = '';
+			if (value > 0xFFFF) {
+				value -= 0x10000;
+				output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
+				value = 0xDC00 | value & 0x3FF;
+			}
+			output += stringFromCharCode(value);
+			return output;
+		}).join('');
+	}
+
+	/**
+	 * Converts a basic code point into a digit/integer.
+	 * @see `digitToBasic()`
+	 * @private
+	 * @param {Number} codePoint The basic numeric code point value.
+	 * @returns {Number} The numeric value of a basic code point (for use in
+	 * representing integers) in the range `0` to `base - 1`, or `base` if
+	 * the code point does not represent a value.
+	 */
+	function basicToDigit(codePoint) {
+		if (codePoint - 48 < 10) {
+			return codePoint - 22;
+		}
+		if (codePoint - 65 < 26) {
+			return codePoint - 65;
+		}
+		if (codePoint - 97 < 26) {
+			return codePoint - 97;
+		}
+		return base;
+	}
+
+	/**
+	 * Converts a digit/integer into a basic code point.
+	 * @see `basicToDigit()`
+	 * @private
+	 * @param {Number} digit The numeric value of a basic code point.
+	 * @returns {Number} The basic code point whose value (when used for
+	 * representing integers) is `digit`, which needs to be in the range
+	 * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
+	 * used; else, the lowercase form is used. The behavior is undefined
+	 * if `flag` is non-zero and `digit` has no uppercase form.
+	 */
+	function digitToBasic(digit, flag) {
+		//  0..25 map to ASCII a..z or A..Z
+		// 26..35 map to ASCII 0..9
+		return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
+	}
+
+	/**
+	 * Bias adaptation function as per section 3.4 of RFC 3492.
+	 * https://tools.ietf.org/html/rfc3492#section-3.4
+	 * @private
+	 */
+	function adapt(delta, numPoints, firstTime) {
+		var k = 0;
+		delta = firstTime ? floor(delta / damp) : delta >> 1;
+		delta += floor(delta / numPoints);
+		for (/* no initialization */; delta > baseMinusTMin * tMax >> 1; k += base) {
+			delta = floor(delta / baseMinusTMin);
+		}
+		return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
+	}
+
+	/**
+	 * Converts a Punycode string of ASCII-only symbols to a string of Unicode
+	 * symbols.
+	 * @memberOf punycode
+	 * @param {String} input The Punycode string of ASCII-only symbols.
+	 * @returns {String} The resulting string of Unicode symbols.
+	 */
+	function decode(input) {
+		// Don't use UCS-2
+		var output = [],
+		    inputLength = input.length,
+		    out,
+		    i = 0,
+		    n = initialN,
+		    bias = initialBias,
+		    basic,
+		    j,
+		    index,
+		    oldi,
+		    w,
+		    k,
+		    digit,
+		    t,
+		    /** Cached calculation results */
+		    baseMinusT;
+
+		// Handle the basic code points: let `basic` be the number of input code
+		// points before the last delimiter, or `0` if there is none, then copy
+		// the first basic code points to the output.
+
+		basic = input.lastIndexOf(delimiter);
+		if (basic < 0) {
+			basic = 0;
+		}
+
+		for (j = 0; j < basic; ++j) {
+			// if it's not a basic code point
+			if (input.charCodeAt(j) >= 0x80) {
+				error('not-basic');
+			}
+			output.push(input.charCodeAt(j));
+		}
+
+		// Main decoding loop: start just after the last delimiter if any basic code
+		// points were copied; start at the beginning otherwise.
+
+		for (index = basic > 0 ? basic + 1 : 0; index < inputLength; /* no final expression */) {
+
+			// `index` is the index of the next character to be consumed.
+			// Decode a generalized variable-length integer into `delta`,
+			// which gets added to `i`. The overflow checking is easier
+			// if we increase `i` as we go, then subtract off its starting
+			// value at the end to obtain `delta`.
+			for (oldi = i, w = 1, k = base; /* no condition */; k += base) {
+
+				if (index >= inputLength) {
+					error('invalid-input');
+				}
+
+				digit = basicToDigit(input.charCodeAt(index++));
+
+				if (digit >= base || digit > floor((maxInt - i) / w)) {
+					error('overflow');
+				}
+
+				i += digit * w;
+				t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+
+				if (digit < t) {
+					break;
+				}
+
+				baseMinusT = base - t;
+				if (w > floor(maxInt / baseMinusT)) {
+					error('overflow');
+				}
+
+				w *= baseMinusT;
+
+			}
+
+			out = output.length + 1;
+			bias = adapt(i - oldi, out, oldi == 0);
+
+			// `i` was supposed to wrap around from `out` to `0`,
+			// incrementing `n` each time, so we'll fix that now:
+			if (floor(i / out) > maxInt - n) {
+				error('overflow');
+			}
+
+			n += floor(i / out);
+			i %= out;
+
+			// Insert `n` at position `i` of the output
+			output.splice(i++, 0, n);
+
+		}
+
+		return ucs2encode(output);
+	}
+
+	/**
+	 * Converts a string of Unicode symbols (e.g. a domain name label) to a
+	 * Punycode string of ASCII-only symbols.
+	 * @memberOf punycode
+	 * @param {String} input The string of Unicode symbols.
+	 * @returns {String} The resulting Punycode string of ASCII-only symbols.
+	 */
+	function encode(input) {
+		var n,
+		    delta,
+		    handledCPCount,
+		    basicLength,
+		    bias,
+		    j,
+		    m,
+		    q,
+		    k,
+		    t,
+		    currentValue,
+		    output = [],
+		    /** `inputLength` will hold the number of code points in `input`. */
+		    inputLength,
+		    /** Cached calculation results */
+		    handledCPCountPlusOne,
+		    baseMinusT,
+		    qMinusT;
+
+		// Convert the input in UCS-2 to Unicode
+		input = ucs2decode(input);
+
+		// Cache the length
+		inputLength = input.length;
+
+		// Initialize the state
+		n = initialN;
+		delta = 0;
+		bias = initialBias;
+
+		// Handle the basic code points
+		for (j = 0; j < inputLength; ++j) {
+			currentValue = input[j];
+			if (currentValue < 0x80) {
+				output.push(stringFromCharCode(currentValue));
+			}
+		}
+
+		handledCPCount = basicLength = output.length;
+
+		// `handledCPCount` is the number of code points that have been handled;
+		// `basicLength` is the number of basic code points.
+
+		// Finish the basic string - if it is not empty - with a delimiter
+		if (basicLength) {
+			output.push(delimiter);
+		}
+
+		// Main encoding loop:
+		while (handledCPCount < inputLength) {
+
+			// All non-basic code points < n have been handled already. Find the next
+			// larger one:
+			for (m = maxInt, j = 0; j < inputLength; ++j) {
+				currentValue = input[j];
+				if (currentValue >= n && currentValue < m) {
+					m = currentValue;
+				}
+			}
+
+			// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
+			// but guard against overflow
+			handledCPCountPlusOne = handledCPCount + 1;
+			if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
+				error('overflow');
+			}
+
+			delta += (m - n) * handledCPCountPlusOne;
+			n = m;
+
+			for (j = 0; j < inputLength; ++j) {
+				currentValue = input[j];
+
+				if (currentValue < n && ++delta > maxInt) {
+					error('overflow');
+				}
+
+				if (currentValue == n) {
+					// Represent delta as a generalized variable-length integer
+					for (q = delta, k = base; /* no condition */; k += base) {
+						t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+						if (q < t) {
+							break;
+						}
+						qMinusT = q - t;
+						baseMinusT = base - t;
+						output.push(
+							stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
+						);
+						q = floor(qMinusT / baseMinusT);
+					}
+
+					output.push(stringFromCharCode(digitToBasic(q, 0)));
+					bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+					delta = 0;
+					++handledCPCount;
+				}
+			}
+
+			++delta;
+			++n;
+
+		}
+		return output.join('');
+	}
+
+	/**
+	 * Converts a Punycode string representing a domain name or an email address
+	 * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
+	 * it doesn't matter if you call it on a string that has already been
+	 * converted to Unicode.
+	 * @memberOf punycode
+	 * @param {String} input The Punycoded domain name or email address to
+	 * convert to Unicode.
+	 * @returns {String} The Unicode representation of the given Punycode
+	 * string.
+	 */
+	function toUnicode(input) {
+		return mapDomain(input, function(string) {
+			return regexPunycode.test(string)
+				? decode(string.slice(4).toLowerCase())
+				: string;
+		});
+	}
+
+	/**
+	 * Converts a Unicode string representing a domain name or an email address to
+	 * Punycode. Only the non-ASCII parts of the domain name will be converted,
+	 * i.e. it doesn't matter if you call it with a domain that's already in
+	 * ASCII.
+	 * @memberOf punycode
+	 * @param {String} input The domain name or email address to convert, as a
+	 * Unicode string.
+	 * @returns {String} The Punycode representation of the given domain name or
+	 * email address.
+	 */
+	function toASCII(input) {
+		return mapDomain(input, function(string) {
+			return regexNonASCII.test(string)
+				? 'xn--' + encode(string)
+				: string;
+		});
+	}
+
+	/*--------------------------------------------------------------------------*/
+
+	/** Define the public API */
+	punycode = {
+		/**
+		 * A string representing the current Punycode.js version number.
+		 * @memberOf punycode
+		 * @type String
+		 */
+		'version': '1.4.1',
+		/**
+		 * An object of methods to convert from JavaScript's internal character
+		 * representation (UCS-2) to Unicode code points, and back.
+		 * @see <https://mathiasbynens.be/notes/javascript-encoding>
+		 * @memberOf punycode
+		 * @type Object
+		 */
+		'ucs2': {
+			'decode': ucs2decode,
+			'encode': ucs2encode
+		},
+		'decode': decode,
+		'encode': encode,
+		'toASCII': toASCII,
+		'toUnicode': toUnicode
+	};
+
+	/** Expose `punycode` */
+	// Some AMD build optimizers, like r.js, check for specific condition patterns
+	// like the following:
+	if (
+		typeof define == 'function' &&
+		typeof define.amd == 'object' &&
+		define.amd
+	) {
+		define('punycode', function() {
+			return punycode;
+		});
+	} else if (freeExports && freeModule) {
+		if (module.exports == freeExports) {
+			// in Node.js, io.js, or RingoJS v0.8.0+
+			freeModule.exports = punycode;
+		} else {
+			// in Narwhal or RingoJS v0.7.0-
+			for (key in punycode) {
+				punycode.hasOwnProperty(key) && (freeExports[key] = punycode[key]);
+			}
+		}
+	} else {
+		// in Rhino or a web browser
+		root.punycode = punycode;
+	}
+
+}(this));
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],202:[function(require,module,exports){
 'use strict';
 
 var replace = String.prototype.replace;
@@ -59715,7 +59875,7 @@ module.exports = {
     RFC3986: 'RFC3986'
 };
 
-},{}],201:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 'use strict';
 
 var stringify = require('./stringify');
@@ -59728,7 +59888,7 @@ module.exports = {
     stringify: stringify
 };
 
-},{"./formats":200,"./parse":202,"./stringify":203}],202:[function(require,module,exports){
+},{"./formats":202,"./parse":204,"./stringify":205}],204:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -59739,21 +59899,63 @@ var defaults = {
     allowDots: false,
     allowPrototypes: false,
     arrayLimit: 20,
+    charset: 'utf-8',
+    charsetSentinel: false,
+    comma: false,
     decoder: utils.decode,
     delimiter: '&',
     depth: 5,
+    ignoreQueryPrefix: false,
+    interpretNumericEntities: false,
     parameterLimit: 1000,
+    parseArrays: true,
     plainObjects: false,
     strictNullHandling: false
 };
+
+var interpretNumericEntities = function (str) {
+    return str.replace(/&#(\d+);/g, function ($0, numberStr) {
+        return String.fromCharCode(parseInt(numberStr, 10));
+    });
+};
+
+// This is what browsers will submit when the ✓ character occurs in an
+// application/x-www-form-urlencoded body and the encoding of the page containing
+// the form is iso-8859-1, or when the submitted form has an accept-charset
+// attribute of iso-8859-1. Presumably also with other charsets that do not contain
+// the ✓ character, such as us-ascii.
+var isoSentinel = 'utf8=%26%2310003%3B'; // encodeURIComponent('&#10003;')
+
+// These are the percent-encoded utf-8 octets representing a checkmark, indicating that the request actually is utf-8 encoded.
+var charsetSentinel = 'utf8=%E2%9C%93'; // encodeURIComponent('✓')
 
 var parseValues = function parseQueryStringValues(str, options) {
     var obj = {};
     var cleanStr = options.ignoreQueryPrefix ? str.replace(/^\?/, '') : str;
     var limit = options.parameterLimit === Infinity ? undefined : options.parameterLimit;
     var parts = cleanStr.split(options.delimiter, limit);
+    var skipIndex = -1; // Keep track of where the utf8 sentinel was found
+    var i;
 
-    for (var i = 0; i < parts.length; ++i) {
+    var charset = options.charset;
+    if (options.charsetSentinel) {
+        for (i = 0; i < parts.length; ++i) {
+            if (parts[i].indexOf('utf8=') === 0) {
+                if (parts[i] === charsetSentinel) {
+                    charset = 'utf-8';
+                } else if (parts[i] === isoSentinel) {
+                    charset = 'iso-8859-1';
+                }
+                skipIndex = i;
+                i = parts.length; // The eslint settings do not allow break;
+            }
+        }
+    }
+
+    for (i = 0; i < parts.length; ++i) {
+        if (i === skipIndex) {
+            continue;
+        }
         var part = parts[i];
 
         var bracketEqualsPos = part.indexOf(']=');
@@ -59761,14 +59963,23 @@ var parseValues = function parseQueryStringValues(str, options) {
 
         var key, val;
         if (pos === -1) {
-            key = options.decoder(part, defaults.decoder);
+            key = options.decoder(part, defaults.decoder, charset);
             val = options.strictNullHandling ? null : '';
         } else {
-            key = options.decoder(part.slice(0, pos), defaults.decoder);
-            val = options.decoder(part.slice(pos + 1), defaults.decoder);
+            key = options.decoder(part.slice(0, pos), defaults.decoder, charset);
+            val = options.decoder(part.slice(pos + 1), defaults.decoder, charset);
         }
+
+        if (val && options.interpretNumericEntities && charset === 'iso-8859-1') {
+            val = interpretNumericEntities(val);
+        }
+
+        if (val && options.comma && val.indexOf(',') > -1) {
+            val = val.split(',');
+        }
+
         if (has.call(obj, key)) {
-            obj[key] = [].concat(obj[key]).concat(val);
+            obj[key] = utils.combine(obj[key], val);
         } else {
             obj[key] = val;
         }
@@ -59784,14 +59995,15 @@ var parseObject = function (chain, val, options) {
         var obj;
         var root = chain[i];
 
-        if (root === '[]') {
-            obj = [];
-            obj = obj.concat(leaf);
+        if (root === '[]' && options.parseArrays) {
+            obj = [].concat(leaf);
         } else {
             obj = options.plainObjects ? Object.create(null) : {};
             var cleanRoot = root.charAt(0) === '[' && root.charAt(root.length - 1) === ']' ? root.slice(1, -1) : root;
             var index = parseInt(cleanRoot, 10);
-            if (
+            if (!options.parseArrays && cleanRoot === '') {
+                obj = { 0: leaf };
+            } else if (
                 !isNaN(index)
                 && root !== cleanRoot
                 && String(index) === cleanRoot
@@ -59833,8 +60045,7 @@ var parseKeys = function parseQueryStringKeys(givenKey, val, options) {
 
     var keys = [];
     if (parent) {
-        // If we aren't using plain objects, optionally prefix keys
-        // that would overwrite object prototype properties
+        // If we aren't using plain objects, optionally prefix keys that would overwrite object prototype properties
         if (!options.plainObjects && has.call(Object.prototype, parent)) {
             if (!options.allowPrototypes) {
                 return;
@@ -59866,24 +60077,41 @@ var parseKeys = function parseQueryStringKeys(givenKey, val, options) {
     return parseObject(keys, val, options);
 };
 
-module.exports = function (str, opts) {
-    var options = opts ? utils.assign({}, opts) : {};
+var normalizeParseOptions = function normalizeParseOptions(opts) {
+    if (!opts) {
+        return defaults;
+    }
 
-    if (options.decoder !== null && options.decoder !== undefined && typeof options.decoder !== 'function') {
+    if (opts.decoder !== null && opts.decoder !== undefined && typeof opts.decoder !== 'function') {
         throw new TypeError('Decoder has to be a function.');
     }
 
-    options.ignoreQueryPrefix = options.ignoreQueryPrefix === true;
-    options.delimiter = typeof options.delimiter === 'string' || utils.isRegExp(options.delimiter) ? options.delimiter : defaults.delimiter;
-    options.depth = typeof options.depth === 'number' ? options.depth : defaults.depth;
-    options.arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : defaults.arrayLimit;
-    options.parseArrays = options.parseArrays !== false;
-    options.decoder = typeof options.decoder === 'function' ? options.decoder : defaults.decoder;
-    options.allowDots = typeof options.allowDots === 'boolean' ? options.allowDots : defaults.allowDots;
-    options.plainObjects = typeof options.plainObjects === 'boolean' ? options.plainObjects : defaults.plainObjects;
-    options.allowPrototypes = typeof options.allowPrototypes === 'boolean' ? options.allowPrototypes : defaults.allowPrototypes;
-    options.parameterLimit = typeof options.parameterLimit === 'number' ? options.parameterLimit : defaults.parameterLimit;
-    options.strictNullHandling = typeof options.strictNullHandling === 'boolean' ? options.strictNullHandling : defaults.strictNullHandling;
+    if (typeof opts.charset !== 'undefined' && opts.charset !== 'utf-8' && opts.charset !== 'iso-8859-1') {
+        throw new Error('The charset option must be either utf-8, iso-8859-1, or undefined');
+    }
+    var charset = typeof opts.charset === 'undefined' ? defaults.charset : opts.charset;
+
+    return {
+        allowDots: typeof opts.allowDots === 'undefined' ? defaults.allowDots : !!opts.allowDots,
+        allowPrototypes: typeof opts.allowPrototypes === 'boolean' ? opts.allowPrototypes : defaults.allowPrototypes,
+        arrayLimit: typeof opts.arrayLimit === 'number' ? opts.arrayLimit : defaults.arrayLimit,
+        charset: charset,
+        charsetSentinel: typeof opts.charsetSentinel === 'boolean' ? opts.charsetSentinel : defaults.charsetSentinel,
+        comma: typeof opts.comma === 'boolean' ? opts.comma : defaults.comma,
+        decoder: typeof opts.decoder === 'function' ? opts.decoder : defaults.decoder,
+        delimiter: typeof opts.delimiter === 'string' || utils.isRegExp(opts.delimiter) ? opts.delimiter : defaults.delimiter,
+        depth: typeof opts.depth === 'number' ? opts.depth : defaults.depth,
+        ignoreQueryPrefix: opts.ignoreQueryPrefix === true,
+        interpretNumericEntities: typeof opts.interpretNumericEntities === 'boolean' ? opts.interpretNumericEntities : defaults.interpretNumericEntities,
+        parameterLimit: typeof opts.parameterLimit === 'number' ? opts.parameterLimit : defaults.parameterLimit,
+        parseArrays: opts.parseArrays !== false,
+        plainObjects: typeof opts.plainObjects === 'boolean' ? opts.plainObjects : defaults.plainObjects,
+        strictNullHandling: typeof opts.strictNullHandling === 'boolean' ? opts.strictNullHandling : defaults.strictNullHandling
+    };
+};
+
+module.exports = function (str, opts) {
+    var options = normalizeParseOptions(opts);
 
     if (str === '' || str === null || typeof str === 'undefined') {
         return options.plainObjects ? Object.create(null) : {};
@@ -59904,16 +60132,18 @@ module.exports = function (str, opts) {
     return utils.compact(obj);
 };
 
-},{"./utils":204}],203:[function(require,module,exports){
+},{"./utils":206}],205:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
 var formats = require('./formats');
+var has = Object.prototype.hasOwnProperty;
 
 var arrayPrefixGenerators = {
     brackets: function brackets(prefix) { // eslint-disable-line func-name-matching
         return prefix + '[]';
     },
+    comma: 'comma',
     indices: function indices(prefix, key) { // eslint-disable-line func-name-matching
         return prefix + '[' + key + ']';
     },
@@ -59922,13 +60152,26 @@ var arrayPrefixGenerators = {
     }
 };
 
+var isArray = Array.isArray;
+var push = Array.prototype.push;
+var pushToArray = function (arr, valueOrArray) {
+    push.apply(arr, isArray(valueOrArray) ? valueOrArray : [valueOrArray]);
+};
+
 var toISO = Date.prototype.toISOString;
 
 var defaults = {
+    addQueryPrefix: false,
+    allowDots: false,
+    charset: 'utf-8',
+    charsetSentinel: false,
     delimiter: '&',
     encode: true,
     encoder: utils.encode,
     encodeValuesOnly: false,
+    formatter: formats.formatters[formats['default']],
+    // deprecated
+    indices: false,
     serializeDate: function serializeDate(date) { // eslint-disable-line func-name-matching
         return toISO.call(date);
     },
@@ -59948,16 +60191,21 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
     allowDots,
     serializeDate,
     formatter,
-    encodeValuesOnly
+    encodeValuesOnly,
+    charset
 ) {
     var obj = object;
     if (typeof filter === 'function') {
         obj = filter(prefix, obj);
     } else if (obj instanceof Date) {
         obj = serializeDate(obj);
-    } else if (obj === null) {
+    } else if (generateArrayPrefix === 'comma' && isArray(obj)) {
+        obj = obj.join(',');
+    }
+
+    if (obj === null) {
         if (strictNullHandling) {
-            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder) : prefix;
+            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset) : prefix;
         }
 
         obj = '';
@@ -59965,8 +60213,8 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
 
     if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean' || utils.isBuffer(obj)) {
         if (encoder) {
-            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder);
-            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder))];
+            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder, charset);
+            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder, charset))];
         }
         return [formatter(prefix) + '=' + formatter(String(obj))];
     }
@@ -59978,7 +60226,7 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
     }
 
     var objKeys;
-    if (Array.isArray(filter)) {
+    if (isArray(filter)) {
         objKeys = filter;
     } else {
         var keys = Object.keys(obj);
@@ -59992,10 +60240,10 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
             continue;
         }
 
-        if (Array.isArray(obj)) {
-            values = values.concat(stringify(
+        if (isArray(obj)) {
+            pushToArray(values, stringify(
                 obj[key],
-                generateArrayPrefix(prefix, key),
+                typeof generateArrayPrefix === 'function' ? generateArrayPrefix(prefix, key) : prefix,
                 generateArrayPrefix,
                 strictNullHandling,
                 skipNulls,
@@ -60005,10 +60253,11 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
                 allowDots,
                 serializeDate,
                 formatter,
-                encodeValuesOnly
+                encodeValuesOnly,
+                charset
             ));
         } else {
-            values = values.concat(stringify(
+            pushToArray(values, stringify(
                 obj[key],
                 prefix + (allowDots ? '.' + key : '[' + key + ']'),
                 generateArrayPrefix,
@@ -60020,7 +60269,8 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
                 allowDots,
                 serializeDate,
                 formatter,
-                encodeValuesOnly
+                encodeValuesOnly,
+                charset
             ));
         }
     }
@@ -60028,36 +60278,63 @@ var stringify = function stringify( // eslint-disable-line func-name-matching
     return values;
 };
 
-module.exports = function (object, opts) {
-    var obj = object;
-    var options = opts ? utils.assign({}, opts) : {};
+var normalizeStringifyOptions = function normalizeStringifyOptions(opts) {
+    if (!opts) {
+        return defaults;
+    }
 
-    if (options.encoder !== null && options.encoder !== undefined && typeof options.encoder !== 'function') {
+    if (opts.encoder !== null && opts.encoder !== undefined && typeof opts.encoder !== 'function') {
         throw new TypeError('Encoder has to be a function.');
     }
 
-    var delimiter = typeof options.delimiter === 'undefined' ? defaults.delimiter : options.delimiter;
-    var strictNullHandling = typeof options.strictNullHandling === 'boolean' ? options.strictNullHandling : defaults.strictNullHandling;
-    var skipNulls = typeof options.skipNulls === 'boolean' ? options.skipNulls : defaults.skipNulls;
-    var encode = typeof options.encode === 'boolean' ? options.encode : defaults.encode;
-    var encoder = typeof options.encoder === 'function' ? options.encoder : defaults.encoder;
-    var sort = typeof options.sort === 'function' ? options.sort : null;
-    var allowDots = typeof options.allowDots === 'undefined' ? false : options.allowDots;
-    var serializeDate = typeof options.serializeDate === 'function' ? options.serializeDate : defaults.serializeDate;
-    var encodeValuesOnly = typeof options.encodeValuesOnly === 'boolean' ? options.encodeValuesOnly : defaults.encodeValuesOnly;
-    if (typeof options.format === 'undefined') {
-        options.format = formats['default'];
-    } else if (!Object.prototype.hasOwnProperty.call(formats.formatters, options.format)) {
-        throw new TypeError('Unknown format option provided.');
+    var charset = opts.charset || defaults.charset;
+    if (typeof opts.charset !== 'undefined' && opts.charset !== 'utf-8' && opts.charset !== 'iso-8859-1') {
+        throw new TypeError('The charset option must be either utf-8, iso-8859-1, or undefined');
     }
-    var formatter = formats.formatters[options.format];
+
+    var format = formats['default'];
+    if (typeof opts.format !== 'undefined') {
+        if (!has.call(formats.formatters, opts.format)) {
+            throw new TypeError('Unknown format option provided.');
+        }
+        format = opts.format;
+    }
+    var formatter = formats.formatters[format];
+
+    var filter = defaults.filter;
+    if (typeof opts.filter === 'function' || isArray(opts.filter)) {
+        filter = opts.filter;
+    }
+
+    return {
+        addQueryPrefix: typeof opts.addQueryPrefix === 'boolean' ? opts.addQueryPrefix : defaults.addQueryPrefix,
+        allowDots: typeof opts.allowDots === 'undefined' ? defaults.allowDots : !!opts.allowDots,
+        charset: charset,
+        charsetSentinel: typeof opts.charsetSentinel === 'boolean' ? opts.charsetSentinel : defaults.charsetSentinel,
+        delimiter: typeof opts.delimiter === 'undefined' ? defaults.delimiter : opts.delimiter,
+        encode: typeof opts.encode === 'boolean' ? opts.encode : defaults.encode,
+        encoder: typeof opts.encoder === 'function' ? opts.encoder : defaults.encoder,
+        encodeValuesOnly: typeof opts.encodeValuesOnly === 'boolean' ? opts.encodeValuesOnly : defaults.encodeValuesOnly,
+        filter: filter,
+        formatter: formatter,
+        serializeDate: typeof opts.serializeDate === 'function' ? opts.serializeDate : defaults.serializeDate,
+        skipNulls: typeof opts.skipNulls === 'boolean' ? opts.skipNulls : defaults.skipNulls,
+        sort: typeof opts.sort === 'function' ? opts.sort : null,
+        strictNullHandling: typeof opts.strictNullHandling === 'boolean' ? opts.strictNullHandling : defaults.strictNullHandling
+    };
+};
+
+module.exports = function (object, opts) {
+    var obj = object;
+    var options = normalizeStringifyOptions(opts);
+
     var objKeys;
     var filter;
 
     if (typeof options.filter === 'function') {
         filter = options.filter;
         obj = filter('', obj);
-    } else if (Array.isArray(options.filter)) {
+    } else if (isArray(options.filter)) {
         filter = options.filter;
         objKeys = filter;
     }
@@ -60069,10 +60346,10 @@ module.exports = function (object, opts) {
     }
 
     var arrayFormat;
-    if (options.arrayFormat in arrayPrefixGenerators) {
-        arrayFormat = options.arrayFormat;
-    } else if ('indices' in options) {
-        arrayFormat = options.indices ? 'indices' : 'repeat';
+    if (opts && opts.arrayFormat in arrayPrefixGenerators) {
+        arrayFormat = opts.arrayFormat;
+    } else if (opts && 'indices' in opts) {
+        arrayFormat = opts.indices ? 'indices' : 'repeat';
     } else {
         arrayFormat = 'indices';
     }
@@ -60083,43 +60360,54 @@ module.exports = function (object, opts) {
         objKeys = Object.keys(obj);
     }
 
-    if (sort) {
-        objKeys.sort(sort);
+    if (options.sort) {
+        objKeys.sort(options.sort);
     }
 
     for (var i = 0; i < objKeys.length; ++i) {
         var key = objKeys[i];
 
-        if (skipNulls && obj[key] === null) {
+        if (options.skipNulls && obj[key] === null) {
             continue;
         }
-
-        keys = keys.concat(stringify(
+        pushToArray(keys, stringify(
             obj[key],
             key,
             generateArrayPrefix,
-            strictNullHandling,
-            skipNulls,
-            encode ? encoder : null,
-            filter,
-            sort,
-            allowDots,
-            serializeDate,
-            formatter,
-            encodeValuesOnly
+            options.strictNullHandling,
+            options.skipNulls,
+            options.encode ? options.encoder : null,
+            options.filter,
+            options.sort,
+            options.allowDots,
+            options.serializeDate,
+            options.formatter,
+            options.encodeValuesOnly,
+            options.charset
         ));
     }
 
-    var joined = keys.join(delimiter);
+    var joined = keys.join(options.delimiter);
     var prefix = options.addQueryPrefix === true ? '?' : '';
+
+    if (options.charsetSentinel) {
+        if (options.charset === 'iso-8859-1') {
+            // encodeURIComponent('&#10003;'), the "numeric entity" representation of a checkmark
+            prefix += 'utf8=%26%2310003%3B&';
+        } else {
+            // encodeURIComponent('✓')
+            prefix += 'utf8=%E2%9C%93&';
+        }
+    }
 
     return joined.length > 0 ? prefix + joined : '';
 };
 
-},{"./formats":200,"./utils":204}],204:[function(require,module,exports){
+},{"./formats":202,"./utils":206}],206:[function(require,module,exports){
 'use strict';
 
 var has = Object.prototype.hasOwnProperty;
+var isArray = Array.isArray;
 
 var hexTable = (function () {
     var array = [];
@@ -60131,13 +60419,11 @@ var hexTable = (function () {
 }());
 
 var compactQueue = function compactQueue(queue) {
-    var obj;
-
-    while (queue.length) {
+    while (queue.length > 1) {
         var item = queue.pop();
-        obj = item.obj[item.prop];
+        var obj = item.obj[item.prop];
 
-        if (Array.isArray(obj)) {
+        if (isArray(obj)) {
             var compacted = [];
 
             for (var j = 0; j < obj.length; ++j) {
@@ -60149,8 +60435,6 @@ var compactQueue = function compactQueue(queue) {
             item.obj[item.prop] = compacted;
         }
     }
-
-    return obj;
 };
 
 var arrayToObject = function arrayToObject(source, options) {
@@ -60170,10 +60454,10 @@ var merge = function merge(target, source, options) {
     }
 
     if (typeof source !== 'object') {
-        if (Array.isArray(target)) {
+        if (isArray(target)) {
             target.push(source);
-        } else if (typeof target === 'object') {
-            if (options.plainObjects || options.allowPrototypes || !has.call(Object.prototype, source)) {
+        } else if (target && typeof target === 'object') {
+            if ((options && (options.plainObjects || options.allowPrototypes)) || !has.call(Object.prototype, source)) {
                 target[source] = true;
             }
         } else {
@@ -60183,20 +60467,21 @@ var merge = function merge(target, source, options) {
         return target;
     }
 
-    if (typeof target !== 'object') {
+    if (!target || typeof target !== 'object') {
         return [target].concat(source);
     }
 
     var mergeTarget = target;
-    if (Array.isArray(target) && !Array.isArray(source)) {
+    if (isArray(target) && !isArray(source)) {
         mergeTarget = arrayToObject(target, options);
     }
 
-    if (Array.isArray(target) && Array.isArray(source)) {
+    if (isArray(target) && isArray(source)) {
         source.forEach(function (item, i) {
             if (has.call(target, i)) {
-                if (target[i] && typeof target[i] === 'object') {
-                    target[i] = merge(target[i], item, options);
+                var targetItem = target[i];
+                if (targetItem && typeof targetItem === 'object' && item && typeof item === 'object') {
+                    target[i] = merge(targetItem, item, options);
                 } else {
                     target.push(item);
                 }
@@ -60226,15 +60511,21 @@ var assign = function assignSingleSource(target, source) {
     }, target);
 };
 
-var decode = function (str) {
+var decode = function (str, decoder, charset) {
+    var strWithoutPlus = str.replace(/\+/g, ' ');
+    if (charset === 'iso-8859-1') {
+        // unescape never throws, no try...catch needed:
+        return strWithoutPlus.replace(/%[0-9a-f]{2}/gi, unescape);
+    }
+    // utf-8
     try {
-        return decodeURIComponent(str.replace(/\+/g, ' '));
+        return decodeURIComponent(strWithoutPlus);
     } catch (e) {
-        return str;
+        return strWithoutPlus;
     }
 };
 
-var encode = function encode(str) {
+var encode = function encode(str, defaultEncoder, charset) {
     // This code was originally written by Brian White (mscdex) for the io.js core querystring library.
     // It has been adapted here for stricter adherence to RFC 3986
     if (str.length === 0) {
@@ -60242,6 +60533,12 @@ var encode = function encode(str) {
     }
 
     var string = typeof str === 'string' ? str : String(str);
+
+    if (charset === 'iso-8859-1') {
+        return escape(string).replace(/%u[0-9a-f]{4}/gi, function ($0) {
+            return '%26%23' + parseInt($0.slice(2), 16) + '%3B';
+        });
+    }
 
     var out = '';
     for (var i = 0; i < string.length; ++i) {
@@ -60305,7 +60602,9 @@ var compact = function compact(value) {
         }
     }
 
-    return compactQueue(queue);
+    compactQueue(queue);
+
+    return value;
 };
 
 var isRegExp = function isRegExp(obj) {
@@ -60313,16 +60612,21 @@ var isRegExp = function isRegExp(obj) {
 };
 
 var isBuffer = function isBuffer(obj) {
-    if (obj === null || typeof obj === 'undefined') {
+    if (!obj || typeof obj !== 'object') {
         return false;
     }
 
     return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
 };
 
+var combine = function combine(a, b) {
+    return [].concat(a, b);
+};
+
 module.exports = {
     arrayToObject: arrayToObject,
     assign: assign,
+    combine: combine,
     compact: compact,
     decode: decode,
     encode: encode,
@@ -60331,7 +60635,7 @@ module.exports = {
     merge: merge
 };
 
-},{}],205:[function(require,module,exports){
+},{}],207:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60417,7 +60721,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],206:[function(require,module,exports){
+},{}],208:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60504,15 +60808,23 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],207:[function(require,module,exports){
+},{}],209:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":205,"./encode":206}],208:[function(require,module,exports){
+},{"./decode":207,"./encode":208}],210:[function(require,module,exports){
 (function (process,global){
 'use strict'
+
+// limit of Crypto.getRandomValues()
+// https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues
+var MAX_BYTES = 65536
+
+// Node supports requesting up to this number of bytes
+// https://github.com/nodejs/node/blob/master/lib/internal/crypto/random.js#L48
+var MAX_UINT32 = 4294967295
 
 function oldBrowser () {
   throw new Error('Secure random number generation is not supported by this browser.\nUse Chrome, Firefox or Internet Explorer 11')
@@ -60529,18 +60841,22 @@ if (crypto && crypto.getRandomValues) {
 
 function randomBytes (size, cb) {
   // phantomjs needs to throw
-  if (size > 65536) throw new Error('requested too many random bytes')
-  // in case browserify  isn't using the Uint8Array version
-  var rawBytes = new global.Uint8Array(size)
+  if (size > MAX_UINT32) throw new RangeError('requested too many random bytes')
 
-  // This will not work in older browsers.
-  // See https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
+  var bytes = Buffer.allocUnsafe(size)
+
   if (size > 0) {  // getRandomValues fails on IE if size == 0
-    crypto.getRandomValues(rawBytes)
+    if (size > MAX_BYTES) { // this is the max bytes crypto.getRandomValues
+      // can do at once see https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
+      for (var generated = 0; generated < size; generated += MAX_BYTES) {
+        // buffer.slice automatically checks if the end is past the end of
+        // the buffer so we don't have to here
+        crypto.getRandomValues(bytes.slice(generated, generated + MAX_BYTES))
+      }
+    } else {
+      crypto.getRandomValues(bytes)
+    }
   }
-
-  // XXX: phantomjs doesn't like a buffer being passed here
-  var bytes = Buffer.from(rawBytes.buffer)
 
   if (typeof cb === 'function') {
     return process.nextTick(function () {
@@ -60552,7 +60868,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":191,"safe-buffer":228}],209:[function(require,module,exports){
+},{"_process":192,"safe-buffer":215}],211:[function(require,module,exports){
 (function (process,global){
 'use strict'
 
@@ -60664,10 +60980,8842 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":191,"randombytes":208,"safe-buffer":228}],210:[function(require,module,exports){
+},{"_process":192,"randombytes":210,"safe-buffer":215}],212:[function(require,module,exports){
+var EventEmitter = require('events').EventEmitter
+var backoff = require('backoff')
+
+module.exports =
+function (createConnection) {
+  return function (opts, onConnect) {
+    onConnect = 'function' == typeof opts ? opts : onConnect
+    opts = 'object' == typeof opts ? opts : {initialDelay: 1e3, maxDelay: 30e3}
+    if(!onConnect)
+      onConnect = opts.onConnect
+
+    var emitter = new EventEmitter()
+    emitter.connected = false
+    emitter.reconnect = true
+
+    if(onConnect)
+      //use "connection" to match core (net) api.
+      emitter.on('connection', onConnect)
+
+    var backoffStrategy = opts.strategy || opts.type
+    var backoffMethod
+    if (typeof backoffStrategy == 'string')
+      backoffMethod = backoff[backoffStrategy](opts)
+    else
+      backoffMethod = backoffStrategy || backoff.fibonacci(opts)
+
+    if(opts.failAfter)
+      backoffMethod.failAfter(opts.failAfter);
+
+    backoffMethod.on('backoff', function (n, d, e) {
+      emitter.emit('backoff', n, d, e)
+    })
+    backoffMethod.on('fail', function (e) {
+      emitter.disconnect()
+      emitter.emit('fail', e)
+    })
+
+    var args
+    function attempt (n, delay) {
+      if(emitter.connected) return
+      if(!emitter.reconnect) return
+
+      emitter.emit('reconnect', n, delay)
+      var con = createConnection.apply(emitter, args)
+      emitter._connection = con
+
+      function onError (err) {
+        con.removeListener('error', onError)
+        emitter.emit('error', err)
+        onDisconnect(err)
+      }
+
+      function onDisconnect (err) {
+        emitter.connected = false
+        con.removeListener('close', onDisconnect)
+        con.removeListener('end'  , onDisconnect)
+
+        //hack to make http not crash.
+        //HTTP IS THE WORST PROTOCOL.
+        if(con.constructor.name == 'Request')
+          con.on('error', function () {})
+
+        //emit disconnect before checking reconnect, so user has a chance to decide not to.
+        emitter.emit('disconnect', err)
+
+        if(!emitter.reconnect) return
+        try { backoffMethod.backoff() } catch (_) { }
+      }
+
+      con
+        .on('error', onError)
+        .on('close', onDisconnect)
+        .on('end'  , onDisconnect)
+
+      if(opts.immediate || con.constructor.name == 'Request') {
+        emitter.connected = true
+        emitter.emit('connect', con)
+        emitter.emit('connection', con)
+        con.once('data', function () {
+          //this is the only way to know for sure that data is coming...
+          backoffMethod.reset()
+        })
+      } else {
+        con
+          .once('connect', function () {
+            backoffMethod.reset()
+            emitter.connected = true
+            if(onConnect)
+              con.removeListener('connect', onConnect)
+            emitter.emit('connect', con)
+            //also support net style 'connection' method.
+            emitter.emit('connection', con)
+          })
+      }
+    }
+
+    emitter.connect =
+    emitter.listen = function () {
+      this.reconnect = true
+      if(emitter.connected) return
+      backoffMethod.reset()
+      backoffMethod.on('ready', attempt)
+      if (!args) {
+        var len = arguments.length;
+        args = new Array(len);
+        for (var i = 0; i < len; i++) {
+          args[i] = arguments[i];
+        }
+      }
+      attempt(0, 0)
+      return emitter
+    }
+
+    //force reconnection
+
+    emitter.disconnect = function () {
+      this.reconnect = false
+
+      if(emitter._connection)
+        emitter._connection.end()
+
+      return emitter
+    }
+
+    emitter.reset = function () {
+      backoffMethod.reset()
+      attempt(0, 0)
+    }
+
+    return emitter
+  }
+
+}
+
+},{"backoff":20,"events":98}],213:[function(require,module,exports){
+'use strict'
+var Buffer = require('buffer').Buffer
+var inherits = require('inherits')
+var HashBase = require('hash-base')
+
+var ARRAY16 = new Array(16)
+
+var zl = [
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
+  3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
+  1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
+  4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13
+]
+
+var zr = [
+  5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
+  6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
+  15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
+  8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
+  12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11
+]
+
+var sl = [
+  11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
+  7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
+  11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
+  11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
+  9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
+]
+
+var sr = [
+  8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
+  9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
+  9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
+  15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15, 8,
+  8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
+]
+
+var hl = [0x00000000, 0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xa953fd4e]
+var hr = [0x50a28be6, 0x5c4dd124, 0x6d703ef3, 0x7a6d76e9, 0x00000000]
+
+function RIPEMD160 () {
+  HashBase.call(this, 64)
+
+  // state
+  this._a = 0x67452301
+  this._b = 0xefcdab89
+  this._c = 0x98badcfe
+  this._d = 0x10325476
+  this._e = 0xc3d2e1f0
+}
+
+inherits(RIPEMD160, HashBase)
+
+RIPEMD160.prototype._update = function () {
+  var words = ARRAY16
+  for (var j = 0; j < 16; ++j) words[j] = this._block.readInt32LE(j * 4)
+
+  var al = this._a | 0
+  var bl = this._b | 0
+  var cl = this._c | 0
+  var dl = this._d | 0
+  var el = this._e | 0
+
+  var ar = this._a | 0
+  var br = this._b | 0
+  var cr = this._c | 0
+  var dr = this._d | 0
+  var er = this._e | 0
+
+  // computation
+  for (var i = 0; i < 80; i += 1) {
+    var tl
+    var tr
+    if (i < 16) {
+      tl = fn1(al, bl, cl, dl, el, words[zl[i]], hl[0], sl[i])
+      tr = fn5(ar, br, cr, dr, er, words[zr[i]], hr[0], sr[i])
+    } else if (i < 32) {
+      tl = fn2(al, bl, cl, dl, el, words[zl[i]], hl[1], sl[i])
+      tr = fn4(ar, br, cr, dr, er, words[zr[i]], hr[1], sr[i])
+    } else if (i < 48) {
+      tl = fn3(al, bl, cl, dl, el, words[zl[i]], hl[2], sl[i])
+      tr = fn3(ar, br, cr, dr, er, words[zr[i]], hr[2], sr[i])
+    } else if (i < 64) {
+      tl = fn4(al, bl, cl, dl, el, words[zl[i]], hl[3], sl[i])
+      tr = fn2(ar, br, cr, dr, er, words[zr[i]], hr[3], sr[i])
+    } else { // if (i<80) {
+      tl = fn5(al, bl, cl, dl, el, words[zl[i]], hl[4], sl[i])
+      tr = fn1(ar, br, cr, dr, er, words[zr[i]], hr[4], sr[i])
+    }
+
+    al = el
+    el = dl
+    dl = rotl(cl, 10)
+    cl = bl
+    bl = tl
+
+    ar = er
+    er = dr
+    dr = rotl(cr, 10)
+    cr = br
+    br = tr
+  }
+
+  // update state
+  var t = (this._b + cl + dr) | 0
+  this._b = (this._c + dl + er) | 0
+  this._c = (this._d + el + ar) | 0
+  this._d = (this._e + al + br) | 0
+  this._e = (this._a + bl + cr) | 0
+  this._a = t
+}
+
+RIPEMD160.prototype._digest = function () {
+  // create padding and handle blocks
+  this._block[this._blockOffset++] = 0x80
+  if (this._blockOffset > 56) {
+    this._block.fill(0, this._blockOffset, 64)
+    this._update()
+    this._blockOffset = 0
+  }
+
+  this._block.fill(0, this._blockOffset, 56)
+  this._block.writeUInt32LE(this._length[0], 56)
+  this._block.writeUInt32LE(this._length[1], 60)
+  this._update()
+
+  // produce result
+  var buffer = Buffer.alloc ? Buffer.alloc(20) : new Buffer(20)
+  buffer.writeInt32LE(this._a, 0)
+  buffer.writeInt32LE(this._b, 4)
+  buffer.writeInt32LE(this._c, 8)
+  buffer.writeInt32LE(this._d, 12)
+  buffer.writeInt32LE(this._e, 16)
+  return buffer
+}
+
+function rotl (x, n) {
+  return (x << n) | (x >>> (32 - n))
+}
+
+function fn1 (a, b, c, d, e, m, k, s) {
+  return (rotl((a + (b ^ c ^ d) + m + k) | 0, s) + e) | 0
+}
+
+function fn2 (a, b, c, d, e, m, k, s) {
+  return (rotl((a + ((b & c) | ((~b) & d)) + m + k) | 0, s) + e) | 0
+}
+
+function fn3 (a, b, c, d, e, m, k, s) {
+  return (rotl((a + ((b | (~c)) ^ d) + m + k) | 0, s) + e) | 0
+}
+
+function fn4 (a, b, c, d, e, m, k, s) {
+  return (rotl((a + ((b & d) | (c & (~d))) + m + k) | 0, s) + e) | 0
+}
+
+function fn5 (a, b, c, d, e, m, k, s) {
+  return (rotl((a + (b ^ (c | (~d))) + m + k) | 0, s) + e) | 0
+}
+
+module.exports = RIPEMD160
+
+},{"buffer":61,"hash-base":102,"inherits":118}],214:[function(require,module,exports){
+/* Copyright (c) 2013-2014 Richard Rodger, MIT License */
+/* jshint node:true, asi:true, eqnull:true */
+"use strict";
+
+
+function Stats( size, duration, clock ) {
+  var self = this
+
+  size = size || 1111
+  duration = duration || 60000
+  clock = clock || Date.now
+
+  var start = clock()
+
+  var vals  = new Array(size)
+  var times = new Array(size)
+
+  var head = -1
+  
+  var count = 0
+  var sum   = 0
+
+  var allmin   = void 0
+  var allmax   = void 0
+  var allcount = 0
+  var allsum   = 0
+
+  var minrate   = void 0
+  var maxrate   = void 0
+
+
+  self.point = function( v ) {
+    if( null == v ) return;
+
+    var now = clock()
+    var cutoff = now - duration
+
+    head = (head+1) % size
+
+    if( count === size ) {
+      sum -= vals[head]
+      count--
+    }
+
+    vals[head]  = v
+    times[head] = now
+
+    count++
+    sum += v
+
+    allcount++
+    allsum += v
+    allmin = void 0===allmin ? v : v < allmin ? v : allmin
+    allmax = void 0===allmax ? v : allmax < v ? v : allmax
+
+    //console.log('point k:'+times[head]+',n:'+count+',h:'+head+', v='+vals+' t='+times)
+  }
+
+  
+  self.calculate = function() {
+    var now = clock()
+    var cutoff = now - duration
+    var i
+
+    if( 0 < count ) {
+      var tail = (size + head - count + 1) % size
+      i = 0
+      while( i++ < count && times[tail] <= cutoff ) {
+        sum -= vals[tail]
+        count--
+        tail = (tail+1) % size
+      }
+    }
+
+    var mean = 0 < count ? sum / count : 0
+    var vr = 0, v, min, max
+    for( i = 0; i < count; i++ ) {
+      v = vals[(size+head-i)%size]
+      vr += Math.pow( v - mean, 2 )
+      min = void 0===min ? v : v < min ? v : min
+      max = void 0===max ? v : max < v ? v : max
+    }
+
+    var rate = 1000 * count / duration
+    minrate = void 0===minrate ? rate : rate < minrate ? rate : minrate
+    maxrate = void 0===maxrate ? rate : maxrate < rate ? rate : maxrate
+
+    var out = {
+      now: now,
+      from: cutoff,
+      start: start,
+
+      count: count, 
+      sum: sum,
+      mean: mean,
+      min : min,
+      max : max,
+      stddev: 1 < count ? Math.sqrt(vr/(count-1)) : 0,
+
+      rate:rate,
+      minrate:minrate,
+      maxrate:maxrate,
+
+      allmin : allmin,
+      allmax : allmax,
+      allcount : allcount,
+      allsum : allsum,
+      allmean : 0 < allcount ? allsum / allcount : 0,
+      allrate: 1000 * allcount / (now-start)
+    }
+    //console.log(require('util').inspect(out))
+
+    return out
+  }
+
+
+  return self
+}
+
+
+function NamedStats( size, duration, clock ) {
+  var self = this
+
+  var empty = new Stats( 1, 1 ).calculate()
+  var map = {}
+
+  self.point = function( v, name ) {
+    if( null == v || null == name ) return;
+
+    var stats = (map[name] = (map[name] || new Stats( size, duration, clock )))
+    stats.point( v )
+  }
+
+  
+  self.calculate = function( name ) {
+    if( null == name ) {
+      var out = {}
+      for( var n in map ) {
+        out[n] = map[n].calculate()
+      }
+      return out
+    }
+
+    var stats = (map[name] = (map[name] || new Stats( size, duration )))
+    if( null == stats ) return empty;
+
+    return stats.calculate()
+  }
+
+
+  self.names = function() {
+    var names = []
+    for( var name in map ) {
+      names.push(name)
+    }
+    return names;
+  }
+  
+  return self
+}
+
+
+module.exports = function( size, duration, clock ) {
+  var stats = new Stats( size, duration, clock );
+  return stats
+}
+
+module.exports.Stats      = Stats
+module.exports.NamedStats = NamedStats
+
+},{}],215:[function(require,module,exports){
+/* eslint-disable node/no-deprecated-api */
+var buffer = require('buffer')
+var Buffer = buffer.Buffer
+
+// alternative to using Object.keys for old browsers
+function copyProps (src, dst) {
+  for (var key in src) {
+    dst[key] = src[key]
+  }
+}
+if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow) {
+  module.exports = buffer
+} else {
+  // Copy properties from require('buffer')
+  copyProps(buffer, exports)
+  exports.Buffer = SafeBuffer
+}
+
+function SafeBuffer (arg, encodingOrOffset, length) {
+  return Buffer(arg, encodingOrOffset, length)
+}
+
+// Copy static methods from Buffer
+copyProps(Buffer, SafeBuffer)
+
+SafeBuffer.from = function (arg, encodingOrOffset, length) {
+  if (typeof arg === 'number') {
+    throw new TypeError('Argument must not be a number')
+  }
+  return Buffer(arg, encodingOrOffset, length)
+}
+
+SafeBuffer.alloc = function (size, fill, encoding) {
+  if (typeof size !== 'number') {
+    throw new TypeError('Argument must be a number')
+  }
+  var buf = Buffer(size)
+  if (fill !== undefined) {
+    if (typeof encoding === 'string') {
+      buf.fill(fill, encoding)
+    } else {
+      buf.fill(fill)
+    }
+  } else {
+    buf.fill(0)
+  }
+  return buf
+}
+
+SafeBuffer.allocUnsafe = function (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('Argument must be a number')
+  }
+  return Buffer(size)
+}
+
+SafeBuffer.allocUnsafeSlow = function (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('Argument must be a number')
+  }
+  return buffer.SlowBuffer(size)
+}
+
+},{"buffer":61}],216:[function(require,module,exports){
+/* Copyright (c) 2013-2015 Richard Rodger, MIT License */
+/* jshint node:true, asi:true, eqnull:true */
+'use strict'
+
+// Load modules
+var Buffer = require('buffer')
+var Http = require('http')
+var Https = require('https')
+var Qs = require('qs')
+var Url = require('url')
+var _ = require('lodash')
+var Jsonic = require('jsonic')
+var Wreck = require('wreck')
+
+// Declare internals
+var internals = {}
+
+exports.listen = function(options, transportUtil) {
+  return function(msg, callback) {
+    var seneca = this.root.delegate()
+
+    var listenOptions = seneca.util.deepextend(options[msg.type], msg)
+
+    var server =
+      listenOptions.protocol === 'https'
+        ? Https.createServer(listenOptions.serverOptions)
+        : Http.createServer()
+
+    var listener
+    var listenAttempts = 0
+    var listen_details = _.clone(msg)
+
+    server.on('request', function(req, res) {
+      internals.timeout(listenOptions, req, res)
+      req.query = Qs.parse(Url.parse(req.url).query)
+      internals.setBody(seneca, transportUtil, req, res, function(err) {
+        if (err) {
+          return res.end()
+        }
+
+        internals.trackHeaders(listenOptions, seneca, transportUtil, req, res)
+      })
+    })
+
+    server.on('error', function(err) {
+      if (
+        'EADDRINUSE' === err.code &&
+        listenAttempts < listenOptions.max_listen_attempts
+      ) {
+        listenAttempts++
+        seneca.log.warn(
+          'listen',
+          'attempt',
+          listenAttempts,
+          err.code,
+          listenOptions
+        )
+        setTimeout(
+          listen,
+          100 + Math.floor(Math.random() * listenOptions.attempt_delay)
+        )
+        return
+      }
+      callback(err)
+    })
+
+    server.on('listening', function() {
+      listen_details.port = server.address().port
+      seneca.log.debug('listen', listen_details)
+      callback(null, listen_details)
+    })
+
+    function listen() {
+      listener = server.listen(
+        (listen_details.port = transportUtil.resolveDynamicValue(
+          listenOptions.port,
+          listenOptions
+        )),
+        (listen_details.host = transportUtil.resolveDynamicValue(
+          listenOptions.host,
+          listenOptions
+        ))
+      )
+    }
+
+    transportUtil.close(seneca, function(done) {
+      // node 0.10 workaround, otherwise it throws
+      if (listener && listener._handle) {
+        listener.close()
+      }
+      done()
+    })
+
+    listen()
+  }
+}
+
+exports.client = function(options, transportUtil) {
+  return function(msg, callback) {
+    var seneca = this.root.delegate()
+
+    var clientOptions = seneca.util.deepextend(options[msg.type], msg)
+    var defaultHeaders = null
+
+    // these are seneca internal, users are not allowed to change them
+    if (options[msg.type].headers) {
+      defaultHeaders = _.omit(options[msg.type].headers, [
+        'Accept',
+        'Content-Type',
+        'Content-Length',
+        'Cache-Control',
+        'seneca-id',
+        'seneca-kind',
+        'seneca-origin',
+        'seneca-track',
+        'seneca-time-client-sent',
+        'seneca-accept',
+        'seneca-time-listen-recv',
+        'seneca-time-listen-sent'
+      ])
+    }
+
+    var send = function(spec, topic, send_done) {
+      var host = transportUtil.resolveDynamicValue(
+        clientOptions.host,
+        clientOptions
+      )
+      var port = transportUtil.resolveDynamicValue(
+        clientOptions.port,
+        clientOptions
+      )
+      var path = transportUtil.resolveDynamicValue(
+        clientOptions.path,
+        clientOptions
+      )
+
+      // never use a 0.0.0.0 as targeted host, because Windows can't handle it
+      host = host === '0.0.0.0' ? '127.0.0.1' : host
+
+      var url = clientOptions.protocol + '://' + host + ':' + port + path
+      seneca.log.debug('client', 'web', 'send', spec, topic, clientOptions, url)
+
+      function action(msg, done, meta) {
+        var data = transportUtil.prepare_request(this, msg, done, meta)
+
+        var headers = {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'seneca-id': data.id,
+          'seneca-kind': 'req',
+          'seneca-origin': seneca.id,
+          'seneca-track': transportUtil.stringifyJSON(
+            seneca,
+            'send-track',
+            data.track || []
+          ),
+          'seneca-time-client-sent': data.time.client_sent
+        }
+
+        if (defaultHeaders) {
+          _.assign(headers, defaultHeaders)
+        }
+
+        var requestOptions = {
+          json: true,
+          headers: headers,
+          timeout: clientOptions.timeout,
+          payload: JSON.stringify(data.act)
+        }
+
+        Wreck.post(url, requestOptions, function(err, res, payload) {
+          var response = {
+            kind: 'res',
+            res: payload && _.isObject(payload) ? payload : null,
+            error: err,
+            sync: (msg.meta$ || meta).sync
+          }
+
+          if (res) {
+            response.id = res.headers['seneca-id']
+            response.origin = res.headers['seneca-origin']
+            response.accept = res.headers['seneca-accept']
+            response.time = {
+              client_sent: res.headers['seneca-time-client-sent'],
+              listen_recv: res.headers['seneca-time-listen-recv'],
+              listen_sent: res.headers['seneca-time-listen-sent']
+            }
+
+            if (res.statusCode !== 200) {
+              response.error = payload
+            }
+          } else {
+            response.id = data.id
+            response.origin = seneca.id
+          }
+
+          transportUtil.handle_response(seneca, response, clientOptions)
+        })
+      }
+
+      send_done(null, action)
+
+      transportUtil.close(seneca, function(done) {
+        done()
+      })
+    }
+    transportUtil.make_client(seneca, send, clientOptions, callback)
+  }
+}
+
+internals.setBody = function(seneca, transportUtil, req, res, next) {
+  var buf = []
+  req.setEncoding('utf8')
+  req.on('data', function(chunk) {
+    buf.push(chunk)
+  })
+  req.on('end', function() {
+    try {
+      var bufstr = buf.join('')
+
+      var bodydata = bufstr.length
+        ? transportUtil.parseJSON(seneca, 'req-body', bufstr)
+        : {}
+
+      if (bodydata instanceof Error) {
+        var out = transportUtil.prepareResponse(seneca, {})
+        out.input = bufstr
+        out.error = transportUtil.error('invalid_json', { input: bufstr })
+        internals.sendResponse(seneca, transportUtil, res, out, {})
+        return
+      }
+
+      req.body = _.extend(
+        {},
+        bodydata,
+
+        // deprecated
+        req.query && req.query.args$ ? Jsonic(req.query.args$) : {},
+
+        req.query && req.query.msg$ ? Jsonic(req.query.msg$) : {},
+        req.query || {}
+      )
+
+      next()
+    } catch (err) {
+      res.write(err.message + ': ' + bufstr)
+      res.statusCode = 400
+      next(err)
+    }
+  })
+}
+
+internals.trackHeaders = function(
+  listenOptions,
+  seneca,
+  transportUtil,
+  req,
+  res
+) {
+  if (Url.parse(req.url).pathname !== listenOptions.path) {
+    res.statusCode = 404
+    return res.end()
+  }
+  var data
+  if (req.headers['seneca-id']) {
+    data = {
+      id: req.headers['seneca-id'],
+      kind: 'act',
+      origin: req.headers['seneca-origin'],
+      track:
+        transportUtil.parseJSON(
+          seneca,
+          'track-receive',
+          req.headers['seneca-track']
+        ) || [],
+      time: {
+        client_sent: req.headers['seneca-time-client-sent']
+      },
+      act: req.body
+    }
+  }
+
+  // convenience for non-seneca clients
+  if (!req.headers['seneca-id']) {
+    data = {
+      id: seneca.idgen(),
+      kind: 'act',
+      origin: req.headers['user-agent'] || 'UNKNOWN',
+      track: [],
+      time: {
+        client_sent: Date.now()
+      },
+      act: req.body
+    }
+  }
+
+  transportUtil.handle_request(seneca, data, listenOptions, function(out) {
+    internals.sendResponse(seneca, transportUtil, res, out, data)
+  })
+}
+
+internals.sendResponse = function(seneca, transportUtil, res, out, data) {
+  var outJson = 'null'
+  var httpcode = 200
+
+  if (out && out.res) {
+    httpcode = out.res.statusCode || httpcode
+    outJson = transportUtil.stringifyJSON(seneca, 'listen-web', out.res)
+  } else if (out && out.error) {
+    httpcode = out.error.statusCode || 500
+    outJson = transportUtil.stringifyJSON(seneca, 'listen-web', out.error)
+  }
+
+  var headers = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'private, max-age=0, no-cache, no-store',
+    'Content-Length': Buffer.Buffer.byteLength(outJson)
+  }
+
+  headers['seneca-id'] = out && out.id ? out.id : seneca.id
+  headers['seneca-kind'] = 'res'
+  headers['seneca-origin'] = out && out.origin ? out.origin : 'UNKNOWN'
+  headers['seneca-accept'] = seneca.id
+  headers['seneca-track'] = '' + (data.track ? data.track : [])
+  headers['seneca-time-client-sent'] =
+    out && out.item ? out.time.client_sent : '0'
+  headers['seneca-time-listen-recv'] =
+    out && out.item ? out.time.listen_recv : '0'
+  headers['seneca-time-listen-sent'] =
+    out && out.item ? out.time.listen_sent : '0'
+
+  res.writeHead(httpcode, headers)
+  res.end(outJson)
+}
+
+internals.timeout = function(listenOptions, req, res) {
+  var id = setTimeout(function() {
+    res.statusCode = 503
+    res.statusMessage = 'Response timeout'
+    res.end('{ "code": "ETIMEDOUT" }')
+  }, listenOptions.timeout || 5000)
+
+  var clearTimeoutId = function() {
+    clearTimeout(id)
+  }
+
+  req.once('close', clearTimeoutId)
+  req.once('error', clearTimeoutId)
+  res.once('error', clearTimeoutId)
+  res.socket.once('data', clearTimeoutId)
+}
+
+},{"buffer":61,"http":258,"https":116,"jsonic":123,"lodash":124,"qs":203,"url":286,"wreck":293}],217:[function(require,module,exports){
+/* Copyright (c) 2013-2015 Richard Rodger, MIT License */
+/* jshint node:true, asi:true, eqnull:true */
+'use strict'
+
+// Load modules
+var Net = require('net')
+var Stream = require('stream')
+var Ndjson = require('ndjson')
+var Reconnect = require('reconnect-core')
+
+// Declare internals
+var internals = {}
+
+exports.listen = function(options, transportUtil) {
+  return function(args, callback) {
+    var seneca = this.root.delegate()
+
+    var listenOptions = seneca.util.deepextend(options[args.type], args)
+
+    var connections = []
+    var listenAttempts = 0
+
+    var listener = Net.createServer(function(connection) {
+      seneca.log.debug(
+        'listen',
+        'connection',
+        listenOptions,
+        'remote',
+        connection.remoteAddress,
+        connection.remotePort
+      )
+
+      var parser = Ndjson.parse()
+      var stringifier = Ndjson.stringify()
+      parser.on('error', function(error) {
+        console.error(error)
+        connection.end()
+      })
+      parser.on('data', function(data) {
+        if (data instanceof Error) {
+          var out = transportUtil.prepareResponse(seneca, {})
+          out.input = data.input
+          out.error = transportUtil.error('invalid_json', { input: data.input })
+
+          stringifier.write(out)
+          return
+        }
+
+        transportUtil.handle_request(seneca, data, options, function(out) {
+          if (out === null || !out.sync) {
+            return
+          }
+
+          stringifier.write(out)
+        })
+      })
+
+      connection.pipe(parser)
+      stringifier.pipe(connection)
+
+      connection.on('error', function(err) {
+        seneca.log.error(
+          'listen',
+          'pipe-error',
+          listenOptions,
+          err && err.stack
+        )
+      })
+
+      connections.push(connection)
+    })
+
+    listener.once('listening', function() {
+      listenOptions.port = listener.address().port
+      seneca.log.debug('listen', 'open', listenOptions)
+      return callback(null, listenOptions)
+    })
+
+    listener.on('error', function(err) {
+      seneca.log.error('listen', 'net-error', listenOptions, err && err.stack)
+
+      if (
+        'EADDRINUSE' === err.code &&
+        listenAttempts < listenOptions.max_listen_attempts
+      ) {
+        listenAttempts++
+        seneca.log.warn(
+          'listen',
+          'attempt',
+          listenAttempts,
+          err.code,
+          listenOptions
+        )
+        setTimeout(
+          listen,
+          100 + Math.floor(Math.random() * listenOptions.attempt_delay)
+        )
+        return
+      }
+    })
+
+    listener.on('close', function() {
+      seneca.log.debug('listen', 'close', listenOptions)
+    })
+
+    function listen() {
+      if (listenOptions.path) {
+        listener.listen(listenOptions.path)
+      } else {
+        listener.listen(listenOptions.port, listenOptions.host)
+      }
+    }
+    listen()
+
+    transportUtil.close(seneca, function(next) {
+      // node 0.10 workaround, otherwise it throws
+      if (listener._handle) {
+        listener.close()
+      }
+      internals.closeConnections(connections, seneca)
+      next()
+    })
+  }
+}
+
+exports.client = function(options, transportUtil) {
+  return function(args, callback) {
+    var seneca = this.root.delegate()
+    var conStream
+    var connection
+    var established = false
+    var stringifier
+
+    var type = args.type
+    if (args.host) {
+      // under Windows host, 0.0.0.0 host will always fail
+      args.host = args.host === '0.0.0.0' ? '127.0.0.1' : args.host
+    }
+    var clientOptions = seneca.util.deepextend(options[args.type], args)
+    clientOptions.host =
+      !args.host && clientOptions.host === '0.0.0.0'
+        ? '127.0.0.1'
+        : clientOptions.host
+
+    var connect = function() {
+      seneca.log.debug('client', type, 'send-init', '', '', clientOptions)
+
+      var reconnect = internals.reconnect(function(stream) {
+        conStream = stream
+        var msger = internals.clientMessager(
+          seneca,
+          clientOptions,
+          transportUtil
+        )
+        var parser = Ndjson.parse()
+        stringifier = Ndjson.stringify()
+
+        stream
+          .pipe(parser)
+          .pipe(msger)
+          .pipe(stringifier)
+          .pipe(stream)
+
+        if (!established) reconnect.emit('s_connected', stringifier)
+        established = true
+      })
+
+      reconnect.on('connect', function(connection) {
+        seneca.log.debug('client', type, 'connect', '', '', clientOptions)
+        // connection.clientOptions = clientOptions // unique per connection
+        // connections.push(connection)
+        // established = true
+      })
+
+      reconnect.on('reconnect', function() {
+        seneca.log.debug('client', type, 'reconnect', '', '', clientOptions)
+      })
+      reconnect.on('disconnect', function(err) {
+        seneca.log.debug(
+          'client',
+          type,
+          'disconnect',
+          '',
+          '',
+          clientOptions,
+          (err && err.stack) || err
+        )
+
+        established = false
+      })
+      reconnect.on('error', function(err) {
+        seneca.log.debug(
+          'client',
+          type,
+          'error',
+          '',
+          '',
+          clientOptions,
+          err.stack
+        )
+      })
+
+      reconnect.connect({
+        port: clientOptions.port,
+        host: clientOptions.host
+      })
+
+      transportUtil.close(seneca, function(done) {
+        reconnect.disconnect()
+        internals.closeConnections([conStream], seneca)
+        done()
+      })
+
+      return reconnect
+    }
+
+    function getClient(cb) {
+      if (!connection) connection = connect()
+      if (established) {
+        cb(stringifier)
+      } else {
+        connection.once('s_connected', cb)
+      }
+    }
+
+    var send = function(spec, topic, send_done) {
+      send_done(null, function(args, done, meta) {
+        var self = this
+        getClient(function(stringifier) {
+          var outmsg = transportUtil.prepare_request(self, args, done, meta)
+          if (!outmsg.replied) stringifier.write(outmsg)
+        })
+      })
+    }
+
+    transportUtil.make_client(seneca, send, clientOptions, callback)
+  }
+}
+
+internals.clientMessager = function(seneca, options, transportUtil) {
+  var messager = new Stream.Duplex({ objectMode: true })
+  messager._read = function() {}
+  messager._write = function(data, enc, callback) {
+    transportUtil.handle_response(seneca, data, options)
+    return callback()
+  }
+  return messager
+}
+
+internals.closeConnections = function(connections, seneca) {
+  for (var i = 0, il = connections.length; i < il; ++i) {
+    internals.destroyConnection(connections[i], seneca)
+  }
+}
+
+internals.destroyConnection = function(connection, seneca) {
+  try {
+    connection.destroy()
+  } catch (e) {
+    seneca.log.error(e)
+  }
+}
+
+internals.reconnect = Reconnect(function() {
+  var args = [].slice.call(arguments)
+  return Net.connect.apply(null, args)
+})
+
+},{"ndjson":131,"net":59,"reconnect-core":212,"stream":243}],218:[function(require,module,exports){
+/* Copyright (c) 2015-2017 Richard Rodger, MIT License */
+'use strict'
+
+var Util = require('util')
+
+var _ = require('lodash')
+var Nid = require('nid')
+var Patrun = require('patrun')
+var Jsonic = require('jsonic')
+var Eraro = require('eraro')
+
+// Declare internals
+var internals = {
+  error: Eraro({
+    package: 'seneca',
+    msgmap: {
+      no_data: 'The message has no data.',
+      invalid_kind_act:
+        'Inbound messages should have kind "act", kind was: <%=kind%>.',
+      no_message_id: 'The message has no identifier.',
+      invalid_origin:
+        'The message response is not for this instance, origin was <%=origin%>.',
+      unknown_message_id: 'The message has an unknown identifier',
+      own_message: 'Inbound message rejected as originated from this server.',
+      message_loop: 'Inbound message rejected as looping back to this server.',
+      data_error: 'Inbound message included an error description.',
+      invalid_json: 'Invalid JSON: <%=input%>.',
+      unexcepted_async_error:
+        'Unexcepted error response to asynchronous message.'
+    },
+    override: true
+  })
+}
+
+module.exports = internals.Utils = function(context) {
+  this._msgprefix = !context.options.msgprefix ? '' : context.options.msgprefix
+  this._context = context
+}
+
+internals.Utils.prototype.error = internals.error // fixes #63
+
+internals.Utils.prototype.handle_response = function(
+  seneca,
+  data,
+  client_options
+) {
+  data.time = data.time || {}
+  data.time.client_recv = Date.now()
+  data.sync = void 0 === data.sync ? true : data.sync
+
+  if (data.kind !== 'res') {
+    if (this._context.options.warn.invalid_kind) {
+      seneca.log.warn('client', 'invalid_kind_res', client_options, data)
+    }
+    return false
+  }
+
+  if (data.id === null) {
+    if (this._context.options.warn.no_message_id) {
+      seneca.log.warn('client', 'no_message_id', client_options, data)
+    }
+    return false
+  }
+
+  if (seneca.id !== data.origin) {
+    if (this._context.options.warn.invalid_origin) {
+      seneca.log.warn('client', 'invalid_origin', client_options, data)
+    }
+    return false
+  }
+
+  var err = null
+  var result = null
+
+  if (data.error) {
+    err = new Error(data.error.message)
+
+    _.each(data.error, function(value, key) {
+      err[key] = value
+    })
+
+    if (!data.sync) {
+      seneca.log.warn(
+        'client',
+        'unexcepted_async_error',
+        client_options,
+        data,
+        err
+      )
+      return true
+    }
+  } else {
+    result = this.handle_entity(seneca, data.res)
+  }
+
+  if (!data.sync) {
+    return true
+  }
+
+  var callmeta = this._context.callmap.get(data.id)
+
+  if (callmeta) {
+    this._context.callmap.del(data.id)
+  } else {
+    if (this._context.options.warn.unknown_message_id) {
+      seneca.log.warn('client', 'unknown_message_id', client_options, data)
+    }
+    return false
+  }
+
+  var actinfo = {
+    id: data.id,
+    accept: data.accept,
+    track: data.track,
+    time: data.time
+  }
+
+  this.callmeta({
+    callmeta: callmeta,
+    err: err,
+    result: result,
+    actinfo: actinfo,
+    seneca: seneca,
+    client_options: client_options,
+    data: data
+  })
+
+  return true
+}
+
+internals.Utils.prototype.callmeta = function(options) {
+  try {
+    options.callmeta.done(options.err, options.result, options.actinfo)
+  } catch (e) {
+    options.seneca.log.error(
+      'client',
+      'callback_error',
+      options.client_options,
+      options.data,
+      e.stack || e
+    )
+  }
+}
+
+internals.Utils.prototype.prepare_request = function(seneca, args, done, meta) {
+  var meta$ = args.meta$ || meta || {}
+
+  // FIX: this is mutating args.meta$ - sync should be inited elsewhere
+  meta$.sync = void 0 === meta$.sync ? true : meta$.sync
+
+  var callmeta = {
+    args: args,
+    done: _.bind(done, seneca),
+    when: Date.now()
+  }
+
+  // store callback only if sync is response expected
+  if (meta$.sync) {
+    this._context.callmap.set(meta$.id, callmeta)
+  } else {
+    this.callmeta({
+      callmeta: callmeta,
+      err: null,
+      result: null,
+      actinfo: null,
+      seneca: seneca,
+      client_options: null,
+      data: null
+    })
+  }
+
+  var track = []
+  if (args.transport$) {
+    track = _.clone(args.transport$.track || [])
+  }
+  track.push(seneca.id)
+
+  var output = {
+    id: meta$.id,
+    kind: 'act',
+    origin: seneca.id,
+    track: track,
+    time: { client_sent: Date.now() },
+    act: seneca.util.clean(args),
+    sync: meta$.sync
+  }
+
+  // workaround to send meta.custom object go along with transport
+  if (meta && meta.custom) {
+    output.act.custom$ = (meta && meta.custom) || undefined
+  }
+
+  output.msg$ = {
+    vin: 1,
+    sid: seneca.id,
+    out: true,
+    mid: meta$.mi,
+    cid: meta$.tx,
+    snc: meta$.sync,
+    pat: meta$.pattern
+  }
+
+  return output
+}
+
+internals.Utils.prototype.handle_request = function(
+  seneca,
+  data,
+  listen_options,
+  respond
+) {
+  if (!data) {
+    return respond({ input: data, error: internals.error('no_data') })
+  }
+
+  // retain transaction information from incoming request
+  var ids = data.id && data.id.split('/')
+  var tx = ids && ids[1]
+  seneca.fixedargs.tx$ = tx || seneca.fixedargs.tx$
+
+  if (data.kind !== 'act') {
+    if (this._context.options.warn.invalid_kind) {
+      seneca.log.warn('listen', 'invalid_kind_act', listen_options, data)
+    }
+    return respond({
+      input: data,
+      error: internals.error('invalid_kind_act', { kind: data.kind })
+    })
+  }
+
+  if (data.id === null) {
+    if (this._context.options.warn.no_message_id) {
+      seneca.log.warn('listen', 'no_message_id', listen_options, data)
+    }
+    return respond({ input: data, error: internals.error('no_message_id') })
+  }
+
+  if (
+    this._context.options.check.own_message &&
+    this._context.callmap.has(data.id)
+  ) {
+    if (this._context.options.warn.own_message) {
+      seneca.log.warn('listen', 'own_message', listen_options, data)
+    }
+    return respond({ input: data, error: internals.error('own_message') })
+  }
+
+  if (this._context.options.check.message_loop && Array.isArray(data.track)) {
+    for (var i = 0; i < data.track.length; i++) {
+      if (seneca.id === data.track[i]) {
+        if (this._context.options.warn.message_loop) {
+          seneca.log.warn('listen', 'message_loop', listen_options, data)
+        }
+        return respond({ input: data, error: internals.error('message_loop') })
+      }
+    }
+  }
+
+  if (data.error) {
+    seneca.log.error('listen', 'data_error', listen_options, data)
+    return respond({ input: data, error: internals.error('data_error') })
+  }
+
+  var output = this.prepareResponse(seneca, data)
+  var input = this.handle_entity(seneca, data.act)
+
+  input.transport$ = {
+    track: data.track || [],
+    origin: data.origin,
+    time: data.time
+  }
+
+  input.id$ = data.id
+
+  this.requestAct(seneca, input, output, respond)
+}
+
+internals.Utils.prototype.requestAct = function(
+  seneca,
+  input,
+  output,
+  respond
+) {
+  var self = this
+
+  try {
+    seneca.act(input, function(err, out) {
+      self.update_output(input, output, err, out)
+      respond(output)
+    })
+  } catch (e) {
+    self.catch_act_error(seneca, e, input, {}, output)
+    respond(output)
+  }
+}
+
+internals.Utils.prototype.make_client = function(
+  context_seneca,
+  make_send,
+  client_options,
+  client_done
+) {
+  var instance = this._context.seneca
+
+  // legacy api
+  if (!context_seneca.seneca) {
+    client_done = client_options
+    client_options = make_send
+    make_send = context_seneca
+  } else {
+    instance = context_seneca
+  }
+
+  var pins = this.resolve_pins(client_options)
+  instance.log.debug('client', client_options, pins || 'any')
+
+  var finish = function(err, send) {
+    if (err) {
+      return client_done(err)
+    }
+    client_done(null, send)
+  }
+
+  if (pins) {
+    var argspatrun = this.make_argspatrun(pins)
+    var resolvesend = this.make_resolvesend(client_options, {}, make_send)
+
+    return this.make_pinclient(client_options, resolvesend, argspatrun, finish)
+  }
+
+  this.make_anyclient(client_options, make_send, finish)
+}
+
+internals.Utils.prototype.make_anyclient = function(opts, make_send, done) {
+  var self = this
+  make_send({}, this._msgprefix + 'any', function(err, send) {
+    if (err) {
+      return done(err)
+    }
+    if (typeof send !== 'function') {
+      return done(self._context.seneca.fail('null-client', { opts: opts }))
+    }
+
+    var client = {
+      id: opts.id || Nid(),
+      toString: function() {
+        return 'any-' + this.id
+      },
+
+      /*
+      // TODO: is this used?
+      match: function (args) {
+        return !this.has(args)
+      },
+*/
+
+      send: function(args, done, meta) {
+        send.call(this, args, done, meta)
+      }
+    }
+
+    done(null, client)
+  })
+}
+
+internals.Utils.prototype.make_pinclient = function(
+  opts,
+  resolvesend,
+  argspatrun,
+  done
+) {
+  var client = {
+    id: opts.id || Nid(),
+    toString: function() {
+      return 'pin-' + argspatrun.mark + '-' + this.id
+    },
+
+    /*
+    // TODO: is this used?
+    match: function (args) {
+      var match = !!argspatrun.find(args)
+      return match
+    },
+*/
+
+    send: function(args, done, meta) {
+      var seneca = this
+      var spec = argspatrun.find(args)
+
+      resolvesend(spec, args, function(err, send) {
+        if (err) {
+          return done(err)
+        }
+        send.call(seneca, args, done, meta)
+      })
+    }
+  }
+
+  done(null, client)
+}
+
+internals.Utils.prototype.resolve_pins = function(opts) {
+  var pins = opts.pin || opts.pins
+  if (pins) {
+    pins = Array.isArray(pins) ? pins : [pins]
+  }
+
+  if (pins) {
+    pins = _.map(pins, function(pin) {
+      return typeof pin === 'string' ? Jsonic(pin) : pin
+    })
+  }
+
+  return pins
+}
+
+internals.Utils.prototype.make_argspatrun = function(pins) {
+  var argspatrun = Patrun({ gex: true })
+
+  _.each(pins, function(pin) {
+    var spec = { pin: pin }
+    argspatrun.add(pin, spec)
+  })
+
+  argspatrun.mark = Util.inspect(pins)
+    .replace(/\s+/g, '')
+    .replace(/\n/g, '')
+
+  return argspatrun
+}
+
+internals.Utils.prototype.make_resolvesend = function(
+  opts,
+  sendmap,
+  make_send
+) {
+  var self = this
+  return function(spec, args, done) {
+    var topic = self.resolve_topic(opts, spec, args)
+    var send = sendmap[topic]
+    if (send) {
+      return done(null, send)
+    }
+
+    make_send(spec, topic, function(err, send) {
+      if (err) {
+        return done(err)
+      }
+      sendmap[topic] = send
+      done(null, send)
+    })
+  }
+}
+
+internals.Utils.prototype.resolve_topic = function(opts, spec, args) {
+  var self = this
+  if (!spec.pin) {
+    return function() {
+      return self._msgprefix + 'any'
+    }
+  }
+
+  var topicpin = _.clone(spec.pin)
+
+  var topicargs = {}
+  _.each(topicpin, function(v, k) {
+    topicargs[k] = args[k]
+  })
+
+  var sb = []
+  _.each(_.keys(topicargs).sort(), function(k) {
+    sb.push(k)
+    sb.push('=')
+    sb.push(topicargs[k])
+    sb.push(',')
+  })
+
+  var topic = this._msgprefix + sb.join('').replace(/[^\w\d]+/g, '_')
+  return topic
+}
+
+internals.Utils.prototype.listen_topics = function(
+  seneca,
+  args,
+  listen_options,
+  do_topic
+) {
+  var self = this
+  var topics = []
+
+  var pins = this.resolve_pins(args)
+
+  if (pins) {
+    _.each(this._context.seneca.findpins(pins), function(pin) {
+      var sb = []
+      _.each(_.keys(pin).sort(), function(k) {
+        sb.push(k)
+        sb.push('=')
+        sb.push(pin[k])
+        sb.push(',')
+      })
+
+      var topic = self._msgprefix + sb.join('').replace(/[^\w\d]+/g, '_')
+
+      topics.push(topic)
+    })
+
+    // TODO: die if no pins!!!
+    // otherwise no listener established and seneca ends without msg
+  } else {
+    topics.push(this._msgprefix + 'any')
+  }
+
+  if (typeof do_topic === 'function') {
+    topics.forEach(function(topic) {
+      do_topic(topic)
+    })
+  }
+
+  return topics
+}
+
+internals.Utils.prototype.update_output = function(input, output, err, out) {
+  output.res = out
+
+  if (err) {
+    var errobj = _.extend({}, err)
+    errobj.message = err.message
+    errobj.name = err.name || 'Error'
+
+    output.error = errobj
+    output.input = input
+  }
+
+  output.time.listen_sent = Date.now()
+}
+
+internals.Utils.prototype.catch_act_error = function(
+  seneca,
+  e,
+  listen_options,
+  input,
+  output
+) {
+  seneca.log.error('listen', 'act-error', listen_options, e.stack || e)
+  output.error = e
+  output.input = input
+}
+
+// legacy names
+internals.Utils.prototype.resolvetopic = internals.Utils.prototype.resolve_topic
+
+internals.Utils.prototype.prepareResponse = function(seneca, input) {
+  return {
+    id: input.id,
+    kind: 'res',
+    origin: input.origin,
+    accept: seneca.id,
+    track: input.track,
+    time: {
+      client_sent: (input.time && input.time.client_sent) || 0,
+      listen_recv: Date.now()
+    },
+    sync: input.sync
+  }
+}
+
+// Utilities
+
+// only support first level
+// interim measure - deal with this in core seneca act api
+// allow user to specify operations on result
+internals.Utils.prototype.handle_entity = function(seneca, raw) {
+  if (!raw) {
+    return raw
+  }
+
+  raw = _.isObject(raw) ? raw : {}
+
+  if (raw.entity$) {
+    return seneca.make$(raw)
+  }
+
+  _.each(raw, function(value, key) {
+    if (_.isObject(value) && value.entity$) {
+      raw[key] = seneca.make$(value)
+    }
+  })
+
+  return raw
+}
+
+internals.Utils.prototype.close = function(seneca, closer) {
+  seneca.add('role:seneca,cmd:close', function(close_args, done) {
+    var seneca = this
+
+    closer.call(seneca, function(err) {
+      if (err) {
+        seneca.log.error(err)
+      }
+
+      seneca.prior(close_args, done)
+    })
+  })
+}
+
+internals.Utils.prototype.stringifyJSON = function(seneca, note, obj) {
+  if (!obj) {
+    return
+  }
+
+  try {
+    return JSON.stringify(obj)
+  } catch (e) {
+    seneca.log.warn('json-stringify', note, obj, e.message)
+  }
+}
+
+internals.Utils.prototype.parseJSON = function(seneca, note, str) {
+  if (!str) {
+    return
+  }
+
+  try {
+    return JSON.parse(str)
+  } catch (e) {
+    seneca.log.warn(
+      'json-parse',
+      note,
+      str.replace(/[\r\n\t]+/g, ''),
+      e.message
+    )
+    e.input = str
+    return e
+  }
+}
+
+internals.Utils.prototype.resolveDynamicValue = function(value, options) {
+  if (_.isFunction(value)) {
+    return value(options)
+  }
+  return value
+}
+
+},{"eraro":97,"jsonic":123,"lodash":124,"nid":132,"patrun":182,"util":291}],219:[function(require,module,exports){
+/* Copyright (c) 2013-2015 Richard Rodger & other contributors, MIT License */
+/* jshint node:true, asi:true, eqnull:true */
+'use strict'
+
+// Load modules
+var _ = require('lodash')
+var LruCache = require('lru-cache')
+var Tcp = require('./lib/tcp')
+var TransportUtil = require('./lib/transport-utils.js')
+var Http = require('./lib/http')
+
+// Declare internals
+var internals = {
+  defaults: {
+    msgprefix: 'seneca_',
+    callmax: 111111,
+    msgidlen: 12,
+    warn: {
+      unknown_message_id: true,
+      invalid_kind: true,
+      invalid_origin: true,
+      no_message_id: true,
+      message_loop: true,
+      own_message: true
+    },
+    check: {
+      message_loop: true,
+      own_message: true
+    },
+    web: {
+      type: 'web',
+      port: 10101,
+      host: '0.0.0.0',
+      path: '/act',
+      protocol: 'http',
+      timeout: 5555,
+      max_listen_attempts: 11,
+      attempt_delay: 222,
+      serverOptions: {}
+    },
+    tcp: {
+      type: 'tcp',
+      host: '0.0.0.0',
+      port: 10201,
+      timeout: 5555
+    }
+  },
+  plugin: 'transport'
+}
+
+module.exports = function transport(options) {
+  var seneca = this
+
+  var settings = seneca.util.deepextend(internals.defaults, options)
+  var callmap = LruCache(settings.callmax)
+  var transportUtil = new TransportUtil({
+    callmap: callmap,
+    seneca: seneca,
+    options: settings
+  })
+
+  seneca.add(
+    { role: internals.plugin, cmd: 'inflight' },
+    internals.inflight(callmap)
+  )
+  seneca.add({ role: internals.plugin, cmd: 'listen' }, internals.listen)
+  seneca.add({ role: internals.plugin, cmd: 'client' }, internals.client)
+
+  seneca.add(
+    { role: internals.plugin, hook: 'listen', type: 'tcp' },
+    Tcp.listen(settings, transportUtil)
+  )
+  seneca.add(
+    { role: internals.plugin, hook: 'client', type: 'tcp' },
+    Tcp.client(settings, transportUtil)
+  )
+
+  seneca.add(
+    { role: internals.plugin, hook: 'listen', type: 'web' },
+    Http.listen(settings, transportUtil)
+  )
+  seneca.add(
+    { role: internals.plugin, hook: 'client', type: 'web' },
+    Http.client(settings, transportUtil)
+  )
+
+  // Aliases.
+  seneca.add(
+    { role: internals.plugin, hook: 'listen', type: 'http' },
+    Http.listen(settings, transportUtil)
+  )
+  seneca.add(
+    { role: internals.plugin, hook: 'client', type: 'http' },
+    Http.client(settings, transportUtil)
+  )
+
+  // Legacy API.
+  seneca.add(
+    { role: internals.plugin, hook: 'listen', type: 'direct' },
+    Http.listen(settings, transportUtil)
+  )
+  seneca.add(
+    { role: internals.plugin, hook: 'client', type: 'direct' },
+    Http.client(settings, transportUtil)
+  )
+
+  return {
+    name: internals.plugin,
+    exportmap: { utils: transportUtil },
+    options: settings
+  }
+}
+
+module.exports.preload = function() {
+  var seneca = this
+
+  var meta = {
+    name: internals.plugin,
+    exportmap: {
+      utils: function() {
+        var transportUtil = seneca.export(internals.plugin).utils
+        if (transportUtil !== meta.exportmap.utils) {
+          transportUtil.apply(this, arguments)
+        }
+      }
+    }
+  }
+
+  return meta
+}
+
+internals.inflight = function(callmap) {
+  return function(args, callback) {
+    var inflight = {}
+    callmap.forEach(function(val, key) {
+      inflight[key] = val
+    })
+    callback(null, inflight)
+  }
+}
+
+internals.listen = function(args, callback) {
+  var seneca = this
+
+  var config = _.extend({}, args.config, {
+    role: internals.plugin,
+    hook: 'listen'
+  })
+  var listen_args = seneca.util.clean(_.omit(config, 'cmd'))
+  var legacyError = internals.legacyError(seneca, listen_args.type)
+  if (legacyError) {
+    return callback(legacyError)
+  }
+  seneca.act(listen_args, callback)
+}
+
+internals.client = function(args, callback) {
+  var seneca = this
+
+  var config = _.extend({}, args.config, {
+    role: internals.plugin,
+    hook: 'client'
+  })
+  var client_args = seneca.util.clean(_.omit(config, 'cmd'))
+  var legacyError = internals.legacyError(seneca, client_args.type)
+  if (legacyError) {
+    return callback(legacyError)
+  }
+  seneca.act(client_args, callback)
+}
+
+internals.legacyError = function(seneca, type) {
+  if (type === 'pubsub') {
+    return seneca.fail('plugin-needed', { name: 'seneca-redis-transport' })
+  }
+  if (type === 'queue') {
+    return seneca.fail('plugin-needed', { name: 'seneca-beanstalkd-transport' })
+  }
+}
+
+},{"./lib/http":216,"./lib/tcp":217,"./lib/transport-utils.js":218,"lodash":124,"lru-cache":125}],220:[function(require,module,exports){
+/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var _ = require('lodash')
+
+var Common = require('./common')
+
+module.exports = function(instance) {
+  instance.stats = make_action_seneca_stats(instance.private$)
+
+  // Add builtin actions.
+  instance.add({ role: 'seneca', cmd: 'ping' }, cmd_ping)
+  instance.add({ role: 'seneca', cmd: 'stats' }, instance.stats)
+  instance.add({ role: 'seneca', cmd: 'close' }, action_seneca_close)
+  instance.add({ role: 'seneca', info: 'fatal' }, action_seneca_fatal)
+  instance.add({ role: 'seneca', get: 'options' }, action_options_get)
+
+  // TODO: review - is this used?
+  //instance.add({ role: 'seneca', make: 'error' }, action_make_error)
+
+  // Legacy builtin actions.
+  // Remove in Seneca 4.x
+  instance.add(
+    { role: 'seneca', stats: true, deprecate$: true },
+    instance.stats
+  )
+  instance.add(
+    { role: 'options', cmd: 'get', deprecate$: true },
+    action_options_get
+  )
+}
+
+function cmd_ping(msg, reply) {
+  reply(this.ping())
+}
+
+function action_seneca_fatal(msg, reply) {
+  reply()
+}
+
+function action_seneca_close(msg, reply) {
+  this.emit('close')
+  reply()
+}
+
+function make_action_seneca_stats(private$) {
+  return function action_seneca_stats(msg, reply) {
+    msg = msg || {}
+    var stats
+
+    // TODO: review - this is sort of breaking the "type" of the stats result
+    if (msg.pattern && private$.stats.actmap[msg.pattern]) {
+      stats = private$.stats.actmap[msg.pattern]
+      stats.time = private$.timestats.calculate(msg.pattern)
+    } else {
+      stats = _.clone(private$.stats)
+      stats.now = new Date()
+      stats.uptime = stats.now - stats.start
+
+      stats.now = new Date(stats.now).toISOString()
+      stats.start = new Date(stats.start).toISOString()
+
+      var summary = null == msg.summary || Common.boolify(msg.summary)
+      //(/^false$/i.exec(msg.summary) ? false : !!msg.summary)
+
+      if (summary) {
+        stats.actmap = void 0
+      } else {
+        _.each(private$.stats.actmap, function(a, p) {
+          private$.stats.actmap[p].time = private$.timestats.calculate(p)
+        })
+      }
+    }
+
+    if (reply) {
+      reply(stats)
+    }
+    return stats
+  }
+}
+
+function action_options_get(msg, reply) {
+  var options = this.options()
+
+  var base = msg.base || null
+  var top = base ? options[base] || {} : options
+  var val = msg.key ? top[msg.key] : top
+
+  reply(Common.copydata(val))
+}
+
+},{"./common":222,"lodash":124}],221:[function(require,module,exports){
+(function (process){
+/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var _ = require('lodash')
+var Jsonic = require('jsonic')
+var Norma = require('norma')
+
+var Common = require('./common')
+var Plugins = require('./plugins')
+var Logging = require('./logging')
+
+var errlog = Common.make_standard_err_log_entry
+
+var intern = {}
+
+
+exports.explain = function(toggle) {
+  if(true === toggle) {
+    return (this.private$.explain = [])
+  }
+  else if(false === toggle) {
+    var out = this.private$.explain
+    delete this.private$.explain
+    return out
+  }
+}
+
+// Create a Seneca Error, OR set a global error handler function
+exports.error = function(first) {
+  if ('function' === typeof first) {
+    this.options({ errhandler: first })
+    return this
+  } else {
+    if (null == first) {
+      throw this.util.error('no_error_code')
+    }
+
+    var plugin_fullname =
+      this.fixedargs && this.fixedargs.plugin$ && this.fixedargs.plugin$.full
+
+    var plugin =
+      null != plugin_fullname
+        ? this.private$.plugins[plugin_fullname]
+        : this.context.plugin
+
+    var error = null
+    if (plugin && plugin.eraro && plugin.eraro.has(first)) {
+      error = plugin.eraro.apply(this, arguments)
+    } else {
+      error = Common.eraro.apply(this, arguments)
+    }
+
+    return error
+  }
+}
+
+// NOTE: plugin error codes are in their own namespaces
+exports.fail = function(code, args) {
+  var error = this.error(code, args)
+
+  if (args && false === args.throw$) {
+    return error
+  } else {
+    throw error
+  }
+}
+
+exports.inward = function() {
+  // TODO: norma should support f/x where x = # args
+  var args = Norma('inward:f', arguments)
+  this.private$.inward.add(args.inward)
+  return this
+}
+
+exports.outward = function() {
+  var args = Norma('outward:f', arguments)
+  this.private$.outward.add(args.outward)
+  return this
+}
+
+exports.prior = function() {
+  if (null == this.private$.act) {
+    // TODO: should be a top level api method: seneca.fail
+    throw this.util.error('no_prior_action', { args: arguments })
+  }
+
+  // Get definition of prior action
+  var priordef = this.private$.act.def.priordef
+
+  var spec = Common.build_message(this, arguments, 'reply:f?', this.fixedargs)
+
+  // TODO: clean sufficiently so that seneca.util.clean not needed
+  var msg = spec.msg
+  var reply = spec.reply
+
+  if (priordef) {
+    msg.prior$ = priordef.id
+    this.act(msg, reply)
+  } else {
+    var meta = msg.meta$ || {}
+    var out = _.clone(msg.default$ || meta.dflt || null)
+    return reply.call(this, null, out, meta)
+  }
+}
+
+// TODO: rename fixedargs
+exports.delegate = function(fixedargs, fixedmeta) {
+  var self = this
+  var opts = this.options()
+
+  fixedargs = fixedargs || {}
+  fixedmeta = fixedmeta || {}
+
+  var delegate = Object.create(self)
+  delegate.private$ = Object.create(self.private$)
+
+  delegate.did =
+    (delegate.did ? delegate.did + '/' : '') + self.private$.didnid()
+
+  var strdesc
+  delegate.toString = function toString() {
+    if (strdesc) return strdesc
+    var vfa = {}
+    _.each(fixedargs, function(v, k) {
+      if (~k.indexOf('$')) return
+      vfa[k] = v
+    })
+
+    strdesc =
+      self.toString() + (_.keys(vfa).length ? '/' + Jsonic.stringify(vfa) : '')
+
+    return strdesc
+  }
+
+  delegate.fixedargs = opts.strict.fixedargs
+    ? _.extend({}, fixedargs, self.fixedargs)
+    : _.extend({}, self.fixedargs, fixedargs)
+
+  delegate.fixedmeta = opts.strict.fixedmeta
+    ? _.extend({}, fixedmeta, self.fixedmeta)
+    : _.extend({}, self.fixedmeta, fixedmeta)
+
+  delegate.delegate = function delegate(further_fixedargs, further_fixedmeta) {
+    var args = _.extend({}, delegate.fixedargs, further_fixedargs || {})
+    var meta = _.extend({}, delegate.fixedmeta, further_fixedmeta || {})
+    return self.delegate.call(this, args, meta)
+  }
+
+  // Somewhere to put contextual data for this delegate.
+  // For example, data for individual web requests.
+  delegate.context = Object.assign({}, self.context)
+
+  return delegate
+}
+
+exports.depends = function() {
+  var self = this
+  var private$ = this.private$
+  var error = this.util.error
+  var args = Norma('{pluginname:s deps:a? moredeps:s*}', arguments)
+
+  var deps = args.deps || args.moredeps
+
+  _.every(deps, function(depname) {
+    if (
+      !_.includes(private$.plugin_order.byname, depname) &&
+      !_.includes(private$.plugin_order.byname, 'seneca-' + depname)
+    ) {
+      self.die(
+        error('plugin_required', {
+          name: args.pluginname,
+          dependency: depname
+        })
+      )
+      return false
+    } else return true
+  })
+}
+
+exports.export = function(key) {
+  var self = this
+  var private$ = this.private$
+  var error = this.util.error
+  var opts = this.options()
+
+  // Legacy aliases
+  if (key === 'util') {
+    key = 'basic'
+  }
+
+  var exportval = private$.exports[key]
+
+  if (!exportval && opts.strict.exports) {
+    return self.die(error('export_not_found', { key: key }))
+  }
+
+  return exportval
+}
+
+// TODO: logging needs to be able to support this withtou awkwardness!
+exports.quiet = function() {
+  this.options({ log: { level: 'warn' } })
+  this.private$.logger = Logging.preload.call(this).extend.logger
+  return this
+}
+
+exports.test = function(errhandler, logspec) {
+  var opts = this.options()
+
+  if ('-' != opts.tag) {
+    this.root.id =
+      null == opts.id$
+        ? this.private$.actnid().substring(0, 4) + '/' + opts.tag
+        : '' + opts.id$
+  }
+
+  if ('function' !== typeof errhandler && null !== errhandler) {
+    logspec = errhandler
+    errhandler = null
+  }
+
+  this.options({
+    errhandler: null == errhandler ? null : errhandler,
+    test: true,
+    log: logspec || 'test'
+  })
+
+  this.private$.logger = Logging.preload.call(this).extend.logger
+
+  return this
+}
+
+// use('pluginname') - built-in, or provide calling code 'require' as seneca opt
+// use(require('pluginname')) - plugin object, init will be called
+// if first arg has property senecaplugin
+exports.use = function(arg0, arg1, arg2) {
+  var self = this
+
+  // DEPRECATED: Remove when Seneca >= 4.x
+  // Allow chaining with seneca.use('options', {...})
+  // see https://github.com/rjrodger/seneca/issues/80
+  if (arg0 === 'options') {
+    self.options(arg1)
+    return self
+  }
+
+  try {
+    var desc = self.private$.use.build_plugin_desc(arg0, arg1, arg2)
+
+    if (this.private$.ignore_plugins[desc.full]) {
+      this.log.info({
+        kind: 'plugin',
+        case: 'ignore',
+        plugin_full: desc.full,
+        plugin_name: desc.name,
+        plugin_tag: desc.tag
+      })
+
+      return self
+    }
+
+    var plugin = self.private$.use.use_plugin_desc(desc)
+
+    self.register(plugin)
+  } catch (e) {
+    self.die(self.private$.error(e, 'plugin_' + e.code))
+  }
+
+  return self
+}
+
+exports.ping = function() {
+  var now = Date.now()
+  return {
+    now: now,
+    uptime: now - this.private$.stats.start,
+    id: this.id,
+    cpu: process.cpuUsage(),
+    mem: process.memoryUsage(),
+    act: this.private$.stats.act,
+    tr: this.private$.transport.register.map(function(x) {
+      return Object.assign({ when: x.when, err: x.err }, x.config)
+    })
+  }
+}
+
+exports.translate = function(from_in, to_in, pick_in) {
+  var from = 'string' === typeof from_in ? Jsonic(from_in) : from_in
+  var to = 'string' === typeof to_in ? Jsonic(to_in) : to_in
+
+  var pick = {}
+
+  if ('string' === typeof pick_in) {
+    pick_in = pick_in.split(/\s*,\s*/)
+  }
+
+  if (Array.isArray(pick_in)) {
+    pick_in.forEach(function(prop) {
+      if (prop.startsWith('-')) {
+        pick[prop.substring(1)] = false
+      } else {
+        pick[prop] = true
+      }
+    })
+  } else if ('object' === typeof pick_in) {
+    pick = Object.assign({}, pick_in)
+  } else {
+    pick = null
+  }
+
+  this.add(from, function(msg, reply) {
+    var pick_msg
+
+    if (pick) {
+      pick_msg = {}
+      Object.keys(pick).forEach(function(prop) {
+        if (pick[prop]) {
+          pick_msg[prop] = msg[prop]
+        }
+      })
+    } else {
+      pick_msg = this.util.clean(msg)
+    }
+
+    var transmsg = Object.assign(pick_msg, to)
+    this.act(transmsg, reply)
+  })
+
+  return this
+}
+
+exports.gate = function() {
+  return this.delegate({ gate$: true })
+}
+
+exports.ungate = function() {
+  this.fixedargs.gate$ = false
+  return this
+}
+
+exports.list_plugins = function() {
+  return _.clone(this.private$.plugins)
+}
+
+exports.find_plugin = function(plugindesc, tag) {
+  var plugin_key = Common.make_plugin_key(plugindesc, tag)
+  return this.private$.plugins[plugin_key]
+}
+
+exports.has_plugin = function(plugindesc, tag) {
+  var plugin_key = Common.make_plugin_key(plugindesc, tag)
+  return !!this.private$.plugins[plugin_key]
+}
+
+exports.ignore_plugin = function(plugindesc, tag, ignore) {
+  if ('boolean' === typeof tag) {
+    ignore = tag
+    tag = null
+  }
+  var plugin_key = Common.make_plugin_key(plugindesc, tag)
+  var resolved_ignore = (this.private$.ignore_plugins[plugin_key] =
+    null == ignore ? true : !!ignore)
+
+  this.log.info({
+    kind: 'plugin',
+    case: 'ignore',
+    full: plugin_key,
+    ignore: resolved_ignore
+  })
+
+  return this
+}
+
+// Find the action metadata for a given pattern, if it exists.
+exports.find = function(pattern, flags) {
+  var seneca = this
+
+  var pat = _.isString(pattern) ? Jsonic(pattern) : pattern
+  pat = seneca.util.clean(pat)
+  pat = pat || {}
+
+  var actdef = seneca.private$.actrouter.find(pat, flags && flags.exact)
+
+  if (!actdef) {
+    actdef = seneca.private$.actrouter.find({})
+  }
+
+  return actdef
+}
+
+// True if an action matching the pattern exists.
+exports.has = function(pattern) {
+  return !!this.find(pattern, { exact: true })
+}
+
+// List all actions that match the pattern.
+exports.list = function(pattern) {
+  return _.map(
+    this.private$.actrouter.list(null == pattern ? {} : Jsonic(pattern)),
+    'match'
+  )
+}
+
+// Get the current status of the instance.
+exports.status = function(flags) {
+  flags = flags || {}
+
+  var hist = this.private$.history.stats()
+  hist.log = this.private$.history.list()
+
+  var status = {
+    stats: this.stats(flags.stats),
+    history: hist,
+    transport: this.private$.transport
+  }
+
+  return status
+}
+
+// Reply to an action that is waiting for a result.
+// Used by transports to decouple sending messages from receiving responses.
+exports.reply = function(spec) {
+  var instance = this
+
+  var item = null
+
+  if (spec && spec.meta) {
+    item = instance.private$.history.get(spec.meta.id)
+    if (item) {
+
+      // Add any additional explain items from responder
+      if(item.meta.explain && spec.meta.explain &&
+         item.meta.explain.length < spec.meta.explain.length) {
+        for(var i = item.meta.explain.length; i < spec.meta.explain.length; i++) {
+          item.meta.explain.push(spec.meta.explain[i])
+        }
+      }
+      
+      item.reply(spec.err, spec.out, spec.meta)
+    }
+  }
+
+  return !!item
+}
+
+// Listen for inbound messages.
+exports.listen = function(callpoint) {
+  return function api_listen() {
+    var private$ = this.private$
+    var argsarr = Array.prototype.slice.call(arguments)
+    var self = this
+
+    var done = _.last(argsarr)
+    if (typeof done === 'function') {
+      argsarr.pop()
+    } else {
+      done = _.noop
+    }
+
+    self.log.debug({
+      kind: 'listen',
+      options: argsarr,
+      callpoint: callpoint()
+    })
+
+    var opts = self.options().transport || {}
+    var config = intern.resolve_config(intern.parse_config(argsarr), opts)
+
+    self.act(
+      'role:transport,cmd:listen',
+      { config: config, gate$: true },
+      function(err, result) {
+        if (err) {
+          return self.die(private$.error(err, 'transport_listen', config))
+        }
+
+        done(null, result)
+        done = _.noop
+      }
+    )
+
+    return self
+  }
+}
+
+// Send outbound messages.
+exports.client = function(callpoint) {
+  return function api_client() {
+    var private$ = this.private$
+    var argsarr = Array.prototype.slice.call(arguments)
+    var self = this
+
+    self.log.debug({
+      kind: 'client',
+      options: argsarr,
+      callpoint: callpoint()
+    })
+
+    var legacy = self.options().legacy || {}
+    var opts = self.options().transport || {}
+
+    var raw_config = intern.parse_config(argsarr)
+
+    // pg: pin group
+    raw_config.pg = Common.pincanon(raw_config.pin || raw_config.pins)
+
+    var config = intern.resolve_config(raw_config, opts)
+
+    config.id = config.id || Common.pattern(raw_config)
+
+    var pins =
+      config.pins || (_.isArray(config.pin) ? config.pin : [config.pin || ''])
+
+    pins = _.map(pins, function(pin) {
+      return _.isString(pin) ? Jsonic(pin) : pin
+    })
+
+    var sd = Plugins.make_delegate(self, { name: 'client$', tag: void 0 })
+
+    var sendclient
+
+    var transport_client = function transport_client(msg, reply, meta) {
+      if (legacy.meta) {
+        meta = meta || msg.meta$
+      }
+
+      // Undefined plugin init actions pass through here when
+      // there's a catchall client, as they have local$:true
+      if (meta.local) {
+        this.prior(msg, reply)
+      } else if (sendclient && sendclient.send) {
+        if (legacy.meta) {
+          msg.meta$ = meta
+        }
+
+        sendclient.send.call(this, msg, reply, meta)
+      } else {
+        this.log.error('no-transport-client', { config: config, msg: msg })
+      }
+    }
+
+    transport_client.id = config.id
+
+    if (config.makehandle) {
+      transport_client.handle = config.makehandle(config)
+    }
+
+    _.each(pins, function(pin) {
+      pin = _.clone(pin)
+      pin.client$ = true
+      pin.strict$ = { add: true }
+      sd.add(pin, transport_client)
+    })
+
+    // Create client.
+    sd.act(
+      'role:transport,cmd:client',
+      { config: config, gate$: true },
+      function(err, liveclient) {
+        if (err) {
+          return sd.die(private$.error(err, 'transport_client', config))
+        }
+
+        if (null == liveclient) {
+          return sd.die(
+            private$.error('transport_client_null', Common.clean(config))
+          )
+        }
+
+        sendclient = liveclient
+      }
+    )
+
+    return self
+  }
+}
+
+// Subscribe to messages.
+exports.sub = function() {
+  var self = this
+  //var private$ = self.private$
+  var private_sub = self.private$.sub
+
+  var subargs = Common.parsePattern(self, arguments, 'action:f actdef:o?')
+  var pattern = subargs.pattern
+  if (
+    pattern.in$ == null &&
+    pattern.out$ == null &&
+    pattern.error$ == null &&
+    pattern.cache$ == null &&
+    pattern.default$ == null &&
+    pattern.client$ == null
+  ) {
+    pattern.in$ = true
+  }
+
+  if (!private_sub.handler) {
+    private_sub.handler = function handle_sub(msg, result, meta) {
+      // only entry msg of prior chain is published
+      if (meta && meta.prior) {
+        return
+      }
+
+      var subfuncs = self.private$.subrouter.find(msg)
+
+      if (subfuncs) {
+        meta.sub = subfuncs.pattern
+        var actdef = subfuncs.actdef
+
+        _.each(subfuncs, function subfunc(subfunc) {
+          try {
+            for (
+              var stI = 0, stlen = private_sub.tracers.length;
+              stI < stlen;
+              stI++
+            ) {
+              private_sub.tracers[stI].call(
+                self,
+                subfunc.instance$,
+                msg,
+                result,
+                meta,
+                actdef
+              )
+            }
+
+            subfunc.call(subfunc.instance$, msg, result, meta)
+
+            // TODO: this should in it's own function
+          } catch (ex) {
+            // TODO: not really satisfactory
+            var err = self.private$.error(ex, 'sub_function_catch', {
+              args: msg,
+              result: result
+            })
+            self.log.error(
+              errlog(err, {
+                kind: 'sub',
+                msg: msg,
+                actid: meta.id
+              })
+            )
+          }
+        })
+      }
+    }
+
+    // TODO: other cases
+
+    // Subs are triggered via events
+    self.on('act-in', annotate('in$', private_sub.handler))
+    self.on('act-out', annotate('out$', private_sub.handler))
+  }
+
+  function annotate(prop, handle_sub) {
+    return function annotation(origmsg, result, meta) {
+      var msg = _.clone(origmsg)
+      result = _.clone(result)
+      msg[prop] = true
+      handle_sub(msg, result, meta)
+    }
+  }
+
+  var subs = self.private$.subrouter.find(pattern)
+  if (!subs) {
+    self.private$.subrouter.add(pattern, (subs = []))
+    subs.pattern = Common.pattern(pattern)
+    subs.actdef = self.find(pattern)
+  }
+  subs.push(subargs.action)
+  subargs.action.instance$ = self
+
+  return self
+}
+
+intern.parse_config = function(args) {
+  var out = {}
+
+  var config = _.compact(args)
+
+  var arglen = config.length
+
+  if (arglen === 1) {
+    if (_.isObject(config[0])) {
+      out = _.clone(config[0])
+    } else {
+      out.port = parseInt(config[0], 10)
+    }
+  } else if (arglen === 2) {
+    out.port = parseInt(config[0], 10)
+    out.host = config[1]
+  } else if (arglen === 3) {
+    out.port = parseInt(config[0], 10)
+    out.host = config[1]
+    out.path = config[2]
+  }
+
+  return out
+}
+
+intern.resolve_config = function(config, options) {
+  var out = _.clone(config)
+
+  _.each(options, function(value, key) {
+    if (_.isObject(value)) {
+      return
+    }
+    out[key] = out[key] === void 0 ? value : out[key]
+  })
+
+  // Default transport is web
+  out.type = out.type || 'web'
+
+  // DEPRECATED: Remove in 4.0
+  if (out.type === 'direct' || out.type === 'http') {
+    out.type = 'web'
+  }
+
+  var base = options[out.type] || {}
+
+  out = _.extend({}, base, out)
+
+  if (out.type === 'web' || out.type === 'tcp') {
+    out.port = out.port == null ? base.port : out.port
+    out.host = out.host == null ? base.host : out.host
+    out.path = out.path == null ? base.path : out.path
+  }
+
+  return out
+}
+
+}).call(this,require('_process'))
+},{"./common":222,"./logging":226,"./plugins":229,"_process":192,"jsonic":123,"lodash":124,"norma":135}],222:[function(require,module,exports){
+(function (process){
+/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var Util = require('util')
+
+var _ = require('lodash')
+var Eraro = require('eraro')
+var Jsonic = require('jsonic')
+var Nid = require('nid')
+var Norma = require('norma')
+var Errors = require('./errors')
+var Print = require('./print')
+
+var error = (exports.error = exports.eraro = Eraro({
+  package: 'seneca',
+  msgmap: Errors,
+  override: true
+}))
+
+exports.make_plugin_key = function(plugin, origtag) {
+  if (null == plugin) {
+    throw error('missing_plugin_name')
+  }
+
+  var name = null == plugin.name ? plugin : plugin.name
+  var tag = null == plugin.tag ? (null == origtag ? '' : origtag) : plugin.tag
+
+  if ('number' === typeof name) {
+    name = '' + name
+  }
+
+  if ('number' === typeof tag) {
+    tag = '' + tag
+  }
+
+  if ('' == name || 'string' !== typeof name) {
+    throw error('bad_plugin_name', { name: name })
+  }
+
+  var m = name.match(/^([a-zA-Z@][a-zA-Z0-9.~_\-/]*)\$([a-zA-Z0-9.~_-]+)$/)
+  if (m) {
+    name = m[1]
+    tag = m[2]
+  }
+
+  // Allow file paths, but ...
+  if (!name.match(/^(\.|\/|\\|\w:)/)) {
+    // ... anything else should be well-formed
+    if (!name.match(/^[a-zA-Z@][a-zA-Z0-9.~_\-/]*$/) || 1024 < name.length) {
+      throw error('bad_plugin_name', { name: name })
+    }
+  }
+
+  if ('' != tag && (!tag.match(/^[a-zA-Z0-9.~_-]+$/) || 1024 < tag.length)) {
+    throw error('bad_plugin_tag', { tag: tag })
+  }
+
+  var key = name + (tag ? '$' + tag : '')
+
+  return key
+}
+
+exports.boolify = function(v) {
+  try {
+    return !!JSON.parse(v)
+  } catch (e) {
+    return false
+  }
+}
+
+exports.tagnid = Nid({ length: 3, alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' })
+
+var parse_jsonic = (exports.parse_jsonic = function(str, code) {
+  code = code || 'bad_jsonic'
+
+  try {
+    return null == str ? null : Jsonic(str)
+  } catch (e) {
+    var col = 1 === e.line ? e.column - 1 : e.column
+    throw error(code, {
+      argstr: str,
+      syntax: e.message,
+      line: e.line,
+      col: col
+    })
+  }
+})
+
+// string args override object args
+// TODO: fix name
+exports.parsePattern = function parse_pattern(
+  instance,
+  rawargs,
+  normaspec,
+  fixed
+) {
+  var args = Norma(
+    '{strargs:s? objargs:o? moreobjargs:o? ' + (normaspec || '') + '}',
+    rawargs
+  )
+
+  // Precedence of arguments in add,act is left-to-right
+  args.pattern = Object.assign(
+    {},
+    args.moreobjargs ? args.moreobjargs : null,
+    args.objargs ? args.objargs : null,
+    parse_jsonic(args.strargs, 'add_string_pattern_syntax'),
+    fixed
+  )
+
+  return args
+}
+
+exports.build_message = function build_message(
+  instance,
+  rawargs,
+  normaspec,
+  fixed
+) {
+  var args = Norma(
+    '{strargs:s? objargs:o? moreobjargs:o? ' + (normaspec || '') + '}',
+    rawargs
+  )
+
+  // Precedence of arguments in add,act is left-to-right
+  args.msg = Object.assign(
+    {},
+    args.moreobjargs,
+    args.objargs,
+    parse_jsonic(args.strargs, 'msg_jsonic_syntax'),
+    fixed
+  )
+
+  return args
+}
+
+var copydata = (exports.copydata = function(obj) {
+  var copy
+
+  // Handle the 3 simple types, and null or undefined
+  if (obj === null || typeof obj !== 'object') return obj
+
+  // Handle Error
+  if (_.isError(obj)) {
+    copy = {}
+    Object.getOwnPropertyNames(obj).forEach(function(key) {
+      copy[key] = obj[key]
+    })
+    return copy
+  }
+
+  // Handle Date
+  if (_.isDate(obj)) {
+    copy = new Date()
+    copy.setTime(obj.getTime())
+    return copy
+  }
+
+  // Handle Array
+  if (_.isArray(obj)) {
+    copy = []
+    for (var i = 0, len = obj.length; i < len; ++i) {
+      copy[i] = copydata(obj[i])
+    }
+    return copy
+  }
+
+  copy = {}
+  for (var attr in obj) {
+    if (obj.hasOwnProperty(attr)) copy[attr] = copydata(obj[attr])
+  }
+  return copy
+})
+
+// Convert pattern object into a normalized jsonic String.
+var pattern = (exports.pattern = function pattern(patobj) {
+  if (_.isString(patobj)) {
+    return patobj
+  }
+
+  patobj = patobj || {}
+  var sb = []
+  _.each(patobj, function(v, k) {
+    if (!~k.indexOf('$') && !_.isFunction(v)) {
+      sb.push(k + ':' + v)
+    }
+  })
+
+  sb.sort()
+
+  return sb.join(',')
+})
+
+exports.pincanon = function pincanon(inpin) {
+  if (_.isString(inpin)) {
+    return pattern(Jsonic(inpin))
+  } else if (_.isArray(inpin)) {
+    var pin = _.map(inpin, pincanon)
+    pin.sort()
+    return pin.join(';')
+  } else {
+    return pattern(inpin)
+  }
+}
+
+// noop for callbacks
+exports.nil = function nil() {
+  _.each(arguments, function(arg) {
+    if (_.isFunction(arg)) {
+      return arg()
+    }
+  })
+}
+
+// remove any props containing $
+function clean(obj, opts) {
+  if (null == obj) return obj
+
+  var out = Array.isArray(obj) ? [] : {}
+
+  var pn = Object.getOwnPropertyNames(obj)
+  for (var i = 0; i < pn.length; i++) {
+    var p = pn[i]
+
+    if ('$' != p[p.length - 1]) {
+      out[p] = obj[p]
+    }
+  }
+
+  if (opts && false !== opts.proto) {
+    //out.__proto__ = obj.__proto__
+  }
+
+  return out
+}
+exports.clean = clean
+
+// rightmost wins
+function deepextend() {
+  var argsarr = new Array(arguments.length)
+  for (var l = 0; l < argsarr.length; ++l) {
+    argsarr[l] = arguments[l]
+  }
+
+  // Lodash uses the reverse order to apply defaults than the deepextend API.
+  argsarr = argsarr.reverse()
+
+  // Add an empty object to the front of the args.  Defaults will be written
+  // to this empty object.
+  argsarr.unshift({})
+
+  return _.defaultsDeep.apply(_, argsarr)
+}
+exports.deepextend = deepextend
+
+// loop over a list of items recursively
+// list can be an integer - number of times to recurse
+exports.recurse = function recurse(list, work, done) {
+  var ctxt = this
+
+  if (_.isNumber(list)) {
+    list = _.range(0, list)
+  } else {
+    list = _.clone(list)
+  }
+
+  function next(err, out) {
+    if (err) return done(err, out)
+
+    var item = list.shift()
+
+    if (void 0 !== item) {
+      work.call(ctxt, item, next)
+    } else {
+      done.call(ctxt, err, out)
+    }
+  }
+  next.call(ctxt)
+}
+
+// Print action result
+exports.print = Print.print
+
+exports.makedie = function(instance, ctxt) {
+  ctxt = _.extend(ctxt, instance.die ? instance.die.context : {})
+
+  var diecount = 0
+
+  var die = function(err) {
+    var so = instance.options()
+    var test = so.test
+
+    // undead is only for testing, do not use in production
+    var undead = (so.debug && so.debug.undead) || (err && err.undead)
+    var full =
+      (so.debug && so.debug.print && 'full' === so.debug.print.fatal) || false
+    var print_env = (so.debug && so.debug.print.env) || false
+
+    if (0 < diecount) {
+      if (!undead) {
+        throw error(err, '[DEATH LOOP] die count: ' + diecount)
+      }
+      return
+    } else {
+      diecount++
+    }
+
+    try {
+      if (!err) {
+        err = new Error('unknown')
+      } else if (!Util.isError(err)) {
+        err = new Error(_.isString(err) ? err : Util.inspect(err))
+      }
+
+      err.fatal$ = true
+
+      var logdesc = {
+        kind: ctxt.txt || 'fatal',
+        level: ctxt.level || 'fatal',
+        plugin: ctxt.plugin,
+        tag: ctxt.tag,
+        id: ctxt.id,
+        code: err.code || 'fatal',
+        notice: err.message,
+        err: err,
+        callpoint: ctxt.callpoint && ctxt.callpoint()
+      }
+
+      instance.log.fatal.call(instance, logdesc)
+
+      var stack = err.stack || ''
+      stack = stack
+        .substring(stack.indexOf('\n') + 5)
+        .replace(/\n\s+/g, '\n               ')
+
+      var procdesc =
+        'pid=' +
+        process.pid +
+        ', arch=' +
+        process.arch +
+        ', platform=' +
+        process.platform +
+        (!full ? '' : ', path=' + process.execPath) +
+        ', argv=' +
+        Util.inspect(process.argv).replace(/\n/g, '') +
+        (!full
+          ? ''
+          : !print_env
+          ? ''
+          : ', env=' + Util.inspect(process.env).replace(/\n/g, ''))
+
+      var when = new Date()
+
+      var stderrmsg =
+        '\n\n' +
+        '=== SENECA FATAL ERROR ===' +
+        '\nMESSAGE   :::  ' +
+        err.message +
+        '\nCODE      :::  ' +
+        err.code +
+        '\nINSTANCE  :::  ' +
+        instance.toString() +
+        '\nDETAILS   :::  ' +
+        Util.inspect(
+          full ? err.details : _.omit(clean(err.details), ['instance']),
+          { depth: null }
+        ).replace(/\n/g, '\n               ') +
+        '\nSTACK     :::  ' +
+        stack +
+        '\nWHEN      :::  ' +
+        when.toISOString() +
+        ', ' +
+        when.getTime() +
+        '\nLOG       :::  ' +
+        Jsonic.stringify(logdesc) +
+        '\nNODE      :::  ' +
+        process.version +
+        ', ' +
+        process.title +
+        (!full
+          ? ''
+          : ', ' +
+            Util.inspect(process.versions).replace(/\s+/g, ' ') +
+            ', ' +
+            Util.inspect(process.features).replace(/\s+/g, ' ') +
+            ', ' +
+            Util.inspect(process.moduleLoadList).replace(/\s+/g, ' ')) +
+        '\nPROCESS   :::  ' +
+        procdesc +
+        '\nFOLDER    :::  ' +
+        process.env.PWD
+
+      if (so.errhandler) {
+        so.errhandler.call(instance, err)
+      }
+
+      if (instance.flags.closed) {
+        return
+      }
+
+      if (!undead) {
+        instance.act('role:seneca,info:fatal,closing$:true', { err: err })
+
+        instance.close(
+          // terminate process, err (if defined) is from seneca.close
+          function(close_err) {
+            if (!undead) {
+              process.nextTick(function() {
+                if (close_err) {
+                  instance.log.fatal({
+                    kind: 'close',
+                    err: Util.inspect(close_err)
+                  })
+                }
+
+                if (test) {
+                  if (close_err) {
+                    Print.err(close_err)
+                  }
+
+                  Print.err(stderrmsg)
+                  Print.err(
+                    '\nSENECA TERMINATED at ' +
+                      new Date().toISOString() +
+                      '. See above for error report.\n'
+                  )
+                }
+
+                so.system.exit(1)
+              })
+            }
+          }
+        )
+      }
+
+      // make sure we close down within options.death_delay seconds
+      if (!undead) {
+        var killtimer = setTimeout(function() {
+          instance.log.fatal({ kind: 'close', timeout: true })
+
+          if (so.test) {
+            Print.err(stderrmsg)
+            Print.err(
+              '\n\nSENECA TERMINATED (on timeout) at ' +
+                new Date().toISOString() +
+                '.\n\n'
+            )
+          }
+
+          so.system.exit(2)
+        }, so.death_delay)
+
+        if (killtimer.unref) {
+          killtimer.unref()
+        }
+      }
+    } catch (panic) {
+      this.log.fatal({
+        kind: 'panic',
+        panic: Util.inspect(panic),
+        orig: arguments[0]
+      })
+
+      if (so.test) {
+        var msg =
+          '\n\n' +
+          'Seneca Panic\n' +
+          '============\n\n' +
+          panic.stack +
+          '\n\nOriginal Error:\n' +
+          (arguments[0] && arguments[0].stack
+            ? arguments[0].stack
+            : arguments[0])
+        Print.err(msg)
+      }
+    }
+  }
+
+  die.context = ctxt
+
+  return die
+}
+
+exports.make_standard_act_log_entry = function(
+  actdef,
+  msg,
+  meta,
+  origmsg,
+  ctxt
+) {
+  var transport = origmsg.transport$ || {}
+  var callmeta = meta || msg.meta$ || {}
+  var prior = callmeta.prior || {}
+  actdef = actdef || {}
+
+  return _.extend(
+    {
+      actid: callmeta.id,
+      msg: msg,
+      meta: meta,
+      entry: prior.entry,
+      prior: prior.chain,
+      gate: origmsg.gate$,
+      caller: origmsg.caller$,
+      actdef: actdef,
+
+      // these are transitional as need to be updated
+      // to standard transport metadata
+      client: actdef.client,
+      listen: !!transport.origin,
+      transport: transport
+    },
+    ctxt
+  )
+}
+
+exports.make_standard_err_log_entry = function(err, ctxt) {
+  if (!err) return ctxt
+
+  if (err.details && ctxt && ctxt.caller) {
+    err.details.caller = ctxt.caller
+  }
+
+  return _.extend(
+    {
+      notice: err.message,
+      code: err.code,
+      err: err
+    },
+    ctxt
+  )
+}
+
+exports.resolve_option = function(value, options) {
+  return _.isFunction(value) ? value(options) : value
+}
+
+exports.flatten = function(obj, prop) {
+  var out = []
+  while (null != obj && 0 < obj.length) {
+    out.push(_.omit(obj[0], [prop]))
+    obj = obj[0][prop]
+  }
+  return out
+}
+
+exports.autoincr = function() {
+  var counter = 0
+  return function() {
+    return counter++
+  }
+}
+
+exports.make_trace_desc = function(meta) {
+  return [
+    meta.pattern,
+    meta.id,
+    meta.instance,
+    meta.tag,
+    meta.version,
+    meta.start,
+    meta.end,
+    meta.sync,
+    meta.action
+  ]
+}
+
+exports.TRACE_PATTERN = 0
+exports.TRACE_ID = 1
+exports.TRACE_INSTANCE = 2
+exports.TRACE_TAG = 3
+exports.TRACE_VERSION = 4
+exports.TRACE_START = 5
+exports.TRACE_END = 6
+exports.TRACE_SYNC = 7
+exports.TRACE_ACTION = 8
+
+exports.history = function history(opts) {
+  return new History(opts)
+}
+
+function History(opts) {
+  var self = this
+  opts = opts || {}
+
+  this._total = 0
+  this._list = []
+  this._map = {}
+
+  if (opts.prune) {
+    this._prune_interval = setInterval(function() {
+      self.prune(Date.now())
+    }, opts.interval || 100)
+    if (this._prune_interval.unref) {
+      this._prune_interval.unref()
+    }
+  }
+}
+
+History.prototype.stats = function stats() {
+  return {
+    total: this._total
+  }
+}
+
+History.prototype.add = function add(obj) {
+  this._map[obj.id] = obj
+
+  var i = this._list.length - 1
+
+  if (i < 0 || this._list[i].timelimit <= obj.timelimit) {
+    this._list.push(obj)
+  } else {
+    i = this.place(obj.timelimit)
+    this._list.splice(i, 0, obj)
+  }
+}
+
+History.prototype.place = function place(timelimit) {
+  var i = this._list.length
+  var s = 0
+  var e = i
+
+  if (0 === this._list.length) {
+    return 0
+  }
+
+  do {
+    i = Math.floor((s + e) / 2)
+
+    if (timelimit > this._list[i].timelimit) {
+      s = i + 1
+      i = s
+    } else if (timelimit < this._list[i].timelimit) {
+      e = i
+    } else {
+      i++
+      break
+    }
+  } while (s < e)
+
+  return i
+}
+
+History.prototype.prune = function prune(timelimit) {
+  var i = this.place(timelimit)
+  if (0 <= i && i <= this._list.length) {
+    for (var j = 0; j < i; j++) {
+      delete this._map[this._list[j].id]
+    }
+    this._list = this._list.slice(i)
+  }
+}
+
+History.prototype.get = function get(id) {
+  return this._map[id] || null
+}
+
+History.prototype.list = function list() {
+  return this._list
+}
+
+History.prototype.close = function close() {
+  if (this._prune_interval) {
+    clearInterval(this._prune_interval)
+  }
+}
+
+History.prototype.toString = function toString() {
+  return Util.inspect({
+    total: this._total,
+    map: this._map,
+    list: this._list
+  })
+}
+
+History.prototype.inspect = History.prototype.toString
+
+}).call(this,require('_process'))
+},{"./errors":223,"./print":230,"_process":192,"eraro":97,"jsonic":123,"lodash":124,"nid":132,"norma":135,"util":291}],223:[function(require,module,exports){
+/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+// Error code messages.
+module.exports = {
+  test_msg: 'Test message.',
+
+  test_args: 'Test args <%=arg0%> <%=arg1%>.',
+
+  test_prop:
+    'TESTING: exists: <%=exists%>, notfound:<%=notfound%>, str=<%=str%>,' +
+    ' obj=<%=obj%>, arr=<%=arr%>, bool=<%=bool%>, null=<%=null$%>, delete=<%=delete$%>, undefined=<%=undefined$%>, void=<%=void$%>, NaN=<%=NaN$%>',
+
+  add_string_pattern_syntax:
+    'Could not add action due to syntax error in ' +
+    'pattern string: "<%=argstr%>": Line:<%=line%>, Column:<%=col%>; <%=syntax%>',
+
+  act_string_args_syntax:
+    'Could execute action due to syntax error in argument' +
+    ' string: "<%=argstr%>": Line:<%=line%>, Column:<%=col%>; <%=syntax%>',
+
+  add_pattern_object_expected_after_string_pattern:
+    'Could not add action; ' +
+    'unexpected argument; a pattern object or function should follow the pattern' +
+    ' string; arguments were: "<%=args%>".',
+
+  add_pattern_object_expected:
+    'Could not add action; unexpected argument; ' +
+    'a pattern object or string should be the first argument; ' +
+    'arguments were: "<%=args%>".',
+
+  add_action_function_expected:
+    'Could not add action: the action function ' +
+    'should appear after the pattern; arguments were: "<%=args%>".',
+
+  add_action_metadata_not_an_object:
+    'Could not add action: the argument after ' +
+    'the action function should be a metadata object: <%=actdef%>.',
+
+  add_empty_pattern:
+    'Could not add action, as the action pattern is empty: ' + '"<%=args%>"',
+
+  act_if_expects_boolean:
+    'The method act_if expects a boolean value as its ' +
+    'first argument, was: "<%=first%>".',
+
+  act_not_found:
+    'No matching action pattern found for <%=args%>, and no default ' +
+    'result provided (using a default$ property).',
+
+  act_default_bad:
+    'No matching action pattern found for <%=args%>, and default ' +
+    'result is not a plain object or an array: <%=xdefault%>.',
+
+  act_no_args:
+    'No action pattern defined in "<%=args%>"; the first argument ' +
+    'should be a string or object pattern.',
+
+  act_invalid_msg:
+    'Action <%=pattern%> received an invalid message; <%=message%>; ' +
+    'message content was: <%=msg%>.',
+
+  act_execute: 'Action <%=pattern%> failed: <%=message%>.',
+
+  act_callback: 'Action <%=pattern%> callback threw: <%=message%>.',
+
+  act_loop:
+    'Action <%=pattern%> loops back on itself. Action details: <%=actdef%>, history: <%=history%>',
+
+  result_not_objarr:
+    'Action <%=pattern%> responded with result that was not an ' +
+    'object or array: <%=result%>; Use option strict:{result:false} to allow; ' +
+    'arguments were: <%=args%>',
+
+  no_client: 'Transport client was not created; arguments were: "<%=args%>".',
+
+  invalid_options: 'Invalid options; <%=message%>',
+
+  plugin_required:
+    'The <%=name%> plugin depends on the <%=dependency%> plugin, ' +
+    'which is not loaded yet.',
+
+  plugin_init: 'The <%=name%> plugin failed to initialize: <%=plugin_error%>.',
+
+  plugin_init_timeout:
+    'The <%=name%> plugin failed to initialize within ' +
+    '<%=timeout%> milliseconds (The init:<%=name%> action did not call the "done"' +
+    ' callback in time).',
+
+  export_not_found: 'The export <%=key%> has not been defined by a plugin.',
+
+  store_cmd_missing:
+    'Entity data store implementation is missing a command; ' +
+    '"<%=cmd%>": "<%=store%>".',
+
+  sub_function_catch:
+    'Pattern subscription function threw: <%=message%> on ' +
+    'args: <%=args%>, result: <%=result%>.',
+
+  ready_failed: 'Ready function failed: <%=message%>',
+
+  unknown_message_reply:
+    'Reply for message <%=id%> failed as message is unknown: <%=args%>',
+
+  maxparents:
+    'Message has too many parent messages (<%=maxparents%>). There may be an infinite loop. Parents: <%=parents%>, Message: <%=args%>',
+
+  plugin_define:
+    "The definition function for the plugin <%=fullname%> has failed: <%=message%>. This error is considered fatal as all plugins have to initialize correctly. You should test the plugin by itself to verify that it is working correctly. Also ensure that the configuration options passed to the plugin are correct. These are shown below under in the DETAILS section. There could also be a bug in the plugin. If you think that is the case, please create a github issue on the plugin's repository<%=repo%>, and include this error report.",
+
+  no_transport_client:
+    'The transport client defined by <%=config%> does not exist for message: <%=msg%>',
+
+  invalid_plugin_option:
+    'Plugin <%=name%>: option value is not valid: <%=err_msg%> in options <%=options%>',
+
+  no_prior_action:
+    'The `prior` method must be called inside an action function. Arguments were: <%=args%>',
+
+  missing_plugin_name: 'The plugin name string was missing or empty.',
+
+  bad_plugin_name:
+    "The plugin name string cannot be empty and must be alphanumeric (matching /^[a-zA-Z][a-zA-Z0-9_]*$/), and cannot be longer than 1024 characters. Name was '<%=name.substring(0,1032)%>'.",
+
+  bad_plugin_tag:
+    "The plugin tag string, if defined, must be alphanumeric (matching /^[a-zA-Z0-9_]+$/), and cannot be longer than 1024 characters. Name was '<%=name.substring(0,1032)%>', and tag was '<%=tag.substring(0,1032)%>'.",
+
+  bad_jsonic:
+    'Data string provided in Jsonic format (https://github.com/rjrodger/jsonic) has a syntax error: <%=syntax%> (line:<%=line%>, col:<%=col%>); original: <%=argstr%>',
+
+  no_error_code:
+    'The Seneca.error or Seneca.fail method was called without an error code string as first argument.',
+
+  // Legacy error message codes
+
+  act_invalid_args:
+    'Action <%=pattern%> has invalid arguments; <%=message%>; ' +
+    'arguments were: <%=msg%>.'
+}
+
+module.exports.deprecation = {
+  seneca_parent:
+    'Seneca.parent has been renamed to Seneca.prior. Seneca.parent will be removed in Seneca 4.x.',
+
+  seneca_next_act: 'Seneca.next_act will be removed in Seneca 3.x'
+}
+
+},{}],224:[function(require,module,exports){
+/* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+const Util = require('util')
+
+// TODO: remove
+const _ = require('lodash')
+
+const Common = require('./common')
+
+
+const intern = {}
+
+
+module.exports = {
+  msg_modify: inward_msg_modify,
+  closed: inward_closed,
+  act_cache: inward_act_cache,
+  act_default: inward_act_default,
+  act_not_found: inward_act_not_found,
+  validate_msg: inward_validate_msg,
+  warnings: inward_warnings,
+  msg_meta: inward_msg_meta,
+  limit_msg: inward_limit_msg,
+  act_stats: inward_act_stats,
+  prepare_delegate: inward_prepare_delegate,
+  announce: inward_announce,
+  intern: intern
+}
+
+function inward_msg_modify(ctxt, data) {
+  var meta = data.meta
+
+  if (ctxt.actdef) {
+    var fixed = ctxt.actdef.fixed
+    var custom = ctxt.actdef.custom
+
+    if (fixed) {
+      Object.assign(data.msg, fixed)
+    }
+
+    if (custom) {
+      meta.custom = meta.custom || {}
+      Object.assign(meta.custom, custom)
+    }
+  }
+}
+
+function inward_limit_msg(ctxt, data) {
+  var so = ctxt.options
+  var meta = data.meta
+
+  if (meta.parents && so.limits.maxparents < meta.parents.length) {
+    return {
+      kind: 'error',
+      code: 'maxparents',
+      info: {
+        maxparents: so.limits.maxparents,
+        numparents: meta.parents.length,
+        parents: _.map(
+          meta.parents,
+          p => p[Common.TRACE_PATTERN] + ' ' + p[Common.TRACE_ACTION]
+        ),
+        args: Util.inspect(Common.clean(data.msg)).replace(/\n/g, '')
+      }
+    }
+  }
+}
+
+function inward_announce(ctxt, data) {
+  if (!ctxt.actdef) return
+
+  // Only intended for use in a per-delegate context.
+  if (_.isFunction(ctxt.seneca.on_act_in)) {
+    ctxt.seneca.on_act_in(ctxt.actdef, data.msg, data.meta)
+  }
+
+  ctxt.seneca.emit('act-in', data.msg, null, data.meta)
+}
+
+function inward_closed(ctxt, data) {
+  if (ctxt.seneca.flags.closed && !data.meta.closing) {
+    return {
+      kind: 'error',
+      code: 'closed',
+      info: {
+        args: Util.inspect(Common.clean(data.msg)).replace(/\n/g, '')
+      }
+    }
+  }
+}
+
+function inward_act_stats(ctxt) {
+  if (!ctxt.actdef) {
+    return
+  }
+
+  var private$ = ctxt.seneca.private$
+  ++private$.stats.act.calls
+
+  var pattern = ctxt.actdef.pattern
+
+  var actstats = (private$.stats.actmap[pattern] =
+    private$.stats.actmap[pattern] || {})
+
+  ++actstats.calls
+}
+
+function inward_act_default(ctxt, data) {
+  var so = ctxt.options
+  var msg = data.msg
+  var meta = data.meta
+
+  // TODO: existence of pattern action needs own indicator flag
+  if (!ctxt.actdef) {
+    var default$ = meta.dflt || (!so.strict.find ? {} : meta.dflt)
+
+    if (_.isPlainObject(default$) || _.isArray(default$)) {
+      return {
+        kind: 'result',
+        result: default$,
+        log: {
+          level: 'debug',
+          data: {
+            kind: 'act',
+            case: 'DEFAULT'
+          }
+        }
+      }
+    } else if (null != default$) {
+      return {
+        kind: 'error',
+        code: 'act_default_bad',
+        info: {
+          args: Util.inspect(Common.clean(msg)).replace(/\n/g, ''),
+          xdefault: Util.inspect(default$)
+        }
+      }
+    }
+  }
+}
+
+function inward_act_not_found(ctxt, data) {
+  var so = ctxt.options
+  var msg = data.msg
+
+  if (!ctxt.actdef) {
+    return {
+      kind: 'error',
+      code: 'act_not_found',
+      info: { args: Util.inspect(Common.clean(msg)).replace(/\n/g, '') },
+      log: {
+        level: so.trace.unknown ? 'warn' : 'debug',
+        data: {
+          kind: 'act',
+          case: 'UNKNOWN'
+        }
+      }
+    }
+  }
+}
+
+function inward_validate_msg(ctxt, data) {
+  var so = ctxt.options
+  var msg = data.msg
+
+  if (!_.isFunction(ctxt.actdef.validate)) {
+    return
+  }
+
+  var err = null
+
+  // FIX: this is assumed to be synchronous
+  // seneca-parambulator and seneca-joi need to be updated
+  ctxt.actdef.validate(msg, function(verr) {
+    err = verr
+  })
+
+  if (err) {
+    return {
+      kind: 'error',
+      code: so.legacy.error_codes ? 'act_invalid_args' : 'act_invalid_msg',
+      info: {
+        pattern: ctxt.actdef.pattern,
+        message: err.message,
+        msg: Common.clean(msg),
+        error: err
+      },
+      log: {
+        level: so.trace.invalid ? 'warn' : null,
+        data: {
+          kind: 'act',
+          case: 'INVALID'
+        }
+      }
+    }
+  }
+}
+
+// Check if actid has already been seen, and if action cache is active,
+// then provide cached result, if any. Return true in this case.
+function inward_act_cache(ctxt, data) {
+  var so = ctxt.options
+  var meta = data.meta
+
+  var actid = meta.id
+  var private$ = ctxt.seneca.private$
+
+  if (actid != null && so.history.active) {
+    var actdetails = private$.history.get(actid)
+
+    if (actdetails) {
+      private$.stats.act.cache++
+
+      var latest = actdetails.result[actdetails.result.length - 1] || {}
+
+      var out = {
+        kind: latest.err ? 'error' : 'result',
+        result: latest.res || null,
+        error: latest.err || null,
+        log: {
+          level: 'debug',
+          data: {
+            kind: 'act',
+            case: 'CACHE',
+            cachetime: latest.when
+          }
+        }
+      }
+
+      ctxt.cached$ = true
+
+      return out
+    }
+  }
+}
+
+function inward_warnings(ctxt, data) {
+  var so = ctxt.options
+  var msg = data.msg
+
+  if (so.debug.deprecation && ctxt.actdef.deprecate) {
+    ctxt.seneca.log.warn({
+      kind: 'act',
+      case: 'DEPRECATED',
+      msg: msg,
+      pattern: ctxt.actdef.pattern,
+      notice: ctxt.actdef.deprecate,
+      callpoint: ctxt.callpoint
+    })
+  }
+}
+
+function inward_msg_meta(ctxt, data) {
+  var meta = data.meta
+
+  // console.log('MSG', data.msg)
+  
+  meta.pattern = ctxt.actdef.pattern
+  meta.action = ctxt.actdef.id
+  meta.plugin = _.extend(meta.plugin, ctxt.actdef.plugin)
+  meta.start = null == meta.start ? ctxt.start : meta.start
+  meta.parents = meta.parents || []
+  meta.trace = meta.trace || []
+
+  var parent = ctxt.seneca.private$.act && ctxt.seneca.private$.act.parent
+
+  // Use parent custom object if present,
+  // otherwise use object provided by caller,
+  // otherwise create a new one.
+  // This preserves the same custom object ref throughout a call chain.
+  var parentcustom = (parent && parent.custom) || meta.custom || {}
+
+  if (parent) {
+    meta.parents = meta.parents.concat(parent.parents || [])
+    meta.parents.unshift(Common.make_trace_desc(parent))
+  }
+
+  meta.custom = Object.assign(
+    parentcustom,
+    meta.custom,
+    ctxt.seneca.fixedmeta && ctxt.seneca.fixedmeta.custom
+  )
+
+  // meta.explain is an array that explanation objects can be appended to.
+  // The same array is used through the action call tree, and must be provided by
+  // calling code at the top level via the explain$ directive.
+  if(data.msg.explain$ && Array.isArray(data.msg.explain$)) {
+    meta.explain = data.msg.explain$
+  }
+  else if(parent && parent.explain) {
+    meta.explain = parent.explain
+  }
+
+  if(ctxt.seneca.private$.explain) {
+    meta.explain = meta.explain || []
+    ctxt.seneca.private$.explain.push(meta.explain)
+  }
+}
+
+function inward_prepare_delegate(ctxt, data) {
+  var meta = data.meta
+  
+  ctxt.seneca.fixedargs.tx$ = data.meta.tx
+
+  data.reply = data.reply.bind(ctxt.seneca)
+  data.reply.seneca = ctxt.seneca
+
+  var reply = data.reply
+
+  // DEPRECATE
+  ctxt.seneca.good = function good(out) {
+    ctxt.seneca.log.warn(
+      'seneca.good is deprecated and will be removed in 4.0.0'
+    )
+    reply(null, out)
+  }
+
+  // DEPRECATE
+  ctxt.seneca.bad = function bad(err) {
+    ctxt.seneca.log.warn(
+      'seneca.bad is deprecated and will be removed in 4.0.0'
+    )
+    reply(err)
+  }
+
+  ctxt.seneca.reply = function reply(err, out) {
+    reply(err, out)
+  }
+
+  ctxt.seneca.explain = intern.explain.bind(ctxt.seneca,meta)
+  if(meta.explain) {
+    ctxt.seneca.explain({explain$:true,msg$:Common.clean(data.msg)})
+  }
+}
+
+
+
+intern.explain = function(meta, entry) {
+  var orig_explain = this.explain
+  var explain = meta.explain
+
+  if(true === entry || false === entry) {
+    return orig_explain.call(this, entry)
+  }
+  
+  else if(explain) {
+    if(null != entry) {
+      if(entry.explain$) {
+        entry.explain$ = {
+          start: meta.start,
+          pattern: meta.pattern,
+          action: meta.action,
+          id: meta.id,
+          instance: meta.instance,
+          tag: meta.tag,
+          seneca: meta.seneca,
+          version: meta.version,
+          gate: meta.gate,
+          fatal: meta.fatal,
+          local: meta.local,
+          closing: meta.closing,
+          timeout: meta.timeout,
+          dflt: meta.dflt,
+          custom: meta.custom,
+          plugin: meta.plugin,
+          prior: meta.prior,
+          caller: meta.caller,
+          parents: meta.parents,
+          remote: meta.remote,
+          sync: meta.sync,
+          trace: meta.trace,
+          sub: meta.sub,
+          data: meta.data,
+          err: meta.err,
+          err_trace: meta.err_trace,
+          error: meta.error,
+          empty: meta.empty,
+        }
+      }
+
+      explain.push('object' === typeof(entry) ? entry : {content:entry} )
+    }
+  }
+  
+  return explain && this.explain
+}
+
+},{"./common":222,"lodash":124,"util":291}],225:[function(require,module,exports){
+/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var _ = require('lodash')
+var Eraro = require('eraro')
+var Norma = require('norma')
+var Jsonic = require('jsonic')
+
+var Common = require('./common')
+var Errors = require('./errors')
+
+var internals = {
+  error: Eraro({
+    package: 'seneca',
+    msgmap: Errors,
+    override: true
+  })
+}
+
+// All methods here are DEPRECATED
+// To be marked as DEPRECATED in Seneca 4.x
+// To be REMOVED in Seneca 5.x
+
+// use args properties as fields
+// defaults: map of default values
+// args: args object
+// fixed: map of fixed values - cannot be overriden
+// omits: array of prop names to exclude
+// defaults, args, and fixed are deepextended together in that order
+exports.argprops = function argprops(defaults, args, fixed, omits) {
+  omits = _.isArray(omits)
+    ? omits
+    : _.isObject(omits)
+    ? _.keys(omits)
+    : _.isString(omits)
+    ? omits.split(/\s*,\s*/)
+    : '' + omits
+
+  // a little pre omit to avoid entities named in omits
+  var usedargs = _.omit(args, omits)
+
+  // don't support $ args
+  usedargs = Common.clean(usedargs)
+
+  return _.omit(Common.deepextend(defaults, usedargs, fixed), omits)
+}
+
+exports.next_act = function next_act() {
+  var argsarr = new Array(arguments.length)
+  for (var l = 0; l < argsarr.length; ++l) {
+    argsarr[l] = arguments[l]
+  }
+
+  var si = this
+
+  si.log.warn({
+    kind: 'notice',
+    case: 'DEPRECATION',
+    notice: Errors.deprecation.seneca_next_act
+  })
+
+  return function(next) {
+    argsarr.push(next)
+    si.act.apply(si, argsarr)
+  }
+}
+
+exports.findpins = function findpins() {
+  var self = this
+
+  var argsarr = new Array(arguments.length)
+  for (var l = 0; l < argsarr.length; ++l) {
+    argsarr[l] = arguments[l]
+  }
+
+  var pins = []
+  var patterns = _.flatten(argsarr)
+
+  _.each(patterns, function(pattern) {
+    pattern = _.isString(pattern) ? Jsonic(pattern) : pattern
+    pins = pins.concat(
+      _.map(self.private$.actrouter.list(pattern), function(desc) {
+        return desc.match
+      })
+    )
+  })
+
+  return pins
+}
+
+exports.act_if = function act_if() {
+  var self = this
+  var args = Norma('{execute:b actargs:.*}', arguments)
+
+  if (args.execute) {
+    return self.act.apply(self, args.actargs)
+  } else return self
+}
+
+exports.hasact = function hasact(pattern) {
+  return !!this.find(pattern, { exact: false })
+}
+
+exports.make_legacy_fail = function make_legacy_fail(so) {
+  return function() {
+    var argsarr = new Array(arguments.length)
+    for (var l = 0; l < argsarr.length; ++l) {
+      argsarr[l] = arguments[l]
+    }
+
+    var cb = _.isFunction(argsarr[argsarr.length - 1])
+      ? argsarr[argsarr.length - 1]
+      : null
+
+    if (cb) {
+      argsarr.pop()
+    }
+
+    if (_.isObject(argsarr[0])) {
+      var code = argsarr[0].code
+      if (_.isString(code)) {
+        argsarr.unshift(code)
+      }
+    }
+
+    var err = internals.error.apply(null, argsarr)
+    err.callpoint = new Error().stack.match(/^.*\n.*\n\s*(.*)/)[1]
+    err.seneca = { code: err.code, valmap: err.details }
+
+    this.log.error(Common.make_standard_err_log_entry(err))
+    if (so.errhandler) {
+      so.errhandler.call(this, err)
+    }
+
+    if (cb) {
+      cb.call(this, err)
+    }
+
+    return err
+  }
+}
+
+},{"./common":222,"./errors":223,"eraro":97,"jsonic":123,"lodash":124,"norma":135}],226:[function(require,module,exports){
+/* Copyright © 2016-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var Util = require('util')
+
+var Stringify = require('json-stringify-safe')
+var _ = require('lodash')
+
+var Print = require('./print')
+
+module.exports = logging
+
+function logging() {
+  // Everything is in preload as logging plugins are
+  // a special case that need to be loaded before any calls to seneca.log.
+}
+
+logging.preload = function() {
+  var seneca = this
+
+  // TODO: temporary for seneca-repl
+  seneca.__build_test_log__$$ = build_test_log
+
+  var so = seneca.options()
+  var logspec = so.log.basic || so.log || {}
+
+  var origspec = logspec
+
+  if (_.isString(logspec)) {
+    if ('quiet' === logspec) {
+      logspec = { level: 'none' }
+    } else if ('silent' === logspec) {
+      logspec = { level: 'none' }
+    } else if ('any' === logspec) {
+      logspec = { level: 'debug+' }
+    } else if ('all' === logspec) {
+      logspec = { level: 'debug+' }
+    } else if ('print' === logspec) {
+      logspec = { level: 'debug+' }
+    } else if ('standard' === logspec) {
+      logspec = { level: 'info+' }
+    } else if ('test' === logspec) {
+      logspec = { level: 'warn+' }
+    }
+  }
+
+  var logrouter = logfilter(logspec)
+
+  var logger = function(seneca, data) {
+    if (logrouter(data)) {
+      var logstr = Stringify(data)
+      Print.log(logstr)
+    }
+  }
+
+  // Test mode prints more readable logs
+  if (so.test) {
+    logger = function(seneca, data) {
+      if (logrouter(data)) {
+        try {
+          var logstr = build_test_log(seneca, origspec, data)
+          Print.log(logstr)
+        } catch (e) {
+          Print.log(data)
+        }
+      }
+    }
+  }
+
+  return {
+    extend: {
+      logger: logger
+    }
+  }
+}
+
+function build_test_log(seneca, origspec, data) {
+  var logstr
+  var time = data.when - seneca.start_time
+  var datalen = seneca.private$.exports.options.debug.datalen
+
+  if ('test' === origspec || 'print' === origspec) {
+    var logb = [
+      time +
+        '/' +
+        seneca.id.substring(0, 2) +
+        '/' +
+        seneca.tag +
+        ' ' +
+        data.level.toUpperCase(),
+      (data.kind || 'data') +
+        (data.case ? '/' + data.case : '') +
+        (data.meta ? (data.meta.sync ? '/s' : '/a') : '')
+    ]
+
+    if ('act' === data.kind) {
+      if (data.meta) {
+        logb.push(
+          data.meta.id
+            .split('/')
+            .map(function(s) {
+              return s.substring(0, 2)
+            })
+            .join('/')
+        )
+
+        logb.push(data.meta.pattern)
+      }
+
+      logb.push(
+        Util.inspect(seneca.util.clean(data.result || data.msg))
+          .replace(/\s+/g, '')
+          .substring(0, datalen)
+      )
+
+      logb.push(data.actdef.id)
+
+      if (data.notice) {
+        logb.push(data.notice)
+      }
+
+      if ('ERR' === data.case) {
+        logb.push('\n\n' + data.err.stack + '\n' + data.caller + '\n')
+      }
+    } else if ('add' === data.kind) {
+      logb.push(data.pattern)
+      logb.push(data.name)
+    } else if ('plugin' === data.kind) {
+      logb.push(
+        data.plugin_name + (data.plugin_tag ? '$' + data.plugin_tag : '')
+      )
+    } else if ('options' === data.kind) {
+      // deliberately omit
+    } else if ('notice' === data.kind) {
+      logb.push(data.notice)
+    } else if ('listen' === data.kind || 'client' === data.kind) {
+      var config = data.options && data.options[0]
+      logb.push(
+        [
+          config.type,
+          config.pin,
+          config.host,
+          _.isFunction(config.port) ? '' : config.port
+        ].join(';')
+      )
+    } else {
+      logb.push(
+        Util.inspect(data)
+          .replace(/\n/g, ' ')
+          .substring(0, datalen)
+      )
+    }
+
+    if (data.did) {
+      logb.push(data.did)
+    }
+
+    logstr = logb.join('\t')
+  } else {
+    logstr = Util.inspect(data, { depth: null })
+    logstr =
+      time +
+      ':\n\t' +
+      logstr.replace(/\n/g, '\n\t') +
+      '\n------------------------------------------------\n\n'
+  }
+
+  return logstr
+}
+
+// TODO: needs massive refactor
+
+function logfilter(options) {
+  let level = options.level || 'info+'
+
+  let calculatedLevels = []
+
+  if (level_exists(level)) {
+    calculatedLevels.push(level)
+  } else if (_.endsWith(level, '+')) {
+    // Level + notation
+    calculatedLevels = log_level_plus(level.substring(0, level.length - 1))
+  } else {
+    // No level nor level+... it must be a custom alias
+    let processedAliases = Object.assign({}, aliases, options.aliases)
+    let aliasInfo = processedAliases[level]
+    if (aliasInfo) {
+      let handled = _.get(aliasInfo, 'handled', true)
+      if (handled) {
+        calculatedLevels = aliasInfo.handler(options)
+      }
+    }
+  }
+
+  return function filter(data) {
+    if (calculatedLevels.indexOf(data.level) !== -1) {
+      return data
+      /*
+      let cloned = _.clone(data)
+      if (options['omit-metadata']) {
+        cloned = _.omit(cloned, ['seneca', 'level', 'when'])
+      }
+
+      if (options.omit && _.isArray(options.omit)) {
+        cloned = _.omit(cloned, options.omit)
+      }
+      return cloned
+*/
+    }
+    return null
+  }
+}
+
+var aliases = {
+  silent: {
+    handled: true,
+    handler: function() {
+      return []
+    }
+  },
+  all: {
+    handled: true,
+    handler: function() {
+      return ['debug', 'info', 'warn', 'error', 'fatal']
+    }
+  },
+  test: {
+    handled: true,
+    handler: function() {
+      return ['error', 'fatal']
+    }
+  }
+}
+
+const log_levels = ['debug', 'info', 'warn', 'error', 'fatal']
+
+/**
+ * It returns the levels above the argument
+ * @param  {String} logLevel the log level to calculate
+ * @return {Array}           the list of logs above the argument
+ */
+function log_level_plus(logLevel) {
+  let index = log_levels.indexOf(logLevel)
+  if (index < 0) {
+    return []
+  } else {
+    return log_levels.slice(index, log_levels.length)
+  }
+}
+
+/**
+ * Checks if a log level exists
+ * @param  {string} level the level itself
+ * @return {boolean}      true if the level exists
+ */
+function level_exists(level) {
+  return log_levels.indexOf(level) !== -1
+}
+
+module.exports.log_level_plus = log_level_plus
+module.exports.level_exists = level_exists
+
+},{"./print":230,"json-stringify-safe":122,"lodash":124,"util":291}],227:[function(require,module,exports){
+(function (process){
+/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var Fs = require('fs')
+var _ = require('lodash')
+var Error = require('eraro')
+var Jsonic = require('jsonic')
+var Minimist = require('minimist')
+var Common = require('./common')
+
+var error = Error({ package: 'seneca', msgmap: ERRMSGMAP() })
+
+module.exports = function(callmodule, defaults, orig_initial) {
+  var sourcemap = {
+    argv: {},
+    env: {},
+    default_file: {},
+    loaded: {}
+  }
+
+  // Must be defined here as prepare depends on it.
+  var options = {}
+
+  var basemodule
+  if (orig_initial.module && orig_initial.module.require) {
+    basemodule = orig_initial.module
+  } else if (callmodule.parent && callmodule.parent.require) {
+    basemodule = callmodule.parent
+  } else {
+    basemodule = callmodule
+  }
+  options = prepare(basemodule, defaults, orig_initial)
+
+  // Not needed after this point, and screws up debug printing.
+  delete options.module
+
+  function prepare(basemodule, defaults, initial) {
+    var DEFAULT_OPTIONS_FILE = './seneca.options.js'
+    var FATAL_OPTIONS_FILE = './options.seneca.js'
+
+    // Load from custom file, either by providing a string,
+    // or having a property 'from' that is a string.
+    // The string is interpreted as a file path.
+
+    var from = initial.from
+    if (_.isString(initial)) {
+      from = initial
+      initial = {}
+    }
+
+    if (_.isString(from)) {
+      sourcemap.loaded = load_options(from)
+    }
+
+    var argv = Minimist(
+      ((initial && initial.debug && initial.debug.argv) || process.argv).slice(
+        2
+      )
+    )
+
+    if (Fs.existsSync && Fs.existsSync(FATAL_OPTIONS_FILE)) {
+      throw error('inverted_file_name', {
+        from: FATAL_OPTIONS_FILE,
+        module: basemodule
+      })
+    }
+
+    try {
+      sourcemap.default_file =
+        basemodule.require && basemodule.require(DEFAULT_OPTIONS_FILE)
+    } catch (e) {
+      if (e.code !== 'MODULE_NOT_FOUND') {
+        var wrappedError = {
+          errmsg: e.message,
+          from: DEFAULT_OPTIONS_FILE,
+          module: basemodule
+        }
+
+        throw error(e, 'require_default_options', wrappedError)
+      }
+    }
+
+    if (process.env.SENECA_OPTIONS) {
+      sourcemap.env = Common.deepextend(
+        {},
+        sourcemap.env,
+        Jsonic(process.env.SENECA_OPTIONS)
+      )
+    }
+
+    if (process.env.SENECA_TEST) {
+      sourcemap.env.test = process.env.SENECA_TEST
+    }
+
+    if (argv.seneca) {
+      if (_.isObject(argv.seneca.options)) {
+        sourcemap.argv = argv.seneca.options
+      } else if (_.isString(argv.seneca.options)) {
+        if (argv.seneca.options === 'print') {
+          sourcemap.argv = { debug: { print: { options: true } } }
+        } else {
+          sourcemap.argv = Jsonic(argv.seneca.options)
+        }
+      }
+
+      // --seneca.options.from=<filepath>
+      if (_.isString(sourcemap.argv.from)) {
+        sourcemap.argv = Common.deepextend(
+          load_options(sourcemap.argv.from),
+          sourcemap.argv
+        )
+      }
+
+      boolify(sourcemap.argv)
+
+      if (null != argv.seneca.tag) {
+        sourcemap.argv.tag = '' + argv.seneca.tag
+      }
+
+      if (argv.seneca.log) {
+        sourcemap.argv.log = sourcemap.argv.log || {}
+        parse_command_line(argv.seneca.log, sourcemap.argv)
+      }
+
+      if (argv.seneca.test) {
+        sourcemap.argv.test = argv.seneca.test
+      }
+    }
+
+    // This is the list of option sources.
+    // The list is in reverse precedence order,
+    // i.e. command line arguments (argv) win
+    var out = Common.deepextend(
+      {},
+      defaults,
+      sourcemap.default_file,
+      options,
+      sourcemap.loaded,
+      initial,
+      sourcemap.env,
+      sourcemap.argv
+    )
+
+    // Legacy log settings.
+    out.log = out.log || out.logger || out.logging || {}
+
+    // boolean corrections
+    out.legacy.logging = Common.boolify(out.legacy.logging)
+
+    return out
+  }
+
+  function parse_command_line(spec, parsedSpec) {
+    var logSpec = _.isArray(spec) ? spec[0] : spec
+
+    if (_.isString(logSpec)) {
+      try {
+        parsedSpec.log = Jsonic(logSpec)
+      } catch (e) {
+        parsedSpec.log = {}
+      }
+      return
+    }
+
+    if (_.isObject(logSpec)) {
+      parsedSpec.log = {}
+      var logType = Object.keys(logSpec.level || logSpec)
+      if (logType.length > 0) {
+        parsedSpec.log = { level: logType[0] }
+      }
+    }
+  }
+
+  function set_options(input) {
+    if (null == input) throw error('no_options')
+
+    // DEPRECATED: Remove when Seneca >= 4.x
+    if (_.isString(input)) {
+      options = prepare(basemodule, defaults, input)
+    } else {
+      options = Common.deepextend(options, input)
+    }
+
+    return options
+  }
+
+  function get_options() {
+    return options
+  }
+
+  function load_options(origfrom) {
+    var out = {}
+
+    var from = origfrom.match(/^\//) ? origfrom : process.cwd() + '/' + origfrom
+
+    if (from.match(/\.json$/i)) {
+      // this is deliberate, options are ALWAYS loaded synchronously
+      var text = (Fs.readFileSync && Fs.readFileSync(from).toString()) || ''
+      out = Jsonic(text)
+    } else if (from.match(/\.js$/i)) {
+      //if (!from.match(/^\//)) {
+      //  from = './' + from
+      //}
+
+      try {
+        out = basemodule.require(from)
+      } catch (e) {
+        // TODO this is getting lost
+        if (e.code !== 'MODULE_NOT_FOUND') {
+          throw error(e, 'require_options', { from: from, module: basemodule })
+        }
+      }
+    }
+
+    return out
+  }
+
+  return {
+    set: set_options,
+    get: get_options
+  }
+}
+
+function boolify(obj) {
+  Object.keys(obj).forEach(function(k) {
+    obj[k] =
+      'true' === obj[k]
+        ? true
+        : 'false' === obj[k]
+        ? false
+        : _.isObject(obj[k])
+        ? boolify(obj[k])
+        : obj[k]
+  })
+  return obj
+}
+
+function ERRMSGMAP() {
+  return {
+    inverted_file_name:
+      'Please use seneca.options.js as the default options ' +
+      'file name. The alternate name options.seneca.js is not supported.',
+
+    require_default_options:
+      'Call to require failed for <%=from%>: <%=errmsg%>.'
+  }
+}
+
+}).call(this,require('_process'))
+},{"./common":222,"_process":192,"eraro":97,"fs":59,"jsonic":123,"lodash":124,"minimist":130}],228:[function(require,module,exports){
+/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var Util = require('util')
+var Assert = require('assert')
+
+var _ = require('lodash')
+
+var Common = require('./common')
+
+// Internal implementations.
+var intern = {}
+
+module.exports = {
+  test$: { intern: intern },
+  act_cache: outward_act_cache,
+  res_object: outward_res_object,
+  act_stats: outward_act_stats,
+  make_error: outward_make_error,
+  announce: outward_announce,
+  trace: outward_trace,
+  act_error: outward_act_error,
+  res_entity: outward_res_entity,
+  msg_meta: outward_msg_meta
+}
+
+function outward_make_error(ctxt, data) {
+  if (!ctxt.options.legacy.error) {
+    if (data.res && !data.meta.error && data.res.meta$ && data.res.meta$.err) {
+      var res = new Error(data.res.message)
+      for (var p in data.res) {
+        res[p] = data.res[p]
+      }
+      data.res = res
+    }
+  }
+}
+
+// Store result in action cache
+// TODO: replace with history
+function outward_act_cache(ctxt, data) {
+  Assert(ctxt.options)
+
+  var so = ctxt.options
+  var res = data.res
+  var meta = data.meta
+
+  var actid = meta.id
+  var private$ = ctxt.seneca.private$
+
+  if (actid != null && so.history.active) {
+    var actdetails = private$.history.get(actid)
+
+    if (actdetails) {
+      actdetails.result.push({ when: Date.now(), res: res })
+    }
+  }
+}
+
+function outward_act_stats(ctxt, data) {
+  if (!ctxt.actdef || ctxt.cached$) {
+    return
+  }
+
+  var private$ = ctxt.seneca.private$
+  var stats = private$.stats.act
+  var meta = data.meta
+
+  ++stats.done
+
+  if (meta && null == meta.prior) {
+    private$.timestats.point(ctxt.duration, ctxt.actdef.pattern)
+  }
+
+  var pattern = ctxt.actdef.pattern
+
+  var actstats = (private$.stats.actmap[pattern] =
+    private$.stats.actmap[pattern] || {})
+
+  if (meta.error) {
+    ++stats.fails
+    ++actstats.fails
+  } else {
+    ++actstats.done
+  }
+}
+
+function outward_res_object(ctxt, data) {
+  Assert(ctxt.options)
+
+  var so = ctxt.options
+  var msg = data.msg
+  var res = data.res
+
+  if (void 0 === data.res) {
+    data.res = null
+  }
+
+  var not_object =
+    res != null &&
+    !(
+      _.isObject(res) ||
+      Array.isArray(res) ||
+      res instanceof Error ||
+      !!res.meta$ ||
+      !!res.entity$ ||
+      !!res.force$
+    )
+
+  // Responding with an Error as data is not allowed.
+  // https://github.com/senecajs/seneca/issues/711
+  if (data.out instanceof Error) {
+    not_object = true
+  }
+
+  var not_legacy = !(
+    msg.cmd === 'generate_id' ||
+    msg.note === true ||
+    msg.cmd === 'native' ||
+    msg.cmd === 'quickcode'
+  )
+
+  if (so.strict.result && not_legacy && not_object) {
+    //data.res = outward.error || error(outward.code, outward.info)
+    data.res = ctxt.seneca.private$.error('result_not_objarr', {
+      pattern: ctxt.actdef.pattern,
+      args: Util.inspect(Common.clean(msg)).replace(/\n/g, ''),
+      result: res
+    })
+    data.meta.error = true
+  }
+}
+
+function outward_announce(ctxt, data) {
+  if (!ctxt.actdef) return
+
+  if (_.isFunction(ctxt.seneca.on_act_out)) {
+    ctxt.seneca.on_act_out(ctxt.actdef, data.res, data.meta)
+  }
+
+  ctxt.seneca.emit('act-out', data.msg, data.res, data.meta)
+
+  ctxt.seneca.log.debug(
+    ctxt.actlog(ctxt.actdef, data.msg, data.meta, ctxt.origmsg, {
+      kind: 'act',
+      case: 'OUT',
+      duration: ctxt.duration,
+      result: data.res,
+      did: ctxt.seneca.did
+    })
+  )
+}
+
+function outward_trace(ctxt, data) {
+  var private$ = ctxt.seneca.private$
+
+  var meta = data.meta
+  var reply_meta = data.reply_meta
+
+  if (meta && reply_meta) {
+    meta.trace = meta.trace || []
+    meta.trace.push({
+      desc: Common.make_trace_desc(reply_meta),
+      trace: reply_meta.trace || []
+    })
+  }
+
+  var parent_meta = private$.act && private$.act.parent
+  if (parent_meta) {
+    parent_meta.trace = parent_meta.trace || []
+    parent_meta.trace.push({
+      desc: Common.make_trace_desc(meta),
+      trace: meta.trace || []
+    })
+  }
+}
+
+function outward_msg_meta(ctxt, data) {
+  var meta = data.meta
+  var reply_meta = data.reply_meta
+
+  if (meta && reply_meta) {
+    meta.custom = _.extend(meta.custom, reply_meta.custom)
+  }
+}
+
+function outward_act_error(ctxt, data) {
+  var delegate = ctxt.seneca
+  var actdef = ctxt.actdef
+  var meta = data.meta
+
+  if (meta.error) {
+    data.error_desc = intern.act_error(delegate, ctxt, data)
+
+    if (meta.fatal) {
+      // TODO: this should not happen here inside outward processing
+      return delegate.die(data.error_desc.err)
+    }
+
+    data.has_callback = data.error_desc.call_cb
+
+    if (delegate && _.isFunction(delegate.on_act_err)) {
+      // TODO: data.res does not seem right here
+      delegate.on_act_err(actdef, data.res, meta)
+    }
+
+    data.err = data.error_desc.err
+    delete data.err.meta$
+
+    data.res = null
+
+    data.meta = data.error_desc.err.meta$ || data.meta
+  } else {
+    data.err = null
+  }
+}
+
+function outward_res_entity(ctxt, data) {
+  var delegate = ctxt.seneca
+  if (data.res && data.res.entity$ && delegate.make$) {
+    data.res = delegate.make$(data.res)
+  }
+}
+
+intern.act_error = function(instance, ctxt, data) {
+  var duration = ctxt.duration
+  var act_callpoint = ctxt.callpoint
+  var actdef = ctxt.actdef || {}
+  var origmsg = ctxt.origmsg
+  var reply = ctxt.reply
+
+  var meta = data.meta
+  var msg = data.msg
+
+  var opts = instance.options()
+
+  var call_cb = true
+
+  var err = data.res || data.err
+
+  if (!err.seneca) {
+    var details = _.extend({}, err.details, {
+      message: err.eraro && err.orig ? err.orig.message : err.message,
+      pattern: actdef.pattern,
+      fn: actdef.func,
+      callback: reply,
+      instance: instance.toString(),
+      callpoint: act_callpoint
+    })
+
+    if (opts.legacy.error) {
+      err = ctxt.error(err, 'act_execute', details)
+    } else {
+      var seneca_err = ctxt.error('act_execute', {
+        pattern: actdef.pattern,
+        message: err.message,
+        callpoint: act_callpoint
+      })
+      delete seneca_err.stack
+
+      err.meta$ = err.meta$ || meta || {}
+      err.meta$.data = instance.util.clean(origmsg)
+
+      if (err.meta$.err) {
+        var errmeta = _.clone(meta)
+        errmeta.err = seneca_err
+        err.meta$.err_trace = err.meta$.err_trace || []
+        err.meta$.err_trace.push(errmeta)
+      } else {
+        err.meta$.err = seneca_err
+      }
+    }
+  } else if (
+    err.orig &&
+    _.isString(err.orig.code) &&
+    err.orig.code.indexOf('perm/') === 0
+  ) {
+    // Special legacy case for seneca-perm
+    err = err.orig
+  }
+
+  if (opts.legacy.error) {
+    err.details = err.details || {}
+    err.details.plugin = err.details.plugin || {}
+  }
+
+  var entry = ctxt.actlog(actdef, msg, meta, origmsg, {
+    // kind is act as this log entry relates to an action
+    kind: 'act',
+    case: 'ERR',
+    duration: duration
+  })
+  entry = ctxt.errlog(err, entry)
+
+  instance.log.error(entry)
+  instance.emit('act-err', msg, err)
+
+  // when fatal$ is set, prefer to die instead
+  if ('function' === typeof opts.errhandler && (!msg || !meta.fatal)) {
+    call_cb = !opts.errhandler.call(instance, err, err.meta$ || meta)
+  }
+
+  return {
+    call_cb: call_cb,
+    err: err
+  }
+}
+
+},{"./common":222,"assert":16,"lodash":124,"util":291}],229:[function(require,module,exports){
+/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var _ = require('lodash')
+var Eraro = require('eraro')
+var Common = require('./common')
+var Print = require('./print')
+
+var internals = {
+  error: Eraro({
+    package: 'seneca',
+    msgmap: {
+      // REMOVE in 4.x
+      unsupported_legacy_plugin:
+        'The plugin <%=name%> uses an unsupported legacy ' +
+        'callback to indicate plugin definition is complete: <%=init_func_sig%> ' +
+        '... }. The correct format is: function(options) { ... }. For more details, ' +
+        'please see http://senecajs.org/tutorials/how-to-write-a-plugin.html'
+    }
+  })
+}
+
+module.exports.register = function(opts, callpoint) {
+  var seq = 0
+
+  return function api_register(plugin) {
+    var seneca = this
+    var so = seneca.options()
+
+    plugin.fullname = Common.make_plugin_key(plugin)
+
+    // Don't reload plugins if load_once true
+    if (so.system.plugin.load_once) {
+      if (seneca.has_plugin(plugin)) {
+        return this
+      }
+    }
+
+    plugin.loading = true
+    seneca.private$.plugins[plugin.fullname] = plugin
+
+    var preload = plugin.init.preload
+    preload = _.isFunction(preload) ? preload : _.noop
+    var meta = preload.call(seneca, plugin) || {}
+
+    var delegate = make_delegate(seneca, plugin)
+
+    seq++
+
+    var plugin_define_pattern = {
+      role: 'seneca',
+      plugin: 'define',
+      name: plugin.name,
+      seq: seq
+    }
+
+    if (plugin.tag !== null) {
+      plugin_define_pattern.tag = plugin.tag
+    }
+
+    // seneca
+    delegate.add(plugin_define_pattern, plugin_definition).act({
+      role: 'seneca',
+      plugin: 'define',
+      name: plugin.name,
+      tag: plugin.tag,
+      seq: seq,
+      default$: {},
+      fatal$: true,
+      local$: true
+    })
+
+    var preload_name = meta.name || plugin.name
+    var preload_fullname = Common.make_plugin_key(preload_name, plugin.tag)
+    seneca.private$.exports[preload_name] = meta.export || plugin
+
+    resolve_plugin_exports(seneca, preload_fullname, meta)
+
+    return this
+
+    function plugin_definition(msg, plugin_done) {
+      var plugin_seneca = this
+      var plugin_options = resolve_options(plugin.fullname, plugin, seneca)
+
+      // Update plugin options data in Seneca options.
+      var seneca_options = { plugin: {} }
+      seneca_options.plugin[plugin.fullname] = plugin_options
+      seneca.options(seneca_options)
+
+      plugin_seneca.log.debug({
+        kind: 'plugin',
+        case: 'init',
+        name: plugin.name,
+        tag: plugin.tag,
+        options: plugin_options,
+        callpoint: callpoint
+      })
+
+      try {
+        meta = define_plugin(plugin_seneca, plugin, plugin_options)
+      } catch (e) {
+        // TODO: needs wrapping
+        return plugin_done(e)
+      }
+
+      // legacy api for service function
+      if (_.isFunction(meta)) {
+        meta = { service: meta }
+      }
+
+      // Plugin may have changed its own name dynamically
+
+      plugin.name = meta.name || plugin.name
+      plugin.tag =
+        meta.tag || plugin.tag || (plugin.options && plugin.options.tag$)
+
+      plugin.fullname = Common.make_plugin_key(plugin)
+      plugin.service = meta.service || plugin.service
+
+      plugin_seneca.__update_plugin__(plugin)
+
+      seneca.private$.plugins[plugin.fullname] = plugin
+
+      seneca.private$.plugin_order.byname.push(plugin.name)
+      seneca.private$.plugin_order.byname = _.uniq(
+        seneca.private$.plugin_order.byname
+      )
+      seneca.private$.plugin_order.byref.push(plugin.fullname)
+
+      var exports = resolve_plugin_exports(plugin_seneca, plugin.fullname, meta)
+
+      // 3.x Backwards compatibility - REMOVE in 4.x
+      if ('amqp-transport' === plugin.name) {
+        seneca.options({ legacy: { meta: true } })
+      }
+
+      plugin_seneca.log.debug({
+        kind: 'plugin',
+        case: 'install',
+        name: plugin.name,
+        tag: plugin.tag,
+        exports: exports
+      })
+
+      plugin_seneca.act(
+        {
+          role: 'seneca',
+          plugin: 'init',
+          seq: msg.seq,
+          init: plugin.name,
+          tag: plugin.tag,
+          default$: {},
+          fatal$: true,
+          local$: true
+        },
+        function(err) {
+          if (err) {
+            var plugin_err_code = 'plugin_init'
+
+            plugin.plugin_error = err.message
+
+            if (err.code === 'action-timeout') {
+              plugin_err_code = 'plugin_init_timeout'
+              plugin.timeout = opts.$.timeout
+            }
+
+            return plugin_seneca.die(
+              internals.error(err, plugin_err_code, plugin)
+            )
+          }
+
+          var fullname = plugin.name + (plugin.tag ? '$' + plugin.tag : '')
+
+          if (opts.$.debug.print && opts.$.debug.print.options) {
+            Print.plugin_options(seneca, fullname, plugin_options)
+          }
+
+          plugin_seneca.log.info({
+            kind: 'plugin',
+            case: 'ready',
+            name: plugin.name,
+            tag: plugin.tag
+          })
+
+          plugin_done()
+        }
+      )
+    }
+  }
+}
+
+module.exports.make_delegate = make_delegate
+
+function resolve_options(fullname, plugindef, seneca) {
+  var so = seneca.options()
+
+  var defaults = plugindef.defaults || {}
+
+  var fullname_options = _.extend(
+    {},
+
+    // DEPRECATED: remove in 4
+    so[fullname],
+
+    so.plugin[fullname],
+
+    // DEPRECATED: remove in 4
+    so[fullname + '$' + plugindef.tag],
+
+    so.plugin[fullname + '$' + plugindef.tag]
+  )
+
+  var shortname = fullname !== plugindef.name ? plugindef.name : null
+  if (!shortname && fullname.indexOf('seneca-') === 0) {
+    shortname = fullname.substring('seneca-'.length)
+  }
+
+  var shortname_options = _.extend(
+    {},
+
+    // DEPRECATED: remove in 4
+    so[shortname],
+
+    so.plugin[shortname],
+
+    // DEPRECATED: remove in 4
+    so[shortname + '$' + plugindef.tag],
+
+    so.plugin[shortname + '$' + plugindef.tag]
+  )
+
+  var base = {}
+
+  // NOTE: plugin error codes are in their own namespaces
+  var errors = plugindef.errors || (plugindef.init && plugindef.init.errors)
+
+  if (errors) {
+    base.errors = errors
+  }
+
+  var outopts = _.extend(
+    base,
+    shortname_options,
+    fullname_options,
+    plugindef.options || {}
+  )
+
+  try {
+    return seneca.util
+      .Optioner(defaults, { allow_unknown: true })
+      .check(outopts)
+  } catch (e) {
+    throw Common.error('invalid_plugin_option', {
+      name: fullname,
+      err_msg: e.message,
+      options: outopts
+    })
+  }
+}
+
+function make_delegate(instance, plugin) {
+  // Adjust Seneca API to be plugin specific.
+  var delegate = instance.delegate({
+    plugin$: {
+      name: plugin.name,
+      tag: plugin.tag
+    },
+
+    fatal$: true
+  })
+
+  delegate.private$ = Object.create(instance.private$)
+  delegate.private$.ge = delegate.private$.ge.gate()
+
+  delegate.log = instance.make_log(
+    delegate,
+    function plugin_delegate_log_modifier(data) {
+      data.plugin_name = plugin.name
+      data.plugin_tag = plugin.tag
+    }
+  )
+
+  delegate.die = Common.makedie(delegate, {
+    type: 'plugin',
+    plugin: plugin.name
+  })
+
+  var actdeflist = []
+
+  delegate.add = function() {
+    var argsarr = new Array(arguments.length)
+    for (var l = 0; l < argsarr.length; ++l) {
+      argsarr[l] = arguments[l]
+    }
+
+    var actdef = argsarr[argsarr.length - 1] || {}
+
+    if (_.isFunction(actdef)) {
+      actdef = {}
+      argsarr.push(actdef)
+    }
+
+    actdef.plugin_name = plugin.name || '-'
+    actdef.plugin_tag = plugin.tag || '-'
+    actdef.plugin_fullname = plugin.fullname
+
+    // TODO: is this necessary?
+    actdef.log = delegate.log
+
+    actdeflist.push(actdef)
+
+    instance.add.apply(delegate, argsarr)
+
+    return delegate
+  }
+
+  delegate.__update_plugin__ = function(plugin) {
+    delegate.context.name = plugin.name || '-'
+    delegate.context.tag = plugin.tag || '-'
+    delegate.context.full = plugin.fullname || '-'
+
+    _.each(actdeflist, function(actdef) {
+      actdef.plugin_name = plugin.name || actdef.plugin_name || '-'
+      actdef.plugin_tag = plugin.tag || actdef.plugin_tag || '-'
+      actdef.plugin_fullname = plugin.fullname || actdef.plugin_fullname || '-'
+    })
+  }
+
+  delegate.init = function(init) {
+    // TODO: validate init_action is function
+
+    var pat = {
+      role: 'seneca',
+      plugin: 'init',
+      init: plugin.name
+    }
+
+    if (null != plugin.tag && '-' != plugin.tag) {
+      pat.tag = plugin.tag
+    }
+
+    delegate.add(pat, function(msg, reply) {
+      init.call(this, reply)
+    })
+  }
+
+  delegate.context.plugin = plugin
+
+  return delegate
+}
+
+function define_plugin(delegate, plugin, options) {
+  // legacy plugins
+  if (plugin.init.length > 1) {
+    plugin.init_func_sig = plugin.init.toString().match(/^(.*)\n/)[1]
+    throw internals.error('unsupported_legacy_plugin', plugin)
+  }
+
+  if (options.errors) {
+    plugin.eraro = Eraro({
+      package: 'seneca',
+      msgmap: options.errors,
+      override: true
+    })
+  }
+
+  var meta
+
+  try {
+    meta = plugin.init.call(delegate, options) || {}
+  } catch (e) {
+    if (e.seneca) {
+      throw e
+    } else {
+      throw Common.error(e, 'plugin_define', {
+        fullname: plugin.fullname,
+        message: (
+          e.message + (' (' + e.stack.match(/\n.*?\n/)).replace(/\n.*\//g, '')
+        ).replace(/\n/g, ''),
+        options: options,
+        repo: plugin.repo ? ' ' + plugin.repo + '/issues' : ''
+      })
+    }
+  }
+
+  meta = _.isString(meta) ? { name: meta } : meta
+  meta.options = meta.options || options
+
+  var updated_options = {}
+  updated_options[plugin.fullname] = meta.options
+  delegate.options(updated_options)
+
+  return meta
+}
+
+function resolve_plugin_exports(seneca, fullname, meta) {
+  var exports = []
+
+  if (meta.export !== void 0) {
+    seneca.private$.exports[fullname] = meta.export
+    exports.push(fullname)
+  }
+
+  if (_.isObject(meta.exportmap) || _.isObject(meta.exports)) {
+    meta.exportmap = meta.exportmap || meta.exports
+    _.each(meta.exportmap, function(v, k) {
+      if (v !== void 0) {
+        var exportname = fullname + '/' + k
+        seneca.private$.exports[exportname] = v
+        exports.push(exportname)
+      }
+    })
+  }
+
+  // Specific Seneca extension points
+  if (_.isObject(meta.extend)) {
+    if (_.isFunction(meta.extend.action_modifier)) {
+      seneca.private$.action_modifiers.push(meta.extend.action_modifier)
+    }
+
+    if (_.isFunction(meta.extend.logger)) {
+      if (
+        !meta.extend.logger.replace &&
+        _.isFunction(seneca.private$.logger.add)
+      ) {
+        seneca.private$.logger.add(meta.extend.logger)
+      } else {
+        seneca.private$.logger = meta.extend.logger
+      }
+    }
+  }
+
+  return exports
+}
+
+},{"./common":222,"./print":230,"eraro":97,"lodash":124}],230:[function(require,module,exports){
+/* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+// Node API modules
+var Util = require('util')
+
+// External modules.
+var _ = require('lodash')
+var Archy = require('archy')
+var Minimist = require('minimist')
+
+/** Handle command line specific functionality */
+module.exports = function(seneca, process_argv) {
+  var argv = Minimist(process_argv.slice(2))
+
+  if (!argv.seneca) {
+    return
+  }
+
+  var cmdspec = argv.seneca
+  if (cmdspec.print) {
+    if (cmdspec.print.tree) {
+      // Hack! Complex init means non-deterministic or multiple ready calls,
+      // so just delay tree print by some number of seconds to capture full tree.
+      var delay_seconds = cmdspec.print.tree.all || cmdspec.print.tree
+      if (_.isNumber(delay_seconds)) {
+        setTimeout(function() {
+          module.exports.print_tree(seneca, cmdspec)
+        }, 1000 * delay_seconds)
+      } else {
+        // Print after first ready
+        seneca.ready(function() {
+          module.exports.print_tree(this, cmdspec)
+        })
+      }
+    }
+
+    if (cmdspec.print.options) {
+      seneca.options({ debug: { print: { options: true } } })
+    }
+  }
+}
+
+module.exports.print_options = function print_options(instance, options) {
+  if (options.debug.print.options) {
+    console.log(
+      '\nSeneca Options (' + instance.id + '): before plugins\n' + '===\n'
+    )
+    console.log(Util.inspect(options, { depth: null }))
+    console.log('')
+  }
+}
+
+// TODO: remove to a plugin to remove dep on archy
+module.exports.print_tree = function print_tree(seneca, cmdspec) {
+  var tree = {
+    label: 'Seneca action patterns for instance: ' + seneca.id,
+    nodes: []
+  }
+
+  function insert(nodes, current) {
+    if (nodes.length === 0) return
+
+    for (var i = 0; i < current.nodes.length; i++) {
+      if (nodes[0] === current.nodes[i].label) {
+        return insert(nodes.slice(1), current.nodes[i])
+      }
+    }
+
+    var nn = { label: nodes[0], nodes: [] }
+    current.nodes.push(nn)
+    insert(nodes.slice(1), nn)
+  }
+
+  _.each(seneca.list(), function(pat) {
+    var nodes = []
+    var ignore = false
+    _.each(pat, function(v, k) {
+      if (
+        (!cmdspec.print.tree.all &&
+          (k === 'role' &&
+            (v === 'seneca' ||
+              v === 'basic' ||
+              v === 'util' ||
+              v === 'entity' ||
+              v === 'web' ||
+              v === 'transport' ||
+              v === 'options' ||
+              v === 'mem-store' ||
+              v === 'seneca'))) ||
+        k === 'init'
+      ) {
+        ignore = true
+      } else {
+        nodes.push(k + ':' + v)
+      }
+    })
+
+    if (!ignore) {
+      var meta = seneca.find(pat)
+
+      var metadesc = []
+      while (meta) {
+        metadesc.push(
+          '# ' +
+            (meta.plugin_fullname || '-') +
+            ', ' +
+            meta.id +
+            ', ' +
+            meta.func.name
+        )
+        meta = meta.priormeta
+      }
+
+      nodes.push(metadesc.join('\n'))
+
+      insert(nodes, tree)
+    }
+  })
+
+  /* eslint no-console: 0 */
+  console.log(Archy(tree))
+}
+
+module.exports.print = function print(err, out) {
+  if (err) {
+    console.log('ERROR: ' + err.message)
+  } else {
+    console.log(Util.inspect(out, { depth: null }))
+  }
+}
+
+module.exports.log = function log() {
+  console.log.apply(console.log, arguments)
+}
+
+module.exports.err = function() {
+  console.error.apply(console.error, arguments)
+}
+
+module.exports.plugin_options = function plugin_options(
+  seneca,
+  fullname,
+  plugin_options
+) {
+  console.log(
+    '\nSeneca Options (' + seneca.id + '): plugin: ' + fullname + '\n' + '===\n'
+  )
+  console.log(Util.inspect(plugin_options, { depth: null }))
+  console.log('')
+}
+
+},{"archy":1,"lodash":124,"minimist":130,"util":291}],231:[function(require,module,exports){
+(function (Buffer){
+/* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+var Http = require('http')
+var Https = require('https')
+var Qs = require('qs')
+var Url = require('url')
+
+var _ = require('lodash')
+var Jsonic = require('jsonic')
+var Wreck = require('wreck')
+var JSS = require('json-stringify-safe')
+
+var Common = require('./common')
+
+// THIS IS NOT A PLUGIN
+// DO NOT COPY TO CREATE TRANSPORT PLUGINS
+// USE THIS INSTEAD: [TODO github example]
+
+// TODO: handle lists properly, without losing meta data
+
+module.exports = function(seneca) {
+  seneca.add('role:transport,cmd:listen', action_listen)
+  seneca.add('role:transport,cmd:client', action_client)
+
+  seneca.add('role:transport,hook:listen,type:web', hook_listen_web)
+  seneca.add('role:transport,hook:client,type:web', hook_client_web)
+
+  var tu = {}
+
+  tu.stringifyJSON = stringifyJSON
+  tu.parseJSON = parseJSON
+
+  tu.externalize_msg = externalize_msg
+  tu.externalize_reply = externalize_reply
+  tu.internalize_msg = internalize_msg
+  tu.internalize_reply = internalize_reply
+  tu.close = close
+
+  tu.info = function() {
+    var pats = seneca.list()
+    var acts = { local: {}, remote: {} }
+    pats.forEach(function(pat) {
+      var def = seneca.find(pat, { exact: true })
+      if (def.client) {
+        acts.remote[def.pattern] = def.id
+      } else {
+        acts.local[def.pattern] = def.id
+      }
+    })
+    return acts
+  }
+
+  seneca.private$.exports['transport/utils'] = tu
+}
+
+function externalize_msg(seneca, msg, meta) {
+  if (!msg) return
+
+  if (msg instanceof Error) {
+    msg = Common.copydata(msg)
+  }
+
+  msg.meta$ = meta
+
+  return msg
+}
+
+function externalize_reply(seneca, err, out, meta) {
+  var rep = err || out
+
+  if (!rep) {
+    rep = {}
+    meta.empty = true
+  }
+
+  rep.meta$ = meta
+
+  if (_.isError(rep)) {
+    rep = Common.copydata(rep)
+    rep.meta$.error = true
+  }
+
+  return rep
+}
+
+function internalize_msg(seneca, msg) {
+  if (!msg) return
+
+  msg = handle_entity(seneca, msg)
+
+  var meta = msg.meta$ || {}
+  delete msg.meta$
+
+  // You can't send fatal msgs
+  delete msg.fatal$
+
+  msg.id$ = meta.id
+  msg.sync$ = meta.sync
+  msg.custom$ = meta.custom
+  msg.explain$ = meta.explain
+
+  msg.parents$ = meta.parents || []
+  msg.parents$.unshift(Common.make_trace_desc(meta))
+
+  msg.remote$ = true
+
+  return msg
+}
+
+function internalize_reply(seneca, data) {
+  var meta = {}
+  var err = null
+  var out = null
+
+  if (data) {
+    meta = data.meta$
+
+    if (meta) {
+      delete data.meta$
+
+      meta.remote = true
+
+      if (meta.error) {
+        err = new Error(data.message)
+        Object.assign(err, data)
+      } else if (!meta.empty) {
+        out = handle_entity(seneca, data)
+      }
+    }
+  }
+
+  return {
+    err: err,
+    out: out,
+    meta: meta
+  }
+}
+
+function stringifyJSON(obj) {
+  if (!obj) return
+
+  try {
+    return JSON.stringify(obj)
+  } catch (e) {
+    return JSS(obj)
+  }
+}
+
+function parseJSON(data) {
+  if (!data) return
+
+  var str = data.toString()
+
+  try {
+    return JSON.parse(str)
+  } catch (e) {
+    e.input = str
+    return e
+  }
+}
+
+function handle_entity(seneca, msg) {
+  if (seneca.make$) {
+    if (msg.entity$) {
+      msg = seneca.make$(msg)
+    }
+
+    Object.keys(msg).forEach(function(key) {
+      var value = msg[key]
+      if (_.isObject(value) && value.entity$) {
+        msg[key] = seneca.make$(value)
+      }
+    })
+  }
+
+  return msg
+}
+
+function register(config, reply) {
+  return function(err, out) {
+    this.private$.transport.register.push({
+      when: Date.now(),
+      config: config,
+      err: err,
+      res: out
+    })
+
+    reply(err, out)
+  }
+}
+
+function close(seneca, closer) {
+  seneca.add('role:seneca,cmd:close', function(msg, reply) {
+    var seneca = this
+
+    closer.call(seneca, function(err) {
+      if (err) {
+        seneca.log.error(err)
+      }
+
+      seneca.prior(msg, reply)
+    })
+  })
+}
+
+function action_listen(msg, reply) {
+  var seneca = this
+
+  var config = _.extend({}, msg.config, { role: 'transport', hook: 'listen' })
+  var listen_msg = seneca.util.clean(_.omit(config, 'cmd'))
+  //listen_msg.seneca = seneca.root.delegate()
+
+  seneca.act(listen_msg, register(listen_msg, reply))
+}
+
+function action_client(msg, reply) {
+  var seneca = this
+
+  var config = _.extend({}, msg.config, { role: 'transport', hook: 'client' })
+  var client_msg = seneca.util.clean(_.omit(config, 'cmd'))
+
+  seneca.act(client_msg, register(client_msg, reply))
+}
+
+function hook_listen_web(msg, reply) {
+  //var seneca = msg.seneca
+  var seneca = this.root.delegate()
+  var config = _.clone(msg)
+
+  config.modify_response = config.modify_response || web_modify_response
+
+  var server =
+    'https' === config.protocol
+      ? Https.createServer(config.custom || config.serverOptions)
+      : Http.createServer()
+
+  server.on('request', handle_request)
+
+  server.on('error', reply)
+
+  server.on('listening', function() {
+    config.port = server.address().port
+    reply(config)
+  })
+
+  var listener = listen()
+
+  close(seneca, function(reply) {
+    if (listener) {
+      listener.close()
+    }
+    reply()
+  })
+
+  function listen() {
+    return server.listen(
+      (config.port = seneca.util.resolve_option(config.port, config)),
+      (config.host = seneca.util.resolve_option(config.host, config))
+    )
+  }
+
+  function handle_request(req, res) {
+    req.setEncoding('utf8')
+    req.query = Qs.parse(Url.parse(req.url).query)
+
+    var buf = []
+
+    req.on('data', function(chunk) {
+      buf.push(chunk)
+    })
+
+    req.on('end', function() {
+      var msg
+      var json = buf.join('')
+      var body = parseJSON(json)
+
+      if (_.isError(body)) {
+        msg = {
+          json: json,
+          role: 'seneca',
+          make: 'error',
+          code: 'parseJSON',
+          err: body
+        }
+      } else {
+        msg = _.extend(
+          body,
+          req.query && req.query.msg$ ? Jsonic(req.query.msg$) : {},
+          req.query || {}
+        )
+      }
+
+      // backwards compatibility with seneca-transport
+      var backwards_compat_origin
+      var backwards_compat_msgid = !msg.meta$ && req.headers['seneca-id']
+      if (backwards_compat_msgid) {
+        msg.meta$ = { id: req.headers['seneca-id'] }
+        backwards_compat_origin = req.headers['seneca-origin']
+      }
+
+      msg = internalize_msg(seneca, msg)
+
+      seneca.act(msg, function(err, out, meta) {
+        var spec = {
+          err: err,
+          out: out,
+          meta: meta,
+          config: config
+        }
+
+        spec.headers = {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'private, max-age=0, no-cache, no-store'
+        }
+
+        spec.status = err ? 500 : 200
+
+        spec = config.modify_response(seneca, spec)
+
+        // backwards compatibility with seneca-transport
+        if (backwards_compat_msgid) {
+          spec.headers['seneca-id'] = backwards_compat_msgid
+          spec.headers['seneca-origin'] = backwards_compat_origin
+        }
+
+        res.writeHead(spec.status, spec.headers)
+        res.end(spec.body)
+      })
+    })
+  }
+}
+
+function web_modify_response(seneca, spec) {
+  spec.body = stringifyJSON(
+    externalize_reply(seneca, spec.err, spec.out, spec.meta)
+  )
+  spec.headers['Content-Length'] = Buffer.byteLength(spec.body)
+  return spec
+}
+
+function makeWreck() {
+  return Wreck.defaults({
+    agents: {
+      http: new Http.Agent({ keepAlive: true, maxFreeSockets: Infinity }),
+      https: new Https.Agent({ keepAlive: true, maxFreeSockets: Infinity }),
+      httpsAllowUnauthorized: new Https.Agent({
+        keepAlive: true,
+        maxFreeSockets: Infinity,
+        rejectUnauthorized: false
+      })
+    }
+  })
+}
+
+function hook_client_web(msg, hook_reply) {
+  var seneca = this.root.delegate()
+  var config = _.clone(msg)
+
+  config.modify_request = config.modify_request || web_modify_request
+  ;(config.port = seneca.util.resolve_option(config.port, config)),
+    (config.host = seneca.util.resolve_option(config.host, config))
+
+  config.wreck = seneca.util.resolve_option(config.wreck || makeWreck, config)
+
+  hook_reply({
+    config: config,
+    send: function(msg, reply, meta) {
+      var sending_instance = this
+
+      var spec = {
+        msg: msg,
+        meta: meta,
+        url:
+          config.protocol +
+          '://' +
+          config.host +
+          ':' +
+          config.port +
+          config.path,
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+
+      spec = config.modify_request(seneca, spec)
+
+      config.wreck.request(spec.method, spec.url, spec.wreck, function(
+        err,
+        res
+      ) {
+        // TODO: should use seneca.reply
+        if (err) {
+          return reply(err)
+        }
+
+        Wreck.read(res, spec.wreck.read, function(err, body) {
+          // TODO: how is this error handled?
+          var data = err || parseJSON(body)
+
+          // backwards compatibility with seneca-transport
+          if (!data.meta$) {
+            data.meta$ = {
+              id: meta.id
+            }
+          }
+
+          seneca.reply(internalize_reply(sending_instance, data))
+        })
+      })
+    }
+  })
+}
+
+function web_modify_request(seneca, spec) {
+  spec.body = stringifyJSON(externalize_msg(seneca, spec.msg, spec.meta))
+  spec.headers['Content-Length'] = Buffer.byteLength(spec.body)
+
+  spec.wreck = {
+    json: false,
+    headers: spec.headers,
+    payload: spec.body,
+    read: {}
+  }
+
+  return spec
+}
+
+}).call(this,require("buffer").Buffer)
+},{"./common":222,"buffer":61,"http":258,"https":116,"json-stringify-safe":122,"jsonic":123,"lodash":124,"qs":203,"url":286,"wreck":293}],232:[function(require,module,exports){
+module.exports={
+  "_from": "github:senecajs/seneca",
+  "_id": "seneca@3.9.0",
+  "_inBundle": false,
+  "_integrity": "",
+  "_location": "/seneca",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "git",
+    "raw": "seneca@github:senecajs/seneca",
+    "name": "seneca",
+    "escapedName": "seneca",
+    "rawSpec": "github:senecajs/seneca",
+    "saveSpec": "github:senecajs/seneca",
+    "fetchSpec": null,
+    "gitCommittish": null
+  },
+  "_requiredBy": [
+    "#DEV:/"
+  ],
+  "_resolved": "github:senecajs/seneca#415a026298e3c96ff3e5865a5a47248558f83000",
+  "_spec": "seneca@github:senecajs/seneca",
+  "_where": "/Users/richard/Projects/seneca/browser",
+  "author": {
+    "name": "Richard Rodger",
+    "url": "http://richardrodger.com/"
+  },
+  "bugs": {
+    "url": "https://github.com/senecajs/seneca/issues"
+  },
+  "bundleDependencies": false,
+  "contributors": [
+    {
+      "name": "Adrien Becchis",
+      "url": "https://github.com/AdrieanKhisbe"
+    },
+    {
+      "name": "Alexandru Mircea",
+      "url": "https://github.com/mirceaalexandru"
+    },
+    {
+      "name": "Adrian Rossouw",
+      "url": "http://daemon.co.za"
+    },
+    {
+      "name": "Colin Ihrig",
+      "url": "https://github.com/cjihrig"
+    },
+    {
+      "name": "Cristian Ianto",
+      "url": "https://github.com/iantocristian"
+    },
+    {
+      "name": "Cristian Kiss",
+      "url": "https://github.com/ckiss"
+    },
+    {
+      "name": "David Mark Clements",
+      "url": "https://github.com/davidmarkclements"
+    },
+    {
+      "name": "Dean McDonnell",
+      "url": "https://github.com/mcdonnelldean"
+    },
+    {
+      "name": "Dominic Tarr",
+      "url": "https://github.com/dominictarr"
+    },
+    {
+      "name": "Dustin Deus",
+      "url": "https://github.com/StarpTech"
+    },
+    {
+      "name": "Glen Keane",
+      "url": "https://github.com/thekemkid"
+    },
+    {
+      "name": "Gege Pincin",
+      "url": "https://github.com/Georgette"
+    },
+    {
+      "name": "Jake Pruitt",
+      "url": "https://github.com/jakepruitt"
+    },
+    {
+      "name": "Maciej Małecki",
+      "url": "http://mmalecki.com"
+    },
+    {
+      "name": "Matteo Collina",
+      "url": "https://github.com/mcollina"
+    },
+    {
+      "name": "Marian Radulescu",
+      "url": "https://github.com/marianr"
+    },
+    {
+      "name": "Marius Ursache",
+      "url": "https://github.com/bamse16"
+    },
+    {
+      "name": "Martin Betak",
+      "url": "https://github.com/matobet"
+    },
+    {
+      "name": "Maxence Dalmais",
+      "url": "https://github.com/maxired"
+    },
+    {
+      "name": "Mihai Dima",
+      "url": "https://github.com/mihaidma"
+    },
+    {
+      "name": "Naomi Feehan",
+      "url": "https://github.com/naomifeehan"
+    },
+    {
+      "name": "Paolo Chiodi",
+      "url": "https://github.com/paolochiodi"
+    },
+    {
+      "name": "Peter Elger",
+      "url": "https://github.com/pelger"
+    },
+    {
+      "name": "Reto Inderbitzin",
+      "url": "https://github.com/indr"
+    },
+    {
+      "name": "Reid Rankin",
+      "url": "https://github.com/reidrankin"
+    },
+    {
+      "name": "Tane Piper",
+      "url": "https://github.com/tanepiper"
+    },
+    {
+      "name": "Wyatt Preul",
+      "url": "https://github.com/geek"
+    },
+    {
+      "name": "Vald Houbiev",
+      "url": "https://github.com/vladgolubev"
+    },
+    {
+      "name": "Vito Tardia",
+      "url": "https://github.com/vtardia"
+    }
+  ],
+  "dependencies": {
+    "archy": "^1.0.0",
+    "eraro": "^1.1.0",
+    "gate-executor": "^1.1.1",
+    "gex": "^0.3.0",
+    "json-stringify-safe": "^5.0.1",
+    "jsonic": "^0.3.1",
+    "lodash": "^4.17.11",
+    "minimist": "^1.2.0",
+    "nid": "^0.3.2",
+    "norma": "^0.4.1",
+    "ordu": "^0.1.1",
+    "patrun": "^1.0.0",
+    "qs": "^6.7.0",
+    "rolling-stats": "^0.1.1",
+    "seneca-transport": "^3.0.0",
+    "use-plugin": "^4.0.0",
+    "wreck": "^12"
+  },
+  "deprecated": false,
+  "description": "A Microservices Framework for Node.js",
+  "devDependencies": {
+    "@seneca/test-plugin": "0.0.1",
+    "async": "^2.6.2",
+    "bench": "^0.3.6",
+    "code": "^5.2.4",
+    "coveralls": "^3.0.2",
+    "handlebars": "^4.1.2",
+    "hoek": "^5",
+    "lab": "^18.0.2",
+    "prettier": "^1.17.0",
+    "seneca-entity": "^3.3.0",
+    "seneca-error-test": "^0.2.2",
+    "seneca-joi": "^3.1.0",
+    "seneca-promisify": "^0.7.1"
+  },
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "CHANGES.md",
+    "lib",
+    "seneca.js"
+  ],
+  "homepage": "http://senecajs.org",
+  "keywords": [
+    "micro",
+    "service",
+    "microservice",
+    "micro-service",
+    "microservices",
+    "micro-services",
+    "services",
+    "micro services",
+    "micro service",
+    "framework",
+    "minimum",
+    "viable",
+    "product",
+    "toolkit",
+    "startup"
+  ],
+  "license": "MIT",
+  "main": "seneca.js",
+  "name": "seneca",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/senecajs/seneca.git"
+  },
+  "scripts": {
+    "clean-npm": "rm -rf node_modules package-lock.json",
+    "coverage": "lab -v -P test -L -t 85 -r html > docs/coverage.html",
+    "coveralls": "lab -s -P test -r lcov | coveralls",
+    "prettier": "prettier --write *.js lib/*.js test/*.js",
+    "repo-publish": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && npm run prettier && npm test && npm run repo-tag && npm publish && npm dist-tag add seneca@$REPO_VERSION next && npm dist-tag add seneca@$REPO_VERSION plugin",
+    "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && echo TAG: v$REPO_VERSION && git commit -a -m v$REPO_VERSION && git push && git tag v$REPO_VERSION && git push --tags;",
+    "smoke": "node test/stubs/launch.js",
+    "test": "lab -v -P test -L -t 85 "
+  },
+  "version": "3.9.0"
+}
+
+},{}],233:[function(require,module,exports){
+(function (process,setImmediate){
+/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+// Node API modules.
+var Assert = require('assert')
+var Events = require('events')
+var Util = require('util')
+
+// External modules.
+var _ = require('lodash')
+var GateExecutor = require('gate-executor')
+var Jsonic = require('jsonic')
+var UsePlugin = require('use-plugin')
+var Nid = require('nid')
+var Norma = require('norma')
+var Patrun = require('patrun')
+var Stats = require('rolling-stats')
+var Ordu = require('ordu')
+var Eraro = require('eraro')
+
+// Internal modules.
+var API = require('./lib/api')
+var Inward = require('./lib/inward')
+var Outward = require('./lib/outward')
+var Common = require('./lib/common')
+var Legacy = require('./lib/legacy')
+var Optioner = require('./lib/optioner')
+var Package = require('./package.json')
+var Plugins = require('./lib/plugins')
+var Print = require('./lib/print')
+var Actions = require('./lib/actions')
+var Transport = require('./lib/transport')
+
+// Shortcuts.
+var errlog = Common.make_standard_err_log_entry
+var actlog = Common.make_standard_act_log_entry
+
+// Internal data and utilities.
+var error = Common.error
+
+var option_defaults = {
+  // Tag this Seneca instance, will be appended to instance identifier.
+  tag: '-',
+
+  // Standard timeout for actions.
+  timeout: 22222,
+
+  // Standard length of identifiers for actions.
+  idlen: 12,
+  didlen: 4,
+
+  // Register (true) default plugins. Set false to not register when
+  // using custom versions.
+  default_plugins: {
+    transport: true
+  },
+
+  // Test mode. Use for unit testing.
+  test: false,
+
+  // Wait time for plugins to close gracefully.
+  death_delay: 11111,
+
+  // Wait time for actions to complete before shutdown.
+  close_delay: 22222,
+
+  // Debug settings.
+  debug: {
+    // Throw (some) errors from seneca.act.
+    fragile: false,
+
+    // Fatal errors ... aren't fatal. Not for production!
+    undead: false,
+
+    // Print debug info to console
+    print: {
+      // Print options. Best used via --seneca.print.options.
+      options: false,
+
+      // Amount of information to print on fatal error: 'summary', 'full'
+      fatal: 'summary',
+
+      // Include environment when printing full crash report.
+      // Default: false for security.
+      env: false
+    },
+
+    // Trace action caller and place in args.caller$.
+    act_caller: false,
+
+    // Shorten all identifiers to 2 characters.
+    short_logs: false,
+
+    // Record and log callpoints (calling code locations).
+    callpoint: false,
+
+    // Log deprecation warnings
+    deprecation: true,
+
+    // Set to array to force artificial argv and ignore process.argv
+    argv: null,
+
+    // Length of data description in logs
+    datalen: 111
+  },
+
+  // Enforce strict behaviours. Relax when backwards compatibility needed.
+  strict: {
+    // Action result must be a plain object.
+    result: true,
+
+    // Delegate fixedargs override action args.
+    fixedargs: true,
+
+    // Adding a pattern overrides existing pattern only if matches exactly.
+    add: false,
+
+    // If no action is found and find is false,
+    // then no error returned along with empty object
+    find: true,
+
+    // Maximum number of times an action can call itself
+    maxloop: 11,
+
+    // Exports must exist
+    exports: false
+  },
+
+  // Keep a transient time-ordered history of actions submitted
+  history: {
+    // History log is active.
+    active: true,
+
+    // Prune the history. Disable only for debugging.
+    prune: true,
+
+    // Prune the history only periodically.
+    interval: 100
+  },
+
+  // Action executor tracing. See gate-executor module.
+  trace: {
+    act: false,
+    stack: false,
+
+    // Messages that do not match a known pattern
+    unknown: true,
+
+    // Messages that have invalid content
+    invalid: false
+  },
+
+  // Action statistics settings. See rolling-stats module.
+  stats: {
+    size: 1024,
+    interval: 60000,
+    running: false
+  },
+
+  // Plugin settings
+  plugin: {},
+
+  // Plugins to load (will be passed to .use)
+  plugins: [],
+
+  // System wide functionality.
+  system: {
+    exit: process.exit,
+
+    // Close instance on these signals, if true.
+    close_signals: {
+      SIGHUP: false,
+      SIGTERM: false,
+      SIGINT: false,
+      SIGBREAK: false
+    },
+
+    plugin: {
+      load_once: false
+    }
+  },
+
+  // Internal functionality. Reserved for objects and functions only.
+  internal: {},
+
+  // Log status at periodic intervals.
+  status: {
+    interval: 60000,
+
+    // By default, does not run.
+    running: false
+  },
+
+  // Shared default transport configuration
+  transport: {
+    // Standard port for messages.
+    port: 10101
+  },
+
+  limits: {
+    maxparents: 33
+  },
+
+  // Setup event listeners before starting
+  events: {},
+
+  // Backwards compatibility settings.
+  legacy: {
+    // Action callback must always have signature callback(error, result).
+    action_signature: false,
+
+    // Logger can be changed by options method.
+    logging: false,
+
+    // Use old error codes. REMOVE in Seneca 4.x
+    error_codes: false,
+
+    // Use old error handling.
+    error: true,
+
+    // Use seneca-transport plugin.
+    transport: true,
+
+    // Add meta$ property to messages.
+    meta: false,
+
+    // Add legacy properties
+    actdef: false,
+
+    // Use old fail method
+    fail: false
+  }
+}
+
+// Utility functions exposed by Seneca via `seneca.util`.
+var seneca_util = {
+  Eraro: Eraro,
+  Jsonic: Jsonic,
+  Nid: Nid,
+  Patrun: Patrun,
+  Joi: UsePlugin.Joi,
+  Optioner: UsePlugin.Optioner,
+
+  clean: Common.clean,
+  pattern: Common.pattern,
+  print: Common.print,
+  error: error,
+
+  // Legacy
+  deepextend: Common.deepextend,
+  recurse: Common.recurse,
+  copydata: Common.copydata,
+  nil: Common.nil,
+  parsepattern: Common.parsePattern,
+  pincanon: Common.pincanon,
+  router: function router() {
+    return Patrun()
+  },
+  resolve_option: Common.resolve_option,
+  flatten: Common.flatten,
+  argprops: Legacy.argprops
+}
+
+// Internal implementations.
+var intern = {
+  util: seneca_util
+}
+
+// Seneca is an EventEmitter.
+function Seneca() {
+  Events.EventEmitter.call(this)
+  this.setMaxListeners(0)
+}
+Util.inherits(Seneca, Events.EventEmitter)
+
+// Create a Seneca instance.
+module.exports = function init(seneca_options, more_options) {
+  var initial_options = _.isString(seneca_options)
+    ? _.extend({}, { from: seneca_options }, more_options)
+    : _.extend({}, seneca_options, more_options)
+
+  // Legacy options, remove in 4.x
+  initial_options.deathdelay = initial_options.death_delay
+
+  var seneca = make_seneca(initial_options)
+  var options = seneca.options()
+
+  // The 'internal' key of options is reserved for objects and functions
+  // that provide functionality, and are thus not really printable
+  seneca.log.debug({ kind: 'notice', options: _.omit(options, ['internal']) })
+
+  Print.print_options(seneca, options)
+
+  // Register default plugins, unless turned off by options.
+  if (options.legacy.transport && options.default_plugins.transport) {
+    seneca.use(require('seneca-transport'))
+  }
+
+  // Register plugins specified in options.
+  var pluginkeys = Object.keys(options.plugins)
+  for (var pkI = 0; pkI < pluginkeys.length; pkI++) {
+    var pluginkey = pluginkeys[pkI]
+    var plugindesc = options.plugins[pluginkey]
+
+    if (false === plugindesc) {
+      seneca.private$.ignore_plugins[pluginkey] = true
+    } else {
+      seneca.use(plugindesc)
+    }
+  }
+
+  seneca.ready(function() {
+    this.log.info({ kind: 'notice', notice: 'hello seneca ' + seneca.id })
+  })
+
+  return seneca
+}
+
+// Expose Seneca prototype for easier monkey-patching
+module.exports.Seneca = Seneca
+
+// To reference builtin loggers when defining logging options.
+module.exports.loghandler = Legacy.loghandler
+
+// Makes require('seneca').use(...) work by creating an on-the-fly instance.
+module.exports.use = function top_use() {
+  var argsarr = new Array(arguments.length)
+  for (var l = 0; l < argsarr.length; ++l) {
+    argsarr[l] = arguments[l]
+  }
+
+  var instance = module.exports()
+
+  return instance.use.apply(instance, argsarr)
+}
+
+// Makes require('seneca').test() work.
+module.exports.test = function top_test() {
+  return module.exports().test(arguments[0], arguments[1])
+}
+
+module.exports.util = seneca_util
+module.exports.test$ = { intern: intern }
+
+// Create a new Seneca instance.
+// * _initial_options_ `o` &rarr; instance options
+function make_seneca(initial_options) {
+  initial_options = initial_options || {}
+
+  // Create a private context.
+  var private$ = make_private()
+  private$.error = error
+
+  // Create a new root Seneca instance.
+  var root$ = new Seneca()
+
+  // Expose private data to plugins.
+  root$.private$ = private$
+
+  // Resolve initial options.
+  private$.optioner = Optioner(module, option_defaults, initial_options)
+  var opts = { $: private$.optioner.get() }
+
+  // Setup event handlers, if defined
+  ;['log', 'act_in', 'act_out', 'act_err', 'ready', 'close'].forEach(function(
+    event_name
+  ) {
+    if ('function' === typeof opts.$.events[event_name]) {
+      root$.on(event_name, opts.$.events[event_name])
+    }
+  })
+
+  // Create internal tools.
+  private$.actnid = Nid({ length: opts.$.idlen })
+  private$.didnid = Nid({ length: opts.$.didlen })
+
+  var next_action_id = Common.autoincr()
+
+  // These need to come from options as required during construction.
+  opts.$.internal.actrouter = opts.$.internal.actrouter || Patrun({ gex: true })
+  opts.$.internal.subrouter = opts.$.internal.subrouter || Patrun({ gex: true })
+
+  var callpoint = make_callpoint(opts.$.debug.callpoint)
+
+  // Define public member variables.
+  root$.start_time = Date.now()
+  root$.context = {}
+  root$.version = Package.version
+
+  // TODO: rename in 4.x as "args" terminology is legacy
+  root$.fixedargs = {}
+
+  root$.flags = {
+    closed: false
+  }
+
+  Object.defineProperty(root$, 'root', { value: root$ })
+
+  private$.history = Common.history(opts.$.history)
+
+  // Seneca methods. Official API.
+  root$.has = API.has // True if the given pattern has an action.
+  root$.find = API.find // Find the action definition for a pattern.
+  root$.list = API.list // List the patterns added to this instance.
+  root$.status = API.status // Get the status if this instance.
+  root$.reply = API.reply // Reply to a submitted message.
+  root$.sub = API.sub // Subscribe to messages.
+  root$.list_plugins = API.list_plugins // List the registered plugins.
+  root$.find_plugin = API.find_plugin // Find the plugin definition.
+  root$.has_plugin = API.has_plugin // True if the plugin is registered.
+  root$.ignore_plugin = API.ignore_plugin // Ignore plugin and don't register it.
+  root$.listen = API.listen(callpoint) // Listen for inbound messages.
+  root$.client = API.client(callpoint) // Send outbound messages.
+  root$.gate = API.gate // Create a delegate that executes actions in sequence.
+  root$.ungate = API.ungate // Execute actions in parallel.
+  root$.translate = API.translate // Translate message to new pattern.
+  root$.ping = API.ping // Generate ping response.
+  root$.use = API.use // Define and load a plugin.
+  root$.test = API.test // Set test mode.
+  root$.quiet = API.quiet // Convenience method to set logging level to `warn+`.
+  root$.export = API.export // Export plain objects from a plugin.
+  root$.depends = API.depends // Check for plugin dependencies.
+  root$.delegate = API.delegate // Create an action-specific Seneca instance.
+  root$.prior = API.prior // Call the previous action definition for message pattern.
+  root$.inward = API.inward // Add a modifier function for messages inward
+  root$.outward = API.outward // Add a modifier function for responses outward
+  root$.error = API.error // Set global error handler, or generate Seneca Error
+  root$.fail = opts.$.legacy.fail ? Legacy.make_legacy_fail(opts.$) : API.fail // Throw a Seneca error
+  root$.explain = API.explain // Toggle top level explain capture 
+  
+  root$.add = api_add // Add a pattern an associated action.
+  root$.act = api_act // Submit a message and trigger the associated action.
+
+  root$.ready = api_ready // Callback when plugins initialized.
+  root$.close = api_close // Close and shutdown plugins.
+  root$.options = api_options // Get and set options.
+  root$.decorate = api_decorate // Decorate seneca object with functions
+
+  // Non-API methods.
+  root$.register = Plugins.register(opts, callpoint)
+
+  root$.wrap = api_wrap
+  root$.seneca = api_seneca
+  root$.fix = api_fix
+
+  // DEPRECATE IN 4.x
+  root$.findact = root$.find
+  root$.plugins = API.list_plugins
+  root$.findplugin = API.find_plugin
+  root$.hasplugin = API.has_plugin
+  root$.hasact = Legacy.hasact
+  root$.act_if = Legacy.act_if
+  root$.findpins = Legacy.findpins
+  root$.pinact = Legacy.findpins
+  root$.next_act = Legacy.next_act
+
+  // Identifier generator.
+  root$.idgen = Nid({ length: opts.$.idlen })
+  opts.$.tag = opts.$.tag || option_defaults.tag
+  opts.$.tag = opts.$.tag === 'undefined' ? option_defaults.tag : opts.$.tag
+
+  // Create a unique identifer for this instance.
+  root$.id =
+    opts.$.id$ ||
+    root$.idgen() +
+      '/' +
+      root$.start_time +
+      '/' +
+      process.pid +
+      '/' +
+      root$.version +
+      '/' +
+      opts.$.tag
+
+  // The instance tag, useful for grouping instances.
+  root$.tag = opts.$.tag
+
+  if (opts.$.debug.short_logs || opts.$.log.short) {
+    opts.$.idlen = 2
+    root$.idgen = Nid({ length: opts.$.idlen })
+    root$.id = root$.idgen() + '/' + opts.$.tag
+  }
+
+  root$.fullname = 'Seneca/' + root$.id
+
+  root$.die = Common.makedie(root$, {
+    type: 'sys',
+    plugin: 'seneca',
+    tag: root$.version,
+    id: root$.id,
+    callpoint: callpoint
+  })
+
+  root$.util = seneca_util
+
+  private$.exports = { options: opts.$ }
+  private$.decorations = {}
+
+  // Configure logging
+  private$.logger = load_logger(root$, opts.$.internal.logger)
+  root$.make_log = make_log
+  root$.log = make_log(root$, make_default_log_modifier(root$))
+
+  // Error events are fatal, unless you're undead.  These are not the
+  // same as action errors, these are unexpected internal issues.
+  root$.on('error', root$.die)
+
+  private$.ge = GateExecutor({
+    timeout: opts.$.timeout
+  })
+    .clear(action_queue_clear)
+    .start()
+
+  // TODO: this should be a plugin
+  // setup status log
+  if (opts.$.status.interval > 0 && opts.$.status.running) {
+    private$.stats = private$.stats || {}
+    private$.status_interval = setInterval(function status() {
+      root$.log.info({
+        kind: 'status',
+        alive: Date.now() - private$.stats.start,
+        act: private$.stats.act
+      })
+    }, opts.$.status.interval)
+  }
+
+  if (opts.$.stats) {
+    private$.timestats = new Stats.NamedStats(
+      opts.$.stats.size,
+      opts.$.stats.interval
+    )
+
+    if (opts.$.stats.running) {
+      setInterval(function stats() {
+        private$.timestats.calculate()
+      }, opts.$.stats.interval)
+    }
+  }
+
+  // private$.plugins = {}
+  private$.plugin_order = { byname: [], byref: [] }
+  private$.use = UsePlugin({
+    prefix: ['seneca-', '@seneca/'],
+    module: opts.$.internal.module || module,
+    msgprefix: false,
+    builtin: '',
+    merge_defaults: false
+  })
+
+  private$.actrouter = opts.$.internal.actrouter
+  private$.subrouter = opts.$.internal.subrouter
+
+  root$.toString = api_toString
+
+  // TODO: provide an api to add these
+  private$.action_modifiers = [
+    function add_rules_from_validate_annotation(actdef) {
+      actdef.rules = Object.assign(
+        actdef.rules,
+        _.clone(actdef.func.validate || {})
+      )
+    }
+  ]
+
+  private$.sub = { handler: null, tracers: [] }
+
+  private$.ready_list = []
+
+  private$.inward = Ordu({ name: 'inward' })
+    .add(Inward.msg_modify)
+    .add(Inward.closed)
+    .add(Inward.act_cache)
+    .add(Inward.act_default)
+    .add(Inward.act_not_found)
+    .add(Inward.act_stats)
+    .add(Inward.validate_msg)
+    .add(Inward.warnings)
+    .add(Inward.msg_meta)
+    .add(Inward.limit_msg)
+    .add(Inward.prepare_delegate)
+    .add(Inward.announce)
+
+  private$.outward = Ordu({ name: 'outward' })
+    .add(Outward.make_error)
+    .add(Outward.act_stats)
+    .add(Outward.act_cache)
+    .add(Outward.res_object)
+    .add(Outward.res_entity)
+    .add(Outward.msg_meta)
+    .add(Outward.trace)
+    .add(Outward.announce)
+    .add(Outward.act_error)
+
+  if (opts.$.test) {
+    root$.test('string' === typeof opts.$.test ? opts.$.test : 'print')
+  }
+
+  // See [`seneca.add`](#seneca.add)
+  function api_add() {
+    var self = this
+    var args = Common.parsePattern(self, arguments, 'action:f? actdef:o?')
+
+    var raw_pattern = args.pattern
+    var pattern = self.util.clean(raw_pattern)
+
+    var action =
+      args.action ||
+      function default_action(msg, done, meta) {
+        done.call(this, null, meta.dflt || null)
+      }
+
+    var actdef = args.actdef || {}
+
+    actdef.raw = _.cloneDeep(raw_pattern)
+    actdef.plugin_name = actdef.plugin_name || 'root$'
+    actdef.plugin_fullname =
+      actdef.plugin_fullname ||
+      actdef.plugin_name +
+        ((actdef.plugin_tag === '-'
+        ? void 0
+        : actdef.plugin_tag)
+          ? '$' + actdef.plugin_tag
+          : '')
+
+    actdef.plugin = {
+      name: actdef.plugin_name,
+      tag: actdef.plugin_tag,
+      fullname: actdef.plugin_fullname
+    }
+
+    var add_callpoint = callpoint()
+    if (add_callpoint) {
+      actdef.callpoint = add_callpoint
+    }
+
+    actdef.sub = !!raw_pattern.sub$
+    actdef.client = !!raw_pattern.client$
+
+    // Deprecate a pattern by providing a string message using deprecate$ key.
+    actdef.deprecate = raw_pattern.deprecate$
+
+    actdef.fixed = Jsonic(raw_pattern.fixed$ || {})
+    actdef.custom = Jsonic(raw_pattern.custom$ || {})
+
+    var strict_add =
+      raw_pattern.strict$ && raw_pattern.strict$.add !== null
+        ? !!raw_pattern.strict$.add
+        : !!opts.$.strict.add
+
+    var addroute = true
+
+    if (opts.$.legacy.actdef) {
+      actdef.args = _.clone(pattern)
+    }
+
+    actdef.id = action.name + '_' + next_action_id()
+    actdef.name = action.name
+    actdef.func = action
+
+    // Canonical string form of the action pattern.
+    actdef.pattern = Common.pattern(pattern)
+
+    // Canonical object form of the action pattern.
+    actdef.msgcanon = Jsonic(actdef.pattern)
+
+    var priordef = self.find(pattern)
+
+    if (priordef && strict_add && priordef.pattern !== actdef.pattern) {
+      // only exact action patterns are overridden
+      // use .wrap for pin-based patterns
+      priordef = null
+    }
+
+    if (priordef) {
+      // Clients needs special handling so that the catchall
+      // pattern does not submit all patterns into the handle
+      if (
+        _.isFunction(priordef.handle) &&
+        ((priordef.client && actdef.client) ||
+          (!priordef.client && !actdef.client))
+      ) {
+        priordef.handle(args.pattern, action)
+        addroute = false
+      } else {
+        actdef.priordef = priordef
+      }
+      actdef.priorpath = priordef.id + ';' + priordef.priorpath
+    } else {
+      actdef.priorpath = ''
+    }
+
+    if (action && actdef && _.isFunction(action.handle)) {
+      actdef.handle = action.handle
+    }
+
+    private$.stats.actmap[actdef.pattern] =
+      private$.stats.actmap[actdef.pattern] || make_action_stats(actdef)
+
+    var pattern_rules = {}
+    _.each(pattern, function(v, k) {
+      if (_.isObject(v)) {
+        pattern_rules[k] = _.clone(v)
+        delete pattern[k]
+      }
+    })
+    actdef.rules = pattern_rules
+
+    if (addroute) {
+      self.log.debug({
+        kind: 'add',
+        case: actdef.sub ? 'SUB' : 'ADD',
+        id: actdef.id,
+        pattern: actdef.pattern,
+        name: action.name,
+        callpoint: callpoint
+      })
+
+      private$.actrouter.add(pattern, actdef)
+    }
+
+    private$.actdef[actdef.id] = actdef
+
+    deferred_modify_action(self, actdef)
+
+    return self
+  }
+
+  function make_action_stats(actdef) {
+    return {
+      id: actdef.id,
+      plugin: {
+        full: actdef.plugin_fullname,
+        name: actdef.plugin_name,
+        tag: actdef.plugin_tag
+      },
+      prior: actdef.priorpath,
+      calls: 0,
+      done: 0,
+      fails: 0,
+      time: {}
+    }
+  }
+
+  // NOTE: use setImmediate so that action annotations (such as .validate)
+  // can be defined after call to seneca.add (for nicer plugin code order).
+  function deferred_modify_action(seneca, actdef) {
+    setImmediate(function() {
+      _.each(seneca.private$.action_modifiers, function(actmod) {
+        actmod.call(seneca, actdef)
+      })
+    })
+  }
+
+  // Perform an action. The properties of the first argument are matched against
+  // known patterns, and the most specific one wins.
+  function api_act() {
+    var argsarr = new Array(arguments.length)
+    for (var l = 0; l < argsarr.length; ++l) {
+      argsarr[l] = arguments[l]
+    }
+
+    var self = this
+    var spec = Common.build_message(self, argsarr, 'reply:f?', self.fixedargs)
+    var msg = spec.msg
+    var reply = spec.reply
+
+    if (opts.$.debug.act_caller || opts.$.test) {
+      msg.caller$ =
+        '\n    Action call arguments and location: ' +
+        (new Error(Util.inspect(msg).replace(/\n/g, '')).stack + '\n')
+          .replace(/Error: /, '')
+          .replace(/.*\/gate-executor\.js:.*\n/g, '')
+          .replace(/.*\/seneca\.js:.*\n/g, '')
+          .replace(/.*\/seneca\/lib\/.*\.js:.*\n/g, '')
+    }
+
+    do_act(self, msg, reply)
+    return self
+  }
+
+  function api_wrap(pin, meta, wrapper) {
+    var pinthis = this
+
+    wrapper = _.isFunction(meta) ? meta : wrapper
+    meta = _.isFunction(meta) ? {} : meta
+
+    pin = _.isArray(pin) ? pin : [pin]
+    _.each(pin, function(p) {
+      _.each(pinthis.list(p), function(actpattern) {
+        pinthis.add(actpattern, meta, wrapper)
+      })
+    })
+
+    return this
+  }
+
+  private$.handle_close = function() {
+    root$.close(function(err) {
+      if (err) {
+        Print.err(err)
+      }
+
+      opts.$.system.exit(err ? (err.exit === null ? 1 : err.exit) : 0)
+    })
+  }
+
+  // close seneca instance
+  // sets public seneca.closed property
+  function api_close(done) {
+    var seneca = this
+
+    var safe_done = _.once(function(err) {
+      if (_.isFunction(done)) {
+        return done.call(seneca, err)
+      }
+    })
+
+    // don't try to close twice
+    if (seneca.flags.closed) {
+      return safe_done()
+    }
+
+    seneca.ready(do_close)
+    var close_timeout = setTimeout(do_close, opts.$.close_delay)
+
+    function do_close() {
+      clearTimeout(close_timeout)
+
+      if (seneca.flags.closed) {
+        return safe_done()
+      }
+
+      // TODO: remove in 4.x
+      seneca.closed = true
+
+      seneca.flags.closed = true
+
+      // cleanup process event listeners
+      _.each(opts.$.system.close_signals, function(active, signal) {
+        if (active) {
+          process.removeListener(signal, private$.handle_close)
+        }
+      })
+
+      seneca.log.debug({
+        kind: 'close',
+        notice: 'start',
+        callpoint: callpoint()
+      })
+
+      seneca.act('role:seneca,cmd:close,closing$:true', function(err) {
+        seneca.log.debug(errlog(err, { kind: 'close', notice: 'end' }))
+
+        seneca.removeAllListeners('act-in')
+        seneca.removeAllListeners('act-out')
+        seneca.removeAllListeners('act-err')
+        seneca.removeAllListeners('pin')
+        seneca.removeAllListeners('after-pin')
+        seneca.removeAllListeners('ready')
+
+        seneca.private$.history.close()
+
+        if (seneca.private$.status_interval) {
+          clearInterval(seneca.private$.status_interval)
+        }
+
+        return safe_done(err)
+      })
+    }
+
+    return seneca
+  }
+
+  // useful when defining services!
+  // note: has EventEmitter.once semantics
+  // if using .on('ready',fn) it will be be called for each ready event
+  function api_ready(ready) {
+    var self = this
+
+    if ('function' === typeof ready) {
+      setImmediate(function register_ready() {
+        if (root$.private$.ge.isclear()) {
+          execute_ready(ready.bind(self))
+        } else {
+          root$.private$.ready_list.push(ready.bind(self))
+        }
+      })
+    }
+
+    return self
+  }
+
+  // Return self. Mostly useful as a check that this is a Seneca instance.
+  function api_seneca() {
+    return this
+  }
+
+  // Describe this instance using the form: Seneca/VERSION/ID
+  function api_toString() {
+    return this.fullname
+  }
+
+  function do_act(instance, origmsg, origreply) {
+    var timedout = false
+    var actmsg = intern.make_actmsg(origmsg)
+    var meta = new intern.Meta(instance, opts, origmsg, origreply)
+
+    if (meta.gate) {
+      instance = instance.delegate()
+      instance.private$.ge = instance.private$.ge.gate()
+    }
+
+    var actctxt = {
+      seneca: instance,
+      origmsg: origmsg,
+      reply: origreply || _.noop,
+      options: instance.options(),
+      callpoint: callpoint()
+    }
+
+    var execspec = {
+      dn: meta.id,
+      fn: function act_fn(done) {
+        try {
+          intern.execute_action(
+            instance,
+            opts,
+            actctxt,
+            actmsg,
+            meta,
+            function action_reply(err, out, reply_meta) {
+              if (!timedout) {
+                intern.handle_reply(meta, actctxt, actmsg, err, out, reply_meta)
+              }
+              done()
+            }
+          )
+        } catch (e) {
+          var ex = Util.isError(e) ? e : new Error(Util.inspect(e))
+          intern.handle_reply(meta, actctxt, actmsg, ex)
+          done()
+        }
+      },
+      ontm: function act_tm() {
+        timedout = true
+        intern.handle_reply(meta, actctxt, actmsg, new Error('[TIMEOUT]'))
+      },
+      tm: meta.timeout
+    }
+
+    instance.private$.ge.add(execspec)
+  }
+
+  function api_fix(patargs, msgargs, custom) {
+    var self = this
+
+    // var defargs = Common.parsePattern(self, arguments)
+    patargs = Jsonic(patargs || {})
+
+    var fix_delegate = self.delegate(patargs)
+
+    fix_delegate.add = function fix_add() {
+      var args = Common.parsePattern(this, arguments, 'rest:.*', patargs)
+      var addargs = [args.pattern]
+        .concat({
+          fixed$: Object.assign({}, msgargs, args.pattern.fixed$),
+          custom$: Object.assign({}, custom, args.pattern.custom$)
+        })
+        .concat(args.rest)
+      return self.add.apply(this, addargs)
+    }
+
+    return fix_delegate
+  }
+
+  function api_options(options, chain) {
+    var self = this
+
+    if (options != null) {
+      self.log.debug({
+        kind: 'options',
+        case: 'SET',
+        options: options,
+        callpoint: callpoint()
+      })
+    }
+
+    opts.$ = private$.exports.options =
+      options == null ? private$.optioner.get() : private$.optioner.set(options)
+
+    if (opts.$.legacy.logging) {
+      if (options && options.log && _.isArray(options.log.map)) {
+        for (var i = 0; i < options.log.map.length; ++i) {
+          self.logroute(options.log.map[i])
+        }
+      }
+    }
+
+    // TODO: in 4.x, when given options, it should chain
+    // Allow chaining with seneca.options({...}, true)
+    // see https://github.com/rjrodger/seneca/issues/80
+    return chain ? self : opts.$
+  }
+
+  // Inspired by https://github.com/hapijs/hapi/blob/master/lib/plugin.js decorate
+  // TODO: convert to seneca errors
+  function api_decorate() {
+    var args = Norma('property:s value:.', arguments)
+
+    var property = args.property
+    Assert(property[0] !== '_', 'property cannot start with _')
+    Assert(
+      private$.decorations[property] === undefined,
+      'seneca is already decorated with the property: ' + property
+    )
+    Assert(
+      root$[property] === undefined,
+      'cannot override a core seneca property: ' + property
+    )
+
+    root$[property] = private$.decorations[property] = args.value
+  }
+
+  Actions(root$)
+
+  if (!opts.$.legacy.transport) {
+    opts.$.legacy.error = false
+
+    // TODO: move to static options in Seneca 4.x
+    opts.$.transport = root$.util.deepextend(
+      {
+        port: 62345,
+        host: '127.0.0.1',
+        path: '/act',
+        protocol: 'http'
+      },
+      opts.$.transport
+    )
+
+    Transport(root$)
+  }
+
+  Print(root$, opts.$.debug.argv || process.argv)
+
+  _.each(opts.$.system.close_signals, function(active, signal) {
+    if (active) {
+      process.once(signal, private$.handle_close)
+    }
+  })
+
+  function load_logger(instance, log_plugin) {
+    log_plugin = log_plugin || require('./lib/logging')
+
+    return log_plugin.preload.call(instance).extend.logger
+  }
+
+  // NOTE: this could be called from an arbitrary GateExecutor task,
+  // if the task queue is emptied.
+  function action_queue_clear() {
+    root$.emit('ready')
+    execute_ready(root$.private$.ready_list.shift())
+
+    if (root$.private$.ge.isclear()) {
+      while (0 < root$.private$.ready_list.length) {
+        execute_ready(root$.private$.ready_list.shift())
+      }
+    }
+  }
+
+  function execute_ready(ready_func) {
+    if (null == ready_func) return
+
+    try {
+      ready_func()
+    } catch (ready_err) {
+      var err = error(ready_err, 'ready_failed', { message: ready_err.message })
+
+      if (opts.$.test) {
+        if (opts.$.errhandler) {
+          opts.$.errhandler.call(root$, err)
+        } else throw err
+      } else {
+        root$.die(err)
+      }
+    }
+  }
+
+  return root$
+}
+
+// Private member variables of Seneca object.
+function make_private() {
+  return {
+    stats: {
+      start: Date.now(),
+      act: {
+        calls: 0,
+        done: 0,
+        fails: 0,
+        cache: 0
+      },
+      actmap: {}
+    },
+    actdef: {},
+    transport: {
+      register: []
+    },
+    plugins: {},
+    ignore_plugins: {}
+  }
+}
+
+// Callpoint resolver. Indicates location in calling code.
+function make_callpoint(active) {
+  if (active) {
+    return function() {
+      return error.callpoint(new Error(), [
+        '/seneca/seneca.js',
+        '/seneca/lib/',
+        '/lodash.js'
+      ])
+    }
+  }
+
+  return _.noop
+}
+
+function make_log(instance, modifier) {
+  var log =
+    instance.log ||
+    function log(data) {
+      instance.private$.logger(this, data)
+      instance.emit('log', data)
+    }
+
+  log = prepare_log(instance, make_modified_log(log, modifier))
+  make_log_levels(instance, log)
+
+  return log
+}
+
+function prepare_log(instance, log) {
+  return function prepare_log_data() {
+    var argsarr = new Array(arguments.length)
+    for (var l = 0; l < argsarr.length; ++l) {
+      argsarr[l] = arguments[l]
+    }
+
+    var a0 = argsarr[0]
+    var data = _.isArray(a0) ? a0 : _.isObject(a0) ? a0 : argsarr
+    log.call(instance, data)
+  }
+}
+
+function make_log_levels(instance, log) {
+  function log_level(level) {
+    return function(data) {
+      data.level = level
+    }
+  }
+  log.debug = prepare_log(instance, make_modified_log(log, log_level('debug')))
+  log.info = prepare_log(instance, make_modified_log(log, log_level('info')))
+  log.warn = prepare_log(instance, make_modified_log(log, log_level('warn')))
+  log.error = prepare_log(instance, make_modified_log(log, log_level('error')))
+  log.fatal = prepare_log(instance, make_modified_log(log, log_level('fatal')))
+}
+
+function make_modified_log(log, modifier) {
+  return function log_modifier(data) {
+    modifier(data)
+    log.call(this, data)
+  }
+}
+
+function make_default_log_modifier(instance) {
+  return function default_log_modifier(data) {
+    data.level = null == data.level ? 'debug' : data.level
+    data.seneca = null == data.seneca ? instance.id : data.seneca
+    data.when = null == data.when ? Date.now() : data.when
+  }
+}
+
+intern.make_act_delegate = function(instance, opts, meta, actdef) {
+  meta = meta || {}
+  actdef = actdef || {}
+
+  var delegate_args = {
+    plugin$: {
+      full: actdef.plugin_fullname,
+      name: actdef.plugin_name,
+      tag: actdef.plugin_tag
+    }
+  }
+
+  var delegate = instance.delegate(delegate_args)
+
+  var parent_act = instance.private$.act || meta.parent
+
+  delegate.private$.act = {
+    parent: parent_act && parent_act.meta,
+    meta: meta,
+    def: actdef
+  }
+
+  // special overrides
+  if (meta.tx) {
+    delegate.fixedargs.tx$ = meta.tx
+  }
+
+  // automate actid log insertion
+
+  delegate.log = make_log(delegate, function act_delegate_log_modifier(data) {
+    data.actid = meta.id
+
+    data.plugin_name = data.plugin_name || actdef.plugin_name
+    data.plugin_tag = data.plugin_tag || actdef.plugin_tag
+    data.pattern = data.pattern || actdef.pattern
+  })
+
+  return delegate
+}
+
+intern.execute_action = function(
+  act_instance,
+  opts,
+  actctxt,
+  msg,
+  meta,
+  reply
+) {
+  var private$ = act_instance.private$
+  var actdef = meta.prior ? private$.actdef[meta.prior] : act_instance.find(msg)
+  var delegate = intern.make_act_delegate(act_instance, opts, meta, actdef)
+
+  actctxt.seneca = delegate
+  actctxt.actdef = actdef
+
+  var data = { meta: meta, msg: msg, reply: reply }
+  var inward = private$.inward.process(actctxt, data)
+
+  if (
+    intern.handle_inward_break(
+      inward,
+      act_instance,
+      data,
+      actdef,
+      actctxt.origmsg
+    )
+  ) {
+    return
+  }
+
+  if (!actdef.sub) {
+    delegate.log.debug(
+      actlog(actdef, msg, meta, actctxt.origmsg, {
+        kind: 'act',
+        case: 'IN',
+        did: delegate.did
+      })
+    )
+  }
+
+  data.id = data.meta.id
+  data.result = []
+  data.timelimit = Date.now() + data.meta.timeout
+
+  if (opts.$.history.active) {
+    private$.history.add(data)
+  }
+
+  if (opts.$.legacy.meta) {
+    data.msg.meta$ = meta
+  }
+
+  actdef.func.call(delegate, data.msg, data.reply, data.meta)
+}
+
+intern.handle_reply = function(meta, actctxt, actmsg, err, out, reply_meta) {
+  meta.end = Date.now()
+
+  var delegate = actctxt.seneca
+  var reply = actctxt.reply
+
+  var data = {
+    meta: meta,
+    msg: actmsg,
+    res: err || out,
+    reply_meta: reply_meta,
+    has_callback: true,
+    err: err || null,
+    out: out || null
+  }
+
+  actctxt.duration = meta.end - meta.start
+  actctxt.actlog = actlog
+  actctxt.errlog = errlog
+  actctxt.error = error
+
+  meta.error = Util.isError(data.res)
+
+  intern.process_outward(actctxt, data)
+
+  if (data.has_callback) {
+    try {
+      reply.call(delegate, data.err, data.res, data.meta)
+    } catch (thrown_obj) {
+      intern.callback_error(delegate, thrown_obj, actctxt, data)
+    }
+  }
+}
+
+intern.handle_inward_break = function(
+  inward,
+  act_instance,
+  data,
+  actdef,
+  origmsg
+) {
+  if (!inward) return false
+
+  var msg = data.msg
+  var reply = data.reply
+  var meta = data.meta
+
+  if ('error' === inward.kind) {
+    var err = inward.error || error(inward.code, inward.info)
+    meta.error = true
+
+    if (inward.log && inward.log.level) {
+      act_instance.log[inward.log.level](
+        errlog(
+          err,
+          errlog(actdef || {}, meta.prior, msg, origmsg, inward.log.data)
+        )
+      )
+    }
+
+    reply.call(act_instance, err)
+    return true
+  } else if ('result' === inward.kind) {
+    if (inward.log && inward.log.level) {
+      act_instance.log[inward.log.level](
+        actlog(actdef || {}, msg, meta, origmsg, inward.log.data)
+      )
+    }
+
+    reply.call(act_instance, null, inward.result)
+    return true
+  }
+}
+
+intern.make_actmsg = function(origmsg) {
+  var actmsg = Object.assign({}, origmsg)
+
+  if (actmsg.id$) {
+    delete actmsg.id$
+  }
+
+  if (actmsg.caller$) {
+    delete actmsg.caller$
+  }
+
+  if (actmsg.meta$) {
+    delete actmsg.meta$
+  }
+
+  if (actmsg.prior$) {
+    delete actmsg.prior$
+  }
+
+  if (actmsg.parents$) {
+    delete actmsg.parents$
+  }
+
+  // backwards compatibility for Seneca 3.x transports
+  if (origmsg.transport$) {
+    actmsg.transport$ = origmsg.transport$
+  }
+
+  return actmsg
+}
+
+intern.resolve_msg_id_tx = function(act_instance, origmsg) {
+  var id_tx = (origmsg.id$ || origmsg.actid$ || act_instance.idgen()).split('/')
+
+  id_tx[1] =
+    id_tx[1] ||
+    origmsg.tx$ ||
+    act_instance.fixedargs.tx$ ||
+    act_instance.idgen()
+
+  id_tx[0] = id_tx[0] || act_instance.idgen()
+
+  return id_tx
+}
+
+intern.Meta = function(instance, opts, origmsg, origreply) {
+  var id_tx = intern.resolve_msg_id_tx(instance, origmsg)
+
+  var origmeta = origmsg.meta$
+
+  // Only a limited set of meta properties can be fixed
+  var fixedmeta = instance.fixedmeta || {}
+
+  this.start = Date.now()
+  this.end = null
+  this.pattern = null
+  this.action = null
+
+  this.mi = id_tx[0]
+  this.tx = id_tx[1]
+  this.id = id_tx[0] + '/' + id_tx[1]
+
+  this.instance = instance.id
+  this.tag = instance.tag
+  this.seneca = instance.version
+  this.version = '0.1.0'
+
+  this.gate = !!origmsg.gate$ || fixedmeta.gate
+  this.fatal = !!origmsg.fatal$ || fixedmeta.fatal
+  this.local = !!origmsg.local$ || fixedmeta.local
+
+  this.closing = !!origmsg.closing$ || (origmeta && origmeta.closing)
+
+  this.timeout = Math.max(
+    0,
+    'number' === typeof origmsg.timeout$ ? origmsg.timeout$ : opts.$.timeout
+  )
+
+  this.dflt = origmsg.default$ || (origmeta && origmeta.dflt)
+
+  // NOTE: do not create object here if not provided explicitly.
+  // The parent custom object will be used when available during inward processing.
+  // This preserves object ref of custom object, as it is shared over calls
+  this.custom = origmsg.custom$ || (origmeta && origmeta.custom) || null
+
+  this.plugin = origmsg.plugin$
+  this.prior = origmsg.prior$
+  this.caller = origmsg.caller$
+  this.parents = origmsg.parents$
+
+  // Only true for arriving messages. Child messages called from an
+  // action triggered by a remote message are not considered remote.
+  this.remote = !!origmsg.remote$
+
+  this.sync =
+    null != origmsg.sync$
+      ? !!origmsg.sync$
+      : origmeta && null != origmeta.sync
+      ? !!origmeta.sync
+      : _.isFunction(origreply)
+
+  this.trace = null
+  this.sub = null
+  this.data = null
+  this.err = null
+  this.err_trace = null
+  this.error = null
+  this.empty = null
+}
+
+intern.process_outward = function(actctxt, data) {
+  var outward = actctxt.seneca.private$.outward.process(actctxt, data)
+
+  if (outward) {
+    if ('error' === outward.kind) {
+      data.res = outward.error || error(outward.code, outward.info)
+      data.meta.error = true
+    } else if ('result' === outward.kind) {
+      data.res = outward.result
+    } else {
+      Assert.fail('unknown outward kind: ' + outward.kind)
+    }
+  }
+}
+
+intern.callback_error = function(instance, thrown_obj, ctxt, data) {
+  var duration = ctxt.duration
+  var act_callpoint = ctxt.callpoint
+  var actdef = ctxt.actdef || {}
+  var origmsg = ctxt.origmsg
+  var reply = ctxt.reply
+
+  var meta = data.meta
+  var msg = data.msg
+
+  var err = Util.isError(thrown_obj)
+    ? thrown_obj
+    : new Error(Util.inspect(thrown_obj))
+
+  var opts = instance.options()
+
+  if (!err.seneca) {
+    err = error(
+      err,
+      'act_callback',
+      _.extend({}, err.details, {
+        message: err.message,
+        pattern: actdef.pattern,
+        fn: actdef.func,
+        callback: reply,
+        instance: instance.toString(),
+        callpoint: act_callpoint
+      })
+    )
+  }
+
+  instance.log.error(
+    actlog(actdef, msg, meta, origmsg, {
+      // kind is act as this log entry relates to an action
+      kind: 'act',
+      case: 'ERR',
+      info: err.message,
+      code: err.code,
+      err: err,
+      duration: duration,
+      did: instance.did
+    })
+  )
+
+  instance.emit('act-err', msg, err, data.res)
+
+  if (opts.errhandler) {
+    opts.errhandler.call(instance, err, err.meta$)
+  }
+}
+
+}).call(this,require('_process'),require("timers").setImmediate)
+},{"./lib/actions":220,"./lib/api":221,"./lib/common":222,"./lib/inward":224,"./lib/legacy":225,"./lib/logging":226,"./lib/optioner":227,"./lib/outward":228,"./lib/plugins":229,"./lib/print":230,"./lib/transport":231,"./package.json":232,"_process":192,"assert":16,"eraro":97,"events":98,"gate-executor":100,"jsonic":123,"lodash":124,"nid":132,"norma":135,"ordu":163,"patrun":182,"rolling-stats":214,"seneca-transport":219,"timers":284,"use-plugin":288,"util":291}],234:[function(require,module,exports){
+var Buffer = require('safe-buffer').Buffer
+
+// prototype class for hash functions
+function Hash (blockSize, finalSize) {
+  this._block = Buffer.alloc(blockSize)
+  this._finalSize = finalSize
+  this._blockSize = blockSize
+  this._len = 0
+}
+
+Hash.prototype.update = function (data, enc) {
+  if (typeof data === 'string') {
+    enc = enc || 'utf8'
+    data = Buffer.from(data, enc)
+  }
+
+  var block = this._block
+  var blockSize = this._blockSize
+  var length = data.length
+  var accum = this._len
+
+  for (var offset = 0; offset < length;) {
+    var assigned = accum % blockSize
+    var remainder = Math.min(length - offset, blockSize - assigned)
+
+    for (var i = 0; i < remainder; i++) {
+      block[assigned + i] = data[offset + i]
+    }
+
+    accum += remainder
+    offset += remainder
+
+    if ((accum % blockSize) === 0) {
+      this._update(block)
+    }
+  }
+
+  this._len += length
+  return this
+}
+
+Hash.prototype.digest = function (enc) {
+  var rem = this._len % this._blockSize
+
+  this._block[rem] = 0x80
+
+  // zero (rem + 1) trailing bits, where (rem + 1) is the smallest
+  // non-negative solution to the equation (length + 1 + (rem + 1)) === finalSize mod blockSize
+  this._block.fill(0, rem + 1)
+
+  if (rem >= this._finalSize) {
+    this._update(this._block)
+    this._block.fill(0)
+  }
+
+  var bits = this._len * 8
+
+  // uint32
+  if (bits <= 0xffffffff) {
+    this._block.writeUInt32BE(bits, this._blockSize - 4)
+
+  // uint64
+  } else {
+    var lowBits = (bits & 0xffffffff) >>> 0
+    var highBits = (bits - lowBits) / 0x100000000
+
+    this._block.writeUInt32BE(highBits, this._blockSize - 8)
+    this._block.writeUInt32BE(lowBits, this._blockSize - 4)
+  }
+
+  this._update(this._block)
+  var hash = this._hash()
+
+  return enc ? hash.toString(enc) : hash
+}
+
+Hash.prototype._update = function () {
+  throw new Error('_update must be implemented by subclass')
+}
+
+module.exports = Hash
+
+},{"safe-buffer":215}],235:[function(require,module,exports){
+var exports = module.exports = function SHA (algorithm) {
+  algorithm = algorithm.toLowerCase()
+
+  var Algorithm = exports[algorithm]
+  if (!Algorithm) throw new Error(algorithm + ' is not supported (we accept pull requests)')
+
+  return new Algorithm()
+}
+
+exports.sha = require('./sha')
+exports.sha1 = require('./sha1')
+exports.sha224 = require('./sha224')
+exports.sha256 = require('./sha256')
+exports.sha384 = require('./sha384')
+exports.sha512 = require('./sha512')
+
+},{"./sha":236,"./sha1":237,"./sha224":238,"./sha256":239,"./sha384":240,"./sha512":241}],236:[function(require,module,exports){
+/*
+ * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
+ * in FIPS PUB 180-1
+ * This source code is derived from sha1.js of the same repository.
+ * The difference between SHA-0 and SHA-1 is just a bitwise rotate left
+ * operation was added.
+ */
+
+var inherits = require('inherits')
+var Hash = require('./hash')
+var Buffer = require('safe-buffer').Buffer
+
+var K = [
+  0x5a827999, 0x6ed9eba1, 0x8f1bbcdc | 0, 0xca62c1d6 | 0
+]
+
+var W = new Array(80)
+
+function Sha () {
+  this.init()
+  this._w = W
+
+  Hash.call(this, 64, 56)
+}
+
+inherits(Sha, Hash)
+
+Sha.prototype.init = function () {
+  this._a = 0x67452301
+  this._b = 0xefcdab89
+  this._c = 0x98badcfe
+  this._d = 0x10325476
+  this._e = 0xc3d2e1f0
+
+  return this
+}
+
+function rotl5 (num) {
+  return (num << 5) | (num >>> 27)
+}
+
+function rotl30 (num) {
+  return (num << 30) | (num >>> 2)
+}
+
+function ft (s, b, c, d) {
+  if (s === 0) return (b & c) | ((~b) & d)
+  if (s === 2) return (b & c) | (b & d) | (c & d)
+  return b ^ c ^ d
+}
+
+Sha.prototype._update = function (M) {
+  var W = this._w
+
+  var a = this._a | 0
+  var b = this._b | 0
+  var c = this._c | 0
+  var d = this._d | 0
+  var e = this._e | 0
+
+  for (var i = 0; i < 16; ++i) W[i] = M.readInt32BE(i * 4)
+  for (; i < 80; ++i) W[i] = W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16]
+
+  for (var j = 0; j < 80; ++j) {
+    var s = ~~(j / 20)
+    var t = (rotl5(a) + ft(s, b, c, d) + e + W[j] + K[s]) | 0
+
+    e = d
+    d = c
+    c = rotl30(b)
+    b = a
+    a = t
+  }
+
+  this._a = (a + this._a) | 0
+  this._b = (b + this._b) | 0
+  this._c = (c + this._c) | 0
+  this._d = (d + this._d) | 0
+  this._e = (e + this._e) | 0
+}
+
+Sha.prototype._hash = function () {
+  var H = Buffer.allocUnsafe(20)
+
+  H.writeInt32BE(this._a | 0, 0)
+  H.writeInt32BE(this._b | 0, 4)
+  H.writeInt32BE(this._c | 0, 8)
+  H.writeInt32BE(this._d | 0, 12)
+  H.writeInt32BE(this._e | 0, 16)
+
+  return H
+}
+
+module.exports = Sha
+
+},{"./hash":234,"inherits":118,"safe-buffer":215}],237:[function(require,module,exports){
+/*
+ * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
+ * in FIPS PUB 180-1
+ * Version 2.1a Copyright Paul Johnston 2000 - 2002.
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * Distributed under the BSD License
+ * See http://pajhome.org.uk/crypt/md5 for details.
+ */
+
+var inherits = require('inherits')
+var Hash = require('./hash')
+var Buffer = require('safe-buffer').Buffer
+
+var K = [
+  0x5a827999, 0x6ed9eba1, 0x8f1bbcdc | 0, 0xca62c1d6 | 0
+]
+
+var W = new Array(80)
+
+function Sha1 () {
+  this.init()
+  this._w = W
+
+  Hash.call(this, 64, 56)
+}
+
+inherits(Sha1, Hash)
+
+Sha1.prototype.init = function () {
+  this._a = 0x67452301
+  this._b = 0xefcdab89
+  this._c = 0x98badcfe
+  this._d = 0x10325476
+  this._e = 0xc3d2e1f0
+
+  return this
+}
+
+function rotl1 (num) {
+  return (num << 1) | (num >>> 31)
+}
+
+function rotl5 (num) {
+  return (num << 5) | (num >>> 27)
+}
+
+function rotl30 (num) {
+  return (num << 30) | (num >>> 2)
+}
+
+function ft (s, b, c, d) {
+  if (s === 0) return (b & c) | ((~b) & d)
+  if (s === 2) return (b & c) | (b & d) | (c & d)
+  return b ^ c ^ d
+}
+
+Sha1.prototype._update = function (M) {
+  var W = this._w
+
+  var a = this._a | 0
+  var b = this._b | 0
+  var c = this._c | 0
+  var d = this._d | 0
+  var e = this._e | 0
+
+  for (var i = 0; i < 16; ++i) W[i] = M.readInt32BE(i * 4)
+  for (; i < 80; ++i) W[i] = rotl1(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16])
+
+  for (var j = 0; j < 80; ++j) {
+    var s = ~~(j / 20)
+    var t = (rotl5(a) + ft(s, b, c, d) + e + W[j] + K[s]) | 0
+
+    e = d
+    d = c
+    c = rotl30(b)
+    b = a
+    a = t
+  }
+
+  this._a = (a + this._a) | 0
+  this._b = (b + this._b) | 0
+  this._c = (c + this._c) | 0
+  this._d = (d + this._d) | 0
+  this._e = (e + this._e) | 0
+}
+
+Sha1.prototype._hash = function () {
+  var H = Buffer.allocUnsafe(20)
+
+  H.writeInt32BE(this._a | 0, 0)
+  H.writeInt32BE(this._b | 0, 4)
+  H.writeInt32BE(this._c | 0, 8)
+  H.writeInt32BE(this._d | 0, 12)
+  H.writeInt32BE(this._e | 0, 16)
+
+  return H
+}
+
+module.exports = Sha1
+
+},{"./hash":234,"inherits":118,"safe-buffer":215}],238:[function(require,module,exports){
+/**
+ * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
+ * in FIPS 180-2
+ * Version 2.2-beta Copyright Angel Marin, Paul Johnston 2000 - 2009.
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ *
+ */
+
+var inherits = require('inherits')
+var Sha256 = require('./sha256')
+var Hash = require('./hash')
+var Buffer = require('safe-buffer').Buffer
+
+var W = new Array(64)
+
+function Sha224 () {
+  this.init()
+
+  this._w = W // new Array(64)
+
+  Hash.call(this, 64, 56)
+}
+
+inherits(Sha224, Sha256)
+
+Sha224.prototype.init = function () {
+  this._a = 0xc1059ed8
+  this._b = 0x367cd507
+  this._c = 0x3070dd17
+  this._d = 0xf70e5939
+  this._e = 0xffc00b31
+  this._f = 0x68581511
+  this._g = 0x64f98fa7
+  this._h = 0xbefa4fa4
+
+  return this
+}
+
+Sha224.prototype._hash = function () {
+  var H = Buffer.allocUnsafe(28)
+
+  H.writeInt32BE(this._a, 0)
+  H.writeInt32BE(this._b, 4)
+  H.writeInt32BE(this._c, 8)
+  H.writeInt32BE(this._d, 12)
+  H.writeInt32BE(this._e, 16)
+  H.writeInt32BE(this._f, 20)
+  H.writeInt32BE(this._g, 24)
+
+  return H
+}
+
+module.exports = Sha224
+
+},{"./hash":234,"./sha256":239,"inherits":118,"safe-buffer":215}],239:[function(require,module,exports){
+/**
+ * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
+ * in FIPS 180-2
+ * Version 2.2-beta Copyright Angel Marin, Paul Johnston 2000 - 2009.
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ *
+ */
+
+var inherits = require('inherits')
+var Hash = require('./hash')
+var Buffer = require('safe-buffer').Buffer
+
+var K = [
+  0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
+  0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
+  0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3,
+  0x72BE5D74, 0x80DEB1FE, 0x9BDC06A7, 0xC19BF174,
+  0xE49B69C1, 0xEFBE4786, 0x0FC19DC6, 0x240CA1CC,
+  0x2DE92C6F, 0x4A7484AA, 0x5CB0A9DC, 0x76F988DA,
+  0x983E5152, 0xA831C66D, 0xB00327C8, 0xBF597FC7,
+  0xC6E00BF3, 0xD5A79147, 0x06CA6351, 0x14292967,
+  0x27B70A85, 0x2E1B2138, 0x4D2C6DFC, 0x53380D13,
+  0x650A7354, 0x766A0ABB, 0x81C2C92E, 0x92722C85,
+  0xA2BFE8A1, 0xA81A664B, 0xC24B8B70, 0xC76C51A3,
+  0xD192E819, 0xD6990624, 0xF40E3585, 0x106AA070,
+  0x19A4C116, 0x1E376C08, 0x2748774C, 0x34B0BCB5,
+  0x391C0CB3, 0x4ED8AA4A, 0x5B9CCA4F, 0x682E6FF3,
+  0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208,
+  0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2
+]
+
+var W = new Array(64)
+
+function Sha256 () {
+  this.init()
+
+  this._w = W // new Array(64)
+
+  Hash.call(this, 64, 56)
+}
+
+inherits(Sha256, Hash)
+
+Sha256.prototype.init = function () {
+  this._a = 0x6a09e667
+  this._b = 0xbb67ae85
+  this._c = 0x3c6ef372
+  this._d = 0xa54ff53a
+  this._e = 0x510e527f
+  this._f = 0x9b05688c
+  this._g = 0x1f83d9ab
+  this._h = 0x5be0cd19
+
+  return this
+}
+
+function ch (x, y, z) {
+  return z ^ (x & (y ^ z))
+}
+
+function maj (x, y, z) {
+  return (x & y) | (z & (x | y))
+}
+
+function sigma0 (x) {
+  return (x >>> 2 | x << 30) ^ (x >>> 13 | x << 19) ^ (x >>> 22 | x << 10)
+}
+
+function sigma1 (x) {
+  return (x >>> 6 | x << 26) ^ (x >>> 11 | x << 21) ^ (x >>> 25 | x << 7)
+}
+
+function gamma0 (x) {
+  return (x >>> 7 | x << 25) ^ (x >>> 18 | x << 14) ^ (x >>> 3)
+}
+
+function gamma1 (x) {
+  return (x >>> 17 | x << 15) ^ (x >>> 19 | x << 13) ^ (x >>> 10)
+}
+
+Sha256.prototype._update = function (M) {
+  var W = this._w
+
+  var a = this._a | 0
+  var b = this._b | 0
+  var c = this._c | 0
+  var d = this._d | 0
+  var e = this._e | 0
+  var f = this._f | 0
+  var g = this._g | 0
+  var h = this._h | 0
+
+  for (var i = 0; i < 16; ++i) W[i] = M.readInt32BE(i * 4)
+  for (; i < 64; ++i) W[i] = (gamma1(W[i - 2]) + W[i - 7] + gamma0(W[i - 15]) + W[i - 16]) | 0
+
+  for (var j = 0; j < 64; ++j) {
+    var T1 = (h + sigma1(e) + ch(e, f, g) + K[j] + W[j]) | 0
+    var T2 = (sigma0(a) + maj(a, b, c)) | 0
+
+    h = g
+    g = f
+    f = e
+    e = (d + T1) | 0
+    d = c
+    c = b
+    b = a
+    a = (T1 + T2) | 0
+  }
+
+  this._a = (a + this._a) | 0
+  this._b = (b + this._b) | 0
+  this._c = (c + this._c) | 0
+  this._d = (d + this._d) | 0
+  this._e = (e + this._e) | 0
+  this._f = (f + this._f) | 0
+  this._g = (g + this._g) | 0
+  this._h = (h + this._h) | 0
+}
+
+Sha256.prototype._hash = function () {
+  var H = Buffer.allocUnsafe(32)
+
+  H.writeInt32BE(this._a, 0)
+  H.writeInt32BE(this._b, 4)
+  H.writeInt32BE(this._c, 8)
+  H.writeInt32BE(this._d, 12)
+  H.writeInt32BE(this._e, 16)
+  H.writeInt32BE(this._f, 20)
+  H.writeInt32BE(this._g, 24)
+  H.writeInt32BE(this._h, 28)
+
+  return H
+}
+
+module.exports = Sha256
+
+},{"./hash":234,"inherits":118,"safe-buffer":215}],240:[function(require,module,exports){
+var inherits = require('inherits')
+var SHA512 = require('./sha512')
+var Hash = require('./hash')
+var Buffer = require('safe-buffer').Buffer
+
+var W = new Array(160)
+
+function Sha384 () {
+  this.init()
+  this._w = W
+
+  Hash.call(this, 128, 112)
+}
+
+inherits(Sha384, SHA512)
+
+Sha384.prototype.init = function () {
+  this._ah = 0xcbbb9d5d
+  this._bh = 0x629a292a
+  this._ch = 0x9159015a
+  this._dh = 0x152fecd8
+  this._eh = 0x67332667
+  this._fh = 0x8eb44a87
+  this._gh = 0xdb0c2e0d
+  this._hh = 0x47b5481d
+
+  this._al = 0xc1059ed8
+  this._bl = 0x367cd507
+  this._cl = 0x3070dd17
+  this._dl = 0xf70e5939
+  this._el = 0xffc00b31
+  this._fl = 0x68581511
+  this._gl = 0x64f98fa7
+  this._hl = 0xbefa4fa4
+
+  return this
+}
+
+Sha384.prototype._hash = function () {
+  var H = Buffer.allocUnsafe(48)
+
+  function writeInt64BE (h, l, offset) {
+    H.writeInt32BE(h, offset)
+    H.writeInt32BE(l, offset + 4)
+  }
+
+  writeInt64BE(this._ah, this._al, 0)
+  writeInt64BE(this._bh, this._bl, 8)
+  writeInt64BE(this._ch, this._cl, 16)
+  writeInt64BE(this._dh, this._dl, 24)
+  writeInt64BE(this._eh, this._el, 32)
+  writeInt64BE(this._fh, this._fl, 40)
+
+  return H
+}
+
+module.exports = Sha384
+
+},{"./hash":234,"./sha512":241,"inherits":118,"safe-buffer":215}],241:[function(require,module,exports){
+var inherits = require('inherits')
+var Hash = require('./hash')
+var Buffer = require('safe-buffer').Buffer
+
+var K = [
+  0x428a2f98, 0xd728ae22, 0x71374491, 0x23ef65cd,
+  0xb5c0fbcf, 0xec4d3b2f, 0xe9b5dba5, 0x8189dbbc,
+  0x3956c25b, 0xf348b538, 0x59f111f1, 0xb605d019,
+  0x923f82a4, 0xaf194f9b, 0xab1c5ed5, 0xda6d8118,
+  0xd807aa98, 0xa3030242, 0x12835b01, 0x45706fbe,
+  0x243185be, 0x4ee4b28c, 0x550c7dc3, 0xd5ffb4e2,
+  0x72be5d74, 0xf27b896f, 0x80deb1fe, 0x3b1696b1,
+  0x9bdc06a7, 0x25c71235, 0xc19bf174, 0xcf692694,
+  0xe49b69c1, 0x9ef14ad2, 0xefbe4786, 0x384f25e3,
+  0x0fc19dc6, 0x8b8cd5b5, 0x240ca1cc, 0x77ac9c65,
+  0x2de92c6f, 0x592b0275, 0x4a7484aa, 0x6ea6e483,
+  0x5cb0a9dc, 0xbd41fbd4, 0x76f988da, 0x831153b5,
+  0x983e5152, 0xee66dfab, 0xa831c66d, 0x2db43210,
+  0xb00327c8, 0x98fb213f, 0xbf597fc7, 0xbeef0ee4,
+  0xc6e00bf3, 0x3da88fc2, 0xd5a79147, 0x930aa725,
+  0x06ca6351, 0xe003826f, 0x14292967, 0x0a0e6e70,
+  0x27b70a85, 0x46d22ffc, 0x2e1b2138, 0x5c26c926,
+  0x4d2c6dfc, 0x5ac42aed, 0x53380d13, 0x9d95b3df,
+  0x650a7354, 0x8baf63de, 0x766a0abb, 0x3c77b2a8,
+  0x81c2c92e, 0x47edaee6, 0x92722c85, 0x1482353b,
+  0xa2bfe8a1, 0x4cf10364, 0xa81a664b, 0xbc423001,
+  0xc24b8b70, 0xd0f89791, 0xc76c51a3, 0x0654be30,
+  0xd192e819, 0xd6ef5218, 0xd6990624, 0x5565a910,
+  0xf40e3585, 0x5771202a, 0x106aa070, 0x32bbd1b8,
+  0x19a4c116, 0xb8d2d0c8, 0x1e376c08, 0x5141ab53,
+  0x2748774c, 0xdf8eeb99, 0x34b0bcb5, 0xe19b48a8,
+  0x391c0cb3, 0xc5c95a63, 0x4ed8aa4a, 0xe3418acb,
+  0x5b9cca4f, 0x7763e373, 0x682e6ff3, 0xd6b2b8a3,
+  0x748f82ee, 0x5defb2fc, 0x78a5636f, 0x43172f60,
+  0x84c87814, 0xa1f0ab72, 0x8cc70208, 0x1a6439ec,
+  0x90befffa, 0x23631e28, 0xa4506ceb, 0xde82bde9,
+  0xbef9a3f7, 0xb2c67915, 0xc67178f2, 0xe372532b,
+  0xca273ece, 0xea26619c, 0xd186b8c7, 0x21c0c207,
+  0xeada7dd6, 0xcde0eb1e, 0xf57d4f7f, 0xee6ed178,
+  0x06f067aa, 0x72176fba, 0x0a637dc5, 0xa2c898a6,
+  0x113f9804, 0xbef90dae, 0x1b710b35, 0x131c471b,
+  0x28db77f5, 0x23047d84, 0x32caab7b, 0x40c72493,
+  0x3c9ebe0a, 0x15c9bebc, 0x431d67c4, 0x9c100d4c,
+  0x4cc5d4be, 0xcb3e42b6, 0x597f299c, 0xfc657e2a,
+  0x5fcb6fab, 0x3ad6faec, 0x6c44198c, 0x4a475817
+]
+
+var W = new Array(160)
+
+function Sha512 () {
+  this.init()
+  this._w = W
+
+  Hash.call(this, 128, 112)
+}
+
+inherits(Sha512, Hash)
+
+Sha512.prototype.init = function () {
+  this._ah = 0x6a09e667
+  this._bh = 0xbb67ae85
+  this._ch = 0x3c6ef372
+  this._dh = 0xa54ff53a
+  this._eh = 0x510e527f
+  this._fh = 0x9b05688c
+  this._gh = 0x1f83d9ab
+  this._hh = 0x5be0cd19
+
+  this._al = 0xf3bcc908
+  this._bl = 0x84caa73b
+  this._cl = 0xfe94f82b
+  this._dl = 0x5f1d36f1
+  this._el = 0xade682d1
+  this._fl = 0x2b3e6c1f
+  this._gl = 0xfb41bd6b
+  this._hl = 0x137e2179
+
+  return this
+}
+
+function Ch (x, y, z) {
+  return z ^ (x & (y ^ z))
+}
+
+function maj (x, y, z) {
+  return (x & y) | (z & (x | y))
+}
+
+function sigma0 (x, xl) {
+  return (x >>> 28 | xl << 4) ^ (xl >>> 2 | x << 30) ^ (xl >>> 7 | x << 25)
+}
+
+function sigma1 (x, xl) {
+  return (x >>> 14 | xl << 18) ^ (x >>> 18 | xl << 14) ^ (xl >>> 9 | x << 23)
+}
+
+function Gamma0 (x, xl) {
+  return (x >>> 1 | xl << 31) ^ (x >>> 8 | xl << 24) ^ (x >>> 7)
+}
+
+function Gamma0l (x, xl) {
+  return (x >>> 1 | xl << 31) ^ (x >>> 8 | xl << 24) ^ (x >>> 7 | xl << 25)
+}
+
+function Gamma1 (x, xl) {
+  return (x >>> 19 | xl << 13) ^ (xl >>> 29 | x << 3) ^ (x >>> 6)
+}
+
+function Gamma1l (x, xl) {
+  return (x >>> 19 | xl << 13) ^ (xl >>> 29 | x << 3) ^ (x >>> 6 | xl << 26)
+}
+
+function getCarry (a, b) {
+  return (a >>> 0) < (b >>> 0) ? 1 : 0
+}
+
+Sha512.prototype._update = function (M) {
+  var W = this._w
+
+  var ah = this._ah | 0
+  var bh = this._bh | 0
+  var ch = this._ch | 0
+  var dh = this._dh | 0
+  var eh = this._eh | 0
+  var fh = this._fh | 0
+  var gh = this._gh | 0
+  var hh = this._hh | 0
+
+  var al = this._al | 0
+  var bl = this._bl | 0
+  var cl = this._cl | 0
+  var dl = this._dl | 0
+  var el = this._el | 0
+  var fl = this._fl | 0
+  var gl = this._gl | 0
+  var hl = this._hl | 0
+
+  for (var i = 0; i < 32; i += 2) {
+    W[i] = M.readInt32BE(i * 4)
+    W[i + 1] = M.readInt32BE(i * 4 + 4)
+  }
+  for (; i < 160; i += 2) {
+    var xh = W[i - 15 * 2]
+    var xl = W[i - 15 * 2 + 1]
+    var gamma0 = Gamma0(xh, xl)
+    var gamma0l = Gamma0l(xl, xh)
+
+    xh = W[i - 2 * 2]
+    xl = W[i - 2 * 2 + 1]
+    var gamma1 = Gamma1(xh, xl)
+    var gamma1l = Gamma1l(xl, xh)
+
+    // W[i] = gamma0 + W[i - 7] + gamma1 + W[i - 16]
+    var Wi7h = W[i - 7 * 2]
+    var Wi7l = W[i - 7 * 2 + 1]
+
+    var Wi16h = W[i - 16 * 2]
+    var Wi16l = W[i - 16 * 2 + 1]
+
+    var Wil = (gamma0l + Wi7l) | 0
+    var Wih = (gamma0 + Wi7h + getCarry(Wil, gamma0l)) | 0
+    Wil = (Wil + gamma1l) | 0
+    Wih = (Wih + gamma1 + getCarry(Wil, gamma1l)) | 0
+    Wil = (Wil + Wi16l) | 0
+    Wih = (Wih + Wi16h + getCarry(Wil, Wi16l)) | 0
+
+    W[i] = Wih
+    W[i + 1] = Wil
+  }
+
+  for (var j = 0; j < 160; j += 2) {
+    Wih = W[j]
+    Wil = W[j + 1]
+
+    var majh = maj(ah, bh, ch)
+    var majl = maj(al, bl, cl)
+
+    var sigma0h = sigma0(ah, al)
+    var sigma0l = sigma0(al, ah)
+    var sigma1h = sigma1(eh, el)
+    var sigma1l = sigma1(el, eh)
+
+    // t1 = h + sigma1 + ch + K[j] + W[j]
+    var Kih = K[j]
+    var Kil = K[j + 1]
+
+    var chh = Ch(eh, fh, gh)
+    var chl = Ch(el, fl, gl)
+
+    var t1l = (hl + sigma1l) | 0
+    var t1h = (hh + sigma1h + getCarry(t1l, hl)) | 0
+    t1l = (t1l + chl) | 0
+    t1h = (t1h + chh + getCarry(t1l, chl)) | 0
+    t1l = (t1l + Kil) | 0
+    t1h = (t1h + Kih + getCarry(t1l, Kil)) | 0
+    t1l = (t1l + Wil) | 0
+    t1h = (t1h + Wih + getCarry(t1l, Wil)) | 0
+
+    // t2 = sigma0 + maj
+    var t2l = (sigma0l + majl) | 0
+    var t2h = (sigma0h + majh + getCarry(t2l, sigma0l)) | 0
+
+    hh = gh
+    hl = gl
+    gh = fh
+    gl = fl
+    fh = eh
+    fl = el
+    el = (dl + t1l) | 0
+    eh = (dh + t1h + getCarry(el, dl)) | 0
+    dh = ch
+    dl = cl
+    ch = bh
+    cl = bl
+    bh = ah
+    bl = al
+    al = (t1l + t2l) | 0
+    ah = (t1h + t2h + getCarry(al, t1l)) | 0
+  }
+
+  this._al = (this._al + al) | 0
+  this._bl = (this._bl + bl) | 0
+  this._cl = (this._cl + cl) | 0
+  this._dl = (this._dl + dl) | 0
+  this._el = (this._el + el) | 0
+  this._fl = (this._fl + fl) | 0
+  this._gl = (this._gl + gl) | 0
+  this._hl = (this._hl + hl) | 0
+
+  this._ah = (this._ah + ah + getCarry(this._al, al)) | 0
+  this._bh = (this._bh + bh + getCarry(this._bl, bl)) | 0
+  this._ch = (this._ch + ch + getCarry(this._cl, cl)) | 0
+  this._dh = (this._dh + dh + getCarry(this._dl, dl)) | 0
+  this._eh = (this._eh + eh + getCarry(this._el, el)) | 0
+  this._fh = (this._fh + fh + getCarry(this._fl, fl)) | 0
+  this._gh = (this._gh + gh + getCarry(this._gl, gl)) | 0
+  this._hh = (this._hh + hh + getCarry(this._hl, hl)) | 0
+}
+
+Sha512.prototype._hash = function () {
+  var H = Buffer.allocUnsafe(64)
+
+  function writeInt64BE (h, l, offset) {
+    H.writeInt32BE(h, offset)
+    H.writeInt32BE(l, offset + 4)
+  }
+
+  writeInt64BE(this._ah, this._al, 0)
+  writeInt64BE(this._bh, this._bl, 8)
+  writeInt64BE(this._ch, this._cl, 16)
+  writeInt64BE(this._dh, this._dl, 24)
+  writeInt64BE(this._eh, this._el, 32)
+  writeInt64BE(this._fh, this._fl, 40)
+  writeInt64BE(this._gh, this._gl, 48)
+  writeInt64BE(this._hh, this._hl, 56)
+
+  return H
+}
+
+module.exports = Sha512
+
+},{"./hash":234,"inherits":118,"safe-buffer":215}],242:[function(require,module,exports){
+/*
+Copyright (c) 2014-2016, Matteo Collina <hello@matteocollina.com>
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+'use strict'
+
+var through = require('through2')
+var StringDecoder = require('string_decoder').StringDecoder
+
+function transform (chunk, enc, cb) {
+  this._last += this._decoder.write(chunk)
+  if (this._last.length > this.maxLength) {
+    return cb(new Error('maximum buffer reached'))
+  }
+
+  var list = this._last.split(this.matcher)
+
+  this._last = list.pop()
+
+  for (var i = 0; i < list.length; i++) {
+    push(this, this.mapper(list[i]))
+  }
+
+  cb()
+}
+
+function flush (cb) {
+  // forward any gibberish left in there
+  this._last += this._decoder.end()
+
+  if (this._last) {
+    push(this, this.mapper(this._last))
+  }
+
+  cb()
+}
+
+function push (self, val) {
+  if (val !== undefined) {
+    self.push(val)
+  }
+}
+
+function noop (incoming) {
+  return incoming
+}
+
+function split (matcher, mapper, options) {
+  // Set defaults for any arguments not supplied.
+  matcher = matcher || /\r?\n/
+  mapper = mapper || noop
+  options = options || {}
+
+  // Test arguments explicitly.
+  switch (arguments.length) {
+    case 1:
+      // If mapper is only argument.
+      if (typeof matcher === 'function') {
+        mapper = matcher
+        matcher = /\r?\n/
+      // If options is only argument.
+      } else if (typeof matcher === 'object' && !(matcher instanceof RegExp)) {
+        options = matcher
+        matcher = /\r?\n/
+      }
+      break
+
+    case 2:
+      // If mapper and options are arguments.
+      if (typeof matcher === 'function') {
+        options = mapper
+        mapper = matcher
+        matcher = /\r?\n/
+      // If matcher and options are arguments.
+      } else if (typeof mapper === 'object') {
+        options = mapper
+        mapper = noop
+      }
+  }
+
+  var stream = through(options, transform, flush)
+
+  // this stream is in objectMode only in the readable part
+  stream._readableState.objectMode = true
+
+  // objectMode default hwm is 16 and not 16384
+  if (stream._readableState.highWaterMark && !options.highWaterMark) {
+    stream._readableState.highWaterMark = 16
+  }
+
+  stream._last = ''
+  stream._decoder = new StringDecoder('utf8')
+  stream.matcher = matcher
+  stream.mapper = mapper
+  stream.maxLength = options.maxLength
+
+  return stream
+}
+
+module.exports = split
+
+},{"string_decoder":272,"through2":283}],243:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+module.exports = Stream;
+
+var EE = require('events').EventEmitter;
+var inherits = require('inherits');
+
+inherits(Stream, EE);
+Stream.Readable = require('readable-stream/readable.js');
+Stream.Writable = require('readable-stream/writable.js');
+Stream.Duplex = require('readable-stream/duplex.js');
+Stream.Transform = require('readable-stream/transform.js');
+Stream.PassThrough = require('readable-stream/passthrough.js');
+
+// Backwards-compat with node 0.4.x
+Stream.Stream = Stream;
+
+
+
+// old-style streams.  Note that the pipe method (the only relevant
+// part of this class) is overridden in the Readable class.
+
+function Stream() {
+  EE.call(this);
+}
+
+Stream.prototype.pipe = function(dest, options) {
+  var source = this;
+
+  function ondata(chunk) {
+    if (dest.writable) {
+      if (false === dest.write(chunk) && source.pause) {
+        source.pause();
+      }
+    }
+  }
+
+  source.on('data', ondata);
+
+  function ondrain() {
+    if (source.readable && source.resume) {
+      source.resume();
+    }
+  }
+
+  dest.on('drain', ondrain);
+
+  // If the 'end' option is not supplied, dest.end() will be called when
+  // source gets the 'end' or 'close' events.  Only dest.end() once.
+  if (!dest._isStdio && (!options || options.end !== false)) {
+    source.on('end', onend);
+    source.on('close', onclose);
+  }
+
+  var didOnEnd = false;
+  function onend() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest.end();
+  }
+
+
+  function onclose() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    if (typeof dest.destroy === 'function') dest.destroy();
+  }
+
+  // don't leave dangling pipes when there are errors.
+  function onerror(er) {
+    cleanup();
+    if (EE.listenerCount(this, 'error') === 0) {
+      throw er; // Unhandled stream error in pipe.
+    }
+  }
+
+  source.on('error', onerror);
+  dest.on('error', onerror);
+
+  // remove all the event listeners that were added.
+  function cleanup() {
+    source.removeListener('data', ondata);
+    dest.removeListener('drain', ondrain);
+
+    source.removeListener('end', onend);
+    source.removeListener('close', onclose);
+
+    source.removeListener('error', onerror);
+    dest.removeListener('error', onerror);
+
+    source.removeListener('end', cleanup);
+    source.removeListener('close', cleanup);
+
+    dest.removeListener('close', cleanup);
+  }
+
+  source.on('end', cleanup);
+  source.on('close', cleanup);
+
+  dest.on('close', cleanup);
+
+  dest.emit('pipe', source);
+
+  // Allow for unix-like usage: A.pipe(B).pipe(C)
+  return dest;
+};
+
+},{"events":98,"inherits":118,"readable-stream/duplex.js":244,"readable-stream/passthrough.js":253,"readable-stream/readable.js":254,"readable-stream/transform.js":255,"readable-stream/writable.js":256}],244:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":211}],211:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":245}],245:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60799,7 +69947,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":213,"./_stream_writable":215,"core-util-is":66,"inherits":120,"process-nextick-args":190}],212:[function(require,module,exports){
+},{"./_stream_readable":247,"./_stream_writable":249,"core-util-is":64,"inherits":118,"process-nextick-args":191}],246:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60847,7 +69995,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":214,"core-util-is":66,"inherits":120}],213:[function(require,module,exports){
+},{"./_stream_transform":248,"core-util-is":64,"inherits":118}],247:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -61869,7 +71017,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":211,"./internal/streams/BufferList":216,"./internal/streams/destroy":217,"./internal/streams/stream":218,"_process":191,"core-util-is":66,"events":100,"inherits":120,"isarray":219,"process-nextick-args":190,"safe-buffer":228,"string_decoder/":220,"util":29}],214:[function(require,module,exports){
+},{"./_stream_duplex":245,"./internal/streams/BufferList":250,"./internal/streams/destroy":251,"./internal/streams/stream":252,"_process":192,"core-util-is":64,"events":98,"inherits":118,"isarray":120,"process-nextick-args":191,"safe-buffer":215,"string_decoder/":257,"util":29}],248:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -62084,7 +71232,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":211,"core-util-is":66,"inherits":120}],215:[function(require,module,exports){
+},{"./_stream_duplex":245,"core-util-is":64,"inherits":118}],249:[function(require,module,exports){
 (function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -62774,7 +71922,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":211,"./internal/streams/destroy":217,"./internal/streams/stream":218,"_process":191,"core-util-is":66,"inherits":120,"process-nextick-args":190,"safe-buffer":228,"timers":264,"util-deprecate":269}],216:[function(require,module,exports){
+},{"./_stream_duplex":245,"./internal/streams/destroy":251,"./internal/streams/stream":252,"_process":192,"core-util-is":64,"inherits":118,"process-nextick-args":191,"safe-buffer":215,"timers":284,"util-deprecate":289}],250:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -62854,7 +72002,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":228,"util":29}],217:[function(require,module,exports){
+},{"safe-buffer":215,"util":29}],251:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -62929,22 +72077,13 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":190}],218:[function(require,module,exports){
+},{"process-nextick-args":191}],252:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":100}],219:[function(require,module,exports){
-var toString = {}.toString;
-
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
-
-},{}],220:[function(require,module,exports){
-arguments[4][61][0].apply(exports,arguments)
-},{"dup":61,"safe-buffer":228}],221:[function(require,module,exports){
+},{"events":98}],253:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":222}],222:[function(require,module,exports){
+},{"./readable":254}],254:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -62953,8429 +72092,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":211,"./lib/_stream_passthrough.js":212,"./lib/_stream_readable.js":213,"./lib/_stream_transform.js":214,"./lib/_stream_writable.js":215}],223:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":245,"./lib/_stream_passthrough.js":246,"./lib/_stream_readable.js":247,"./lib/_stream_transform.js":248,"./lib/_stream_writable.js":249}],255:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":222}],224:[function(require,module,exports){
+},{"./readable":254}],256:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":215}],225:[function(require,module,exports){
-var EventEmitter = require('events').EventEmitter
-var backoff = require('backoff')
-
-module.exports =
-function (createConnection) {
-  return function (opts, onConnect) {
-    onConnect = 'function' == typeof opts ? opts : onConnect
-    opts = 'object' == typeof opts ? opts : {initialDelay: 1e3, maxDelay: 30e3}
-    if(!onConnect)
-      onConnect = opts.onConnect
-
-    var emitter = new EventEmitter()
-    emitter.connected = false
-    emitter.reconnect = true
-
-    if(onConnect)
-      //use "connection" to match core (net) api.
-      emitter.on('connection', onConnect)
-
-    var backoffStrategy = opts.strategy || opts.type
-    var backoffMethod
-    if (typeof backoffStrategy == 'string')
-      backoffMethod = backoff[backoffStrategy](opts)
-    else
-      backoffMethod = backoffStrategy || backoff.fibonacci(opts)
-
-    if(opts.failAfter)
-      backoffMethod.failAfter(opts.failAfter);
-
-    backoffMethod.on('backoff', function (n, d, e) {
-      emitter.emit('backoff', n, d, e)
-    })
-    backoffMethod.on('fail', function (e) {
-      emitter.disconnect()
-      emitter.emit('fail', e)
-    })
-
-    var args
-    function attempt (n, delay) {
-      if(emitter.connected) return
-      if(!emitter.reconnect) return
-
-      emitter.emit('reconnect', n, delay)
-      var con = createConnection.apply(emitter, args)
-      emitter._connection = con
-
-      function onError (err) {
-        con.removeListener('error', onError)
-        emitter.emit('error', err)
-        onDisconnect(err)
-      }
-
-      function onDisconnect (err) {
-        emitter.connected = false
-        con.removeListener('close', onDisconnect)
-        con.removeListener('end'  , onDisconnect)
-
-        //hack to make http not crash.
-        //HTTP IS THE WORST PROTOCOL.
-        if(con.constructor.name == 'Request')
-          con.on('error', function () {})
-
-        //emit disconnect before checking reconnect, so user has a chance to decide not to.
-        emitter.emit('disconnect', err)
-
-        if(!emitter.reconnect) return
-        try { backoffMethod.backoff() } catch (_) { }
-      }
-
-      con
-        .on('error', onError)
-        .on('close', onDisconnect)
-        .on('end'  , onDisconnect)
-
-      if(opts.immediate || con.constructor.name == 'Request') {
-        emitter.connected = true
-        emitter.emit('connect', con)
-        emitter.emit('connection', con)
-        con.once('data', function () {
-          //this is the only way to know for sure that data is coming...
-          backoffMethod.reset()
-        })
-      } else {
-        con
-          .once('connect', function () {
-            backoffMethod.reset()
-            emitter.connected = true
-            if(onConnect)
-              con.removeListener('connect', onConnect)
-            emitter.emit('connect', con)
-            //also support net style 'connection' method.
-            emitter.emit('connection', con)
-          })
-      }
-    }
-
-    emitter.connect =
-    emitter.listen = function () {
-      this.reconnect = true
-      if(emitter.connected) return
-      backoffMethod.reset()
-      backoffMethod.on('ready', attempt)
-      if (!args) {
-        var len = arguments.length;
-        args = new Array(len);
-        for (var i = 0; i < len; i++) {
-          args[i] = arguments[i];
-        }
-      }
-      attempt(0, 0)
-      return emitter
-    }
-
-    //force reconnection
-
-    emitter.disconnect = function () {
-      this.reconnect = false
-
-      if(emitter._connection)
-        emitter._connection.end()
-
-      return emitter
-    }
-
-    emitter.reset = function () {
-      backoffMethod.reset()
-      attempt(0, 0)
-    }
-
-    return emitter
-  }
-
-}
-
-},{"backoff":20,"events":100}],226:[function(require,module,exports){
-'use strict'
-var Buffer = require('buffer').Buffer
-var inherits = require('inherits')
-var HashBase = require('hash-base')
-
-var ARRAY16 = new Array(16)
-
-var zl = [
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
-  3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
-  1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
-  4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13
-]
-
-var zr = [
-  5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
-  6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
-  15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
-  8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
-  12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11
-]
-
-var sl = [
-  11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
-  7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
-  11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
-  11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
-  9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
-]
-
-var sr = [
-  8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
-  9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
-  9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
-  15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15, 8,
-  8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
-]
-
-var hl = [0x00000000, 0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xa953fd4e]
-var hr = [0x50a28be6, 0x5c4dd124, 0x6d703ef3, 0x7a6d76e9, 0x00000000]
-
-function RIPEMD160 () {
-  HashBase.call(this, 64)
-
-  // state
-  this._a = 0x67452301
-  this._b = 0xefcdab89
-  this._c = 0x98badcfe
-  this._d = 0x10325476
-  this._e = 0xc3d2e1f0
-}
-
-inherits(RIPEMD160, HashBase)
-
-RIPEMD160.prototype._update = function () {
-  var words = ARRAY16
-  for (var j = 0; j < 16; ++j) words[j] = this._block.readInt32LE(j * 4)
-
-  var al = this._a | 0
-  var bl = this._b | 0
-  var cl = this._c | 0
-  var dl = this._d | 0
-  var el = this._e | 0
-
-  var ar = this._a | 0
-  var br = this._b | 0
-  var cr = this._c | 0
-  var dr = this._d | 0
-  var er = this._e | 0
-
-  // computation
-  for (var i = 0; i < 80; i += 1) {
-    var tl
-    var tr
-    if (i < 16) {
-      tl = fn1(al, bl, cl, dl, el, words[zl[i]], hl[0], sl[i])
-      tr = fn5(ar, br, cr, dr, er, words[zr[i]], hr[0], sr[i])
-    } else if (i < 32) {
-      tl = fn2(al, bl, cl, dl, el, words[zl[i]], hl[1], sl[i])
-      tr = fn4(ar, br, cr, dr, er, words[zr[i]], hr[1], sr[i])
-    } else if (i < 48) {
-      tl = fn3(al, bl, cl, dl, el, words[zl[i]], hl[2], sl[i])
-      tr = fn3(ar, br, cr, dr, er, words[zr[i]], hr[2], sr[i])
-    } else if (i < 64) {
-      tl = fn4(al, bl, cl, dl, el, words[zl[i]], hl[3], sl[i])
-      tr = fn2(ar, br, cr, dr, er, words[zr[i]], hr[3], sr[i])
-    } else { // if (i<80) {
-      tl = fn5(al, bl, cl, dl, el, words[zl[i]], hl[4], sl[i])
-      tr = fn1(ar, br, cr, dr, er, words[zr[i]], hr[4], sr[i])
-    }
-
-    al = el
-    el = dl
-    dl = rotl(cl, 10)
-    cl = bl
-    bl = tl
-
-    ar = er
-    er = dr
-    dr = rotl(cr, 10)
-    cr = br
-    br = tr
-  }
-
-  // update state
-  var t = (this._b + cl + dr) | 0
-  this._b = (this._c + dl + er) | 0
-  this._c = (this._d + el + ar) | 0
-  this._d = (this._e + al + br) | 0
-  this._e = (this._a + bl + cr) | 0
-  this._a = t
-}
-
-RIPEMD160.prototype._digest = function () {
-  // create padding and handle blocks
-  this._block[this._blockOffset++] = 0x80
-  if (this._blockOffset > 56) {
-    this._block.fill(0, this._blockOffset, 64)
-    this._update()
-    this._blockOffset = 0
-  }
-
-  this._block.fill(0, this._blockOffset, 56)
-  this._block.writeUInt32LE(this._length[0], 56)
-  this._block.writeUInt32LE(this._length[1], 60)
-  this._update()
-
-  // produce result
-  var buffer = Buffer.alloc ? Buffer.alloc(20) : new Buffer(20)
-  buffer.writeInt32LE(this._a, 0)
-  buffer.writeInt32LE(this._b, 4)
-  buffer.writeInt32LE(this._c, 8)
-  buffer.writeInt32LE(this._d, 12)
-  buffer.writeInt32LE(this._e, 16)
-  return buffer
-}
-
-function rotl (x, n) {
-  return (x << n) | (x >>> (32 - n))
-}
-
-function fn1 (a, b, c, d, e, m, k, s) {
-  return (rotl((a + (b ^ c ^ d) + m + k) | 0, s) + e) | 0
-}
-
-function fn2 (a, b, c, d, e, m, k, s) {
-  return (rotl((a + ((b & c) | ((~b) & d)) + m + k) | 0, s) + e) | 0
-}
-
-function fn3 (a, b, c, d, e, m, k, s) {
-  return (rotl((a + ((b | (~c)) ^ d) + m + k) | 0, s) + e) | 0
-}
-
-function fn4 (a, b, c, d, e, m, k, s) {
-  return (rotl((a + ((b & d) | (c & (~d))) + m + k) | 0, s) + e) | 0
-}
-
-function fn5 (a, b, c, d, e, m, k, s) {
-  return (rotl((a + (b ^ (c | (~d))) + m + k) | 0, s) + e) | 0
-}
-
-module.exports = RIPEMD160
-
-},{"buffer":63,"hash-base":104,"inherits":120}],227:[function(require,module,exports){
-/* Copyright (c) 2013-2014 Richard Rodger, MIT License */
-/* jshint node:true, asi:true, eqnull:true */
-"use strict";
-
-
-function Stats( size, duration, clock ) {
-  var self = this
-
-  size = size || 1111
-  duration = duration || 60000
-  clock = clock || Date.now
-
-  var start = clock()
-
-  var vals  = new Array(size)
-  var times = new Array(size)
-
-  var head = -1
-  
-  var count = 0
-  var sum   = 0
-
-  var allmin   = void 0
-  var allmax   = void 0
-  var allcount = 0
-  var allsum   = 0
-
-  var minrate   = void 0
-  var maxrate   = void 0
-
-
-  self.point = function( v ) {
-    if( null == v ) return;
-
-    var now = clock()
-    var cutoff = now - duration
-
-    head = (head+1) % size
-
-    if( count === size ) {
-      sum -= vals[head]
-      count--
-    }
-
-    vals[head]  = v
-    times[head] = now
-
-    count++
-    sum += v
-
-    allcount++
-    allsum += v
-    allmin = void 0===allmin ? v : v < allmin ? v : allmin
-    allmax = void 0===allmax ? v : allmax < v ? v : allmax
-
-    //console.log('point k:'+times[head]+',n:'+count+',h:'+head+', v='+vals+' t='+times)
-  }
-
-  
-  self.calculate = function() {
-    var now = clock()
-    var cutoff = now - duration
-    var i
-
-    if( 0 < count ) {
-      var tail = (size + head - count + 1) % size
-      i = 0
-      while( i++ < count && times[tail] <= cutoff ) {
-        sum -= vals[tail]
-        count--
-        tail = (tail+1) % size
-      }
-    }
-
-    var mean = 0 < count ? sum / count : 0
-    var vr = 0, v, min, max
-    for( i = 0; i < count; i++ ) {
-      v = vals[(size+head-i)%size]
-      vr += Math.pow( v - mean, 2 )
-      min = void 0===min ? v : v < min ? v : min
-      max = void 0===max ? v : max < v ? v : max
-    }
-
-    var rate = 1000 * count / duration
-    minrate = void 0===minrate ? rate : rate < minrate ? rate : minrate
-    maxrate = void 0===maxrate ? rate : maxrate < rate ? rate : maxrate
-
-    var out = {
-      now: now,
-      from: cutoff,
-      start: start,
-
-      count: count, 
-      sum: sum,
-      mean: mean,
-      min : min,
-      max : max,
-      stddev: 1 < count ? Math.sqrt(vr/(count-1)) : 0,
-
-      rate:rate,
-      minrate:minrate,
-      maxrate:maxrate,
-
-      allmin : allmin,
-      allmax : allmax,
-      allcount : allcount,
-      allsum : allsum,
-      allmean : 0 < allcount ? allsum / allcount : 0,
-      allrate: 1000 * allcount / (now-start)
-    }
-    //console.log(require('util').inspect(out))
-
-    return out
-  }
-
-
-  return self
-}
-
-
-function NamedStats( size, duration, clock ) {
-  var self = this
-
-  var empty = new Stats( 1, 1 ).calculate()
-  var map = {}
-
-  self.point = function( v, name ) {
-    if( null == v || null == name ) return;
-
-    var stats = (map[name] = (map[name] || new Stats( size, duration, clock )))
-    stats.point( v )
-  }
-
-  
-  self.calculate = function( name ) {
-    if( null == name ) {
-      var out = {}
-      for( var n in map ) {
-        out[n] = map[n].calculate()
-      }
-      return out
-    }
-
-    var stats = (map[name] = (map[name] || new Stats( size, duration )))
-    if( null == stats ) return empty;
-
-    return stats.calculate()
-  }
-
-
-  self.names = function() {
-    var names = []
-    for( var name in map ) {
-      names.push(name)
-    }
-    return names;
-  }
-  
-  return self
-}
-
-
-module.exports = function( size, duration, clock ) {
-  var stats = new Stats( size, duration, clock );
-  return stats
-}
-
-module.exports.Stats      = Stats
-module.exports.NamedStats = NamedStats
-
-},{}],228:[function(require,module,exports){
-/* eslint-disable node/no-deprecated-api */
-var buffer = require('buffer')
-var Buffer = buffer.Buffer
-
-// alternative to using Object.keys for old browsers
-function copyProps (src, dst) {
-  for (var key in src) {
-    dst[key] = src[key]
-  }
-}
-if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow) {
-  module.exports = buffer
-} else {
-  // Copy properties from require('buffer')
-  copyProps(buffer, exports)
-  exports.Buffer = SafeBuffer
-}
-
-function SafeBuffer (arg, encodingOrOffset, length) {
-  return Buffer(arg, encodingOrOffset, length)
-}
-
-// Copy static methods from Buffer
-copyProps(Buffer, SafeBuffer)
-
-SafeBuffer.from = function (arg, encodingOrOffset, length) {
-  if (typeof arg === 'number') {
-    throw new TypeError('Argument must not be a number')
-  }
-  return Buffer(arg, encodingOrOffset, length)
-}
-
-SafeBuffer.alloc = function (size, fill, encoding) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  var buf = Buffer(size)
-  if (fill !== undefined) {
-    if (typeof encoding === 'string') {
-      buf.fill(fill, encoding)
-    } else {
-      buf.fill(fill)
-    }
-  } else {
-    buf.fill(0)
-  }
-  return buf
-}
-
-SafeBuffer.allocUnsafe = function (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  return Buffer(size)
-}
-
-SafeBuffer.allocUnsafeSlow = function (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  return buffer.SlowBuffer(size)
-}
-
-},{"buffer":63}],229:[function(require,module,exports){
-/* Copyright (c) 2013-2015 Richard Rodger, MIT License */
-/* jshint node:true, asi:true, eqnull:true */
-'use strict'
-
-// Load modules
-var Buffer = require('buffer')
-var Http = require('http')
-var Https = require('https')
-var Qs = require('qs')
-var Url = require('url')
-var _ = require('lodash')
-var Jsonic = require('jsonic')
-var Wreck = require('wreck')
-
-// Declare internals
-var internals = {}
-
-exports.listen = function (options, transportUtil) {
-  return function (msg, callback) {
-    var seneca = this.root.delegate()
-
-    var listenOptions = seneca.util.deepextend(options[msg.type], msg)
-
-    var server = (listenOptions.protocol === 'https') ? Https.createServer(listenOptions.serverOptions) : Http.createServer()
-
-    var listener
-    var listenAttempts = 0
-    var listen_details = _.clone(msg)
-
-    server.on('request', function (req, res) {
-      internals.timeout(listenOptions, req, res)
-      req.query = Qs.parse(Url.parse(req.url).query)
-      internals.setBody(seneca, transportUtil, req, res, function (err) {
-        if (err) {
-          return res.end()
-        }
-
-        internals.trackHeaders(listenOptions, seneca, transportUtil, req, res)
-      })
-    })
-
-    server.on('error', function (err) {
-      if ('EADDRINUSE' === err.code && listenAttempts < listenOptions.max_listen_attempts) {
-        listenAttempts++
-        seneca.log.warn('listen', 'attempt', listenAttempts, err.code, listenOptions)
-        setTimeout(listen, 100 + Math.floor(Math.random() * listenOptions.attempt_delay))
-        return
-      }
-      callback(err)
-    })
-
-    server.on('listening', function () {
-      listen_details.port = server.address().port
-      seneca.log.debug('listen', listen_details)
-      callback(null, listen_details)
-    })
-
-    function listen () {
-      listener = server.listen(
-        listen_details.port = transportUtil.resolveDynamicValue(listenOptions.port, listenOptions),
-        listen_details.host = transportUtil.resolveDynamicValue(listenOptions.host, listenOptions)
-      )
-    }
-
-    transportUtil.close(seneca, function (done) {
-      // node 0.10 workaround, otherwise it throws
-      if (listener && listener._handle) {
-        listener.close()
-      }
-      done()
-    })
-
-    listen()
-  }
-}
-
-exports.client = function (options, transportUtil) {
-  return function (msg, callback) {
-    var seneca = this.root.delegate()
-
-    var clientOptions = seneca.util.deepextend(options[msg.type], msg)
-    var defaultHeaders = null
-
-    // these are seneca internal, users are not allowed to change them
-    if (options[msg.type].headers) {
-      defaultHeaders = _.omit(options[msg.type].headers,
-        ['Accept', 'Content-Type', 'Content-Length', 'Cache-Control', 'seneca-id',
-          'seneca-kind', 'seneca-origin', 'seneca-track', 'seneca-time-client-sent',
-          'seneca-accept', 'seneca-time-listen-recv', 'seneca-time-listen-sent'])
-    }
-
-    var send = function (spec, topic, send_done) {
-      var host = transportUtil.resolveDynamicValue(clientOptions.host, clientOptions)
-      var port = transportUtil.resolveDynamicValue(clientOptions.port, clientOptions)
-      var path = transportUtil.resolveDynamicValue(clientOptions.path, clientOptions)
-
-      // never use a 0.0.0.0 as targeted host, because Windows can't handle it
-      host = host === '0.0.0.0' ? '127.0.0.1' : host
-
-      var url = clientOptions.protocol + '://' + host + ':' + port + path
-      seneca.log.debug('client', 'web', 'send', spec, topic, clientOptions, url)
-
-      function action (msg, done, meta) {
-        var data = transportUtil.prepare_request(this, msg, done, meta)
-
-        var headers = {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'seneca-id': data.id,
-          'seneca-kind': 'req',
-          'seneca-origin': seneca.id,
-          'seneca-track': transportUtil.stringifyJSON(seneca, 'send-track', data.track || []),
-          'seneca-time-client-sent': data.time.client_sent
-        }
-
-        if (defaultHeaders) {
-          _.assign(headers, defaultHeaders)
-        }
-
-        var requestOptions = {
-          json: true,
-          headers: headers,
-          timeout: clientOptions.timeout,
-          payload: JSON.stringify(data.act)
-        }
-
-        Wreck.post(url, requestOptions, function (err, res, payload) {
-          var response = {
-            kind: 'res',
-            res: payload && _.isObject(payload) ? payload : null,
-            error: err,
-            sync: (msg.meta$ || meta).sync
-          }
-
-          if (res) {
-            response.id = res.headers['seneca-id']
-            response.origin = res.headers['seneca-origin']
-            response.accept = res.headers['seneca-accept']
-            response.time = {
-              client_sent: res.headers['seneca-time-client-sent'],
-              listen_recv: res.headers['seneca-time-listen-recv'],
-              listen_sent: res.headers['seneca-time-listen-sent']
-            }
-
-            if (res.statusCode !== 200) {
-              response.error = payload
-            }
-          }
-          else {
-            response.id = data.id
-            response.origin = seneca.id
-          }
-
-          transportUtil.handle_response(seneca, response, clientOptions)
-        })
-      }
-
-      send_done(null, action)
-
-      transportUtil.close(seneca, function (done) {
-        done()
-      })
-    }
-    transportUtil.make_client(seneca, send, clientOptions, callback)
-  }
-}
-
-internals.setBody = function (seneca, transportUtil, req, res, next) {
-  var buf = []
-  req.setEncoding('utf8')
-  req.on('data', function (chunk) {
-    buf.push(chunk)
-  })
-  req.on('end', function () {
-    try {
-      var bufstr = buf.join('')
-
-      var bodydata = bufstr.length ? transportUtil.parseJSON(seneca, 'req-body', bufstr) : {}
-
-      if (bodydata instanceof Error) {
-        var out = transportUtil.prepareResponse(seneca, {})
-        out.input = bufstr
-        out.error = transportUtil.error('invalid_json', { input: bufstr })
-        internals.sendResponse(seneca, transportUtil, res, out, {})
-        return
-      }
-
-      req.body = _.extend(
-        {},
-        bodydata,
-
-        // deprecated
-        (req.query && req.query.args$) ? Jsonic(req.query.args$) : {},
-
-        (req.query && req.query.msg$) ? Jsonic(req.query.msg$) : {},
-        req.query || {}
-      )
-
-      next()
-    }
-    catch (err) {
-      res.write(err.message + ': ' + bufstr)
-      res.statusCode = 400
-      next(err)
-    }
-  })
-}
-
-internals.trackHeaders = function (listenOptions, seneca, transportUtil, req, res) {
-  if (req.url.indexOf(listenOptions.path) !== 0) {
-    return
-  }
-  var data
-  if (req.headers['seneca-id']) {
-    data = {
-      id: req.headers['seneca-id'],
-      kind: 'act',
-      origin: req.headers['seneca-origin'],
-      track: transportUtil.parseJSON(seneca, 'track-receive', req.headers['seneca-track']) || [],
-      time: {
-        client_sent: req.headers['seneca-time-client-sent']
-      },
-      act: req.body
-    }
-  }
-
-  // convenience for non-seneca clients
-  if (!req.headers['seneca-id']) {
-    data = {
-      id: seneca.idgen(),
-      kind: 'act',
-      origin: req.headers['user-agent'] || 'UNKNOWN',
-      track: [],
-      time: {
-        client_sent: Date.now()
-      },
-      act: req.body
-    }
-  }
-
-  transportUtil.handle_request(seneca, data, listenOptions, function (out) {
-    internals.sendResponse(seneca, transportUtil, res, out, data)
-  })
-}
-
-internals.sendResponse = function (seneca, transportUtil, res, out, data) {
-  var outJson = 'null'
-  var httpcode = 200
-
-  if (out && out.res) {
-    httpcode = out.res.statusCode || httpcode
-    outJson = transportUtil.stringifyJSON(seneca, 'listen-web', out.res)
-  }
-  else if (out && out.error) {
-    httpcode = out.error.statusCode || 500
-    outJson = transportUtil.stringifyJSON(seneca, 'listen-web', out.error)
-  }
-
-  var headers = {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'private, max-age=0, no-cache, no-store',
-    'Content-Length': Buffer.Buffer.byteLength(outJson)
-  }
-
-  headers['seneca-id'] = out && out.id ? out.id : seneca.id
-  headers['seneca-kind'] = 'res'
-  headers['seneca-origin'] = out && out.origin ? out.origin : 'UNKNOWN'
-  headers['seneca-accept'] = seneca.id
-  headers['seneca-track'] = '' + (data.track ? data.track : [])
-  headers['seneca-time-client-sent'] =
-    out && out.item ? out.time.client_sent : '0'
-  headers['seneca-time-listen-recv'] =
-    out && out.item ? out.time.listen_recv : '0'
-  headers['seneca-time-listen-sent'] =
-    out && out.item ? out.time.listen_sent : '0'
-
-  res.writeHead(httpcode, headers)
-  res.end(outJson)
-}
-
-internals.timeout = function (listenOptions, req, res) {
-  var id = setTimeout(function () {
-    res.statusCode = 503
-    res.statusMessage = 'Response timeout'
-    res.end('{ "code": "ETIMEDOUT" }')
-  }, listenOptions.timeout || 5000)
-
-  var clearTimeoutId = function () {
-    clearTimeout(id)
-  }
-
-  req.once('close', clearTimeoutId)
-  req.once('error', clearTimeoutId)
-  res.once('error', clearTimeoutId)
-  res.socket.once('data', clearTimeoutId)
-}
-
-},{"buffer":63,"http":259,"https":118,"jsonic":124,"lodash":125,"qs":201,"url":266,"wreck":273}],230:[function(require,module,exports){
-/* Copyright (c) 2013-2015 Richard Rodger, MIT License */
-/* jshint node:true, asi:true, eqnull:true */
-'use strict'
-
-// Load modules
-var Net = require('net')
-var Stream = require('stream')
-var Ndjson = require('ndjson')
-var Reconnect = require('reconnect-core')
-var _ = require('lodash')
-
-// Declare internals
-var internals = {}
-
-exports.listen = function (options, transportUtil) {
-  return function (args, callback) {
-    var seneca = this.root.delegate()
-
-    var listenOptions = seneca.util.deepextend(options[args.type], args)
-
-    var connections = []
-    var listenAttempts = 0
-
-    var listener = Net.createServer(function (connection) {
-      seneca.log.debug('listen', 'connection', listenOptions,
-                       'remote', connection.remoteAddress, connection.remotePort)
-
-      var parser = Ndjson.parse()
-      var stringifier = Ndjson.stringify()
-      parser.on('error', function (error) {
-        console.error(error)
-        connection.end()
-      })
-      parser.on('data', function (data) {
-        if (data instanceof Error) {
-          var out = transportUtil.prepareResponse(seneca, {})
-          out.input = data.input
-          out.error = transportUtil.error('invalid_json', { input: data.input })
-
-          stringifier.write(out)
-          return
-        }
-
-        transportUtil.handle_request(seneca, data, options, function (out) {
-          if (out === null || !out.sync) {
-            return
-          }
-
-          stringifier.write(out)
-        })
-      })
-
-      connection.pipe(parser)
-      stringifier.pipe(connection)
-
-      connection.on('error', function (err) {
-        seneca.log.error('listen', 'pipe-error', listenOptions, err && err.stack)
-      })
-
-      connections.push(connection)
-    })
-
-    listener.once('listening', function () {
-      listenOptions.port = listener.address().port
-      seneca.log.debug('listen', 'open', listenOptions)
-      return callback(null, listenOptions)
-    })
-
-    listener.on('error', function (err) {
-      seneca.log.error('listen', 'net-error', listenOptions, err && err.stack)
-
-      if ('EADDRINUSE' === err.code && listenAttempts < listenOptions.max_listen_attempts) {
-        listenAttempts++
-        seneca.log.warn('listen', 'attempt', listenAttempts, err.code, listenOptions)
-        setTimeout(listen, 100 + Math.floor(Math.random() * listenOptions.attempt_delay))
-        return
-      }
-    })
-
-    listener.on('close', function () {
-      seneca.log.debug('listen', 'close', listenOptions)
-    })
-
-    function listen () {
-      if (listenOptions.path) {
-        listener.listen(listenOptions.path)
-      }
-      else {
-        listener.listen(listenOptions.port, listenOptions.host)
-      }
-    }
-    listen()
-
-    transportUtil.close(seneca, function (next) {
-      // node 0.10 workaround, otherwise it throws
-      if (listener._handle) {
-        listener.close()
-      }
-      internals.closeConnections(connections, seneca)
-      next()
-    })
-  }
-}
-
-exports.client = function (options, transportUtil) {
-  return function (args, callback) {
-    var seneca = this.root.delegate()
-
-    var type = args.type
-    if (args.host) {
-      // under Windows host, 0.0.0.0 host will always fail
-      args.host = args.host === '0.0.0.0' ? '127.0.0.1' : args.host
-    }
-    var clientOptions = seneca.util.deepextend(options[args.type], args)
-    clientOptions.host = !args.host && clientOptions.host === '0.0.0.0' ? '127.0.0.1' : clientOptions.host
-
-    var send = function (spec, topic, send_done) {
-      seneca.log.debug('client', type, 'send-init', spec, topic, clientOptions)
-
-      var connections = []
-      var established = false
-
-      var reconnect = internals.reconnect(function (stream) {
-        // unique connections are by the options e.g. host:port
-        // don't need to pipe everything again if it exists
-        // established is for a race condition for `connect` event pushing
-        var existing = _.find(connections, { clientOptions: clientOptions })
-        if (!established || existing && existing.setup) {
-          return
-        }
-
-        var msger = internals.clientMessager(seneca, clientOptions, transportUtil)
-        var parser = Ndjson.parse()
-        var stringifier = Ndjson.stringify()
-
-        stream
-          .pipe(parser)
-          .pipe(msger)
-          .pipe(stringifier)
-          .pipe(stream)
-
-        existing.setup = true
-
-        send_done(null, function (args, done, meta) {
-          var outmsg = transportUtil.prepare_request(this, args, done, meta)
-          if (!outmsg.replied) stringifier.write(outmsg)
-        })
-      })
-
-      reconnect.on('connect', function (connection) {
-        seneca.log.debug('client', type, 'connect', spec, topic, clientOptions)
-        connection.clientOptions = clientOptions // unique per connection
-        connections.push(connection)
-        established = true
-      })
-      reconnect.on('reconnect', function () {
-        seneca.log.debug('client', type, 'reconnect', spec, topic, clientOptions)
-      })
-      reconnect.on('disconnect', function (err) {
-        seneca.log.debug('client', type, 'disconnect', spec, topic, clientOptions,
-           (err && err.stack) || err)
-
-        var conn = _.find(connections, { clientOptions: clientOptions })
-        if (conn) {
-          conn.setup = false
-        }
-      })
-      reconnect.on('error', function (err) {
-        seneca.log.debug('client', type, 'error', spec, topic, clientOptions, err.stack)
-      })
-
-      reconnect.connect({
-        port: clientOptions.port,
-        host: clientOptions.host
-      })
-
-      transportUtil.close(seneca, function (done) {
-        reconnect.disconnect()
-        internals.closeConnections(connections, seneca)
-        done()
-      })
-    }
-
-    transportUtil.make_client(seneca, send, clientOptions, callback)
-  }
-}
-
-internals.clientMessager = function (seneca, options, transportUtil) {
-  var messager = new Stream.Duplex({ objectMode: true })
-  messager._read = function () {}
-  messager._write = function (data, enc, callback) {
-    transportUtil.handle_response(seneca, data, options)
-    return callback()
-  }
-  return messager
-}
-
-internals.closeConnections = function (connections, seneca) {
-  for (var i = 0, il = connections.length; i < il; ++i) {
-    internals.destroyConnection(connections[i], seneca)
-  }
-}
-
-internals.destroyConnection = function (connection, seneca) {
-  try {
-    connection.destroy()
-  }
-  catch (e) {
-    seneca.log.error(e)
-  }
-}
-
-internals.reconnect = Reconnect(function () {
-  var args = [].slice.call(arguments)
-  return Net.connect.apply(null, args)
-})
-
-},{"lodash":125,"ndjson":132,"net":59,"reconnect-core":225,"stream":258}],231:[function(require,module,exports){
-/* Copyright (c) 2015-2017 Richard Rodger, MIT License */
-'use strict'
-
-
-var Util = require('util')
-
-var _ = require('lodash')
-var Nid = require('nid')
-var Patrun = require('patrun')
-var Jsonic = require('jsonic')
-var Eraro = require('eraro')
-
-
-// Declare internals
-var internals = {
-  error: Eraro({
-    package: 'seneca',
-    msgmap: {
-      'no_data': 'The message has no data.',
-      'invalid_kind_act': 'Inbound messages should have kind "act", kind was: <%=kind%>.',
-      'no_message_id': 'The message has no identifier.',
-      'invalid_origin': 'The message response is not for this instance, origin was <%=origin%>.',
-      'unknown_message_id': 'The message has an unknown identifier',
-      'own_message': 'Inbound message rejected as originated from this server.',
-      'message_loop': 'Inbound message rejected as looping back to this server.',
-      'data_error': 'Inbound message included an error description.',
-      'invalid_json': 'Invalid JSON: <%=input%>.',
-      'unexcepted_async_error': 'Unexcepted error response to asynchronous message.'
-    },
-    override: true
-  })
-}
-
-module.exports = internals.Utils = function (context) {
-  this._msgprefix = (!context.options.msgprefix ? '' : context.options.msgprefix)
-  this._context = context
-}
-
-internals.Utils.prototype.error = internals.error // fixes #63
-
-internals.Utils.prototype.handle_response = function (seneca, data, client_options) {
-  data.time = data.time || {}
-  data.time.client_recv = Date.now()
-  data.sync = void 0 === data.sync ? true : data.sync
-
-  if (data.kind !== 'res') {
-    if (this._context.options.warn.invalid_kind) {
-      seneca.log.warn('client', 'invalid_kind_res', client_options, data)
-    }
-    return false
-  }
-
-  if (data.id === null) {
-    if (this._context.options.warn.no_message_id) {
-      seneca.log.warn('client', 'no_message_id', client_options, data)
-    }
-    return false
-  }
-
-  if (seneca.id !== data.origin) {
-    if (this._context.options.warn.invalid_origin) {
-      seneca.log.warn('client', 'invalid_origin', client_options, data)
-    }
-    return false
-  }
-
-  var err = null
-  var result = null
-
-  if (data.error) {
-    err = new Error(data.error.message)
-
-    _.each(data.error, function (value, key) {
-      err[key] = value
-    })
-
-    if (!data.sync) {
-      seneca.log.warn('client', 'unexcepted_async_error', client_options, data, err)
-      return true
-    }
-  }
-  else {
-    result = this.handle_entity(seneca, data.res)
-  }
-
-  if (!data.sync) {
-    return true
-  }
-
-  var callmeta = this._context.callmap.get(data.id)
-
-  if (callmeta) {
-    this._context.callmap.del(data.id)
-  }
-  else {
-    if (this._context.options.warn.unknown_message_id) {
-      seneca.log.warn('client', 'unknown_message_id', client_options, data)
-    }
-    return false
-  }
-
-
-  var actinfo = {
-    id: data.id,
-    accept: data.accept,
-    track: data.track,
-    time: data.time
-  }
-
-  this.callmeta({
-    callmeta: callmeta,
-    err: err,
-    result: result,
-    actinfo: actinfo,
-    seneca: seneca,
-    client_options: client_options,
-    data: data
-  })
-
-  return true
-}
-
-internals.Utils.prototype.callmeta = function (options) {
-  try {
-    options.callmeta.done(options.err, options.result, options.actinfo)
-  }
-  catch (e) {
-    options.seneca.log.error('client', 'callback_error', options.client_options, options.data, e.stack || e)
-  }
-}
-
-internals.Utils.prototype.prepare_request = function (seneca, args, done, meta) {
-  var meta$ = (args.meta$ || meta)
-
-
-  // FIX: this is mutating args.meta$ - sync should be inited elsewhere
-  meta$.sync = void 0 === meta$.sync ? true : meta$.sync
-
-  var callmeta = {
-    args: args,
-    done: _.bind(done, seneca),
-    when: Date.now()
-  }
-
-  // store callback only if sync is response expected
-  if (meta$.sync) {
-    this._context.callmap.set(meta$.id, callmeta)
-  }
-  else {
-    this.callmeta({
-      callmeta: callmeta,
-      err: null,
-      result: null,
-      actinfo: null,
-      seneca: seneca,
-      client_options: null,
-      data: null
-    })
-  }
-
-  var track = []
-  if (args.transport$) {
-    track = _.clone((args.transport$.track || []))
-  }
-  track.push(seneca.id)
-
-  var output = {
-    id: meta$.id,
-    kind: 'act',
-    origin: seneca.id,
-    track: track,
-    time: { client_sent: Date.now() },
-    act: seneca.util.clean(args),
-    sync: meta$.sync
-  }
-
-  output.msg$ = {
-    vin: 1,
-    sid: seneca.id,
-    out: true,
-    mid: meta$.mi,
-    cid: meta$.tx,
-    snc: meta$.sync,
-    pat: meta$.pattern
-  }
-
-  return output
-}
-
-internals.Utils.prototype.handle_request = function (seneca, data, listen_options, respond) {
-  if (!data) {
-    return respond({ input: data, error: internals.error('no_data') })
-  }
-
-  // retain transaction information from incoming request
-  var ids = data.id && data.id.split('/')
-  var tx = ids && ids[1]
-  seneca.fixedargs.tx$ = tx || seneca.fixedargs.tx$
-
-  if (data.kind !== 'act') {
-    if (this._context.options.warn.invalid_kind) {
-      seneca.log.warn('listen', 'invalid_kind_act', listen_options, data)
-    }
-    return respond({
-      input: data,
-      error: internals.error('invalid_kind_act', { kind: data.kind })
-    })
-  }
-
-  if (data.id === null) {
-    if (this._context.options.warn.no_message_id) {
-      seneca.log.warn('listen', 'no_message_id', listen_options, data)
-    }
-    return respond({ input: data, error: internals.error('no_message_id') })
-  }
-
-  if (this._context.options.check.own_message && this._context.callmap.has(data.id)) {
-    if (this._context.options.warn.own_message) {
-      seneca.log.warn('listen', 'own_message', listen_options, data)
-    }
-    return respond({ input: data, error: internals.error('own_message') })
-  }
-
-  if (this._context.options.check.message_loop && Array.isArray(data.track)) {
-    for (var i = 0; i < data.track.length; i++) {
-      if (seneca.id === data.track[i]) {
-        if (this._context.options.warn.message_loop) {
-          seneca.log.warn('listen', 'message_loop', listen_options, data)
-        }
-        return respond({ input: data, error: internals.error('message_loop') })
-      }
-    }
-  }
-
-  if (data.error) {
-    seneca.log.error('listen', 'data_error', listen_options, data)
-    return respond({ input: data, error: internals.error('data_error') })
-  }
-
-  var output = this.prepareResponse(seneca, data)
-  var input = this.handle_entity(seneca, data.act)
-
-  input.transport$ = {
-    track: data.track || [],
-    origin: data.origin,
-    time: data.time
-  }
-
-  input.id$ = data.id
-
-  this.requestAct(seneca, input, output, respond)
-}
-
-internals.Utils.prototype.requestAct = function (seneca, input, output, respond) {
-  var self = this
-
-  try {
-    seneca.act(input, function (err, out) {
-      self.update_output(input, output, err, out)
-      respond(output)
-    })
-  }
-  catch (e) {
-    self.catch_act_error(seneca, e, input, {}, output)
-    respond(output)
-  }
-}
-
-internals.Utils.prototype.make_client = function (context_seneca, make_send, client_options, client_done) {
-  var instance = this._context.seneca
-
-  // legacy api
-  if (!context_seneca.seneca) {
-    client_done = client_options
-    client_options = make_send
-    make_send = context_seneca
-  }
-  else {
-    instance = context_seneca
-  }
-
-  var pins = this.resolve_pins(client_options)
-  instance.log.debug('client', client_options, pins || 'any')
-
-  var finish = function (err, send) {
-    if (err) {
-      return client_done(err)
-    }
-    client_done(null, send)
-  }
-
-  if (pins) {
-    var argspatrun = this.make_argspatrun(pins)
-    var resolvesend = this.make_resolvesend(client_options, {}, make_send)
-
-    return this.make_pinclient(client_options, resolvesend, argspatrun, finish)
-  }
-
-  this.make_anyclient(client_options, make_send, finish)
-}
-
-internals.Utils.prototype.make_anyclient = function (opts, make_send, done) {
-  var self = this
-  make_send({}, this._msgprefix + 'any', function (err, send) {
-    if (err) {
-      return done(err)
-    }
-    if (typeof send !== 'function') {
-      return done(self._context.seneca.fail('null-client', { opts: opts }))
-    }
-
-    var client = {
-      id: opts.id || Nid(),
-      toString: function () { return 'any-' + this.id },
-
-/*
-      // TODO: is this used?
-      match: function (args) {
-        return !this.has(args)
-      },
-*/
-
-      send: function (args, done, meta) {
-        send.call(this, args, done, meta)
-      }
-    }
-
-    done(null, client)
-  })
-}
-
-internals.Utils.prototype.make_pinclient = function (opts, resolvesend, argspatrun, done) {
-  var client = {
-    id: opts.id || Nid(),
-    toString: function () {
-      return 'pin-' + argspatrun.mark + '-' + this.id
-    },
-
-/*
-    // TODO: is this used?
-    match: function (args) {
-      var match = !!argspatrun.find(args)
-      return match
-    },
-*/
-
-    send: function (args, done, meta) {
-      var seneca = this
-      var spec = argspatrun.find(args)
-
-      resolvesend(spec, args, function (err, send) {
-        if (err) {
-          return done(err)
-        }
-        send.call(seneca, args, done, meta)
-      })
-    }
-  }
-
-  done(null, client)
-}
-
-internals.Utils.prototype.resolve_pins = function (opts) {
-  var pins = opts.pin || opts.pins
-  if (pins) {
-    pins = Array.isArray(pins) ? pins : [pins]
-  }
-
-  if (pins) {
-    pins = _.map(pins, function (pin) {
-      return (typeof pin === 'string') ? Jsonic(pin) : pin
-    })
-  }
-
-  return pins
-}
-
-internals.Utils.prototype.make_argspatrun = function (pins) {
-  var argspatrun = Patrun({ gex: true })
-
-  _.each(pins, function (pin) {
-    var spec = { pin: pin }
-    argspatrun.add(pin, spec)
-  })
-
-  argspatrun.mark = Util.inspect(pins).replace(/\s+/g, '').replace(/\n/g, '')
-
-  return argspatrun
-}
-
-internals.Utils.prototype.make_resolvesend = function (opts, sendmap, make_send) {
-  var self = this
-  return function (spec, args, done) {
-    var topic = self.resolve_topic(opts, spec, args)
-    var send = sendmap[topic]
-    if (send) {
-      return done(null, send)
-    }
-
-    make_send(spec, topic, function (err, send) {
-      if (err) {
-        return done(err)
-      }
-      sendmap[topic] = send
-      done(null, send)
-    })
-  }
-}
-
-internals.Utils.prototype.resolve_topic = function (opts, spec, args) {
-  var self = this
-  if (!spec.pin) {
-    return function () {
-      return self._msgprefix + 'any'
-    }
-  }
-
-  var topicpin = _.clone(spec.pin)
-
-  var topicargs = {}
-  _.each(topicpin, function (v, k) {
-    topicargs[k] = args[k]
-  })
-
-  var sb = []
-  _.each(_.keys(topicargs).sort(), function (k) {
-    sb.push(k)
-    sb.push('=')
-    sb.push(topicargs[k])
-    sb.push(',')
-  })
-
-  var topic = this._msgprefix + (sb.join('')).replace(/[^\w\d]+/g, '_')
-  return topic
-}
-
-internals.Utils.prototype.listen_topics = function (seneca, args, listen_options, do_topic) {
-  var self = this
-  var topics = []
-
-  var pins = this.resolve_pins(args)
-
-  if (pins) {
-    _.each(this._context.seneca.findpins(pins), function (pin) {
-      var sb = []
-      _.each(_.keys(pin).sort(), function (k) {
-        sb.push(k)
-        sb.push('=')
-        sb.push(pin[k])
-        sb.push(',')
-      })
-
-      var topic = self._msgprefix + (sb.join('')).replace(/[^\w\d]+/g, '_')
-
-      topics.push(topic)
-    })
-
-    // TODO: die if no pins!!!
-    // otherwise no listener established and seneca ends without msg
-  }
-  else {
-    topics.push(this._msgprefix + 'any')
-  }
-
-  if (typeof do_topic === 'function') {
-    topics.forEach(function (topic) {
-      do_topic(topic)
-    })
-  }
-
-  return topics
-}
-
-internals.Utils.prototype.update_output = function (input, output, err, out) {
-  output.res = out
-
-  if (err) {
-    var errobj = _.extend({}, err)
-    errobj.message = err.message
-    errobj.name = err.name || 'Error'
-
-    output.error = errobj
-    output.input = input
-  }
-
-  output.time.listen_sent = Date.now()
-}
-
-internals.Utils.prototype.catch_act_error = function (seneca, e, listen_options, input, output) {
-  seneca.log.error('listen', 'act-error', listen_options, e.stack || e)
-  output.error = e
-  output.input = input
-}
-
-
-  // legacy names
-internals.Utils.prototype.resolvetopic = internals.Utils.prototype.resolve_topic
-
-
-internals.Utils.prototype.prepareResponse = function (seneca, input) {
-  return {
-    id: input.id,
-    kind: 'res',
-    origin: input.origin,
-    accept: seneca.id,
-    track: input.track,
-    time: {
-      client_sent: (input.time && input.time.client_sent) || 0,
-      listen_recv: Date.now()
-    },
-    sync: input.sync
-  }
-}
-
-
-// Utilities
-
-// only support first level
-// interim measure - deal with this in core seneca act api
-// allow user to specify operations on result
-internals.Utils.prototype.handle_entity = function (seneca, raw) {
-  if (!raw) {
-    return raw
-  }
-
-  raw = _.isObject(raw) ? raw : {}
-
-  if (raw.entity$) {
-    return seneca.make$(raw)
-  }
-
-  _.each(raw, function (value, key) {
-    if (_.isObject(value) && value.entity$) {
-      raw[key] = seneca.make$(value)
-    }
-  })
-
-  return raw
-}
-
-
-internals.Utils.prototype.close = function (seneca, closer) {
-  seneca.add('role:seneca,cmd:close', function (close_args, done) {
-    var seneca = this
-
-    closer.call(seneca, function (err) {
-      if (err) {
-        seneca.log.error(err)
-      }
-
-      seneca.prior(close_args, done)
-    })
-  })
-}
-
-
-internals.Utils.prototype.stringifyJSON = function (seneca, note, obj) {
-  if (!obj) {
-    return
-  }
-
-  try {
-    return JSON.stringify(obj)
-  }
-  catch (e) {
-    seneca.log.warn('json-stringify', note, obj, e.message)
-  }
-}
-
-
-internals.Utils.prototype.parseJSON = function (seneca, note, str) {
-  if (!str) {
-    return
-  }
-
-  try {
-    return JSON.parse(str)
-  }
-  catch (e) {
-    seneca.log.warn('json-parse', note, str.replace(/[\r\n\t]+/g, ''), e.message)
-    e.input = str
-    return e
-  }
-}
-
-
-internals.Utils.prototype.resolveDynamicValue = function (value, options) {
-  if (_.isFunction(value)) {
-    return value(options)
-  }
-  return value
-}
-
-},{"eraro":232,"jsonic":124,"lodash":125,"nid":133,"patrun":181,"util":271}],232:[function(require,module,exports){
-/* Copyright (c) 2014-2018 Richard Rodger, MIT License */
-/* jshint node:true, asi:true, eqnull:true */
-
-// Create JavaScript Error objects with code strings, context details,
-// and templated messages.
-'use strict'
-
-// #### System modules
-var util = require('util')
-
-// #### External modules
-var _ = require('lodash')
-
-// #### Exports
-module.exports = eraro
-
-// #### Create an _eraro_ function
-// Parameters:
-//
-//   * _options_ : (optional) Object; properties:
-//      * _package_ : (optional) String; package name to mark Error objects
-//      * _prefix_  : (optional) Boolean/String; If false, then no prefix is used; If not defined, the package name is used
-//      * _module_  : (optional) Object; _module_ object to use as starting point for _require_ calls
-//      * _msgmap_  : (optional) Object; map codes to message templates
-//      * _inspect_ : (optional) Boolean; If true, _util.inspect_ is called on values; default: true.
-//
-// Returns: Function
-//
-// The created function has parameters:
-//
-//   * _exception_ : (optional) Error; the original exception to be wrapped
-//   * _code_ : (optional) String; code value
-//   * _message_ : (optional) String; error message, will be processed as a template
-//   * _details_ : (optional) Object; contextual details of the error, used to insert details into message
-//
-// and returns an Error object (to be thrown or used in a callback, as needed).
-// The returned Error object has the following additional properties:
-//
-//   * _code_: String; the code string
-//   * _package_: String; the package name
-//   * _**package-name**_: Boolean (true); a convenience marker for the package
-//   * _msg_: String; the generated message, may differ from original exception message (if any)
-//   * _details_: Object; contextual details of error
-//   * _callpoint_: String; first line of stacktrace that is external to eraro and calling module
-function eraro(options) {
-  options = options || {}
-
-  var msgprefix =
-    false === options.prefix
-      ? ''
-      : _.isString(options.prefix)
-      ? options.prefix
-      : _.isString(options.package)
-      ? options.package + ': '
-      : ''
-
-  var packaje = options.package || 'unknown'
-  var callmodule = options.module || module
-  var msgmap = options.msgmap || {}
-  var inspect = null == options.inspect ? true : !!options.inspect
-
-  var markers = [module.filename]
-
-  var filename = callmodule.filename
-  if (filename) markers.push(filename)
-
-  var errormaker = function(ex, code, msg, details) {
-    var internalex = false
-
-    if (util.isError(ex)) {
-      if (ex.eraro && !options.override) return ex
-    } else {
-      internalex = true
-      ex = null
-      code = arguments[0]
-      msg = arguments[1]
-      details = arguments[2]
-    }
-
-    code = _.isString(code)
-      ? code
-      : ex
-      ? ex.code
-        ? ex.code
-        : ex.message
-        ? ex.message
-        : 'unknown'
-      : 'unknown'
-
-    details = _.isObject(details)
-      ? details
-      : _.isObject(msg) && !_.isString(msg)
-      ? msg
-      : {}
-
-    msg = _.isString(msg) ? msg : null
-    msg = buildmessage(
-      options,
-      msg,
-      msgmap,
-      msgprefix,
-      inspect,
-      code,
-      details,
-      ex
-    )
-
-    var err = new Error(msg)
-
-    if (ex) {
-      details.orig$ = null == details.orig$ ? ex : details.orig$
-      details.message$ =
-        null == details.message$ ? ex.message : details.message$
-
-      // drag along properties from original exception
-      for (var p in ex) {
-        err[p] = ex[p]
-      }
-    }
-
-    err.eraro = true
-
-    err.orig = ex // orig
-    err.code = code
-    err[packaje] = true
-    err.package = packaje
-    err.msg = msg
-    err.details = details
-
-    err.stack = ex ? ex.stack : err.stack
-    err.callpoint = callpoint(err, markers)
-
-    return err
-  }
-
-  errormaker.callpoint = callpoint
-
-  errormaker.has = function(code) {
-    return !!msgmap[code]
-  }
-
-  return errormaker
-}
-
-// #### Find the first external stack trace line.
-// Parameters:
-//
-//   * _error_ : (optional) Error; provides the stack
-//   * _markers_ : (optional) Array[String]; ignore lines containing these strings
-//
-// Returns: String; stack trace line, with indent removed
-function callpoint(error, markers) {
-  markers = _.isArray(markers) ? markers : []
-
-  var stack = error ? error.stack : null
-  var out = ''
-
-  if (stack) {
-    var lines = stack.split('\n')
-    var done = false
-    var i
-
-    line_loop: for (i = 1; i < lines.length; i++) {
-      var line = lines[i]
-
-      var found = false
-      for (var j = 0; j < markers.length; j++) {
-        if (_.isString(markers[j])) {
-          found = -1 != line.indexOf(markers[j])
-          if (found) break
-        }
-      }
-
-      if (!found) break line_loop
-    }
-
-    out = _.isString(lines[i]) ? lines[i].substring(4) : out
-  }
-
-  return out
-}
-
-// #### Build the message string from a template by inserting details
-// Uses the underscore template function with default settings.
-// The original message (_msg_) has priority over messages from the _msgmap_.
-// If no message can be found, the _code_ is used as a message.
-// If an insert property is not defined, it is replaced with _[name?]_ in the message.
-// As a convenience, _util_ and ___ are made available in the templates.
-//
-// Parameters:
-//
-//   * _msg_ : (required) String; message template
-//   * _msgmap_ : (required) Object; map codes to message templates
-//   * _msgprefix_: (required) String; prefix for all messages, useful as indentification of error origin
-//   * _code_: (required) String; error code
-//   * _details_: (required) Object; error details providing context
-//
-// Returns: String; human readable error message
-function buildmessage(
-  options,
-  msg,
-  msgmap,
-  msgprefix,
-  inspect,
-  code,
-  details,
-  ex
-) {
-  var message =
-    msgprefix +
-    (_.isString(msg)
-      ? msg
-      : _.isString(msgmap[code])
-      ? msgmap[code]
-      : ex
-      ? originalmsg(options.override, ex)
-      : code)
-
-  // These are the inserts.
-  var valmap = _.extend({}, details, { code: code })
-
-  // Workaround to prevent underscore blowing up if properties are not
-  // found.  Reserved words and undefined need to be suffixed with $
-  // in the template interpolates.
-
-  var valstrmap = { util: util, _: _ }
-  _.each(valmap, function(val, key) {
-    /* jshint evil:true */
-    try {
-      eval('var ' + key + ';')
-    } catch (e) {
-      key = key + '$'
-    }
-    if ({ undefined: 1, NaN: 1 }[key]) {
-      key = key + '$'
-    }
-    valstrmap[key] = inspect && !_.isString(val) ? util.inspect(val) : val
-  })
-
-  var done = false
-  while (!done) {
-    try {
-      var tm = _.template(message)
-      message = tm(valstrmap)
-      done = true
-    } catch (e) {
-      if (e instanceof ReferenceError) {
-        var m = /ReferenceError:\s+(.*?)\s+/.exec(e.toString())
-        if (m && m[1]) {
-          valstrmap[m[1]] = '[' + m[1] + '?]'
-        } else done = true
-      }
-
-      // Some other error - give up and just dump the properties at
-      // the end of the template.
-      else {
-        done = true
-        message =
-          message +
-          ' VALUES:' +
-          util.inspect(valmap, { depth: 2 }) +
-          ' TEMPLATE ERROR: ' +
-          e
-      }
-    }
-  }
-
-  return message
-}
-
-function originalmsg(override, ex) {
-  if (!ex) return
-
-  if (override && ex.eraro && ex.orig) return ex.orig.message
-
-  return ex.message
-}
-
-},{"lodash":125,"util":271}],233:[function(require,module,exports){
-/* Copyright (c) 2013-2015 Richard Rodger & other contributors, MIT License */
-/* jshint node:true, asi:true, eqnull:true */
-'use strict'
-
-// Load modules
-var _ = require('lodash')
-var LruCache = require('lru-cache')
-var Tcp = require('./lib/tcp')
-var TransportUtil = require('./lib/transport-utils.js')
-var Http = require('./lib/http')
-
-// Declare internals
-var internals = {
-  defaults: {
-    msgprefix: 'seneca_',
-    callmax: 111111,
-    msgidlen: 12,
-    warn: {
-      unknown_message_id: true,
-      invalid_kind: true,
-      invalid_origin: true,
-      no_message_id: true,
-      message_loop: true,
-      own_message: true
-    },
-    check: {
-      message_loop: true,
-      own_message: true
-    },
-    web: {
-      type: 'web',
-      port: 10101,
-      host: '0.0.0.0',
-      path: '/act',
-      protocol: 'http',
-      timeout: 5555,
-      max_listen_attempts: 11,
-      attempt_delay: 222,
-      serverOptions: {}
-    },
-    tcp: {
-      type: 'tcp',
-      host: '0.0.0.0',
-      port: 10201,
-      timeout: 5555
-    }
-  },
-  plugin: 'transport'
-}
-
-module.exports = function transport (options) {
-  var seneca = this
-
-  var settings = seneca.util.deepextend(internals.defaults, options)
-  var callmap = LruCache(settings.callmax)
-  var transportUtil = new TransportUtil({
-    callmap: callmap,
-    seneca: seneca,
-    options: settings
-  })
-
-  seneca.add({ role: internals.plugin, cmd: 'inflight' }, internals.inflight(callmap))
-  seneca.add({ role: internals.plugin, cmd: 'listen' }, internals.listen)
-  seneca.add({ role: internals.plugin, cmd: 'client' }, internals.client)
-
-  seneca.add({ role: internals.plugin, hook: 'listen', type: 'tcp' }, Tcp.listen(settings, transportUtil))
-  seneca.add({ role: internals.plugin, hook: 'client', type: 'tcp' }, Tcp.client(settings, transportUtil))
-
-  seneca.add({ role: internals.plugin, hook: 'listen', type: 'web' }, Http.listen(settings, transportUtil))
-  seneca.add({ role: internals.plugin, hook: 'client', type: 'web' }, Http.client(settings, transportUtil))
-
-  // Aliases.
-  seneca.add({ role: internals.plugin, hook: 'listen', type: 'http' }, Http.listen(settings, transportUtil))
-  seneca.add({ role: internals.plugin, hook: 'client', type: 'http' }, Http.client(settings, transportUtil))
-
-  // Legacy API.
-  seneca.add({ role: internals.plugin, hook: 'listen', type: 'direct' }, Http.listen(settings, transportUtil))
-  seneca.add({ role: internals.plugin, hook: 'client', type: 'direct' }, Http.client(settings, transportUtil))
-
-  return {
-    name: internals.plugin,
-    exportmap: { utils: transportUtil },
-    options: settings
-  }
-}
-
-module.exports.preload = function () {
-  var seneca = this
-
-  var meta = {
-    name: internals.plugin,
-    exportmap: {
-      utils: function () {
-        var transportUtil = seneca.export(internals.plugin).utils
-        if (transportUtil !== meta.exportmap.utils) {
-          transportUtil.apply(this, arguments)
-        }
-      }
-    }
-  }
-
-  return meta
-}
-
-internals.inflight = function (callmap) {
-  return function (args, callback) {
-    var inflight = {}
-    callmap.forEach(function (val, key) {
-      inflight[key] = val
-    })
-    callback(null, inflight)
-  }
-}
-
-internals.listen = function (args, callback) {
-  var seneca = this
-
-  var config = _.extend({}, args.config, { role: internals.plugin, hook: 'listen' })
-  var listen_args = seneca.util.clean(_.omit(config, 'cmd'))
-  var legacyError = internals.legacyError(seneca, listen_args.type)
-  if (legacyError) {
-    return callback(legacyError)
-  }
-  seneca.act(listen_args, callback)
-}
-
-internals.client = function (args, callback) {
-  var seneca = this
-
-  var config = _.extend({}, args.config, { role: internals.plugin, hook: 'client' })
-  var client_args = seneca.util.clean(_.omit(config, 'cmd'))
-  var legacyError = internals.legacyError(seneca, client_args.type)
-  if (legacyError) {
-    return callback(legacyError)
-  }
-  seneca.act(client_args, callback)
-}
-
-internals.legacyError = function (seneca, type) {
-  if (type === 'pubsub') {
-    return seneca.fail('plugin-needed', { name: 'seneca-redis-transport' })
-  }
-  if (type === 'queue') {
-    return seneca.fail('plugin-needed', { name: 'seneca-beanstalkd-transport' })
-  }
-}
-
-},{"./lib/http":229,"./lib/tcp":230,"./lib/transport-utils.js":231,"lodash":125,"lru-cache":126}],234:[function(require,module,exports){
-/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var _ = require('lodash')
-
-var Common = require('./common')
-
-module.exports = function(instance) {
-  instance.stats = make_action_seneca_stats(instance.private$)
-
-  // Add builtin actions.
-  instance.add({ role: 'seneca', cmd: 'ping' }, cmd_ping)
-  instance.add({ role: 'seneca', cmd: 'stats' }, instance.stats)
-  instance.add({ role: 'seneca', cmd: 'close' }, action_seneca_close)
-  instance.add({ role: 'seneca', info: 'fatal' }, action_seneca_fatal)
-  instance.add({ role: 'seneca', get: 'options' }, action_options_get)
-
-  // TODO: review - is this used?
-  //instance.add({ role: 'seneca', make: 'error' }, action_make_error)
-
-  // Legacy builtin actions.
-  // Remove in Seneca 4.x
-  instance.add(
-    { role: 'seneca', stats: true, deprecate$: true },
-    instance.stats
-  )
-  instance.add(
-    { role: 'options', cmd: 'get', deprecate$: true },
-    action_options_get
-  )
-}
-
-function cmd_ping(msg, reply) {
-  reply(this.ping())
-}
-
-function action_seneca_fatal(msg, reply) {
-  reply()
-}
-
-function action_seneca_close(msg, reply) {
-  this.emit('close')
-  reply()
-}
-
-function make_action_seneca_stats(private$) {
-  return function action_seneca_stats(msg, reply) {
-    msg = msg || {}
-    var stats
-
-    // TODO: review - this is sort of breaking the "type" of the stats result
-    if (msg.pattern && private$.stats.actmap[msg.pattern]) {
-      stats = private$.stats.actmap[msg.pattern]
-      stats.time = private$.timestats.calculate(msg.pattern)
-    } else {
-      stats = _.clone(private$.stats)
-      stats.now = new Date()
-      stats.uptime = stats.now - stats.start
-
-      stats.now = new Date(stats.now).toISOString()
-      stats.start = new Date(stats.start).toISOString()
-
-      var summary = null == msg.summary || Common.boolify(msg.summary)
-      //(/^false$/i.exec(msg.summary) ? false : !!msg.summary)
-
-      if (summary) {
-        stats.actmap = void 0
-      } else {
-        _.each(private$.stats.actmap, function(a, p) {
-          private$.stats.actmap[p].time = private$.timestats.calculate(p)
-        })
-      }
-    }
-
-    if (reply) {
-      reply(stats)
-    }
-    return stats
-  }
-}
-
-function action_options_get(msg, reply) {
-  var options = this.options()
-
-  var base = msg.base || null
-  var top = base ? options[base] || {} : options
-  var val = msg.key ? top[msg.key] : top
-
-  reply(Common.copydata(val))
-}
-
-},{"./common":236,"lodash":125}],235:[function(require,module,exports){
-(function (process){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var _ = require('lodash')
-var Jsonic = require('jsonic')
-var Norma = require('norma')
-
-var Common = require('./common')
-var Plugins = require('./plugins')
-var Logging = require('./logging')
-
-var errlog = Common.make_standard_err_log_entry
-
-var intern = {}
-
-exports.fail = function(code) {
-  var plugin_fullname =
-    this.fixedargs && this.fixedargs.plugin$ && this.fixedargs.plugin$.full
-
-  var plugin =
-    null != plugin_fullname
-      ? this.private$.plugins[plugin_fullname]
-      : this.context.plugin
-
-  if (plugin && plugin.eraro && plugin.eraro.has(code)) {
-    throw plugin.eraro.apply(this, arguments)
-  } else {
-    throw Common.eraro.apply(this, arguments)
-  }
-}
-
-exports.inward = function() {
-  // TODO: norma should support f/x where x = # args
-  var args = Norma('inward:f', arguments)
-  this.private$.inward.add(args.inward)
-  return this
-}
-
-exports.outward = function() {
-  var args = Norma('outward:f', arguments)
-  this.private$.outward.add(args.outward)
-  return this
-}
-
-exports.prior = function() {
-  if (null == this.private$.act) {
-    // TODO: should be a top level api method: seneca.fail
-    throw this.util.error('no_prior_action', { args: arguments })
-  }
-
-  // Get definition of prior action
-  var priordef = this.private$.act.def.priordef
-
-  var spec = Common.build_message(this, arguments, 'reply:f?', this.fixedargs)
-
-  // TODO: clean sufficiently so that seneca.util.clean not needed
-  var msg = spec.msg
-  var reply = spec.reply
-
-  if (priordef) {
-    msg.prior$ = priordef.id
-    this.act(msg, reply)
-  } else {
-    var meta = msg.meta$ || {}
-    var out = _.clone(msg.default$ || meta.dflt || null)
-    return reply.call(this, null, out, meta)
-  }
-}
-
-// TODO: rename fixedargs
-exports.delegate = function(fixedargs, fixedmeta) {
-  var self = this
-  var opts = this.options()
-
-  fixedargs = fixedargs || {}
-  fixedmeta = fixedmeta || {}
-
-  var delegate = Object.create(self)
-  delegate.private$ = Object.create(self.private$)
-
-  delegate.did =
-    (delegate.did ? delegate.did + '/' : '') + self.private$.didnid()
-
-  var strdesc
-  delegate.toString = function toString() {
-    if (strdesc) return strdesc
-    var vfa = {}
-    _.each(fixedargs, function(v, k) {
-      if (~k.indexOf('$')) return
-      vfa[k] = v
-    })
-
-    strdesc =
-      self.toString() + (_.keys(vfa).length ? '/' + Jsonic.stringify(vfa) : '')
-
-    return strdesc
-  }
-
-  delegate.fixedargs = opts.strict.fixedargs
-    ? _.extend({}, fixedargs, self.fixedargs)
-    : _.extend({}, self.fixedargs, fixedargs)
-
-  delegate.fixedmeta = opts.strict.fixedmeta
-    ? _.extend({}, fixedmeta, self.fixedmeta)
-    : _.extend({}, self.fixedmeta, fixedmeta)
-
-  delegate.delegate = function delegate(further_fixedargs, further_fixedmeta) {
-    var args = _.extend({}, delegate.fixedargs, further_fixedargs || {})
-    var meta = _.extend({}, delegate.fixedmeta, further_fixedmeta || {})
-    return self.delegate.call(this, args, meta)
-  }
-
-  // Somewhere to put contextual data for this delegate.
-  // For example, data for individual web requests.
-  delegate.context = Object.assign({}, self.context)
-
-  return delegate
-}
-
-exports.depends = function() {
-  var self = this
-  var private$ = this.private$
-  var error = this.util.error
-  var args = Norma('{pluginname:s deps:a? moredeps:s*}', arguments)
-
-  var deps = args.deps || args.moredeps
-
-  _.every(deps, function(depname) {
-    if (
-      !_.includes(private$.plugin_order.byname, depname) &&
-      !_.includes(private$.plugin_order.byname, 'seneca-' + depname)
-    ) {
-      self.die(
-        error('plugin_required', {
-          name: args.pluginname,
-          dependency: depname
-        })
-      )
-      return false
-    } else return true
-  })
-}
-
-exports.export = function(key) {
-  var self = this
-  var private$ = this.private$
-  var error = this.util.error
-  var opts = this.options()
-
-  // Legacy aliases
-  if (key === 'util') {
-    key = 'basic'
-  }
-
-  var exportval = private$.exports[key]
-
-  if (!exportval && opts.strict.exports) {
-    return self.die(error('export_not_found', { key: key }))
-  }
-
-  return exportval
-}
-
-// TODO: logging needs to be able to support this withtou awkwardness!
-exports.quiet = function() {
-  this.options({ log: { level: 'warn' } })
-  this.private$.logger = Logging.preload.call(this).extend.logger
-  return this
-}
-
-exports.test = function(errhandler, logspec) {
-  var opts = this.options()
-
-  if ('-' != opts.tag) {
-    this.root.id =
-      null == opts.id$
-        ? this.private$.actnid().substring(0, 4) + '/' + opts.tag
-        : '' + opts.id$
-  }
-
-  if ('function' !== typeof errhandler && null !== errhandler) {
-    logspec = errhandler
-    errhandler = null
-  }
-
-  this.options({
-    errhandler: null == errhandler ? null : errhandler,
-    test: true,
-    log: logspec || 'test'
-  })
-
-  this.private$.logger = Logging.preload.call(this).extend.logger
-
-  return this
-}
-
-// use('pluginname') - built-in, or provide calling code 'require' as seneca opt
-// use(require('pluginname')) - plugin object, init will be called
-// if first arg has property senecaplugin
-exports.use = function(arg0, arg1, arg2) {
-  var self = this
-
-  // DEPRECATED: Remove when Seneca >= 4.x
-  // Allow chaining with seneca.use('options', {...})
-  // see https://github.com/rjrodger/seneca/issues/80
-  if (arg0 === 'options') {
-    self.options(arg1)
-    return self
-  }
-
-  try {
-    var desc = self.private$.use.build_plugin_desc(arg0, arg1, arg2)
-
-    if (this.private$.ignore_plugins[desc.full]) {
-      this.log.info({
-        kind: 'plugin',
-        case: 'ignore',
-        plugin_full: desc.full,
-        plugin_name: desc.name,
-        plugin_tag: desc.tag
-      })
-
-      return self
-    }
-
-    var plugin = self.private$.use.use_plugin_desc(desc)
-
-    self.register(plugin)
-  } catch (e) {
-    self.die(self.private$.error(e, 'plugin_' + e.code))
-  }
-
-  return self
-}
-
-exports.ping = function() {
-  var now = Date.now()
-  return {
-    now: now,
-    uptime: now - this.private$.stats.start,
-    id: this.id,
-    cpu: process.cpuUsage(),
-    mem: process.memoryUsage(),
-    act: this.private$.stats.act,
-    tr: this.private$.transport.register.map(function(x) {
-      return Object.assign({ when: x.when, err: x.err }, x.config)
-    })
-  }
-}
-
-exports.translate = function(from_in, to_in) {
-  var from = 'string' === typeof from_in ? Jsonic(from_in) : from_in
-  var to = 'string' === typeof to_in ? Jsonic(to_in) : to_in
-  this.add(from, function(msg, reply) {
-    var transmsg = Object.assign(this.util.clean(msg), to)
-    this.act(transmsg, reply)
-  })
-  return this
-}
-
-exports.gate = function() {
-  return this.delegate({ gate$: true })
-}
-
-exports.ungate = function() {
-  this.fixedargs.gate$ = false
-  return this
-}
-
-exports.list_plugins = function() {
-  return _.clone(this.private$.plugins)
-}
-
-exports.find_plugin = function(plugindesc, tag) {
-  var plugin_key = Common.make_plugin_key(plugindesc, tag)
-  return this.private$.plugins[plugin_key]
-}
-
-exports.has_plugin = function(plugindesc, tag) {
-  var plugin_key = Common.make_plugin_key(plugindesc, tag)
-  return !!this.private$.plugins[plugin_key]
-}
-
-exports.ignore_plugin = function(plugindesc, tag, ignore) {
-  if ('boolean' === typeof tag) {
-    ignore = tag
-    tag = null
-  }
-  var plugin_key = Common.make_plugin_key(plugindesc, tag)
-  var resolved_ignore = (this.private$.ignore_plugins[plugin_key] =
-    null == ignore ? true : !!ignore)
-
-  this.log.info({
-    kind: 'plugin',
-    case: 'ignore',
-    full: plugin_key,
-    ignore: resolved_ignore
-  })
-
-  return this
-}
-
-// Find the action metadata for a given pattern, if it exists.
-exports.find = function(pattern, flags) {
-  var seneca = this
-
-  var pat = _.isString(pattern) ? Jsonic(pattern) : pattern
-  pat = seneca.util.clean(pat)
-  pat = pat || {}
-
-  var actdef = seneca.private$.actrouter.find(pat, flags && flags.exact)
-
-  if (!actdef) {
-    actdef = seneca.private$.actrouter.find({})
-  }
-
-  return actdef
-}
-
-// True if an action matching the pattern exists.
-exports.has = function(pattern) {
-  return !!this.find(pattern, { exact: true })
-}
-
-// List all actions that match the pattern.
-exports.list = function(pattern) {
-  return _.map(
-    this.private$.actrouter.list(null == pattern ? {} : Jsonic(pattern)),
-    'match'
-  )
-}
-
-// Get the current status of the instance.
-exports.status = function(flags) {
-  flags = flags || {}
-
-  var hist = this.private$.history.stats()
-  hist.log = this.private$.history.list()
-
-  var status = {
-    stats: this.stats(flags.stats),
-    history: hist,
-    transport: this.private$.transport
-  }
-
-  return status
-}
-
-// Reply to an action that is waiting for a result.
-// Used by transports to decouple sending messages from receiving responses.
-exports.reply = function(spec) {
-  var instance = this
-
-  var item = null
-
-  if (spec && spec.meta) {
-    item = instance.private$.history.get(spec.meta.id)
-    if (item) {
-      item.reply(spec.err, spec.out, spec.meta)
-    }
-  }
-
-  return !!item
-}
-
-// Listen for inbound messages.
-exports.listen = function(callpoint) {
-  return function api_listen() {
-    var private$ = this.private$
-    var argsarr = Array.prototype.slice.call(arguments)
-    var self = this
-
-    var done = _.last(argsarr)
-    if (typeof done === 'function') {
-      argsarr.pop()
-    } else {
-      done = _.noop
-    }
-
-    self.log.debug({
-      kind: 'listen',
-      options: argsarr,
-      callpoint: callpoint()
-    })
-
-    var opts = self.options().transport || {}
-    var config = intern.resolve_config(intern.parse_config(argsarr), opts)
-
-    self.act(
-      'role:transport,cmd:listen',
-      { config: config, gate$: true },
-      function(err, result) {
-        if (err) {
-          return self.die(private$.error(err, 'transport_listen', config))
-        }
-
-        done(null, result)
-        done = _.noop
-      }
-    )
-
-    return self
-  }
-}
-
-// Send outbound messages.
-exports.client = function(callpoint) {
-  return function api_client() {
-    var private$ = this.private$
-    var argsarr = Array.prototype.slice.call(arguments)
-    var self = this
-
-    self.log.debug({
-      kind: 'client',
-      options: argsarr,
-      callpoint: callpoint()
-    })
-
-    var legacy = self.options().legacy || {}
-    var opts = self.options().transport || {}
-
-    var raw_config = intern.parse_config(argsarr)
-
-    // pg: pin group
-    raw_config.pg = Common.pincanon(raw_config.pin || raw_config.pins)
-
-    var config = intern.resolve_config(raw_config, opts)
-
-    config.id = config.id || Common.pattern(raw_config)
-
-    var pins =
-      config.pins || (_.isArray(config.pin) ? config.pin : [config.pin || ''])
-
-    pins = _.map(pins, function(pin) {
-      return _.isString(pin) ? Jsonic(pin) : pin
-    })
-
-    var sd = Plugins.make_delegate(self, { name: 'client$', tag: void 0 })
-
-    var sendclient
-
-    var transport_client = function transport_client(msg, reply, meta) {
-      if (legacy.meta) {
-        meta = meta || msg.meta$
-      }
-
-      // Undefined plugin init actions pass through here when
-      // there's a catchall client, as they have local$:true
-      if (meta.local) {
-        this.prior(msg, reply)
-      } else if (sendclient && sendclient.send) {
-        if (legacy.meta) {
-          msg.meta$ = meta
-        }
-
-        sendclient.send.call(this, msg, reply, meta)
-      } else {
-        this.log.error('no-transport-client', { config: config, msg: msg })
-      }
-    }
-
-    transport_client.id = config.id
-
-    if (config.makehandle) {
-      transport_client.handle = config.makehandle(config)
-    }
-
-    _.each(pins, function(pin) {
-      pin = _.clone(pin)
-      pin.client$ = true
-      pin.strict$ = { add: true }
-      sd.add(pin, transport_client)
-    })
-
-    // Create client.
-    sd.act(
-      'role:transport,cmd:client',
-      { config: config, gate$: true },
-      function(err, liveclient) {
-        if (err) {
-          return sd.die(private$.error(err, 'transport_client', config))
-        }
-
-        if (null == liveclient) {
-          return sd.die(
-            private$.error('transport_client_null', Common.clean(config))
-          )
-        }
-
-        sendclient = liveclient
-      }
-    )
-
-    return self
-  }
-}
-
-// Subscribe to messages.
-exports.sub = function() {
-  var self = this
-  //var private$ = self.private$
-  var private_sub = self.private$.sub
-
-  var subargs = Common.parsePattern(self, arguments, 'action:f actdef:o?')
-  var pattern = subargs.pattern
-  if (
-    pattern.in$ == null &&
-    pattern.out$ == null &&
-    pattern.error$ == null &&
-    pattern.cache$ == null &&
-    pattern.default$ == null &&
-    pattern.client$ == null
-  ) {
-    pattern.in$ = true
-  }
-
-  if (!private_sub.handler) {
-    private_sub.handler = function handle_sub(msg, result, meta) {
-      // only entry msg of prior chain is published
-      if (meta && meta.prior) {
-        return
-      }
-
-      var subfuncs = self.private$.subrouter.find(msg)
-
-      if (subfuncs) {
-        meta.sub = subfuncs.pattern
-        var actdef = subfuncs.actdef
-
-        _.each(subfuncs, function subfunc(subfunc) {
-          try {
-            for (
-              var stI = 0, stlen = private_sub.tracers.length;
-              stI < stlen;
-              stI++
-            ) {
-              private_sub.tracers[stI].call(
-                self,
-                subfunc.instance$,
-                msg,
-                result,
-                meta,
-                actdef
-              )
-            }
-
-            subfunc.call(subfunc.instance$, msg, result, meta)
-
-            // TODO: this should in it's own function
-          } catch (ex) {
-            // TODO: not really satisfactory
-            var err = self.private$.error(ex, 'sub_function_catch', {
-              args: msg,
-              result: result
-            })
-            self.log.error(
-              errlog(err, {
-                kind: 'sub',
-                msg: msg,
-                actid: meta.id
-              })
-            )
-          }
-        })
-      }
-    }
-
-    // TODO: other cases
-
-    // Subs are triggered via events
-    self.on('act-in', annotate('in$', private_sub.handler))
-    self.on('act-out', annotate('out$', private_sub.handler))
-  }
-
-  function annotate(prop, handle_sub) {
-    return function annotation(origmsg, result, meta) {
-      var msg = _.clone(origmsg)
-      result = _.clone(result)
-      msg[prop] = true
-      handle_sub(msg, result, meta)
-    }
-  }
-
-  var subs = self.private$.subrouter.find(pattern)
-  if (!subs) {
-    self.private$.subrouter.add(pattern, (subs = []))
-    subs.pattern = Common.pattern(pattern)
-    subs.actdef = self.find(pattern)
-  }
-  subs.push(subargs.action)
-  subargs.action.instance$ = self
-
-  return self
-}
-
-intern.parse_config = function(args) {
-  var out = {}
-
-  var config = _.compact(args)
-
-  var arglen = config.length
-
-  if (arglen === 1) {
-    if (_.isObject(config[0])) {
-      out = _.clone(config[0])
-    } else {
-      out.port = parseInt(config[0], 10)
-    }
-  } else if (arglen === 2) {
-    out.port = parseInt(config[0], 10)
-    out.host = config[1]
-  } else if (arglen === 3) {
-    out.port = parseInt(config[0], 10)
-    out.host = config[1]
-    out.path = config[2]
-  }
-
-  return out
-}
-
-intern.resolve_config = function(config, options) {
-  var out = _.clone(config)
-
-  _.each(options, function(value, key) {
-    if (_.isObject(value)) {
-      return
-    }
-    out[key] = out[key] === void 0 ? value : out[key]
-  })
-
-  // Default transport is web
-  out.type = out.type || 'web'
-
-  // DEPRECATED: Remove in 4.0
-  if (out.type === 'direct' || out.type === 'http') {
-    out.type = 'web'
-  }
-
-  var base = options[out.type] || {}
-
-  out = _.extend({}, base, out)
-
-  if (out.type === 'web' || out.type === 'tcp') {
-    out.port = out.port == null ? base.port : out.port
-    out.host = out.host == null ? base.host : out.host
-    out.path = out.path == null ? base.path : out.path
-  }
-
-  return out
-}
-
-}).call(this,require('_process'))
-},{"./common":236,"./logging":240,"./plugins":243,"_process":191,"jsonic":124,"lodash":125,"norma":135}],236:[function(require,module,exports){
-(function (process){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var Util = require('util')
-
-var _ = require('lodash')
-var Eraro = require('eraro')
-var Jsonic = require('jsonic')
-var Nid = require('nid')
-var Norma = require('norma')
-var Errors = require('./errors')
-var Print = require('./print')
-
-var error = (exports.error = exports.eraro = Eraro({
-  package: 'seneca',
-  msgmap: Errors,
-  override: true
-}))
-
-exports.make_plugin_key = function(plugin, origtag) {
-  if (null == plugin) {
-    throw error('missing_plugin_name')
-  }
-
-  var name = null == plugin.name ? plugin : plugin.name
-  var tag = null == plugin.tag ? (null == origtag ? '' : origtag) : plugin.tag
-
-  if ('number' === typeof name) {
-    name = '' + name
-  }
-
-  if ('number' === typeof tag) {
-    tag = '' + tag
-  }
-
-  if ('' == name || 'string' !== typeof name) {
-    throw error('bad_plugin_name', { name: name })
-  }
-
-  var m = name.match(/^([a-zA-Z@][a-zA-Z0-9_\-/]*)\$([a-zA-Z0-9_-]+)$/)
-  if (m) {
-    name = m[1]
-    tag = m[2]
-  }
-
-  if (!name.match(/^[a-zA-Z@][a-zA-Z0-9_\-/]*$/) || 1024 < name.length) {
-    throw error('bad_plugin_name', { name: name })
-  }
-
-  if ('' != tag && (!tag.match(/^[a-zA-Z0-9_-]+$/) || 1024 < tag.length)) {
-    throw error('bad_plugin_tag', { tag: tag })
-  }
-
-  var key = name + (tag ? '$' + tag : '')
-
-  return key
-}
-
-exports.boolify = function(v) {
-  try {
-    return !!JSON.parse(v)
-  } catch (e) {
-    return false
-  }
-}
-
-exports.tagnid = Nid({ length: 3, alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' })
-
-var parse_jsonic = (exports.parse_jsonic = function(str, code) {
-  code = code || 'bad_jsonic'
-
-  try {
-    return null == str ? null : Jsonic(str)
-  } catch (e) {
-    var col = 1 === e.line ? e.column - 1 : e.column
-    throw error(code, {
-      argstr: str,
-      syntax: e.message,
-      line: e.line,
-      col: col
-    })
-  }
-})
-
-// string args override object args
-// TODO: fix name
-exports.parsePattern = function parse_pattern(
-  instance,
-  rawargs,
-  normaspec,
-  fixed
-) {
-  var args = Norma(
-    '{strargs:s? objargs:o? moreobjargs:o? ' + (normaspec || '') + '}',
-    rawargs
-  )
-
-  // Precedence of arguments in add,act is left-to-right
-  args.pattern = Object.assign(
-    {},
-    args.moreobjargs ? args.moreobjargs : null,
-    args.objargs ? args.objargs : null,
-    parse_jsonic(args.strargs, 'add_string_pattern_syntax'),
-    fixed
-  )
-
-  return args
-}
-
-exports.build_message = function build_message(
-  instance,
-  rawargs,
-  normaspec,
-  fixed
-) {
-  var args = Norma(
-    '{strargs:s? objargs:o? moreobjargs:o? ' + (normaspec || '') + '}',
-    rawargs
-  )
-
-  // Precedence of arguments in add,act is left-to-right
-  args.msg = Object.assign(
-    {},
-    args.moreobjargs,
-    args.objargs,
-    parse_jsonic(args.strargs, 'msg_jsonic_syntax'),
-    fixed
-  )
-
-  return args
-}
-
-var copydata = (exports.copydata = function(obj) {
-  var copy
-
-  // Handle the 3 simple types, and null or undefined
-  if (obj === null || typeof obj !== 'object') return obj
-
-  // Handle Error
-  if (_.isError(obj)) {
-    copy = {}
-    Object.getOwnPropertyNames(obj).forEach(function(key) {
-      copy[key] = obj[key]
-    })
-    return copy
-  }
-
-  // Handle Date
-  if (_.isDate(obj)) {
-    copy = new Date()
-    copy.setTime(obj.getTime())
-    return copy
-  }
-
-  // Handle Array
-  if (_.isArray(obj)) {
-    copy = []
-    for (var i = 0, len = obj.length; i < len; ++i) {
-      copy[i] = copydata(obj[i])
-    }
-    return copy
-  }
-
-  copy = {}
-  for (var attr in obj) {
-    if (obj.hasOwnProperty(attr)) copy[attr] = copydata(obj[attr])
-  }
-  return copy
-})
-
-// Convert pattern object into a normalized jsonic String.
-var pattern = (exports.pattern = function pattern(patobj) {
-  if (_.isString(patobj)) {
-    return patobj
-  }
-
-  patobj = patobj || {}
-  var sb = []
-  _.each(patobj, function(v, k) {
-    if (!~k.indexOf('$') && !_.isFunction(v)) {
-      sb.push(k + ':' + v)
-    }
-  })
-
-  sb.sort()
-
-  return sb.join(',')
-})
-
-exports.pincanon = function pincanon(inpin) {
-  if (_.isString(inpin)) {
-    return pattern(Jsonic(inpin))
-  } else if (_.isArray(inpin)) {
-    var pin = _.map(inpin, pincanon)
-    pin.sort()
-    return pin.join(';')
-  } else {
-    return pattern(inpin)
-  }
-}
-
-// noop for callbacks
-exports.nil = function nil() {
-  _.each(arguments, function(arg) {
-    if (_.isFunction(arg)) {
-      return arg()
-    }
-  })
-}
-
-// remove any props containing $
-function clean(obj, opts) {
-  if (null == obj) return obj
-
-  var out = Array.isArray(obj) ? [] : {}
-
-  var pn = Object.getOwnPropertyNames(obj)
-  for (var i = 0; i < pn.length; i++) {
-    var p = pn[i]
-
-    if ('$' != p[p.length - 1]) {
-      out[p] = obj[p]
-    }
-  }
-
-  if (opts && false !== opts.proto) {
-    //out.__proto__ = obj.__proto__
-  }
-
-  return out
-}
-exports.clean = clean
-
-function deepextend() {
-  var argsarr = new Array(arguments.length)
-  for (var l = 0; l < argsarr.length; ++l) {
-    argsarr[l] = arguments[l]
-  }
-
-  // Lodash uses the reverse order to apply defaults than the deepextend API.
-  argsarr = argsarr.reverse()
-
-  // Add an empty object to the front of the args.  Defaults will be written
-  // to this empty object.
-  argsarr.unshift({})
-
-  return _.defaultsDeep.apply(_, argsarr)
-}
-exports.deepextend = deepextend
-
-// loop over a list of items recursively
-// list can be an integer - number of times to recurse
-exports.recurse = function recurse(list, work, done) {
-  var ctxt = this
-
-  if (_.isNumber(list)) {
-    list = _.range(0, list)
-  } else {
-    list = _.clone(list)
-  }
-
-  function next(err, out) {
-    if (err) return done(err, out)
-
-    var item = list.shift()
-
-    if (void 0 !== item) {
-      work.call(ctxt, item, next)
-    } else {
-      done.call(ctxt, err, out)
-    }
-  }
-  next.call(ctxt)
-}
-
-// Print action result
-exports.print = Print.print
-
-exports.makedie = function(instance, ctxt) {
-  ctxt = _.extend(ctxt, instance.die ? instance.die.context : {})
-
-  var diecount = 0
-
-  var die = function(err) {
-    var so = instance.options()
-    var test = so.test
-
-    // undead is only for testing, do not use in production
-    var undead = (so.debug && so.debug.undead) || (err && err.undead)
-    var full =
-      (so.debug && so.debug.print && 'full' === so.debug.print.fatal) || false
-
-    if (0 < diecount) {
-      if (!undead) {
-        throw error(err, '[DEATH LOOP] die count: ' + diecount)
-      }
-      return
-    } else {
-      diecount++
-    }
-
-    try {
-      if (!err) {
-        err = new Error('unknown')
-      } else if (!Util.isError(err)) {
-        err = new Error(_.isString(err) ? err : Util.inspect(err))
-      }
-
-      err.fatal$ = true
-
-      var logdesc = {
-        kind: ctxt.txt || 'fatal',
-        level: ctxt.level || 'fatal',
-        plugin: ctxt.plugin,
-        tag: ctxt.tag,
-        id: ctxt.id,
-        code: err.code || 'fatal',
-        notice: err.message,
-        err: err,
-        callpoint: ctxt.callpoint && ctxt.callpoint()
-      }
-
-      instance.log.fatal.call(instance, logdesc)
-
-      var stack = err.stack || ''
-      stack = stack
-        .substring(stack.indexOf('\n') + 5)
-        .replace(/\n\s+/g, '\n               ')
-
-      var procdesc =
-        'pid=' +
-        process.pid +
-        ', arch=' +
-        process.arch +
-        ', platform=' +
-        process.platform +
-        (!full ? '' : ', path=' + process.execPath) +
-        ', argv=' +
-        Util.inspect(process.argv).replace(/\n/g, '') +
-        (!full ? '' : ', env=' + Util.inspect(process.env).replace(/\n/g, ''))
-
-      var when = new Date()
-
-      var stderrmsg =
-        '\n\n' +
-        '=== SENECA FATAL ERROR ===' +
-        '\nMESSAGE   :::  ' +
-        err.message +
-        '\nCODE      :::  ' +
-        err.code +
-        '\nINSTANCE  :::  ' +
-        instance.toString() +
-        '\nDETAILS   :::  ' +
-        Util.inspect(
-          full ? err.details : _.omit(clean(err.details), ['instance']),
-          { depth: null }
-        ).replace(/\n/g, '\n               ') +
-        '\nSTACK     :::  ' +
-        stack +
-        '\nWHEN      :::  ' +
-        when.toISOString() +
-        ', ' +
-        when.getTime() +
-        '\nLOG       :::  ' +
-        Jsonic.stringify(logdesc) +
-        '\nNODE      :::  ' +
-        process.version +
-        ', ' +
-        process.title +
-        (!full
-          ? ''
-          : ', ' +
-            Util.inspect(process.versions).replace(/\s+/g, ' ') +
-            ', ' +
-            Util.inspect(process.features).replace(/\s+/g, ' ') +
-            ', ' +
-            Util.inspect(process.moduleLoadList).replace(/\s+/g, ' ')) +
-        '\nPROCESS   :::  ' +
-        procdesc +
-        '\nFOLDER    :::  ' +
-        process.env.PWD
-
-      if (so.errhandler) {
-        so.errhandler.call(instance, err)
-      }
-
-      if (instance.flags.closed) {
-        return
-      }
-
-      if (!undead) {
-        instance.act('role:seneca,info:fatal,closing$:true', { err: err })
-
-        instance.close(
-          // terminate process, err (if defined) is from seneca.close
-          function(close_err) {
-            if (!undead) {
-              process.nextTick(function() {
-                if (close_err) {
-                  instance.log.fatal({
-                    kind: 'close',
-                    err: Util.inspect(close_err)
-                  })
-                }
-
-                if (test) {
-                  if (close_err) {
-                    Print.err(close_err)
-                  }
-
-                  Print.err(stderrmsg)
-                  Print.err(
-                    '\nSENECA TERMINATED at ' +
-                      new Date().toISOString() +
-                      '. See above for error report.\n'
-                  )
-                }
-
-                so.system.exit(1)
-              })
-            }
-          }
-        )
-      }
-
-      // make sure we close down within options.death_delay seconds
-      if (!undead) {
-        var killtimer = setTimeout(function() {
-          instance.log.fatal({ kind: 'close', timeout: true })
-
-          if (so.test) {
-            Print.err(stderrmsg)
-            Print.err(
-              '\n\nSENECA TERMINATED (on timeout) at ' +
-                new Date().toISOString() +
-                '.\n\n'
-            )
-          }
-
-          so.system.exit(2)
-        }, so.death_delay)
-
-        if (killtimer.unref) {
-          killtimer.unref()
-        }
-      }
-    } catch (panic) {
-      this.log.fatal({
-        kind: 'panic',
-        panic: Util.inspect(panic),
-        orig: arguments[0]
-      })
-
-      if (so.test) {
-        var msg =
-          '\n\n' +
-          'Seneca Panic\n' +
-          '============\n\n' +
-          panic.stack +
-          '\n\nOriginal Error:\n' +
-          (arguments[0] && arguments[0].stack
-            ? arguments[0].stack
-            : arguments[0])
-        Print.err(msg)
-      }
-    }
-  }
-
-  die.context = ctxt
-
-  return die
-}
-
-exports.make_standard_act_log_entry = function(
-  actdef,
-  msg,
-  meta,
-  origmsg,
-  ctxt
-) {
-  var transport = origmsg.transport$ || {}
-  var callmeta = meta || msg.meta$ || {}
-  var prior = callmeta.prior || {}
-  actdef = actdef || {}
-
-  return _.extend(
-    {
-      actid: callmeta.id,
-      msg: msg,
-      meta: meta,
-      entry: prior.entry,
-      prior: prior.chain,
-      gate: origmsg.gate$,
-      caller: origmsg.caller$,
-      actdef: actdef,
-
-      // these are transitional as need to be updated
-      // to standard transport metadata
-      client: actdef.client,
-      listen: !!transport.origin,
-      transport: transport
-    },
-    ctxt
-  )
-}
-
-exports.make_standard_err_log_entry = function(err, ctxt) {
-  if (!err) return ctxt
-
-  return _.extend(
-    {
-      notice: err.message,
-      code: err.code,
-      err: err
-    },
-    ctxt
-  )
-}
-
-exports.resolve_option = function(value, options) {
-  return _.isFunction(value) ? value(options) : value
-}
-
-exports.flatten = function(obj, prop) {
-  var out = []
-  while (null != obj && 0 < obj.length) {
-    out.push(_.omit(obj[0], [prop]))
-    obj = obj[0][prop]
-  }
-  return out
-}
-
-exports.autoincr = function() {
-  var counter = 0
-  return function() {
-    return counter++
-  }
-}
-
-exports.make_trace_desc = function(meta) {
-  return [
-    meta.pattern,
-    meta.id,
-    meta.instance,
-    meta.tag,
-    meta.version,
-    meta.start,
-    meta.end,
-    meta.sync,
-    meta.action
-  ]
-}
-
-exports.TRACE_PATTERN = 0
-exports.TRACE_ID = 1
-exports.TRACE_INSTANCE = 2
-exports.TRACE_TAG = 3
-exports.TRACE_VERSION = 4
-exports.TRACE_START = 5
-exports.TRACE_END = 6
-exports.TRACE_SYNC = 7
-exports.TRACE_ACTION = 8
-
-exports.history = function history(opts) {
-  return new History(opts)
-}
-
-function History(opts) {
-  var self = this
-  opts = opts || {}
-
-  this._total = 0
-  this._list = []
-  this._map = {}
-
-  if (opts.prune) {
-    this._prune_interval = setInterval(function() {
-      self.prune(Date.now())
-    }, opts.interval || 100)
-    if (this._prune_interval.unref) {
-      this._prune_interval.unref()
-    }
-  }
-}
-
-History.prototype.stats = function stats() {
-  return {
-    total: this._total
-  }
-}
-
-History.prototype.add = function add(obj) {
-  this._map[obj.id] = obj
-
-  var i = this._list.length - 1
-
-  if (i < 0 || this._list[i].timelimit <= obj.timelimit) {
-    this._list.push(obj)
-  } else {
-    i = this.place(obj.timelimit)
-    this._list.splice(i, 0, obj)
-  }
-}
-
-History.prototype.place = function place(timelimit) {
-  var i = this._list.length
-  var s = 0
-  var e = i
-
-  if (0 === this._list.length) {
-    return 0
-  }
-
-  do {
-    i = Math.floor((s + e) / 2)
-
-    if (timelimit > this._list[i].timelimit) {
-      s = i + 1
-      i = s
-    } else if (timelimit < this._list[i].timelimit) {
-      e = i
-    } else {
-      i++
-      break
-    }
-  } while (s < e)
-
-  return i
-}
-
-History.prototype.prune = function prune(timelimit) {
-  var i = this.place(timelimit)
-  if (0 <= i && i <= this._list.length) {
-    for (var j = 0; j < i; j++) {
-      delete this._map[this._list[j].id]
-    }
-    this._list = this._list.slice(i)
-  }
-}
-
-History.prototype.get = function get(id) {
-  return this._map[id] || null
-}
-
-History.prototype.list = function list() {
-  return this._list
-}
-
-History.prototype.close = function close() {
-  if (this._prune_interval) {
-    clearInterval(this._prune_interval)
-  }
-}
-
-History.prototype.toString = function toString() {
-  return Util.inspect({
-    total: this._total,
-    map: this._map,
-    list: this._list
-  })
-}
-
-History.prototype.inspect = History.prototype.toString
-
-}).call(this,require('_process'))
-},{"./errors":237,"./print":244,"_process":191,"eraro":246,"jsonic":124,"lodash":125,"nid":133,"norma":135,"util":271}],237:[function(require,module,exports){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-// Error code messages.
-module.exports = {
-  test_msg: 'Test message.',
-
-  test_prop:
-    'TESTING: exists: <%=exists%>, notfound:<%=notfound%>, str=<%=str%>,' +
-    ' obj=<%=obj%>, arr=<%=arr%>, bool=<%=bool%>, null=<%=null$%>, delete=<%=delete$%>, undefined=<%=undefined$%>, void=<%=void$%>, NaN=<%=NaN$%>',
-
-  add_string_pattern_syntax:
-    'Could not add action due to syntax error in ' +
-    'pattern string: "<%=argstr%>": Line:<%=line%>, Column:<%=col%>; <%=syntax%>',
-
-  act_string_args_syntax:
-    'Could execute action due to syntax error in argument' +
-    ' string: "<%=argstr%>": Line:<%=line%>, Column:<%=col%>; <%=syntax%>',
-
-  add_pattern_object_expected_after_string_pattern:
-    'Could not add action; ' +
-    'unexpected argument; a pattern object or function should follow the pattern' +
-    ' string; arguments were: "<%=args%>".',
-
-  add_pattern_object_expected:
-    'Could not add action; unexpected argument; ' +
-    'a pattern object or string should be the first argument; ' +
-    'arguments were: "<%=args%>".',
-
-  add_action_function_expected:
-    'Could not add action: the action function ' +
-    'should appear after the pattern; arguments were: "<%=args%>".',
-
-  add_action_metadata_not_an_object:
-    'Could not add action: the argument after ' +
-    'the action function should be a metadata object: <%=actdef%>.',
-
-  add_empty_pattern:
-    'Could not add action, as the action pattern is empty: ' + '"<%=args%>"',
-
-  act_if_expects_boolean:
-    'The method act_if expects a boolean value as its ' +
-    'first argument, was: "<%=first%>".',
-
-  act_not_found:
-    'No matching action pattern found for <%=args%>, and no default ' +
-    'result provided (using a default$ property).',
-
-  act_default_bad:
-    'No matching action pattern found for <%=args%>, and default ' +
-    'result is not a plain object or an array: <%=xdefault%>.',
-
-  act_no_args:
-    'No action pattern defined in "<%=args%>"; the first argument ' +
-    'should be a string or object pattern.',
-
-  act_invalid_msg:
-    'Action <%=pattern%> received an invalid message; <%=message%>; ' +
-    'message content was: <%=msg%>.',
-
-  act_execute: 'Action <%=pattern%> failed: <%=message%>.',
-
-  act_callback: 'Action <%=pattern%> callback threw: <%=message%>.',
-
-  act_loop:
-    'Action <%=pattern%> loops back on itself. Action details: <%=actdef%>, history: <%=history%>',
-
-  result_not_objarr:
-    'Action <%=pattern%> responded with result that was not an ' +
-    'object or array: <%=result%>; Use option strict:{result:false} to allow; ' +
-    'arguments were: <%=args%>',
-
-  no_client: 'Transport client was not created; arguments were: "<%=args%>".',
-
-  invalid_options: 'Invalid options; <%=message%>',
-
-  plugin_required:
-    'The <%=name%> plugin depends on the <%=dependency%> plugin, ' +
-    'which is not loaded yet.',
-
-  plugin_init: 'The <%=name%> plugin failed to initialize: <%=plugin_error%>.',
-
-  plugin_init_timeout:
-    'The <%=name%> plugin failed to initialize within ' +
-    '<%=timeout%> milliseconds (The init:<%=name%> action did not call the "done"' +
-    ' callback in time).',
-
-  export_not_found: 'The export <%=key%> has not been defined by a plugin.',
-
-  store_cmd_missing:
-    'Entity data store implementation is missing a command; ' +
-    '"<%=cmd%>": "<%=store%>".',
-
-  sub_function_catch:
-    'Pattern subscription function threw: <%=message%> on ' +
-    'args: <%=args%>, result: <%=result%>.',
-
-  ready_failed: 'Ready function failed: <%=message%>',
-
-  unknown_message_reply:
-    'Reply for message <%=id%> failed as message is unknown: <%=args%>',
-
-  maxparents:
-    'Message has too many parent messages (<%=maxparents%>). There may be an infinite loop. Parents: <%=parents%>, Message: <%=args%>',
-
-  plugin_define:
-    "The definition function for the plugin <%=fullname%> has failed: <%=message%>. This error is considered fatal as all plugins have to initialize correctly. You should test the plugin by itself to verify that it is working correctly. Also ensure that the configuration options passed to the plugin are correct. These are shown below under in the DETAILS section. There could also be a bug in the plugin. If you think that is the case, please create a github issue on the plugin's repository<%=repo%>, and include this error report.",
-
-  no_transport_client:
-    'The transport client defined by <%=config%> does not exist for message: <%=msg%>',
-
-  invalid_plugin_option:
-    'Plugin <%=name%>: option value is not valid: <%=err_msg%> in options <%=options%>',
-
-  no_prior_action:
-    'The `prior` method must be called inside an action function. Arguments were: <%=args%>',
-
-  missing_plugin_name: 'The plugin name string was missing or empty.',
-
-  bad_plugin_name:
-    "The plugin name string cannot be empty and must be alphanumeric (matching /^[a-zA-Z][a-zA-Z0-9_]*$/), and cannot be longer than 1024 characters. Name was '<%=name.substring(0,1032)%>'.",
-
-  bad_plugin_tag:
-    "The plugin tag string, if defined, must be alphanumeric (matching /^[a-zA-Z0-9_]+$/), and cannot be longer than 1024 characters. Name was '<%=name.substring(0,1032)%>', and tag was '<%=tag.substring(0,1032)%>'.",
-
-  bad_jsonic:
-    'Data string provided in Jsonic format (https://github.com/rjrodger/jsonic) has a syntax error: <%=syntax%> (line:<%=line%>, col:<%=col%>); original: <%=argstr%>',
-
-  // Legacy error message codes
-
-  act_invalid_args:
-    'Action <%=pattern%> has invalid arguments; <%=message%>; ' +
-    'arguments were: <%=msg%>.'
-}
-
-module.exports.deprecation = {
-  seneca_parent:
-    'Seneca.parent has been renamed to Seneca.prior. Seneca.parent will be removed in Seneca 4.x.',
-
-  seneca_next_act: 'Seneca.next_act will be removed in Seneca 3.x'
-}
-
-},{}],238:[function(require,module,exports){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var Util = require('util')
-var Assert = require('assert')
-
-var _ = require('lodash')
-
-var Common = require('./common')
-
-module.exports = {
-  closed: inward_closed,
-  act_cache: inward_act_cache,
-  act_default: inward_act_default,
-  act_not_found: inward_act_not_found,
-  validate_msg: inward_validate_msg,
-  warnings: inward_warnings,
-  msg_meta: inward_msg_meta,
-  limit_msg: inward_limit_msg,
-  msg_modify: inward_msg_modify,
-  act_stats: inward_act_stats,
-  prepare_delegate: inward_prepare_delegate,
-  announce: inward_announce
-}
-
-function inward_limit_msg(ctxt, data) {
-  var so = ctxt.options
-  var meta = data.meta
-
-  if (meta.parents && so.limits.maxparents < meta.parents.length) {
-    return {
-      kind: 'error',
-      code: 'maxparents',
-      info: {
-        maxparents: so.limits.maxparents,
-        numparents: meta.parents.length,
-        parents: _.map(meta.parents, p => p[0]),
-        args: Util.inspect(Common.clean(data.msg)).replace(/\n/g, '')
-      }
-    }
-  }
-}
-
-function inward_announce(ctxt, data) {
-  if (!ctxt.actdef) return
-
-  if (_.isFunction(ctxt.seneca.on_act_in)) {
-    ctxt.seneca.on_act_in(ctxt.actdef, data.msg, data.meta)
-  }
-
-  ctxt.seneca.emit('act-in', data.msg, null, data.meta)
-}
-
-function inward_closed(ctxt, data) {
-  if (ctxt.seneca.flags.closed && !data.meta.closing) {
-    return {
-      kind: 'error',
-      code: 'closed',
-      info: {
-        args: Util.inspect(Common.clean(data.msg)).replace(/\n/g, '')
-      }
-    }
-  }
-}
-
-function inward_act_stats(ctxt) {
-  if (!ctxt.actdef) {
-    return
-  }
-
-  var private$ = ctxt.seneca.private$
-  ++private$.stats.act.calls
-
-  var pattern = ctxt.actdef.pattern
-
-  var actstats = (private$.stats.actmap[pattern] =
-    private$.stats.actmap[pattern] || {})
-
-  ++actstats.calls
-}
-
-function inward_act_default(ctxt, data) {
-  var so = ctxt.options
-  var msg = data.msg
-  var meta = data.meta
-
-  // TODO: existence of pattern action needs own indicator flag
-  if (!ctxt.actdef) {
-    var default$ = meta.dflt || (!so.strict.find ? {} : meta.dflt)
-
-    if (_.isPlainObject(default$) || _.isArray(default$)) {
-      return {
-        kind: 'result',
-        result: default$,
-        log: {
-          level: 'debug',
-          data: {
-            kind: 'act',
-            case: 'DEFAULT'
-          }
-        }
-      }
-    } else if (null != default$) {
-      return {
-        kind: 'error',
-        code: 'act_default_bad',
-        info: {
-          args: Util.inspect(Common.clean(msg)).replace(/\n/g, ''),
-          xdefault: Util.inspect(default$)
-        }
-      }
-    }
-  }
-}
-
-function inward_act_not_found(ctxt, data) {
-  var so = ctxt.options
-  var msg = data.msg
-
-  if (!ctxt.actdef) {
-    return {
-      kind: 'error',
-      code: 'act_not_found',
-      info: { args: Util.inspect(Common.clean(msg)).replace(/\n/g, '') },
-      log: {
-        level: so.trace.unknown ? 'warn' : 'debug',
-        data: {
-          kind: 'act',
-          case: 'UNKNOWN'
-        }
-      }
-    }
-  }
-}
-
-function inward_validate_msg(ctxt, data) {
-  var so = ctxt.options
-  var msg = data.msg
-
-  Assert(ctxt.actdef)
-
-  if (!_.isFunction(ctxt.actdef.validate)) {
-    return
-  }
-
-  var err = null
-
-  // FIX: this is assumed to be synchronous
-  // seneca-parambulator and seneca-joi need to be updated
-  ctxt.actdef.validate(msg, function(verr) {
-    err = verr
-  })
-
-  if (err) {
-    return {
-      kind: 'error',
-      code: so.legacy.error_codes ? 'act_invalid_args' : 'act_invalid_msg',
-      info: {
-        pattern: ctxt.actdef.pattern,
-        message: err.message,
-        msg: Common.clean(msg),
-        error: err
-      },
-      log: {
-        level: so.trace.invalid ? 'warn' : null,
-        data: {
-          kind: 'act',
-          case: 'INVALID'
-        }
-      }
-    }
-  }
-}
-
-// Check if actid has already been seen, and if action cache is active,
-// then provide cached result, if any. Return true in this case.
-function inward_act_cache(ctxt, data) {
-  var so = ctxt.options
-  var meta = data.meta
-
-  var actid = meta.id
-  var private$ = ctxt.seneca.private$
-
-  if (actid != null && so.history.active) {
-    var actdetails = private$.history.get(actid)
-
-    if (actdetails) {
-      private$.stats.act.cache++
-
-      var latest = actdetails.result[actdetails.result.length - 1] || {}
-
-      var out = {
-        kind: latest.err ? 'error' : 'result',
-        result: latest.res || null,
-        error: latest.err || null,
-        log: {
-          level: 'debug',
-          data: {
-            kind: 'act',
-            case: 'CACHE',
-            cachetime: latest.when
-          }
-        }
-      }
-
-      ctxt.cached$ = true
-
-      return out
-    }
-  }
-}
-
-function inward_warnings(ctxt, data) {
-  var so = ctxt.options
-  var msg = data.msg
-
-  Assert(ctxt.actdef)
-
-  if (so.debug.deprecation && ctxt.actdef.deprecate) {
-    ctxt.seneca.log.warn({
-      kind: 'act',
-      case: 'DEPRECATED',
-      msg: msg,
-      pattern: ctxt.actdef.pattern,
-      notice: ctxt.actdef.deprecate,
-      callpoint: ctxt.callpoint
-    })
-  }
-}
-
-function inward_msg_meta(ctxt, data) {
-  var meta = data.meta
-
-  meta.pattern = ctxt.actdef.pattern
-  meta.action = ctxt.actdef.id
-  meta.plugin = _.extend(meta.plugin, ctxt.actdef.plugin)
-  meta.start = null == meta.start ? ctxt.start : meta.start
-  meta.parents = meta.parents || []
-  meta.trace = meta.trace || []
-
-  var parent = ctxt.seneca.private$.act && ctxt.seneca.private$.act.parent
-
-  // Use parent custom object if present,
-  // otherwise use object provided by caller,
-  // otherwise create a new one.
-  // This preserves the same custom object ref throughout a call chain.
-  var parentcustom = (parent && parent.custom) || meta.custom || {}
-
-  if (parent) {
-    meta.parents = meta.parents.concat(parent.parents || [])
-    meta.parents.unshift(Common.make_trace_desc(parent))
-  }
-
-  meta.custom = Object.assign(
-    parentcustom,
-    meta.custom,
-    ctxt.seneca.fixedmeta && ctxt.seneca.fixedmeta.custom
-  )
-}
-
-// TODO: remove
-function inward_msg_modify() {
-  //Common.setmeta(data.msg, data.meta)
-}
-
-function inward_prepare_delegate(ctxt, data) {
-  Assert(data.reply)
-
-  ctxt.seneca.fixedargs.tx$ = data.meta.tx
-
-  data.reply = data.reply.bind(ctxt.seneca)
-  data.reply.seneca = ctxt.seneca
-
-  var reply = data.reply
-
-  // DEPRECATE
-  ctxt.seneca.good = function good(out) {
-    ctxt.seneca.log.warn(
-      'seneca.good is deprecated and will be removed in 4.0.0'
-    )
-    reply(null, out)
-  }
-
-  // DEPRECATE
-  ctxt.seneca.bad = function bad(err) {
-    ctxt.seneca.log.warn(
-      'seneca.bad is deprecated and will be removed in 4.0.0'
-    )
-    reply(err)
-  }
-
-  ctxt.seneca.reply = function reply(err, out) {
-    reply(err, out)
-  }
-}
-
-},{"./common":236,"assert":16,"lodash":125,"util":271}],239:[function(require,module,exports){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var _ = require('lodash')
-var Eraro = require('eraro')
-var Norma = require('norma')
-var Jsonic = require('jsonic')
-
-var Common = require('./common')
-var Errors = require('./errors')
-
-var internals = {
-  error: Eraro({
-    package: 'seneca',
-    msgmap: Errors,
-    override: true
-  })
-}
-
-// All methods here are DEPRECATED
-// To be marked as DEPRECATED in Seneca 4.x
-// To be REMOVED in Seneca 5.x
-
-// use args properties as fields
-// defaults: map of default values
-// args: args object
-// fixed: map of fixed values - cannot be overriden
-// omits: array of prop names to exclude
-// defaults, args, and fixed are deepextended together in that order
-exports.argprops = function argprops(defaults, args, fixed, omits) {
-  omits = _.isArray(omits)
-    ? omits
-    : _.isObject(omits)
-    ? _.keys(omits)
-    : _.isString(omits)
-    ? omits.split(/\s*,\s*/)
-    : '' + omits
-
-  // a little pre omit to avoid entities named in omits
-  var usedargs = _.omit(args, omits)
-
-  // don't support $ args
-  usedargs = Common.clean(usedargs)
-
-  return _.omit(Common.deepextend(defaults, usedargs, fixed), omits)
-}
-
-exports.next_act = function next_act() {
-  var argsarr = new Array(arguments.length)
-  for (var l = 0; l < argsarr.length; ++l) {
-    argsarr[l] = arguments[l]
-  }
-
-  var si = this
-
-  si.log.warn({
-    kind: 'notice',
-    case: 'DEPRECATION',
-    notice: Errors.deprecation.seneca_next_act
-  })
-
-  return function(next) {
-    argsarr.push(next)
-    si.act.apply(si, argsarr)
-  }
-}
-
-exports.findpins = function findpins() {
-  var self = this
-
-  var argsarr = new Array(arguments.length)
-  for (var l = 0; l < argsarr.length; ++l) {
-    argsarr[l] = arguments[l]
-  }
-
-  var pins = []
-  var patterns = _.flatten(argsarr)
-
-  _.each(patterns, function(pattern) {
-    pattern = _.isString(pattern) ? Jsonic(pattern) : pattern
-    pins = pins.concat(
-      _.map(self.private$.actrouter.list(pattern), function(desc) {
-        return desc.match
-      })
-    )
-  })
-
-  return pins
-}
-
-exports.act_if = function act_if() {
-  var self = this
-  var args = Norma('{execute:b actargs:.*}', arguments)
-
-  if (args.execute) {
-    return self.act.apply(self, args.actargs)
-  } else return self
-}
-
-exports.hasact = function hasact(pattern) {
-  return !!this.find(pattern, { exact: false })
-}
-
-exports.make_legacy_fail = function make_legacy_fail(so) {
-  return function() {
-    var argsarr = new Array(arguments.length)
-    for (var l = 0; l < argsarr.length; ++l) {
-      argsarr[l] = arguments[l]
-    }
-
-    var cb = _.isFunction(argsarr[argsarr.length - 1])
-      ? argsarr[argsarr.length - 1]
-      : null
-
-    if (cb) {
-      argsarr.pop()
-    }
-
-    if (_.isObject(argsarr[0])) {
-      var code = argsarr[0].code
-      if (_.isString(code)) {
-        argsarr.unshift(code)
-      }
-    }
-
-    var err = internals.error.apply(null, argsarr)
-    err.callpoint = new Error().stack.match(/^.*\n.*\n\s*(.*)/)[1]
-    err.seneca = { code: err.code, valmap: err.details }
-
-    this.log.error(Common.make_standard_err_log_entry(err))
-    if (so.errhandler) {
-      so.errhandler.call(this, err)
-    }
-
-    if (cb) {
-      cb.call(this, err)
-    }
-
-    return err
-  }
-}
-
-},{"./common":236,"./errors":237,"eraro":246,"jsonic":124,"lodash":125,"norma":135}],240:[function(require,module,exports){
-/* Copyright © 2016-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var Util = require('util')
-
-var Stringify = require('json-stringify-safe')
-var _ = require('lodash')
-
-var Print = require('./print')
-
-module.exports = logging
-
-function logging() {
-  // Everything is in preload as logging plugins are
-  // a special case that need to be loaded before any calls to seneca.log.
-}
-
-logging.preload = function() {
-  var seneca = this
-  var so = seneca.options()
-  var logspec = so.log.basic || so.log || {}
-
-  var origspec = logspec
-
-  if (_.isString(logspec)) {
-    if ('quiet' === logspec) {
-      logspec = { level: 'none' }
-    } else if ('silent' === logspec) {
-      logspec = { level: 'none' }
-    } else if ('any' === logspec) {
-      logspec = { level: 'debug+' }
-    } else if ('all' === logspec) {
-      logspec = { level: 'debug+' }
-    } else if ('print' === logspec) {
-      logspec = { level: 'debug+' }
-    } else if ('standard' === logspec) {
-      logspec = { level: 'info+' }
-    } else if ('test' === logspec) {
-      logspec = { level: 'warn+' }
-    }
-  }
-
-  var logrouter = logfilter(logspec)
-
-  var logger = function(seneca, data) {
-    if (logrouter(data)) {
-      var logstr = Stringify(data)
-      Print.log(logstr)
-    }
-  }
-
-  // Test mode prints more readable logs
-  if (so.test) {
-    logger = function(seneca, data) {
-      if (logrouter(data)) {
-        try {
-          var logstr
-          var time = data.when - seneca.start_time
-
-          if ('test' === origspec || 'print' === origspec) {
-            var logb = [
-              time +
-                '/' +
-                seneca.id.substring(0, 2) +
-                '/' +
-                seneca.tag +
-                ' ' +
-                data.level.toUpperCase(),
-              (data.kind || 'data') +
-                (data.case ? '/' + data.case : '') +
-                (data.meta ? (data.meta.sync ? '/s' : '/a') : '')
-            ]
-
-            if ('act' === data.kind) {
-              if (data.meta) {
-                logb.push(
-                  data.meta.id
-                    .split('/')
-                    .map(function(s) {
-                      return s.substring(0, 2)
-                    })
-                    .join('/')
-                )
-
-                logb.push(data.meta.pattern)
-              }
-
-              logb.push(
-                Util.inspect(seneca.util.clean(data.result || data.msg))
-                  .replace(/\s+/g, '')
-                  .substring(0, 88)
-              )
-
-              logb.push(data.actdef.id)
-
-              if (data.notice) {
-                logb.push(data.notice)
-              }
-
-              if ('ERR' === data.case) {
-                logb.push('\n\n' + data.err.stack + '\n' + data.caller + '\n')
-              }
-            } else if ('add' === data.kind) {
-              logb.push(data.pattern)
-              logb.push(data.name)
-            } else if ('plugin' === data.kind) {
-              logb.push(
-                data.plugin_name +
-                  (data.plugin_tag ? '$' + data.plugin_tag : '')
-              )
-            } else if ('options' === data.kind) {
-              // deliberately omit
-            } else if ('notice' === data.kind) {
-              logb.push(data.notice)
-            } else if ('listen' === data.kind || 'client' === data.kind) {
-              var config = data.options && data.options[0]
-              logb.push(
-                [
-                  config.type,
-                  config.pin,
-                  config.host,
-                  _.isFunction(config.port) ? '' : config.port
-                ].join(';')
-              )
-            } else {
-              logb.push(
-                Util.inspect(data)
-                  .replace(/\n/g, ' ')
-                  .substring(0, 88)
-              )
-            }
-
-            logstr = logb.join('\t')
-          } else {
-            logstr = Util.inspect(data, { depth: null })
-            logstr =
-              time +
-              ':\n\t' +
-              logstr.replace(/\n/g, '\n\t') +
-              '\n------------------------------------------------\n\n'
-          }
-
-          Print.log(logstr)
-        } catch (e) {
-          Print.log(data)
-        }
-      }
-    }
-  }
-
-  return {
-    extend: {
-      logger: logger
-    }
-  }
-}
-
-// TODO: needs massive refactor
-
-function logfilter(options) {
-  let level = options.level || 'info+'
-
-  let calculatedLevels = []
-
-  if (level_exists(level)) {
-    calculatedLevels.push(level)
-  } else if (_.endsWith(level, '+')) {
-    // Level + notation
-    calculatedLevels = log_level_plus(level.substring(0, level.length - 1))
-  } else {
-    // No level nor level+... it must be a custom alias
-    let processedAliases = Object.assign({}, aliases, options.aliases)
-    let aliasInfo = processedAliases[level]
-    if (aliasInfo) {
-      let handled = _.get(aliasInfo, 'handled', true)
-      if (handled) {
-        calculatedLevels = aliasInfo.handler(options)
-      }
-    }
-  }
-
-  return function filter(data) {
-    if (calculatedLevels.indexOf(data.level) !== -1) {
-      return data
-      /*
-      let cloned = _.clone(data)
-      if (options['omit-metadata']) {
-        cloned = _.omit(cloned, ['seneca', 'level', 'when'])
-      }
-
-      if (options.omit && _.isArray(options.omit)) {
-        cloned = _.omit(cloned, options.omit)
-      }
-      return cloned
-*/
-    }
-    return null
-  }
-}
-
-var aliases = {
-  silent: {
-    handled: true,
-    handler: function() {
-      return []
-    }
-  },
-  all: {
-    handled: true,
-    handler: function() {
-      return ['debug', 'info', 'warn', 'error', 'fatal']
-    }
-  },
-  test: {
-    handled: true,
-    handler: function() {
-      return ['error', 'fatal']
-    }
-  }
-}
-
-const log_levels = ['debug', 'info', 'warn', 'error', 'fatal']
-
-/**
- * It returns the levels above the argument
- * @param  {String} logLevel the log level to calculate
- * @return {Array}           the list of logs above the argument
- */
-function log_level_plus(logLevel) {
-  let index = log_levels.indexOf(logLevel)
-  if (index < 0) {
-    return []
-  } else {
-    return log_levels.slice(index, log_levels.length)
-  }
-}
-
-/**
- * Checks if a log level exists
- * @param  {string} level the level itself
- * @return {boolean}      true if the level exists
- */
-function level_exists(level) {
-  return log_levels.indexOf(level) !== -1
-}
-
-module.exports.log_level_plus = log_level_plus
-module.exports.level_exists = level_exists
-
-},{"./print":244,"json-stringify-safe":123,"lodash":125,"util":271}],241:[function(require,module,exports){
-(function (process){
-/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var Fs = require('fs')
-var _ = require('lodash')
-var Error = require('eraro')
-var Jsonic = require('jsonic')
-var Minimist = require('minimist')
-var Common = require('./common')
-
-var error = Error({ package: 'seneca', msgmap: ERRMSGMAP() })
-
-module.exports = function(callmodule, defaults, orig_initial) {
-  var sourcemap = {
-    argv: {},
-    env: {},
-    default_file: {},
-    loaded: {}
-  }
-
-  // Must be defined here as prepare depends on it.
-  var options = {}
-
-  var basemodule
-  if (orig_initial.module && orig_initial.module.require) {
-    basemodule = orig_initial.module
-  } else if (callmodule.parent && callmodule.parent.require) {
-    basemodule = callmodule.parent
-  } else {
-    basemodule = callmodule
-  }
-  options = prepare(basemodule, defaults, orig_initial)
-
-  // Not needed after this point, and screws up debug printing.
-  delete options.module
-
-  function prepare(basemodule, defaults, initial) {
-    var DEFAULT_OPTIONS_FILE = './seneca.options.js'
-    var FATAL_OPTIONS_FILE = './options.seneca.js'
-
-    // Load from custom file, either by providing a string,
-    // or having a property 'from' that is a string.
-    // The string is interpreted as a file path.
-
-    var from = initial.from
-    if (_.isString(initial)) {
-      from = initial
-      initial = {}
-    }
-
-    if (_.isString(from)) {
-      sourcemap.loaded = load_options(from)
-    }
-
-    var argv = Minimist(process.argv.slice(2))
-
-    if (Fs.existsSync && Fs.existsSync(FATAL_OPTIONS_FILE)) {
-      throw error('inverted_file_name', {
-        from: FATAL_OPTIONS_FILE,
-        module: basemodule
-      })
-    }
-
-    try {
-      sourcemap.default_file =
-        basemodule.require && basemodule.require(DEFAULT_OPTIONS_FILE)
-    } catch (e) {
-      if (e.code !== 'MODULE_NOT_FOUND') {
-        var wrappedError = {
-          errmsg: e.message,
-          from: DEFAULT_OPTIONS_FILE,
-          module: basemodule
-        }
-
-        throw error(e, 'require_default_options', wrappedError)
-      }
-    }
-
-    if (process.env.SENECA_OPTIONS) {
-      sourcemap.env = Common.deepextend(
-        {},
-        sourcemap.env,
-        Jsonic(process.env.SENECA_OPTIONS)
-      )
-    }
-
-    if (process.env.SENECA_TEST) {
-      sourcemap.env.test = process.env.SENECA_TEST
-    }
-
-    if (argv.seneca) {
-      if (_.isObject(argv.seneca.options)) {
-        sourcemap.argv = argv.seneca.options
-      } else if (_.isString(argv.seneca.options)) {
-        if (argv.seneca.options === 'print') {
-          sourcemap.argv = { debug: { print: { options: true } } }
-        } else {
-          sourcemap.argv = Jsonic(argv.seneca.options)
-        }
-      }
-
-      // --seneca.options.from=<filepath>
-      if (_.isString(sourcemap.argv.from)) {
-        sourcemap.argv = Common.deepextend(
-          load_options(sourcemap.argv.from),
-          sourcemap.argv
-        )
-      }
-
-      boolify(sourcemap.argv)
-
-      if (null != argv.seneca.tag) {
-        sourcemap.argv.tag = '' + argv.seneca.tag
-      }
-
-      if (argv.seneca.log) {
-        sourcemap.argv.log = sourcemap.argv.log || {}
-        parse_command_line(argv.seneca.log, sourcemap.argv)
-      }
-
-      if (argv.seneca.test) {
-        sourcemap.argv.test = argv.seneca.test
-      }
-    }
-
-    // This is the list of option sources.
-    // The list is in reverse precedence order,
-    // i.e. command line arguments (argv) win
-    var out = Common.deepextend(
-      {},
-      defaults,
-      sourcemap.default_file,
-      options,
-      sourcemap.loaded,
-      initial,
-      sourcemap.env,
-      sourcemap.argv
-    )
-
-    // Legacy log settings.
-    out.log = out.log || out.logger || out.logging || {}
-
-    // boolean corrections
-    out.legacy.logging = Common.boolify(out.legacy.logging)
-
-    return out
-  }
-
-  function parse_command_line(spec, parsedSpec) {
-    var logSpec = _.isArray(spec) ? spec[0] : spec
-
-    if (_.isString(logSpec)) {
-      try {
-        parsedSpec.log = Jsonic(logSpec)
-      } catch (e) {
-        parsedSpec.log = {}
-      }
-      return
-    }
-
-    if (_.isObject(logSpec)) {
-      parsedSpec.log = {}
-      var logType = Object.keys(logSpec.level || logSpec)
-      if (logType.length > 0) {
-        parsedSpec.log = { level: logType[0] }
-      }
-    }
-  }
-
-  function set_options(input) {
-    if (null == input) throw error('no_options')
-
-    // DEPRECATED: Remove when Seneca >= 4.x
-    if (_.isString(input)) {
-      options = prepare(basemodule, defaults, input)
-    } else {
-      options = Common.deepextend(options, input)
-    }
-
-    return options
-  }
-
-  function get_options() {
-    return options
-  }
-
-  function load_options(origfrom) {
-    var out = {}
-
-    var from = origfrom.match(/^\//) ? origfrom : process.cwd() + '/' + origfrom
-
-    if (from.match(/\.json$/i)) {
-      // this is deliberate, options are ALWAYS loaded synchronously
-      var text = (Fs.readFileSync && Fs.readFileSync(from).toString()) || ''
-      out = Jsonic(text)
-    } else if (from.match(/\.js$/i)) {
-      //if (!from.match(/^\//)) {
-      //  from = './' + from
-      //}
-
-      try {
-        out = basemodule.require(from)
-      } catch (e) {
-        // TODO this is getting lost
-        if (e.code !== 'MODULE_NOT_FOUND') {
-          throw error(e, 'require_options', { from: from, module: basemodule })
-        }
-      }
-    }
-
-    return out
-  }
-
-  return {
-    set: set_options,
-    get: get_options
-  }
-}
-
-function boolify(obj) {
-  Object.keys(obj).forEach(function(k) {
-    obj[k] =
-      'true' === obj[k]
-        ? true
-        : 'false' === obj[k]
-        ? false
-        : _.isObject(obj[k])
-        ? boolify(obj[k])
-        : obj[k]
-  })
-  return obj
-}
-
-function ERRMSGMAP() {
-  return {
-    inverted_file_name:
-      'Please use seneca.options.js as the default options ' +
-      'file name. The alternate name options.seneca.js is not supported.',
-
-    require_default_options:
-      'Call to require failed for <%=from%>: <%=errmsg%>.'
-  }
-}
-
-}).call(this,require('_process'))
-},{"./common":236,"_process":191,"eraro":246,"fs":59,"jsonic":124,"lodash":125,"minimist":131}],242:[function(require,module,exports){
-/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var Util = require('util')
-var Assert = require('assert')
-
-var _ = require('lodash')
-
-var Common = require('./common')
-
-// Internal implementations.
-var intern = {}
-
-module.exports = {
-  test$: { intern: intern },
-  act_cache: outward_act_cache,
-  res_object: outward_res_object,
-  act_stats: outward_act_stats,
-  make_error: outward_make_error,
-  announce: outward_announce,
-  trace: outward_trace,
-  act_error: outward_act_error,
-  res_entity: outward_res_entity,
-  msg_meta: outward_msg_meta
-}
-
-function outward_make_error(ctxt, data) {
-  if (!ctxt.options.legacy.error) {
-    if (data.res && !data.meta.error && data.res.meta$ && data.res.meta$.err) {
-      var res = new Error(data.res.message)
-      for (var p in data.res) {
-        res[p] = data.res[p]
-      }
-      data.res = res
-    }
-  }
-}
-
-// Store result in action cache
-// TODO: replace with history
-function outward_act_cache(ctxt, data) {
-  Assert(ctxt.options)
-
-  var so = ctxt.options
-  var res = data.res
-  var meta = data.meta
-
-  var actid = meta.id
-  var private$ = ctxt.seneca.private$
-
-  if (actid != null && so.history.active) {
-    var actdetails = private$.history.get(actid)
-
-    if (actdetails) {
-      actdetails.result.push({ when: Date.now(), res: res })
-    }
-  }
-}
-
-function outward_act_stats(ctxt, data) {
-  if (!ctxt.actdef || ctxt.cached$) {
-    return
-  }
-
-  var private$ = ctxt.seneca.private$
-  var stats = private$.stats.act
-  var meta = data.meta
-
-  ++stats.done
-
-  if (meta && null == meta.prior) {
-    private$.timestats.point(ctxt.duration, ctxt.actdef.pattern)
-  }
-
-  var pattern = ctxt.actdef.pattern
-
-  var actstats = (private$.stats.actmap[pattern] =
-    private$.stats.actmap[pattern] || {})
-
-  if (meta.error) {
-    ++stats.fails
-    ++actstats.fails
-  } else {
-    ++actstats.done
-  }
-}
-
-function outward_res_object(ctxt, data) {
-  Assert(ctxt.options)
-
-  var so = ctxt.options
-  var msg = data.msg
-  var res = data.res
-
-  if (void 0 === data.res) {
-    data.res = null
-  }
-
-  var not_object =
-    res != null &&
-    !(
-      _.isObject(res) ||
-      Array.isArray(res) ||
-      res instanceof Error ||
-      !!res.meta$ ||
-      !!res.entity$ ||
-      !!res.force$
-    )
-
-  // Responding with an Error as data is not allowed.
-  // https://github.com/senecajs/seneca/issues/711
-  if (data.out instanceof Error) {
-    not_object = true
-  }
-
-  var not_legacy = !(
-    msg.cmd === 'generate_id' ||
-    msg.note === true ||
-    msg.cmd === 'native' ||
-    msg.cmd === 'quickcode'
-  )
-
-  if (so.strict.result && not_legacy && not_object) {
-    //data.res = outward.error || error(outward.code, outward.info)
-    data.res = ctxt.seneca.private$.error('result_not_objarr', {
-      pattern: ctxt.actdef.pattern,
-      args: Util.inspect(Common.clean(msg)).replace(/\n/g, ''),
-      result: res
-    })
-    data.meta.error = true
-  }
-}
-
-function outward_announce(ctxt, data) {
-  if (!ctxt.actdef) return
-
-  if (_.isFunction(ctxt.seneca.on_act_out)) {
-    ctxt.seneca.on_act_out(ctxt.actdef, data.res, data.meta)
-  }
-
-  ctxt.seneca.emit('act-out', data.msg, data.res, data.meta)
-
-  ctxt.seneca.log.debug(
-    ctxt.actlog(ctxt.actdef, data.msg, data.meta, ctxt.origmsg, {
-      kind: 'act',
-      case: 'OUT',
-      duration: ctxt.duration,
-      result: data.res
-    })
-  )
-}
-
-function outward_trace(ctxt, data) {
-  var private$ = ctxt.seneca.private$
-
-  var meta = data.meta
-  var reply_meta = data.reply_meta
-
-  if (meta && reply_meta) {
-    meta.trace = meta.trace || []
-    meta.trace.push({
-      desc: Common.make_trace_desc(reply_meta),
-      trace: reply_meta.trace || []
-    })
-  }
-
-  var parent_meta = private$.act && private$.act.parent
-  if (parent_meta) {
-    parent_meta.trace = parent_meta.trace || []
-    parent_meta.trace.push({
-      desc: Common.make_trace_desc(meta),
-      trace: meta.trace || []
-    })
-  }
-}
-
-function outward_msg_meta(ctxt, data) {
-  var meta = data.meta
-  var reply_meta = data.reply_meta
-
-  if (meta && reply_meta) {
-    meta.custom = _.extend(meta.custom, reply_meta.custom)
-  }
-}
-
-function outward_act_error(ctxt, data) {
-  var delegate = ctxt.seneca
-  var actdef = ctxt.actdef
-  var meta = data.meta
-
-  if (meta.error) {
-    data.error_desc = intern.act_error(delegate, ctxt, data)
-
-    if (meta.fatal) {
-      // TODO: this should not happen here inside outward processing
-      return delegate.die(data.error_desc.err)
-    }
-
-    data.has_callback = data.error_desc.call_cb
-
-    if (delegate && _.isFunction(delegate.on_act_err)) {
-      // TODO: data.res does not seem right here
-      delegate.on_act_err(actdef, data.res, meta)
-    }
-
-    data.err = data.error_desc.err
-    delete data.err.meta$
-
-    data.res = null
-
-    data.meta = data.error_desc.err.meta$ || data.meta
-  } else {
-    data.err = null
-  }
-}
-
-function outward_res_entity(ctxt, data) {
-  var delegate = ctxt.seneca
-  if (data.res && data.res.entity$ && delegate.make$) {
-    data.res = delegate.make$(data.res)
-  }
-}
-
-intern.act_error = function(instance, ctxt, data) {
-  var duration = ctxt.duration
-  var act_callpoint = ctxt.callpoint
-  var actdef = ctxt.actdef || {}
-  var origmsg = ctxt.origmsg
-  var reply = ctxt.reply
-
-  var meta = data.meta
-  var msg = data.msg
-
-  var opts = instance.options()
-
-  var call_cb = true
-
-  var err = data.res || data.err
-
-  if (!err.seneca) {
-    var details = _.extend({}, err.details, {
-      message: err.eraro && err.orig ? err.orig.message : err.message,
-      pattern: actdef.pattern,
-      fn: actdef.func,
-      callback: reply,
-      instance: instance.toString(),
-      callpoint: act_callpoint
-    })
-
-    if (opts.legacy.error) {
-      err = ctxt.error(err, 'act_execute', details)
-    } else {
-      var seneca_err = ctxt.error('act_execute', {
-        pattern: actdef.pattern,
-        message: err.message,
-        callpoint: act_callpoint
-      })
-      delete seneca_err.stack
-
-      err.meta$ = err.meta$ || meta || {}
-      err.meta$.data = instance.util.clean(origmsg)
-
-      if (err.meta$.err) {
-        var errmeta = _.clone(meta)
-        errmeta.err = seneca_err
-        err.meta$.err_trace = err.meta$.err_trace || []
-        err.meta$.err_trace.push(errmeta)
-      } else {
-        err.meta$.err = seneca_err
-      }
-    }
-  } else if (
-    err.orig &&
-    _.isString(err.orig.code) &&
-    err.orig.code.indexOf('perm/') === 0
-  ) {
-    // Special legacy case for seneca-perm
-    err = err.orig
-  }
-
-  if (opts.legacy.error) {
-    err.details = err.details || {}
-    err.details.plugin = err.details.plugin || {}
-  }
-
-  var entry = ctxt.actlog(actdef, msg, meta, origmsg, {
-    // kind is act as this log entry relates to an action
-    kind: 'act',
-    case: 'ERR',
-    duration: duration
-  })
-  entry = ctxt.errlog(err, entry)
-
-  instance.log.error(entry)
-  instance.emit('act-err', msg, err)
-
-  // when fatal$ is set, prefer to die instead
-  if ('function' === typeof opts.errhandler && (!msg || !meta.fatal)) {
-    call_cb = !opts.errhandler.call(instance, err, err.meta$ || meta)
-  }
-
-  return {
-    call_cb: call_cb,
-    err: err
-  }
-}
-
-},{"./common":236,"assert":16,"lodash":125,"util":271}],243:[function(require,module,exports){
-/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var _ = require('lodash')
-var Eraro = require('eraro')
-var Common = require('./common')
-var Print = require('./print')
-
-var internals = {
-  error: Eraro({
-    package: 'seneca',
-    msgmap: {
-      // REMOVE in 4.x
-      unsupported_legacy_plugin:
-        'The plugin <%=name%> uses an unsupported legacy ' +
-        'callback to indicate plugin definition is complete: <%=init_func_sig%> ' +
-        '... }. The correct format is: function(options) { ... }. For more details, ' +
-        'please see http://senecajs.org/tutorials/how-to-write-a-plugin.html'
-    }
-  })
-}
-
-module.exports.register = function(opts, callpoint) {
-  var seq = 0
-
-  return function api_register(plugin) {
-    var seneca = this
-    var so = seneca.options()
-
-    plugin.fullname = Common.make_plugin_key(plugin)
-
-    // Don't reload plugins if load_once true
-    if (so.system.plugin.load_once) {
-      if (seneca.has_plugin(plugin)) {
-        return this
-      }
-    }
-
-    plugin.loading = true
-    seneca.private$.plugins[plugin.fullname] = plugin
-
-    var preload = plugin.init.preload
-    preload = _.isFunction(preload) ? preload : _.noop
-    var meta = preload.call(seneca, plugin) || {}
-
-    var delegate = make_delegate(seneca, plugin)
-
-    seq++
-
-    var plugin_define_pattern = {
-      role: 'seneca',
-      plugin: 'define',
-      name: plugin.name,
-      seq: seq
-    }
-
-    if (plugin.tag !== null) {
-      plugin_define_pattern.tag = plugin.tag
-    }
-
-    // seneca
-    delegate.add(plugin_define_pattern, plugin_definition).act({
-      role: 'seneca',
-      plugin: 'define',
-      name: plugin.name,
-      tag: plugin.tag,
-      seq: seq,
-      default$: {},
-      fatal$: true,
-      local$: true
-    })
-
-    var preload_name = meta.name || plugin.name
-    var preload_fullname = Common.make_plugin_key(preload_name, plugin.tag)
-    seneca.private$.exports[preload_name] = meta.export || plugin
-
-    resolve_plugin_exports(seneca, preload_fullname, meta)
-
-    return this
-
-    function plugin_definition(msg, plugin_done) {
-      var plugin_seneca = this
-      var plugin_options = resolve_options(plugin.fullname, plugin, seneca)
-
-      // Update plugin options data in Seneca options.
-      var seneca_options = { plugin: {} }
-      seneca_options.plugin[plugin.fullname] = plugin_options
-      seneca.options(seneca_options)
-
-      plugin_seneca.log.debug({
-        kind: 'plugin',
-        case: 'init',
-        name: plugin.name,
-        tag: plugin.tag,
-        options: plugin_options,
-        callpoint: callpoint
-      })
-
-      try {
-        meta = define_plugin(plugin_seneca, plugin, plugin_options)
-      } catch (e) {
-        // TODO: needs wrapping
-        return plugin_done(e)
-      }
-
-      // legacy api for service function
-      if (_.isFunction(meta)) {
-        meta = { service: meta }
-      }
-
-      // Plugin may have changed its own name dynamically
-
-      plugin.name = meta.name || plugin.name
-      plugin.tag =
-        meta.tag || plugin.tag || (plugin.options && plugin.options.tag$)
-
-      plugin.fullname = Common.make_plugin_key(plugin)
-      plugin.service = meta.service || plugin.service
-
-      plugin_seneca.__update_plugin__(plugin)
-
-      seneca.private$.plugins[plugin.fullname] = plugin
-
-      seneca.private$.plugin_order.byname.push(plugin.name)
-      seneca.private$.plugin_order.byname = _.uniq(
-        seneca.private$.plugin_order.byname
-      )
-      seneca.private$.plugin_order.byref.push(plugin.fullname)
-
-      var exports = resolve_plugin_exports(plugin_seneca, plugin.fullname, meta)
-
-      // 3.x Backwards compatibility - REMOVE in 4.x
-      if ('amqp-transport' === plugin.name) {
-        seneca.options({ legacy: { meta: true } })
-      }
-
-      plugin_seneca.log.debug({
-        kind: 'plugin',
-        case: 'install',
-        name: plugin.name,
-        tag: plugin.tag,
-        exports: exports
-      })
-
-      plugin_seneca.act(
-        {
-          role: 'seneca',
-          plugin: 'init',
-          seq: msg.seq,
-          init: plugin.name,
-          tag: plugin.tag,
-          default$: {},
-          fatal$: true,
-          local$: true
-        },
-        function(err) {
-          if (err) {
-            var plugin_err_code = 'plugin_init'
-
-            plugin.plugin_error = err.message
-
-            if (err.code === 'action-timeout') {
-              plugin_err_code = 'plugin_init_timeout'
-              plugin.timeout = opts.$.timeout
-            }
-
-            return plugin_seneca.die(
-              internals.error(err, plugin_err_code, plugin)
-            )
-          }
-
-          var fullname = plugin.name + (plugin.tag ? '$' + plugin.tag : '')
-
-          if (opts.$.debug.print && opts.$.debug.print.options) {
-            Print.plugin_options(seneca, fullname, plugin_options)
-          }
-
-          plugin_seneca.log.info({
-            kind: 'plugin',
-            case: 'ready',
-            name: plugin.name,
-            tag: plugin.tag
-          })
-
-          plugin_done()
-        }
-      )
-    }
-  }
-}
-
-module.exports.make_delegate = make_delegate
-
-function resolve_options(fullname, plugindef, seneca) {
-  var so = seneca.options()
-
-  var defaults = plugindef.defaults || {}
-
-  var fullname_options = _.extend(
-    {},
-
-    // DEPRECATED: remove in 4
-    so[fullname],
-
-    so.plugin[fullname],
-
-    // DEPRECATED: remove in 4
-    so[fullname + '$' + plugindef.tag],
-
-    so.plugin[fullname + '$' + plugindef.tag]
-  )
-
-  var shortname = fullname !== plugindef.name ? plugindef.name : null
-  if (!shortname && fullname.indexOf('seneca-') === 0) {
-    shortname = fullname.substring('seneca-'.length)
-  }
-
-  var shortname_options = _.extend(
-    {},
-
-    // DEPRECATED: remove in 4
-    so[shortname],
-
-    so.plugin[shortname],
-
-    // DEPRECATED: remove in 4
-    so[shortname + '$' + plugindef.tag],
-
-    so.plugin[shortname + '$' + plugindef.tag]
-  )
-
-  var base = {}
-  var errors = plugindef.errors || (plugindef.init && plugindef.init.errors)
-
-  if (errors) {
-    base.errors = errors
-  }
-
-  var outopts = _.extend(
-    base,
-    shortname_options,
-    fullname_options,
-    plugindef.options || {}
-  )
-
-  try {
-    return seneca.util
-      .Optioner(defaults, { allow_unknown: true })
-      .check(outopts)
-  } catch (e) {
-    throw Common.error('invalid_plugin_option', {
-      name: fullname,
-      err_msg: e.message,
-      options: outopts
-    })
-  }
-}
-
-function make_delegate(instance, plugin) {
-  // Adjust Seneca API to be plugin specific.
-  var delegate = instance.delegate({
-    plugin$: {
-      name: plugin.name,
-      tag: plugin.tag
-    },
-
-    fatal$: true
-  })
-
-  delegate.private$ = Object.create(instance.private$)
-  delegate.private$.ge = delegate.private$.ge.gate()
-
-  delegate.log = instance.make_log(
-    delegate,
-    function plugin_delegate_log_modifier(data) {
-      data.plugin_name = plugin.name
-      data.plugin_tag = plugin.tag
-    }
-  )
-
-  delegate.die = Common.makedie(delegate, {
-    type: 'plugin',
-    plugin: plugin.name
-  })
-
-  var actdeflist = []
-
-  delegate.add = function() {
-    var argsarr = new Array(arguments.length)
-    for (var l = 0; l < argsarr.length; ++l) {
-      argsarr[l] = arguments[l]
-    }
-
-    var actdef = argsarr[argsarr.length - 1] || {}
-
-    if (_.isFunction(actdef)) {
-      actdef = {}
-      argsarr.push(actdef)
-    }
-
-    actdef.plugin_name = plugin.name || '-'
-    actdef.plugin_tag = plugin.tag || '-'
-    actdef.plugin_fullname = plugin.fullname
-
-    // TODO: is this necessary?
-    actdef.log = delegate.log
-
-    actdeflist.push(actdef)
-
-    instance.add.apply(delegate, argsarr)
-
-    return delegate
-  }
-
-  delegate.__update_plugin__ = function(plugin) {
-    delegate.context.name = plugin.name || '-'
-    delegate.context.tag = plugin.tag || '-'
-    delegate.context.full = plugin.fullname || '-'
-
-    _.each(actdeflist, function(actdef) {
-      actdef.plugin_name = plugin.name || actdef.plugin_name || '-'
-      actdef.plugin_tag = plugin.tag || actdef.plugin_tag || '-'
-      actdef.plugin_fullname = plugin.fullname || actdef.plugin_fullname || '-'
-    })
-  }
-
-  delegate.init = function(init) {
-    // TODO: validate init_action is function
-
-    var pat = {
-      role: 'seneca',
-      plugin: 'init',
-      init: plugin.name
-    }
-
-    if (null != plugin.tag && '-' != plugin.tag) {
-      pat.tag = plugin.tag
-    }
-
-    delegate.add(pat, function(msg, reply) {
-      init.call(this, reply)
-    })
-  }
-
-  delegate.context.plugin = plugin
-
-  return delegate
-}
-
-function define_plugin(delegate, plugin, options) {
-  // legacy plugins
-  if (plugin.init.length > 1) {
-    plugin.init_func_sig = plugin.init.toString().match(/^(.*)\n/)[1]
-    throw internals.error('unsupported_legacy_plugin', plugin)
-  }
-
-  if (options.errors) {
-    plugin.eraro = Eraro({
-      package: 'seneca',
-      msgmap: options.errors,
-      override: true
-    })
-  }
-
-  var meta
-
-  try {
-    meta = plugin.init.call(delegate, options) || {}
-  } catch (e) {
-    if (e.seneca) {
-      throw e
-    } else {
-      throw Common.error(e, 'plugin_define', {
-        fullname: plugin.fullname,
-        message: (
-          e.message + (' (' + e.stack.match(/\n.*?\n/)).replace(/\n.*\//g, '')
-        ).replace(/\n/g, ''),
-        options: options,
-        repo: plugin.repo ? ' ' + plugin.repo + '/issues' : ''
-      })
-    }
-  }
-
-  meta = _.isString(meta) ? { name: meta } : meta
-  meta.options = meta.options || options
-
-  var updated_options = {}
-  updated_options[plugin.fullname] = meta.options
-  delegate.options(updated_options)
-
-  return meta
-}
-
-function resolve_plugin_exports(seneca, fullname, meta) {
-  var exports = []
-
-  if (meta.export !== void 0) {
-    seneca.private$.exports[fullname] = meta.export
-    exports.push(fullname)
-  }
-
-  if (_.isObject(meta.exportmap) || _.isObject(meta.exports)) {
-    meta.exportmap = meta.exportmap || meta.exports
-    _.each(meta.exportmap, function(v, k) {
-      if (v !== void 0) {
-        var exportname = fullname + '/' + k
-        seneca.private$.exports[exportname] = v
-        exports.push(exportname)
-      }
-    })
-  }
-
-  // Specific Seneca extension points
-  if (_.isObject(meta.extend)) {
-    if (_.isFunction(meta.extend.action_modifier)) {
-      seneca.private$.action_modifiers.push(meta.extend.action_modifier)
-    }
-
-    if (_.isFunction(meta.extend.logger)) {
-      if (
-        !meta.extend.logger.replace &&
-        _.isFunction(seneca.private$.logger.add)
-      ) {
-        seneca.private$.logger.add(meta.extend.logger)
-      } else {
-        seneca.private$.logger = meta.extend.logger
-      }
-    }
-  }
-
-  return exports
-}
-
-},{"./common":236,"./print":244,"eraro":246,"lodash":125}],244:[function(require,module,exports){
-/* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-// Node API modules
-var Util = require('util')
-
-// External modules.
-var _ = require('lodash')
-var Archy = require('archy')
-var Minimist = require('minimist')
-
-/** Handle command line specific functionality */
-module.exports = function(seneca, process_argv) {
-  var argv = Minimist(process_argv.slice(2))
-
-  if (!argv.seneca) {
-    return
-  }
-
-  var cmdspec = argv.seneca
-  if (cmdspec.print) {
-    if (cmdspec.print.tree) {
-      // Hack! Complex init means non-deterministic or multiple ready calls,
-      // so just delay tree print by some number of seconds to capture full tree.
-      var delay_seconds = cmdspec.print.tree.all || cmdspec.print.tree
-      if (_.isNumber(delay_seconds)) {
-        setTimeout(function() {
-          module.exports.print_tree(seneca, cmdspec)
-        }, 1000 * delay_seconds)
-      } else {
-        // Print after first ready
-        seneca.ready(function() {
-          module.exports.print_tree(this, cmdspec)
-        })
-      }
-    }
-
-    if (cmdspec.print.options) {
-      seneca.options({ debug: { print: { options: true } } })
-    }
-  }
-}
-
-module.exports.print_options = function print_options(instance, options) {
-  if (options.debug.print.options) {
-    console.log(
-      '\nSeneca Options (' + instance.id + '): before plugins\n' + '===\n'
-    )
-    console.log(Util.inspect(options, { depth: null }))
-    console.log('')
-  }
-}
-
-// TODO: remove to a plugin to remove dep on archy
-module.exports.print_tree = function print_tree(seneca, cmdspec) {
-  var tree = {
-    label: 'Seneca action patterns for instance: ' + seneca.id,
-    nodes: []
-  }
-
-  function insert(nodes, current) {
-    if (nodes.length === 0) return
-
-    for (var i = 0; i < current.nodes.length; i++) {
-      if (nodes[0] === current.nodes[i].label) {
-        return insert(nodes.slice(1), current.nodes[i])
-      }
-    }
-
-    var nn = { label: nodes[0], nodes: [] }
-    current.nodes.push(nn)
-    insert(nodes.slice(1), nn)
-  }
-
-  _.each(seneca.list(), function(pat) {
-    var nodes = []
-    var ignore = false
-    _.each(pat, function(v, k) {
-      if (
-        (!cmdspec.print.tree.all &&
-          (k === 'role' &&
-            (v === 'seneca' ||
-              v === 'basic' ||
-              v === 'util' ||
-              v === 'entity' ||
-              v === 'web' ||
-              v === 'transport' ||
-              v === 'options' ||
-              v === 'mem-store' ||
-              v === 'seneca'))) ||
-        k === 'init'
-      ) {
-        ignore = true
-      } else {
-        nodes.push(k + ':' + v)
-      }
-    })
-
-    if (!ignore) {
-      var meta = seneca.find(pat)
-
-      var metadesc = []
-      while (meta) {
-        metadesc.push(
-          '# ' +
-            (meta.plugin_fullname || '-') +
-            ', ' +
-            meta.id +
-            ', ' +
-            meta.func.name
-        )
-        meta = meta.priormeta
-      }
-
-      nodes.push(metadesc.join('\n'))
-
-      insert(nodes, tree)
-    }
-  })
-
-  /* eslint no-console: 0 */
-  console.log(Archy(tree))
-}
-
-module.exports.print = function print(err, out) {
-  if (err) {
-    console.log('ERROR: ' + err.message)
-  } else {
-    console.log(Util.inspect(out, { depth: null }))
-  }
-}
-
-module.exports.log = function log() {
-  console.log.apply(console.log, arguments)
-}
-
-module.exports.err = function() {
-  console.error.apply(console.error, arguments)
-}
-
-module.exports.plugin_options = function plugin_options(
-  seneca,
-  fullname,
-  plugin_options
-) {
-  console.log(
-    '\nSeneca Options (' + seneca.id + '): plugin: ' + fullname + '\n' + '===\n'
-  )
-  console.log(Util.inspect(plugin_options, { depth: null }))
-  console.log('')
-}
-
-},{"archy":1,"lodash":125,"minimist":131,"util":271}],245:[function(require,module,exports){
-(function (Buffer){
-/* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-var Http = require('http')
-var Https = require('https')
-var Qs = require('qs')
-var Url = require('url')
-
-var _ = require('lodash')
-var Jsonic = require('jsonic')
-var Wreck = require('wreck')
-var JSS = require('json-stringify-safe')
-
-var Common = require('./common')
-
-// THIS IS NOT A PLUGIN
-// DO NOT COPY TO CREATE TRANSPORT PLUGINS
-// USE THIS INSTEAD: [TODO github example]
-
-// TODO: handle lists properly, without losing meta data
-
-module.exports = function(seneca) {
-  seneca.add('role:transport,cmd:listen', action_listen)
-  seneca.add('role:transport,cmd:client', action_client)
-
-  seneca.add('role:transport,hook:listen,type:web', hook_listen_web)
-  seneca.add('role:transport,hook:client,type:web', hook_client_web)
-
-  var tu = {}
-
-  tu.stringifyJSON = stringifyJSON
-  tu.parseJSON = parseJSON
-
-  tu.externalize_msg = externalize_msg
-  tu.externalize_reply = externalize_reply
-  tu.internalize_msg = internalize_msg
-  tu.internalize_reply = internalize_reply
-  tu.close = close
-
-  tu.info = function() {
-    var pats = seneca.list()
-    var acts = { local: {}, remote: {} }
-    pats.forEach(function(pat) {
-      var def = seneca.find(pat, { exact: true })
-      if (def.client) {
-        acts.remote[def.pattern] = def.id
-      } else {
-        acts.local[def.pattern] = def.id
-      }
-    })
-    return acts
-  }
-
-  seneca.private$.exports['transport/utils'] = tu
-}
-
-function externalize_msg(seneca, msg, meta) {
-  if (!msg) return
-
-  if (msg instanceof Error) {
-    msg = Common.copydata(msg)
-  }
-
-  msg.meta$ = meta
-
-  return msg
-}
-
-function externalize_reply(seneca, err, out, meta) {
-  var rep = err || out
-
-  if (!rep) {
-    rep = {}
-    meta.empty = true
-  }
-
-  rep.meta$ = meta
-
-  if (_.isError(rep)) {
-    rep = Common.copydata(rep)
-    rep.meta$.error = true
-  }
-
-  return rep
-}
-
-function internalize_msg(seneca, msg) {
-  if (!msg) return
-
-  msg = handle_entity(seneca, msg)
-
-  var meta = msg.meta$ || {}
-  delete msg.meta$
-
-  // You can't send fatal msgs
-  delete msg.fatal$
-
-  msg.id$ = meta.id
-  msg.sync$ = meta.sync
-  msg.custom$ = meta.custom
-
-  msg.parents$ = meta.parents || []
-  msg.parents$.unshift(Common.make_trace_desc(meta))
-
-  return msg
-}
-
-function internalize_reply(seneca, data) {
-  var meta = {}
-  var err = null
-  var out = null
-
-  if (data) {
-    meta = data.meta$
-
-    if (meta) {
-      delete data.meta$
-
-      if (meta.error) {
-        err = new Error(data.message)
-        Object.assign(err, data)
-      } else if (!meta.empty) {
-        out = handle_entity(seneca, data)
-      }
-    }
-  }
-
-  return {
-    err: err,
-    out: out,
-    meta: meta
-  }
-}
-
-function stringifyJSON(obj) {
-  if (!obj) return
-
-  try {
-    return JSON.stringify(obj)
-  } catch (e) {
-    return JSS(obj)
-  }
-}
-
-function parseJSON(data) {
-  if (!data) return
-
-  var str = data.toString()
-
-  try {
-    return JSON.parse(str)
-  } catch (e) {
-    e.input = str
-    return e
-  }
-}
-
-function handle_entity(seneca, msg) {
-  if (seneca.make$) {
-    if (msg.entity$) {
-      msg = seneca.make$(msg)
-    }
-
-    Object.keys(msg).forEach(function(key) {
-      var value = msg[key]
-      if (_.isObject(value) && value.entity$) {
-        msg[key] = seneca.make$(value)
-      }
-    })
-  }
-
-  return msg
-}
-
-function register(config, reply) {
-  return function(err, out) {
-    this.private$.transport.register.push({
-      when: Date.now(),
-      config: config,
-      err: err,
-      res: out
-    })
-
-    reply(err, out)
-  }
-}
-
-function close(seneca, closer) {
-  seneca.add('role:seneca,cmd:close', function(msg, reply) {
-    var seneca = this
-
-    closer.call(seneca, function(err) {
-      if (err) {
-        seneca.log.error(err)
-      }
-
-      seneca.prior(msg, reply)
-    })
-  })
-}
-
-function action_listen(msg, reply) {
-  var seneca = this
-
-  var config = _.extend({}, msg.config, { role: 'transport', hook: 'listen' })
-  var listen_msg = seneca.util.clean(_.omit(config, 'cmd'))
-  //listen_msg.seneca = seneca.root.delegate()
-
-  seneca.act(listen_msg, register(listen_msg, reply))
-}
-
-function action_client(msg, reply) {
-  var seneca = this
-
-  var config = _.extend({}, msg.config, { role: 'transport', hook: 'client' })
-  var client_msg = seneca.util.clean(_.omit(config, 'cmd'))
-
-  seneca.act(client_msg, register(client_msg, reply))
-}
-
-function hook_listen_web(msg, reply) {
-  //var seneca = msg.seneca
-  var seneca = this.root.delegate()
-  var config = _.clone(msg)
-
-  config.modify_response = config.modify_response || web_modify_response
-
-  var server =
-    'https' === config.protocol
-      ? Https.createServer(config.custom || config.serverOptions)
-      : Http.createServer()
-
-  server.on('request', handle_request)
-
-  server.on('error', reply)
-
-  server.on('listening', function() {
-    config.port = server.address().port
-    reply(config)
-  })
-
-  var listener = listen()
-
-  close(seneca, function(reply) {
-    if (listener) {
-      listener.close()
-    }
-    reply()
-  })
-
-  function listen() {
-    return server.listen(
-      (config.port = seneca.util.resolve_option(config.port, config)),
-      (config.host = seneca.util.resolve_option(config.host, config))
-    )
-  }
-
-  function handle_request(req, res) {
-    req.setEncoding('utf8')
-    req.query = Qs.parse(Url.parse(req.url).query)
-
-    var buf = []
-
-    req.on('data', function(chunk) {
-      buf.push(chunk)
-    })
-
-    req.on('end', function() {
-      var msg
-      var json = buf.join('')
-      var body = parseJSON(json)
-
-      if (_.isError(body)) {
-        msg = {
-          json: json,
-          role: 'seneca',
-          make: 'error',
-          code: 'parseJSON',
-          err: body
-        }
-      } else {
-        msg = _.extend(
-          body,
-          req.query && req.query.msg$ ? Jsonic(req.query.msg$) : {},
-          req.query || {}
-        )
-      }
-
-      // backwards compatibility with seneca-transport
-      var backwards_compat_origin
-      var backwards_compat_msgid = !msg.meta$ && req.headers['seneca-id']
-      if (backwards_compat_msgid) {
-        msg.meta$ = { id: req.headers['seneca-id'] }
-        backwards_compat_origin = req.headers['seneca-origin']
-      }
-
-      msg = internalize_msg(seneca, msg)
-
-      seneca.act(msg, function(err, out, meta) {
-        var spec = {
-          err: err,
-          out: out,
-          meta: meta,
-          config: config
-        }
-
-        spec.headers = {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'private, max-age=0, no-cache, no-store'
-        }
-
-        spec.status = err ? 500 : 200
-
-        spec = config.modify_response(seneca, spec)
-
-        // backwards compatibility with seneca-transport
-        if (backwards_compat_msgid) {
-          spec.headers['seneca-id'] = backwards_compat_msgid
-          spec.headers['seneca-origin'] = backwards_compat_origin
-        }
-
-        res.writeHead(spec.status, spec.headers)
-        res.end(spec.body)
-      })
-    })
-  }
-}
-
-function web_modify_response(seneca, spec) {
-  spec.body = stringifyJSON(
-    externalize_reply(seneca, spec.err, spec.out, spec.meta)
-  )
-  spec.headers['Content-Length'] = Buffer.byteLength(spec.body)
-  return spec
-}
-
-function makeWreck() {
-  return Wreck.defaults({
-    agents: {
-      http: new Http.Agent({ keepAlive: true, maxFreeSockets: Infinity }),
-      https: new Https.Agent({ keepAlive: true, maxFreeSockets: Infinity }),
-      httpsAllowUnauthorized: new Https.Agent({
-        keepAlive: true,
-        maxFreeSockets: Infinity,
-        rejectUnauthorized: false
-      })
-    }
-  })
-}
-
-function hook_client_web(msg, hook_reply) {
-  var seneca = this.root.delegate()
-  var config = _.clone(msg)
-
-  config.modify_request = config.modify_request || web_modify_request
-  ;(config.port = seneca.util.resolve_option(config.port, config)),
-    (config.host = seneca.util.resolve_option(config.host, config))
-
-  config.wreck = seneca.util.resolve_option(config.wreck || makeWreck, config)
-
-  hook_reply({
-    config: config,
-    send: function(msg, reply, meta) {
-      var sending_instance = this
-
-      var spec = {
-        msg: msg,
-        meta: meta,
-        url:
-          config.protocol +
-          '://' +
-          config.host +
-          ':' +
-          config.port +
-          config.path,
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json'
-        }
-      }
-
-      spec = config.modify_request(seneca, spec)
-
-      config.wreck.request(spec.method, spec.url, spec.wreck, function(
-        err,
-        res
-      ) {
-        // TODO: should use seneca.reply
-        if (err) {
-          return reply(err)
-        }
-
-        Wreck.read(res, spec.wreck.read, function(err, body) {
-          // TODO: how is this error handled?
-          var data = err || parseJSON(body)
-
-          // backwards compatibility with seneca-transport
-          if (!data.meta$) {
-            data.meta$ = {
-              id: meta.id
-            }
-          }
-
-          seneca.reply(internalize_reply(sending_instance, data))
-        })
-      })
-    }
-  })
-}
-
-function web_modify_request(seneca, spec) {
-  spec.body = stringifyJSON(externalize_msg(seneca, spec.msg, spec.meta))
-  spec.headers['Content-Length'] = Buffer.byteLength(spec.body)
-
-  spec.wreck = {
-    json: false,
-    headers: spec.headers,
-    payload: spec.body,
-    read: {}
-  }
-
-  return spec
-}
-
-}).call(this,require("buffer").Buffer)
-},{"./common":236,"buffer":63,"http":259,"https":118,"json-stringify-safe":123,"jsonic":124,"lodash":125,"qs":201,"url":266,"wreck":273}],246:[function(require,module,exports){
-arguments[4][232][0].apply(exports,arguments)
-},{"dup":232,"lodash":125,"util":271}],247:[function(require,module,exports){
-module.exports={
-  "name": "seneca",
-  "description": "A Microservices Framework for Node.js",
-  "version": "3.8.0-rc3",
-  "license": "MIT",
-  "homepage": "http://senecajs.org",
-  "keywords": [
-    "micro",
-    "service",
-    "microservice",
-    "micro-service",
-    "microservices",
-    "micro-services",
-    "services",
-    "micro services",
-    "micro service",
-    "framework",
-    "minimum",
-    "viable",
-    "product",
-    "toolkit",
-    "startup"
-  ],
-  "author": "Richard Rodger (http://richardrodger.com/)",
-  "contributors": [
-    "Adrien Becchis (https://github.com/AdrieanKhisbe)",
-    "Alexandru Mircea (https://github.com/mirceaalexandru)",
-    "Adrian Rossouw (http://daemon.co.za)",
-    "Colin Ihrig (https://github.com/cjihrig)",
-    "Cristian Ianto (https://github.com/iantocristian)",
-    "Cristian Kiss (https://github.com/ckiss)",
-    "David Mark Clements (https://github.com/davidmarkclements)",
-    "Dean McDonnell (https://github.com/mcdonnelldean)",
-    "Dominic Tarr (https://github.com/dominictarr)",
-    "Dustin Deus (https://github.com/StarpTech)",
-    "Glen Keane (https://github.com/thekemkid)",
-    "Gege Pincin (https://github.com/Georgette)",
-    "Jake Pruitt (https://github.com/jakepruitt)",
-    "Maciej Małecki (http://mmalecki.com)",
-    "Matteo Collina (https://github.com/mcollina)",
-    "Marian Radulescu (https://github.com/marianr)",
-    "Marius Ursache (https://github.com/bamse16)",
-    "Martin Betak (https://github.com/matobet)",
-    "Maxence Dalmais (https://github.com/maxired)",
-    "Mihai Dima (https://github.com/mihaidma)",
-    "Naomi Feehan (https://github.com/naomifeehan)",
-    "Paolo Chiodi (https://github.com/paolochiodi)",
-    "Peter Elger (https://github.com/pelger)",
-    "Reto Inderbitzin (https://github.com/indr)",
-    "Reid Rankin (https://github.com/reidrankin)",
-    "Tane Piper (https://github.com/tanepiper)",
-    "Wyatt Preul (https://github.com/geek)",
-    "Vald Houbiev (https://github.com/vladgolubev)",
-    "Vito Tardia (https://github.com/vtardia)"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/senecajs/seneca.git"
-  },
-  "files": [
-    "LICENSE",
-    "README.md",
-    "CHANGES.md",
-    "lib",
-    "seneca.js"
-  ],
-  "engines": {
-    "node": ">=4.0.0"
-  },
-  "main": "seneca.js",
-  "scripts": {
-    "test": "lab -v -P test -L -t 85 -I URL,URLSearchParams,SharedArrayBuffer,Atomics,BigUint64Array,BigInt64Array,BigInt",
-    "coveralls": "lab -s -P test -r lcov | coveralls",
-    "coverage": "lab -v -P test -L -t 85 -r html > docs/coverage.html",
-    "annotate": "docco seneca.js lib/*.js -o docs/annotated",
-    "smoke": "node test/stubs/launch.js",
-    "prettier": "prettier --write *.js lib/*.js test/*.js",
-    "clean-npm": "rm -rf node_modules package-lock.json",
-    "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"`; echo TAG: v$REPO_VERSION; git commit -a -m v$REPO_VERSION; git push; git tag v$REPO_VERSION; git push --tags;",
-    "repo-publish": "npm run repo-tag; npm publish --access public"
-  },
-  "dependencies": {
-    "archy": "1.0",
-    "eraro": "1.1",
-    "gate-executor": "1.1",
-    "gex": "0.3",
-    "json-stringify-safe": "5.0",
-    "jsonic": "0.3",
-    "lodash": "4.17.11",
-    "minimist": "1.2",
-    "nid": "0.3",
-    "norma": "0.4",
-    "ordu": "0.1",
-    "patrun": "1.0",
-    "qs": "6.5",
-    "rolling-stats": "0.1",
-    "semver": "5.5",
-    "seneca-transport": "2.4",
-    "use-plugin": "3.0",
-    "wreck": "12.5"
-  },
-  "devDependencies": {
-    "async": "2",
-    "bench": "0",
-    "code": "4",
-    "coveralls": "3",
-    "docco": "0",
-    "hoek": "4.2.1",
-    "lab": "14",
-    "prettier": "1",
-    "seneca-entity": "2",
-    "seneca-error-test": "0",
-    "@seneca/test-plugin": "0"
-  }
-}
-
-},{}],248:[function(require,module,exports){
-(function (process,setImmediate){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
-'use strict'
-
-// Node API modules.
-var Assert = require('assert')
-var Events = require('events')
-var Util = require('util')
-
-// External modules.
-var _ = require('lodash')
-var GateExecutor = require('gate-executor')
-var Jsonic = require('jsonic')
-var UsePlugin = require('use-plugin')
-var Nid = require('nid')
-var Norma = require('norma')
-var Patrun = require('patrun')
-var Stats = require('rolling-stats')
-var Ordu = require('ordu')
-var Eraro = require('eraro')
-
-// Internal modules.
-var API = require('./lib/api')
-var Inward = require('./lib/inward')
-var Outward = require('./lib/outward')
-var Common = require('./lib/common')
-var Legacy = require('./lib/legacy')
-var Optioner = require('./lib/optioner')
-var Package = require('./package.json')
-var Plugins = require('./lib/plugins')
-var Print = require('./lib/print')
-var Actions = require('./lib/actions')
-var Transport = require('./lib/transport')
-
-// Shortcuts.
-var errlog = Common.make_standard_err_log_entry
-var actlog = Common.make_standard_act_log_entry
-
-// Internal data and utilities.
-var error = Common.error
-
-var option_defaults = {
-  // Tag this Seneca instance, will be appended to instance identifier.
-  tag: '-',
-
-  // Standard timeout for actions.
-  timeout: 22222,
-
-  // Standard length of identifiers for actions.
-  idlen: 12,
-  didlen: 4,
-
-  // Register (true) default plugins. Set false to not register when
-  // using custom versions.
-  default_plugins: {
-    transport: true
-  },
-
-  // Test mode. Use for unit testing.
-  test: false,
-
-  // Wait time for plugins to close gracefully.
-  death_delay: 11111,
-
-  // Wait time for actions to complete before shutdown.
-  close_delay: 22222,
-
-  // Debug settings.
-  debug: {
-    // Throw (some) errors from seneca.act.
-    fragile: false,
-
-    // Fatal errors ... aren't fatal. Not for production!
-    undead: false,
-
-    // Print debug info to console
-    print: {
-      // Print options. Best used via --seneca.print.options.
-      options: false,
-
-      // Amount of information to print on fatal error: 'summary', 'full'
-      fatal: 'summary'
-    },
-
-    // Trace action caller and place in args.caller$.
-    act_caller: false,
-
-    // Shorten all identifiers to 2 characters.
-    short_logs: false,
-
-    // Record and log callpoints (calling code locations).
-    callpoint: false,
-
-    // Log deprecation warnings
-    deprecation: true
-  },
-
-  // Enforce strict behaviours. Relax when backwards compatibility needed.
-  strict: {
-    // Action result must be a plain object.
-    result: true,
-
-    // Delegate fixedargs override action args.
-    fixedargs: true,
-
-    // Adding a pattern overrides existing pattern only if matches exactly.
-    add: false,
-
-    // If no action is found and find is false,
-    // then no error returned along with empty object
-    find: true,
-
-    // Maximum number of times an action can call itself
-    maxloop: 11,
-
-    // Exports must exist
-    exports: false
-  },
-
-  // Keep a transient time-ordered history of actions submitted
-  history: {
-    // History log is active.
-    active: true,
-
-    // Prune the history. Disable only for debugging.
-    prune: true,
-
-    // Prune the history only periodically.
-    interval: 100
-  },
-
-  // Action executor tracing. See gate-executor module.
-  trace: {
-    act: false,
-    stack: false,
-
-    // Messages that do not match a known pattern
-    unknown: true,
-
-    // Messages that have invalid content
-    invalid: false
-  },
-
-  // Action statistics settings. See rolling-stats module.
-  stats: {
-    size: 1024,
-    interval: 60000,
-    running: false
-  },
-
-  // Plugin settings
-  plugin: {},
-
-  // Plugins to load (will be passed to .use)
-  plugins: [],
-
-  // System wide functionality.
-  system: {
-    exit: process.exit,
-
-    // Close instance on these signals, if true.
-    close_signals: {
-      SIGHUP: false,
-      SIGTERM: false,
-      SIGINT: false,
-      SIGBREAK: false
-    },
-
-    plugin: {
-      load_once: false
-    }
-  },
-
-  // Internal functionality. Reserved for objects and functions only.
-  internal: {},
-
-  // Log status at periodic intervals.
-  status: {
-    interval: 60000,
-
-    // By default, does not run.
-    running: false
-  },
-
-  // Shared default transport configuration
-  transport: {
-    // Standard port for messages.
-    port: 10101
-  },
-
-  limits: {
-    maxparents: 33
-  },
-
-  // Backwards compatibility settings.
-  legacy: {
-    // Action callback must always have signature callback(error, result).
-    action_signature: false,
-
-    // Logger can be changed by options method.
-    logging: false,
-
-    // Use old error codes. REMOVE in Seneca 4.x
-    error_codes: false,
-
-    // Use old error handling.
-    error: true,
-
-    // Use seneca-transport plugin.
-    transport: true,
-
-    // Add meta$ property to messages.
-    meta: false,
-
-    // Add legacy properties
-    actdef: false,
-
-    // Use old fail method
-    fail: false
-  }
-}
-
-// Utility functions exposed by Seneca via `seneca.util`.
-var seneca_util = {
-  Eraro: Eraro,
-  Jsonic: Jsonic,
-  Nid: Nid,
-  Patrun: Patrun,
-  Joi: UsePlugin.Joi,
-  Optioner: UsePlugin.Optioner,
-
-  clean: Common.clean,
-  pattern: Common.pattern,
-  print: Common.print,
-  error: error,
-
-  // Legacy
-  deepextend: Common.deepextend,
-  recurse: Common.recurse,
-  copydata: Common.copydata,
-  nil: Common.nil,
-  parsepattern: Common.parsePattern,
-  pincanon: Common.pincanon,
-  router: function router() {
-    return Patrun()
-  },
-  resolve_option: Common.resolve_option,
-  flatten: Common.flatten,
-  argprops: Legacy.argprops
-}
-
-// Internal implementations.
-var intern = {
-  util: seneca_util
-}
-
-// Seneca is an EventEmitter.
-function Seneca() {
-  Events.EventEmitter.call(this)
-  this.setMaxListeners(0)
-}
-Util.inherits(Seneca, Events.EventEmitter)
-
-// Create a Seneca instance.
-module.exports = function init(seneca_options, more_options) {
-  var initial_options = _.isString(seneca_options)
-    ? _.extend({}, { from: seneca_options }, more_options)
-    : _.extend({}, seneca_options, more_options)
-
-  // Legacy options, remove in 4.x
-  initial_options.deathdelay = initial_options.death_delay
-
-  var seneca = make_seneca(initial_options)
-  var options = seneca.options()
-
-  // The 'internal' key of options is reserved for objects and functions
-  // that provide functionality, and are thus not really printable
-  seneca.log.debug({ kind: 'notice', options: _.omit(options, ['internal']) })
-
-  Print.print_options(seneca, options)
-
-  // Register default plugins, unless turned off by options.
-  if (options.legacy.transport && options.default_plugins.transport) {
-    seneca.use(require('seneca-transport'))
-  }
-
-  // Register plugins specified in options.
-  var pluginkeys = Object.keys(options.plugins)
-  for (var pkI = 0; pkI < pluginkeys.length; pkI++) {
-    var pluginkey = pluginkeys[pkI]
-    var plugindesc = options.plugins[pluginkey]
-
-    if (false === plugindesc) {
-      seneca.private$.ignore_plugins[pluginkey] = true
-    } else {
-      seneca.use(plugindesc)
-    }
-  }
-
-  seneca.ready(function() {
-    this.log.info({ kind: 'notice', notice: 'hello seneca ' + seneca.id })
-  })
-
-  return seneca
-}
-
-// Expose Seneca prototype for easier monkey-patching
-module.exports.Seneca = Seneca
-
-// To reference builtin loggers when defining logging options.
-module.exports.loghandler = Legacy.loghandler
-
-// Makes require('seneca').use(...) work by creating an on-the-fly instance.
-module.exports.use = function top_use() {
-  var argsarr = new Array(arguments.length)
-  for (var l = 0; l < argsarr.length; ++l) {
-    argsarr[l] = arguments[l]
-  }
-
-  var instance = module.exports()
-
-  return instance.use.apply(instance, argsarr)
-}
-
-// Makes require('seneca').test() work.
-module.exports.test = function top_test() {
-  return module.exports().test(arguments[0], arguments[1])
-}
-
-module.exports.util = seneca_util
-module.exports.test$ = { intern: intern }
-
-// Create a new Seneca instance.
-// * _initial_options_ `o` &rarr; instance options
-function make_seneca(initial_options) {
-  initial_options = initial_options || {}
-
-  // Create a private context.
-  var private$ = make_private()
-  private$.error = error
-
-  // Create a new root Seneca instance.
-  var root$ = new Seneca()
-  root$.make_log = make_log
-
-  // Expose private data to plugins.
-  root$.private$ = private$
-
-  // Resolve initial options.
-  private$.optioner = Optioner(module, option_defaults, initial_options)
-  var opts = { $: private$.optioner.get() }
-
-  // Create internal tools.
-  private$.actnid = Nid({ length: opts.$.idlen })
-  private$.didnid = Nid({ length: opts.$.didlen })
-
-  var next_action_id = Common.autoincr()
-
-  // These need to come from options as required during construction.
-  opts.$.internal.actrouter = opts.$.internal.actrouter || Patrun({ gex: true })
-  opts.$.internal.subrouter = opts.$.internal.subrouter || Patrun({ gex: true })
-
-  var callpoint = make_callpoint(opts.$.debug.callpoint)
-
-  // Define public member variables.
-  root$.start_time = Date.now()
-  root$.context = {}
-  root$.version = Package.version
-
-  // TODO: rename in 4.x as "args" terminology is legacy
-  root$.fixedargs = {}
-
-  root$.flags = {
-    closed: false
-  }
-
-  Object.defineProperty(root$, 'root', { value: root$ })
-
-  private$.history = Common.history(opts.$.history)
-
-  // Seneca methods. Official API.
-  root$.has = API.has // True if the given pattern has an action.
-  root$.find = API.find // Find the action definition for a pattern.
-  root$.list = API.list // List the patterns added to this instance.
-  root$.status = API.status // Get the status if this instance.
-  root$.reply = API.reply // Reply to a submitted message.
-  root$.sub = API.sub // Subscribe to messages.
-  root$.list_plugins = API.list_plugins // List the registered plugins.
-  root$.find_plugin = API.find_plugin // Find the plugin definition.
-  root$.has_plugin = API.has_plugin // True if the plugin is registered.
-  root$.ignore_plugin = API.ignore_plugin // Ignore plugin and don't register it.
-  root$.listen = API.listen(callpoint) // Listen for inbound messages.
-  root$.client = API.client(callpoint) // Send outbound messages.
-  root$.gate = API.gate // Create a delegate that executes actions in sequence.
-  root$.ungate = API.ungate // Execute actions in parallel.
-  root$.translate = API.translate // Translate message to new pattern.
-  root$.ping = API.ping // Generate ping response.
-  root$.use = API.use // Define and load a plugin.
-  root$.test = API.test // Set test mode.
-  root$.quiet = API.quiet // Convenience method to set logging level to `warn+`.
-  root$.export = API.export // Export plain objects from a plugin.
-  root$.depends = API.depends // Check for plugin dependencies.
-  root$.delegate = API.delegate // Create an action-specific Seneca instance.
-  root$.prior = API.prior // Call the previous action definition for message pattern.
-  root$.inward = API.inward // Add a modifier function for messages inward
-  root$.outward = API.outward // Add a modifier function for responses outward
-
-  root$.add = api_add // Add a pattern an associated action.
-  root$.act = api_act // Submit a message and trigger the associated action.
-
-  root$.ready = api_ready // Callback when plugins initialized.
-  root$.close = api_close // Close and shutdown plugins.
-  root$.options = api_options // Get and set options.
-  root$.error = api_error // Set global error handler.
-  root$.decorate = api_decorate // Decorate seneca object with functions
-
-  // DEPRECATE Legacy fail in 4.x
-  root$.fail = opts.$.legacy.fail ? Legacy.make_legacy_fail(opts.$) : API.fail
-
-  // Non-API methods.
-  root$.register = Plugins.register(opts, callpoint)
-
-  root$.wrap = api_wrap
-  root$.seneca = api_seneca
-  root$.fix = api_fix
-
-  // DEPRECATE IN 4.x
-  root$.findact = root$.find
-  root$.plugins = API.list_plugins
-  root$.findplugin = API.find_plugin
-  root$.hasplugin = API.has_plugin
-  root$.hasact = Legacy.hasact
-  root$.act_if = Legacy.act_if
-  root$.findpins = Legacy.findpins
-  root$.pinact = Legacy.findpins
-  root$.next_act = Legacy.next_act
-
-  // Identifier generator.
-  root$.idgen = Nid({ length: opts.$.idlen })
-  opts.$.tag = opts.$.tag || option_defaults.tag
-  opts.$.tag = opts.$.tag === 'undefined' ? option_defaults.tag : opts.$.tag
-
-  // Create a unique identifer for this instance.
-  root$.id =
-    opts.$.id$ ||
-    root$.idgen() +
-      '/' +
-      root$.start_time +
-      '/' +
-      process.pid +
-      '/' +
-      root$.version +
-      '/' +
-      opts.$.tag
-
-  // The instance tag, useful for grouping instances.
-  root$.tag = opts.$.tag
-
-  if (opts.$.debug.short_logs || opts.$.log.short) {
-    opts.$.idlen = 2
-    root$.idgen = Nid({ length: opts.$.idlen })
-    root$.id = root$.idgen() + '/' + opts.$.tag
-  }
-
-  root$.fullname = 'Seneca/' + root$.id
-
-  root$.die = Common.makedie(root$, {
-    type: 'sys',
-    plugin: 'seneca',
-    tag: root$.version,
-    id: root$.id,
-    callpoint: callpoint
-  })
-
-  root$.util = seneca_util
-
-  // Configure logging
-  private$.exports = { options: opts.$ }
-  private$.decorations = {}
-
-  private$.logger = load_logger(root$, opts.$.internal.logger)
-  root$.log = make_log(root$, make_default_log_modifier(root$))
-
-  // Error events are fatal, unless you're undead.  These are not the
-  // same as action errors, these are unexpected internal issues.
-  root$.on('error', root$.die)
-
-  private$.ge = GateExecutor({
-    timeout: opts.$.timeout
-  })
-    .clear(action_queue_clear)
-    .start()
-
-  // TODO: this should be a plugin
-  // setup status log
-  if (opts.$.status.interval > 0 && opts.$.status.running) {
-    private$.stats = private$.stats || {}
-    private$.status_interval = setInterval(function status() {
-      root$.log.info({
-        kind: 'status',
-        alive: Date.now() - private$.stats.start,
-        act: private$.stats.act
-      })
-    }, opts.$.status.interval)
-  }
-
-  if (opts.$.stats) {
-    private$.timestats = new Stats.NamedStats(
-      opts.$.stats.size,
-      opts.$.stats.interval
-    )
-
-    if (opts.$.stats.running) {
-      setInterval(function stats() {
-        private$.timestats.calculate()
-      }, opts.$.stats.interval)
-    }
-  }
-
-  // private$.plugins = {}
-  private$.plugin_order = { byname: [], byref: [] }
-  private$.use = UsePlugin({
-    prefix: ['seneca-', '@seneca/'],
-    module: opts.$.internal.module || module,
-    msgprefix: false,
-    builtin: '',
-    merge_defaults: false
-  })
-
-  private$.actrouter = opts.$.internal.actrouter
-  private$.subrouter = opts.$.internal.subrouter
-
-  root$.toString = api_toString
-
-  // TODO: provide an api to add these
-  private$.action_modifiers = []
-  private$.sub = { handler: null, tracers: [] }
-
-  private$.ready_list = []
-
-  private$.inward = Ordu({ name: 'inward' })
-    .add(Inward.closed)
-    .add(Inward.act_cache)
-    .add(Inward.act_default)
-    .add(Inward.act_not_found)
-    .add(Inward.act_stats)
-    .add(Inward.validate_msg)
-    .add(Inward.warnings)
-    .add(Inward.msg_meta)
-    .add(Inward.limit_msg)
-    .add(Inward.prepare_delegate)
-    .add(Inward.msg_modify)
-    .add(Inward.announce)
-
-  private$.outward = Ordu({ name: 'outward' })
-    .add(Outward.make_error)
-    .add(Outward.act_stats)
-    .add(Outward.act_cache)
-    .add(Outward.res_object)
-    .add(Outward.res_entity)
-    .add(Outward.msg_meta)
-    .add(Outward.trace)
-    .add(Outward.announce)
-    .add(Outward.act_error)
-
-  if (opts.$.test) {
-    root$.test('string' === typeof opts.$.test ? opts.$.test : 'print')
-  }
-
-  // See [`seneca.add`](#seneca.add)
-  function api_add() {
-    var self = this
-    var args = Common.parsePattern(self, arguments, 'action:f? actdef:o?')
-
-    var raw_pattern = args.pattern
-    var pattern = self.util.clean(raw_pattern)
-
-    var action =
-      args.action ||
-      function default_action(msg, done, meta) {
-        done.call(this, null, meta.dflt || null)
-      }
-
-    var actdef = args.actdef || {}
-
-    actdef.raw = _.cloneDeep(raw_pattern)
-    actdef.plugin_name = actdef.plugin_name || 'root$'
-    actdef.plugin_fullname =
-      actdef.plugin_fullname ||
-      actdef.plugin_name +
-        ((actdef.plugin_tag === '-'
-        ? void 0
-        : actdef.plugin_tag)
-          ? '$' + actdef.plugin_tag
-          : '')
-
-    actdef.plugin = {
-      name: actdef.plugin_name,
-      tag: actdef.plugin_tag,
-      fullname: actdef.plugin_fullname
-    }
-
-    var add_callpoint = callpoint()
-    if (add_callpoint) {
-      actdef.callpoint = add_callpoint
-    }
-
-    actdef.sub = !!raw_pattern.sub$
-    actdef.client = !!raw_pattern.client$
-
-    // Deprecate a pattern by providing a string message using deprecate$ key.
-    actdef.deprecate = raw_pattern.deprecate$
-
-    var strict_add =
-      raw_pattern.strict$ && raw_pattern.strict$.add !== null
-        ? !!raw_pattern.strict$.add
-        : !!opts.$.strict.add
-
-    var pattern_rules = _.clone(action.validate || {})
-    _.each(pattern, function(v, k) {
-      if (_.isObject(v)) {
-        pattern_rules[k] = _.clone(v)
-        delete pattern[k]
-      }
-    })
-
-    var addroute = true
-
-    if (opts.$.legacy.actdef) {
-      actdef.args = _.clone(pattern)
-    }
-
-    actdef.rules = pattern_rules
-
-    actdef.id = action.name + '_' + next_action_id()
-    actdef.name = action.name
-    actdef.func = action
-
-    // Canonical string form of the action pattern.
-    actdef.pattern = Common.pattern(pattern)
-
-    // Canonical object form of the action pattern.
-    actdef.msgcanon = Jsonic(actdef.pattern)
-
-    var priordef = self.find(pattern)
-
-    if (priordef && strict_add && priordef.pattern !== actdef.pattern) {
-      // only exact action patterns are overridden
-      // use .wrap for pin-based patterns
-      priordef = null
-    }
-
-    if (priordef) {
-      // Clients needs special handling so that the catchall
-      // pattern does not submit all patterns into the handle
-      if (
-        _.isFunction(priordef.handle) &&
-        ((priordef.client && actdef.client) ||
-          (!priordef.client && !actdef.client))
-      ) {
-        priordef.handle(args.pattern, action)
-        addroute = false
-      } else {
-        actdef.priordef = priordef
-      }
-      actdef.priorpath = priordef.id + ';' + priordef.priorpath
-    } else {
-      actdef.priorpath = ''
-    }
-
-    if (action && actdef && _.isFunction(action.handle)) {
-      actdef.handle = action.handle
-    }
-
-    private$.stats.actmap[actdef.pattern] =
-      private$.stats.actmap[actdef.pattern] || make_action_stats(actdef)
-
-    actdef = modify_action(self, actdef)
-
-    if (addroute) {
-      self.log.debug({
-        kind: 'add',
-        case: actdef.sub ? 'SUB' : 'ADD',
-        id: actdef.id,
-        pattern: actdef.pattern,
-        name: action.name,
-        callpoint: callpoint
-      })
-
-      private$.actrouter.add(pattern, actdef)
-    }
-
-    private$.actdef[actdef.id] = actdef
-
-    return self
-  }
-
-  function make_action_stats(actdef) {
-    return {
-      id: actdef.id,
-      plugin: {
-        full: actdef.plugin_fullname,
-        name: actdef.plugin_name,
-        tag: actdef.plugin_tag
-      },
-      prior: actdef.priorpath,
-      calls: 0,
-      done: 0,
-      fails: 0,
-      time: {}
-    }
-  }
-
-  function modify_action(seneca, actdef) {
-    _.each(private$.action_modifiers, function(actmod) {
-      actdef = actmod.call(seneca, actdef) || actdef
-    })
-
-    return actdef
-  }
-
-  // Perform an action. The properties of the first argument are matched against
-  // known patterns, and the most specific one wins.
-  function api_act() {
-    var argsarr = new Array(arguments.length)
-    for (var l = 0; l < argsarr.length; ++l) {
-      argsarr[l] = arguments[l]
-    }
-
-    var self = this
-    var spec = Common.build_message(self, argsarr, 'reply:f?', self.fixedargs)
-    var msg = spec.msg
-    var reply = spec.reply
-
-    if (opts.$.debug.act_caller || opts.$.test) {
-      msg.caller$ =
-        '\n    Action call arguments and location: ' +
-        (new Error(Util.inspect(msg).replace(/\n/g, '')).stack + '\n')
-          .replace(/Error: /, '')
-          .replace(/.*\/gate-executor\.js:.*\n/g, '')
-          .replace(/.*\/seneca\.js:.*\n/g, '')
-          .replace(/.*\/seneca\/lib\/.*\.js:.*\n/g, '')
-    }
-
-    do_act(self, msg, reply)
-    return self
-  }
-
-  function api_wrap(pin, meta, wrapper) {
-    var pinthis = this
-
-    wrapper = _.isFunction(meta) ? meta : wrapper
-    meta = _.isFunction(meta) ? {} : meta
-
-    pin = _.isArray(pin) ? pin : [pin]
-    _.each(pin, function(p) {
-      _.each(pinthis.list(p), function(actpattern) {
-        pinthis.add(actpattern, meta, wrapper)
-      })
-    })
-
-    return this
-  }
-
-  private$.handle_close = function() {
-    root$.close(function(err) {
-      if (err) {
-        Print.err(err)
-      }
-
-      opts.$.system.exit(err ? (err.exit === null ? 1 : err.exit) : 0)
-    })
-  }
-
-  // close seneca instance
-  // sets public seneca.closed property
-  function api_close(done) {
-    var seneca = this
-
-    var safe_done = _.once(function(err) {
-      if (_.isFunction(done)) {
-        return done.call(seneca, err)
-      }
-    })
-
-    // don't try to close twice
-    if (seneca.flags.closed) {
-      return safe_done()
-    }
-
-    seneca.ready(do_close)
-    var close_timeout = setTimeout(do_close, opts.$.close_delay)
-
-    function do_close() {
-      clearTimeout(close_timeout)
-
-      if (seneca.flags.closed) {
-        return safe_done()
-      }
-
-      // TODO: remove in 4.x
-      seneca.closed = true
-
-      seneca.flags.closed = true
-
-      // cleanup process event listeners
-      _.each(opts.$.system.close_signals, function(active, signal) {
-        if (active) {
-          process.removeListener(signal, private$.handle_close)
-        }
-      })
-
-      seneca.log.debug({
-        kind: 'close',
-        notice: 'start',
-        callpoint: callpoint()
-      })
-
-      seneca.act('role:seneca,cmd:close,closing$:true', function(err) {
-        seneca.log.debug(errlog(err, { kind: 'close', notice: 'end' }))
-
-        seneca.removeAllListeners('act-in')
-        seneca.removeAllListeners('act-out')
-        seneca.removeAllListeners('act-err')
-        seneca.removeAllListeners('pin')
-        seneca.removeAllListeners('after-pin')
-        seneca.removeAllListeners('ready')
-
-        seneca.private$.history.close()
-
-        if (seneca.private$.status_interval) {
-          clearInterval(seneca.private$.status_interval)
-        }
-
-        return safe_done(err)
-      })
-    }
-
-    return seneca
-  }
-
-  // useful when defining services!
-  // note: has EventEmitter.once semantics
-  // if using .on('ready',fn) it will be be called for each ready event
-  function api_ready(ready) {
-    var self = this
-
-    setImmediate(function register_ready() {
-      if (root$.private$.ge.isclear()) {
-        execute_ready(ready.bind(self))
-      } else {
-        root$.private$.ready_list.push(ready.bind(self))
-      }
-    })
-
-    return self
-  }
-
-  // Return self. Mostly useful as a check that this is a Seneca instance.
-  function api_seneca() {
-    return this
-  }
-
-  // Describe this instance using the form: Seneca/VERSION/ID
-  function api_toString() {
-    return this.fullname
-  }
-
-  function do_act(instance, origmsg, origreply) {
-    var timedout = false
-    var actmsg = intern.make_actmsg(origmsg)
-    var meta = new intern.Meta(instance, opts, origmsg, origreply)
-
-    if (meta.gate) {
-      instance = instance.delegate()
-      instance.private$.ge = instance.private$.ge.gate()
-    }
-
-    var actctxt = {
-      seneca: instance,
-      origmsg: origmsg,
-      reply: origreply || _.noop,
-      options: instance.options(),
-      callpoint: callpoint()
-    }
-
-    var execspec = {
-      dn: meta.id,
-      fn: function act_fn(done) {
-        try {
-          intern.execute_action(
-            instance,
-            opts,
-            actctxt,
-            actmsg,
-            meta,
-            function action_reply(err, out, reply_meta) {
-              if (!timedout) {
-                intern.handle_reply(meta, actctxt, actmsg, err, out, reply_meta)
-              }
-              done()
-            }
-          )
-        } catch (e) {
-          var ex = Util.isError(e) ? e : new Error(Util.inspect(e))
-          intern.handle_reply(meta, actctxt, actmsg, ex)
-          done()
-        }
-      },
-      ontm: function act_tm() {
-        timedout = true
-        intern.handle_reply(meta, actctxt, actmsg, new Error('[TIMEOUT]'))
-      },
-      tm: meta.timeout
-    }
-
-    instance.private$.ge.add(execspec)
-  }
-
-  function api_fix() {
-    var self = this
-
-    var defargs = Common.parsePattern(self, arguments)
-
-    var fix = self.delegate(defargs.pattern)
-
-    fix.add = function fix_add() {
-      var args = Common.parsePattern(fix, arguments, 'rest:.*', defargs.pattern)
-      var addargs = [args.pattern].concat(args.rest)
-      return self.add.apply(fix, addargs)
-    }
-
-    return fix
-  }
-
-  function api_options(options, chain) {
-    var self = this
-
-    if (options != null) {
-      self.log.debug({
-        kind: 'options',
-        case: 'SET',
-        options: options,
-        callpoint: callpoint()
-      })
-    }
-
-    opts.$ = private$.exports.options =
-      options == null ? private$.optioner.get() : private$.optioner.set(options)
-
-    if (opts.$.legacy.logging) {
-      if (options && options.log && _.isArray(options.log.map)) {
-        for (var i = 0; i < options.log.map.length; ++i) {
-          self.logroute(options.log.map[i])
-        }
-      }
-    }
-
-    // TODO: in 4.x, when given options, it should chain
-    // Allow chaining with seneca.options({...}, true)
-    // see https://github.com/rjrodger/seneca/issues/80
-    return chain ? self : opts.$
-  }
-
-  function api_error(errhandler) {
-    this.options({ errhandler: errhandler })
-    return this
-  }
-
-  // Inspired by https://github.com/hapijs/hapi/blob/master/lib/plugin.js decorate
-  // TODO: convert to seneca errors
-  function api_decorate() {
-    var args = Norma('property:s value:.', arguments)
-
-    var property = args.property
-    Assert(property[0] !== '_', 'property cannot start with _')
-    Assert(
-      private$.decorations[property] === undefined,
-      'seneca is already decorated with the property: ' + property
-    )
-    Assert(
-      root$[property] === undefined,
-      'cannot override a core seneca property: ' + property
-    )
-
-    root$[property] = private$.decorations[property] = args.value
-  }
-
-  Actions(root$)
-
-  if (!opts.$.legacy.transport) {
-    opts.$.legacy.error = false
-
-    // TODO: move to static options in Seneca 4.x
-    opts.$.transport = root$.util.deepextend(
-      {
-        port: 62345,
-        host: '127.0.0.1',
-        path: '/act',
-        protocol: 'http'
-      },
-      opts.$.transport
-    )
-
-    Transport(root$)
-  }
-
-  Print(root$, process.argv)
-
-  _.each(opts.$.system.close_signals, function(active, signal) {
-    if (active) {
-      process.once(signal, private$.handle_close)
-    }
-  })
-
-  function load_logger(instance, log_plugin) {
-    log_plugin = log_plugin || require('./lib/logging')
-
-    return log_plugin.preload.call(instance).extend.logger
-  }
-
-  // NOTE: this could be called from an arbitrary GateExecutor task,
-  // if the task queue is emptied.
-  function action_queue_clear() {
-    root$.emit('ready')
-    execute_ready(root$.private$.ready_list.shift())
-
-    if (root$.private$.ge.isclear()) {
-      while (0 < root$.private$.ready_list.length) {
-        execute_ready(root$.private$.ready_list.shift())
-      }
-    }
-  }
-
-  function execute_ready(ready_func) {
-    if (null == ready_func) return
-
-    try {
-      ready_func()
-    } catch (ready_err) {
-      var err = error(ready_err, 'ready_failed', { message: ready_err.message })
-
-      if (opts.$.test) {
-        if (opts.$.errhandler) {
-          opts.$.errhandler.call(root$, err)
-        } else throw err
-      } else {
-        root$.die(err)
-      }
-    }
-  }
-
-  return root$
-}
-
-// Private member variables of Seneca object.
-function make_private() {
-  return {
-    stats: {
-      start: Date.now(),
-      act: {
-        calls: 0,
-        done: 0,
-        fails: 0,
-        cache: 0
-      },
-      actmap: {}
-    },
-    actdef: {},
-    transport: {
-      register: []
-    },
-    plugins: {},
-    ignore_plugins: {}
-  }
-}
-
-// Callpoint resolver. Indicates location in calling code.
-function make_callpoint(active) {
-  if (active) {
-    return function() {
-      return error.callpoint(new Error(), [
-        '/seneca/seneca.js',
-        '/seneca/lib/',
-        '/lodash.js'
-      ])
-    }
-  }
-
-  return _.noop
-}
-
-function make_log(instance, modifier) {
-  var log =
-    instance.log ||
-    function log(data) {
-      instance.private$.logger(this, data)
-    }
-
-  log = prepare_log(instance, make_modified_log(log, modifier))
-  make_log_levels(instance, log)
-
-  return log
-}
-
-function prepare_log(instance, log) {
-  return function prepare_log_data() {
-    var argsarr = new Array(arguments.length)
-    for (var l = 0; l < argsarr.length; ++l) {
-      argsarr[l] = arguments[l]
-    }
-
-    var a0 = argsarr[0]
-    var data = _.isArray(a0) ? a0 : _.isObject(a0) ? a0 : argsarr
-    log.call(instance, data)
-  }
-}
-
-function make_log_levels(instance, log) {
-  function log_level(level) {
-    return function(data) {
-      data.level = level
-    }
-  }
-  log.debug = prepare_log(instance, make_modified_log(log, log_level('debug')))
-  log.info = prepare_log(instance, make_modified_log(log, log_level('info')))
-  log.warn = prepare_log(instance, make_modified_log(log, log_level('warn')))
-  log.error = prepare_log(instance, make_modified_log(log, log_level('error')))
-  log.fatal = prepare_log(instance, make_modified_log(log, log_level('fatal')))
-}
-
-function make_modified_log(log, modifier) {
-  return function log_modifier(data) {
-    modifier(data)
-    log.call(this, data)
-  }
-}
-
-function make_default_log_modifier(instance) {
-  return function default_log_modifier(data) {
-    data.level = null == data.level ? 'debug' : data.level
-    data.seneca = null == data.seneca ? instance.id : data.seneca
-    data.when = null == data.when ? Date.now() : data.when
-  }
-}
-
-intern.make_act_delegate = function(instance, opts, meta, actdef) {
-  meta = meta || {}
-  actdef = actdef || {}
-
-  var delegate_args = {
-    plugin$: {
-      full: actdef.plugin_fullname,
-      name: actdef.plugin_name,
-      tag: actdef.plugin_tag
-    }
-  }
-
-  var delegate = instance.delegate(delegate_args)
-
-  var parent_act = instance.private$.act || meta.parent
-
-  delegate.private$.act = {
-    parent: parent_act && parent_act.meta,
-    meta: meta,
-    def: actdef
-  }
-
-  // special overrides
-  if (meta.tx) {
-    delegate.fixedargs.tx$ = meta.tx
-  }
-
-  // automate actid log insertion
-
-  delegate.log = make_log(delegate, function act_delegate_log_modifier(data) {
-    data.actid = meta.id
-
-    data.plugin_name = data.plugin_name || actdef.plugin_name
-    data.plugin_tag = data.plugin_tag || actdef.plugin_tag
-    data.pattern = data.pattern || actdef.pattern
-  })
-
-  return delegate
-}
-
-intern.execute_action = function(
-  act_instance,
-  opts,
-  actctxt,
-  msg,
-  meta,
-  reply
-) {
-  var private$ = act_instance.private$
-  var actdef = meta.prior ? private$.actdef[meta.prior] : act_instance.find(msg)
-  var delegate = intern.make_act_delegate(act_instance, opts, meta, actdef)
-
-  actctxt.seneca = delegate
-  actctxt.actdef = actdef
-
-  var data = { meta: meta, msg: msg, reply: reply }
-  var inward = private$.inward.process(actctxt, data)
-
-  if (
-    intern.handle_inward_break(
-      inward,
-      act_instance,
-      data,
-      actdef,
-      actctxt.origmsg
-    )
-  ) {
-    return
-  }
-
-  if (!actdef.sub) {
-    delegate.log.debug(
-      actlog(actdef, msg, meta, actctxt.origmsg, { kind: 'act', case: 'IN' })
-    )
-  }
-
-  data.id = data.meta.id
-  data.result = []
-  data.timelimit = Date.now() + data.meta.timeout
-
-  if (opts.$.history.active) {
-    private$.history.add(data)
-  }
-
-  if (opts.$.legacy.meta) {
-    data.msg.meta$ = meta
-  }
-
-  actdef.func.call(delegate, data.msg, data.reply, data.meta)
-}
-
-intern.handle_reply = function(meta, actctxt, actmsg, err, out, reply_meta) {
-  meta.end = Date.now()
-
-  var delegate = actctxt.seneca
-  var reply = actctxt.reply
-
-  var data = {
-    meta: meta,
-    msg: actmsg,
-    res: err || out,
-    reply_meta: reply_meta,
-    has_callback: true,
-    err: err || null,
-    out: out || null
-  }
-
-  actctxt.duration = meta.end - meta.start
-  actctxt.actlog = actlog
-  actctxt.errlog = errlog
-  actctxt.error = error
-
-  meta.error = data.res instanceof Error
-
-  intern.process_outward(actctxt, data)
-
-  if (data.has_callback) {
-    try {
-      reply.call(delegate, data.err, data.res, data.meta)
-    } catch (thrown_obj) {
-      intern.callback_error(delegate, thrown_obj, actctxt, data)
-    }
-  }
-}
-
-intern.handle_inward_break = function(
-  inward,
-  act_instance,
-  data,
-  actdef,
-  origmsg
-) {
-  if (!inward) return false
-
-  var msg = data.msg
-  var reply = data.reply
-  var meta = data.meta
-
-  if ('error' === inward.kind) {
-    var err = inward.error || error(inward.code, inward.info)
-    meta.error = true
-
-    if (inward.log && inward.log.level) {
-      act_instance.log[inward.log.level](
-        errlog(
-          err,
-          errlog(actdef || {}, meta.prior, msg, origmsg, inward.log.data)
-        )
-      )
-    }
-
-    reply.call(act_instance, err)
-    return true
-  } else if ('result' === inward.kind) {
-    if (inward.log && inward.log.level) {
-      act_instance.log[inward.log.level](
-        actlog(actdef || {}, msg, meta, origmsg, inward.log.data)
-      )
-    }
-
-    reply.call(act_instance, null, inward.result)
-    return true
-  }
-}
-
-intern.make_actmsg = function(origmsg) {
-  var actmsg = Object.assign({}, origmsg)
-
-  if (actmsg.id$) {
-    delete actmsg.id$
-  }
-
-  if (actmsg.caller$) {
-    delete actmsg.caller$
-  }
-
-  if (actmsg.meta$) {
-    delete actmsg.meta$
-  }
-
-  if (actmsg.prior$) {
-    delete actmsg.prior$
-  }
-
-  if (actmsg.parents$) {
-    delete actmsg.parents$
-  }
-
-  // backwards compatibility for Seneca 3.x transports
-  if (origmsg.transport$) {
-    actmsg.transport$ = origmsg.transport$
-  }
-
-  return actmsg
-}
-
-intern.resolve_msg_id_tx = function(act_instance, origmsg) {
-  var id_tx = (origmsg.id$ || origmsg.actid$ || act_instance.idgen()).split('/')
-
-  id_tx[1] =
-    id_tx[1] ||
-    origmsg.tx$ ||
-    act_instance.fixedargs.tx$ ||
-    act_instance.idgen()
-
-  id_tx[0] = id_tx[0] || act_instance.idgen()
-
-  return id_tx
-}
-
-intern.Meta = function(instance, opts, origmsg, origreply) {
-  var id_tx = intern.resolve_msg_id_tx(instance, origmsg)
-
-  var origmeta = origmsg.meta$
-
-  // Only a limited set of meta properties can be fixed
-  var fixedmeta = instance.fixedmeta || {}
-
-  this.start = Date.now()
-  this.end = null
-  this.pattern = null
-  this.action = null
-
-  this.mi = id_tx[0]
-  this.tx = id_tx[1]
-  this.id = id_tx[0] + '/' + id_tx[1]
-
-  this.instance = instance.id
-  this.tag = instance.tag
-  this.seneca = instance.version
-  this.version = '0.1.0'
-
-  this.gate = !!origmsg.gate$ || fixedmeta.gate
-  this.fatal = !!origmsg.fatal$ || fixedmeta.fatal
-  this.local = !!origmsg.local$ || fixedmeta.local
-
-  this.closing = !!origmsg.closing$ || (origmeta && origmeta.closing)
-
-  this.timeout = Math.max(
-    0,
-    'number' === typeof origmsg.timeout$ ? origmsg.timeout$ : opts.$.timeout
-  )
-
-  this.dflt = origmsg.default$ || (origmeta && origmeta.dflt)
-
-  // NOTE: do not create object here if not provided explicitly.
-  // The parent custom object will be used when available during inward processing.
-  // This preserves object ref of custom object, as it is shared over calls
-  this.custom = origmsg.custom$ || (origmeta && origmeta.custom) || null
-
-  this.plugin = origmsg.plugin$
-  this.prior = origmsg.prior$
-  this.caller = origmsg.caller$
-
-  this.parents = origmsg.parents$
-
-  this.sync =
-    null != origmsg.sync$
-      ? !!origmsg.sync$
-      : origmeta && null != origmeta.sync
-      ? !!origmeta.sync
-      : _.isFunction(origreply)
-
-  this.trace = null
-  this.sub = null
-  this.data = null
-  this.err = null
-  this.err_trace = null
-  this.error = null
-  this.empty = null
-}
-
-intern.process_outward = function(actctxt, data) {
-  var outward = actctxt.seneca.private$.outward.process(actctxt, data)
-
-  if (outward) {
-    if ('error' === outward.kind) {
-      data.res = outward.error || error(outward.code, outward.info)
-      data.meta.error = true
-    } else if ('result' === outward.kind) {
-      data.res = outward.result
-    } else {
-      Assert.fail('unknown outward kind: ' + outward.kind)
-    }
-  }
-}
-
-intern.callback_error = function(instance, thrown_obj, ctxt, data) {
-  var duration = ctxt.duration
-  var act_callpoint = ctxt.callpoint
-  var actdef = ctxt.actdef || {}
-  var origmsg = ctxt.origmsg
-  var reply = ctxt.reply
-
-  var meta = data.meta
-  var msg = data.msg
-
-  var err = Util.isError(thrown_obj)
-    ? thrown_obj
-    : new Error(Util.inspect(thrown_obj))
-
-  var opts = instance.options()
-
-  if (!err.seneca) {
-    err = error(
-      err,
-      'act_callback',
-      _.extend({}, err.details, {
-        message: err.message,
-        pattern: actdef.pattern,
-        fn: actdef.func,
-        callback: reply,
-        instance: instance.toString(),
-        callpoint: act_callpoint
-      })
-    )
-  }
-
-  instance.log.error(
-    actlog(actdef, msg, meta, origmsg, {
-      // kind is act as this log entry relates to an action
-      kind: 'act',
-      case: 'ERR',
-      info: err.message,
-      code: err.code,
-      err: err,
-      duration: duration
-    })
-  )
-
-  instance.emit('act-err', msg, err, data.res)
-
-  if (opts.errhandler) {
-    opts.errhandler.call(instance, err, err.meta$)
-  }
-}
-
-}).call(this,require('_process'),require("timers").setImmediate)
-},{"./lib/actions":234,"./lib/api":235,"./lib/common":236,"./lib/inward":238,"./lib/legacy":239,"./lib/logging":240,"./lib/optioner":241,"./lib/outward":242,"./lib/plugins":243,"./lib/print":244,"./lib/transport":245,"./package.json":247,"_process":191,"assert":16,"eraro":246,"events":100,"gate-executor":102,"jsonic":124,"lodash":125,"nid":133,"norma":135,"ordu":162,"patrun":181,"rolling-stats":227,"seneca-transport":233,"timers":264,"use-plugin":268,"util":271}],249:[function(require,module,exports){
-var Buffer = require('safe-buffer').Buffer
-
-// prototype class for hash functions
-function Hash (blockSize, finalSize) {
-  this._block = Buffer.alloc(blockSize)
-  this._finalSize = finalSize
-  this._blockSize = blockSize
-  this._len = 0
-}
-
-Hash.prototype.update = function (data, enc) {
-  if (typeof data === 'string') {
-    enc = enc || 'utf8'
-    data = Buffer.from(data, enc)
-  }
-
-  var block = this._block
-  var blockSize = this._blockSize
-  var length = data.length
-  var accum = this._len
-
-  for (var offset = 0; offset < length;) {
-    var assigned = accum % blockSize
-    var remainder = Math.min(length - offset, blockSize - assigned)
-
-    for (var i = 0; i < remainder; i++) {
-      block[assigned + i] = data[offset + i]
-    }
-
-    accum += remainder
-    offset += remainder
-
-    if ((accum % blockSize) === 0) {
-      this._update(block)
-    }
-  }
-
-  this._len += length
-  return this
-}
-
-Hash.prototype.digest = function (enc) {
-  var rem = this._len % this._blockSize
-
-  this._block[rem] = 0x80
-
-  // zero (rem + 1) trailing bits, where (rem + 1) is the smallest
-  // non-negative solution to the equation (length + 1 + (rem + 1)) === finalSize mod blockSize
-  this._block.fill(0, rem + 1)
-
-  if (rem >= this._finalSize) {
-    this._update(this._block)
-    this._block.fill(0)
-  }
-
-  var bits = this._len * 8
-
-  // uint32
-  if (bits <= 0xffffffff) {
-    this._block.writeUInt32BE(bits, this._blockSize - 4)
-
-  // uint64
-  } else {
-    var lowBits = (bits & 0xffffffff) >>> 0
-    var highBits = (bits - lowBits) / 0x100000000
-
-    this._block.writeUInt32BE(highBits, this._blockSize - 8)
-    this._block.writeUInt32BE(lowBits, this._blockSize - 4)
-  }
-
-  this._update(this._block)
-  var hash = this._hash()
-
-  return enc ? hash.toString(enc) : hash
-}
-
-Hash.prototype._update = function () {
-  throw new Error('_update must be implemented by subclass')
-}
-
-module.exports = Hash
-
-},{"safe-buffer":228}],250:[function(require,module,exports){
-var exports = module.exports = function SHA (algorithm) {
-  algorithm = algorithm.toLowerCase()
-
-  var Algorithm = exports[algorithm]
-  if (!Algorithm) throw new Error(algorithm + ' is not supported (we accept pull requests)')
-
-  return new Algorithm()
-}
-
-exports.sha = require('./sha')
-exports.sha1 = require('./sha1')
-exports.sha224 = require('./sha224')
-exports.sha256 = require('./sha256')
-exports.sha384 = require('./sha384')
-exports.sha512 = require('./sha512')
-
-},{"./sha":251,"./sha1":252,"./sha224":253,"./sha256":254,"./sha384":255,"./sha512":256}],251:[function(require,module,exports){
-/*
- * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
- * in FIPS PUB 180-1
- * This source code is derived from sha1.js of the same repository.
- * The difference between SHA-0 and SHA-1 is just a bitwise rotate left
- * operation was added.
- */
-
-var inherits = require('inherits')
-var Hash = require('./hash')
-var Buffer = require('safe-buffer').Buffer
-
-var K = [
-  0x5a827999, 0x6ed9eba1, 0x8f1bbcdc | 0, 0xca62c1d6 | 0
-]
-
-var W = new Array(80)
-
-function Sha () {
-  this.init()
-  this._w = W
-
-  Hash.call(this, 64, 56)
-}
-
-inherits(Sha, Hash)
-
-Sha.prototype.init = function () {
-  this._a = 0x67452301
-  this._b = 0xefcdab89
-  this._c = 0x98badcfe
-  this._d = 0x10325476
-  this._e = 0xc3d2e1f0
-
-  return this
-}
-
-function rotl5 (num) {
-  return (num << 5) | (num >>> 27)
-}
-
-function rotl30 (num) {
-  return (num << 30) | (num >>> 2)
-}
-
-function ft (s, b, c, d) {
-  if (s === 0) return (b & c) | ((~b) & d)
-  if (s === 2) return (b & c) | (b & d) | (c & d)
-  return b ^ c ^ d
-}
-
-Sha.prototype._update = function (M) {
-  var W = this._w
-
-  var a = this._a | 0
-  var b = this._b | 0
-  var c = this._c | 0
-  var d = this._d | 0
-  var e = this._e | 0
-
-  for (var i = 0; i < 16; ++i) W[i] = M.readInt32BE(i * 4)
-  for (; i < 80; ++i) W[i] = W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16]
-
-  for (var j = 0; j < 80; ++j) {
-    var s = ~~(j / 20)
-    var t = (rotl5(a) + ft(s, b, c, d) + e + W[j] + K[s]) | 0
-
-    e = d
-    d = c
-    c = rotl30(b)
-    b = a
-    a = t
-  }
-
-  this._a = (a + this._a) | 0
-  this._b = (b + this._b) | 0
-  this._c = (c + this._c) | 0
-  this._d = (d + this._d) | 0
-  this._e = (e + this._e) | 0
-}
-
-Sha.prototype._hash = function () {
-  var H = Buffer.allocUnsafe(20)
-
-  H.writeInt32BE(this._a | 0, 0)
-  H.writeInt32BE(this._b | 0, 4)
-  H.writeInt32BE(this._c | 0, 8)
-  H.writeInt32BE(this._d | 0, 12)
-  H.writeInt32BE(this._e | 0, 16)
-
-  return H
-}
-
-module.exports = Sha
-
-},{"./hash":249,"inherits":120,"safe-buffer":228}],252:[function(require,module,exports){
-/*
- * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
- * in FIPS PUB 180-1
- * Version 2.1a Copyright Paul Johnston 2000 - 2002.
- * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
- * Distributed under the BSD License
- * See http://pajhome.org.uk/crypt/md5 for details.
- */
-
-var inherits = require('inherits')
-var Hash = require('./hash')
-var Buffer = require('safe-buffer').Buffer
-
-var K = [
-  0x5a827999, 0x6ed9eba1, 0x8f1bbcdc | 0, 0xca62c1d6 | 0
-]
-
-var W = new Array(80)
-
-function Sha1 () {
-  this.init()
-  this._w = W
-
-  Hash.call(this, 64, 56)
-}
-
-inherits(Sha1, Hash)
-
-Sha1.prototype.init = function () {
-  this._a = 0x67452301
-  this._b = 0xefcdab89
-  this._c = 0x98badcfe
-  this._d = 0x10325476
-  this._e = 0xc3d2e1f0
-
-  return this
-}
-
-function rotl1 (num) {
-  return (num << 1) | (num >>> 31)
-}
-
-function rotl5 (num) {
-  return (num << 5) | (num >>> 27)
-}
-
-function rotl30 (num) {
-  return (num << 30) | (num >>> 2)
-}
-
-function ft (s, b, c, d) {
-  if (s === 0) return (b & c) | ((~b) & d)
-  if (s === 2) return (b & c) | (b & d) | (c & d)
-  return b ^ c ^ d
-}
-
-Sha1.prototype._update = function (M) {
-  var W = this._w
-
-  var a = this._a | 0
-  var b = this._b | 0
-  var c = this._c | 0
-  var d = this._d | 0
-  var e = this._e | 0
-
-  for (var i = 0; i < 16; ++i) W[i] = M.readInt32BE(i * 4)
-  for (; i < 80; ++i) W[i] = rotl1(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16])
-
-  for (var j = 0; j < 80; ++j) {
-    var s = ~~(j / 20)
-    var t = (rotl5(a) + ft(s, b, c, d) + e + W[j] + K[s]) | 0
-
-    e = d
-    d = c
-    c = rotl30(b)
-    b = a
-    a = t
-  }
-
-  this._a = (a + this._a) | 0
-  this._b = (b + this._b) | 0
-  this._c = (c + this._c) | 0
-  this._d = (d + this._d) | 0
-  this._e = (e + this._e) | 0
-}
-
-Sha1.prototype._hash = function () {
-  var H = Buffer.allocUnsafe(20)
-
-  H.writeInt32BE(this._a | 0, 0)
-  H.writeInt32BE(this._b | 0, 4)
-  H.writeInt32BE(this._c | 0, 8)
-  H.writeInt32BE(this._d | 0, 12)
-  H.writeInt32BE(this._e | 0, 16)
-
-  return H
-}
-
-module.exports = Sha1
-
-},{"./hash":249,"inherits":120,"safe-buffer":228}],253:[function(require,module,exports){
-/**
- * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
- * in FIPS 180-2
- * Version 2.2-beta Copyright Angel Marin, Paul Johnston 2000 - 2009.
- * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
- *
- */
-
-var inherits = require('inherits')
-var Sha256 = require('./sha256')
-var Hash = require('./hash')
-var Buffer = require('safe-buffer').Buffer
-
-var W = new Array(64)
-
-function Sha224 () {
-  this.init()
-
-  this._w = W // new Array(64)
-
-  Hash.call(this, 64, 56)
-}
-
-inherits(Sha224, Sha256)
-
-Sha224.prototype.init = function () {
-  this._a = 0xc1059ed8
-  this._b = 0x367cd507
-  this._c = 0x3070dd17
-  this._d = 0xf70e5939
-  this._e = 0xffc00b31
-  this._f = 0x68581511
-  this._g = 0x64f98fa7
-  this._h = 0xbefa4fa4
-
-  return this
-}
-
-Sha224.prototype._hash = function () {
-  var H = Buffer.allocUnsafe(28)
-
-  H.writeInt32BE(this._a, 0)
-  H.writeInt32BE(this._b, 4)
-  H.writeInt32BE(this._c, 8)
-  H.writeInt32BE(this._d, 12)
-  H.writeInt32BE(this._e, 16)
-  H.writeInt32BE(this._f, 20)
-  H.writeInt32BE(this._g, 24)
-
-  return H
-}
-
-module.exports = Sha224
-
-},{"./hash":249,"./sha256":254,"inherits":120,"safe-buffer":228}],254:[function(require,module,exports){
-/**
- * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
- * in FIPS 180-2
- * Version 2.2-beta Copyright Angel Marin, Paul Johnston 2000 - 2009.
- * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
- *
- */
-
-var inherits = require('inherits')
-var Hash = require('./hash')
-var Buffer = require('safe-buffer').Buffer
-
-var K = [
-  0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
-  0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
-  0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3,
-  0x72BE5D74, 0x80DEB1FE, 0x9BDC06A7, 0xC19BF174,
-  0xE49B69C1, 0xEFBE4786, 0x0FC19DC6, 0x240CA1CC,
-  0x2DE92C6F, 0x4A7484AA, 0x5CB0A9DC, 0x76F988DA,
-  0x983E5152, 0xA831C66D, 0xB00327C8, 0xBF597FC7,
-  0xC6E00BF3, 0xD5A79147, 0x06CA6351, 0x14292967,
-  0x27B70A85, 0x2E1B2138, 0x4D2C6DFC, 0x53380D13,
-  0x650A7354, 0x766A0ABB, 0x81C2C92E, 0x92722C85,
-  0xA2BFE8A1, 0xA81A664B, 0xC24B8B70, 0xC76C51A3,
-  0xD192E819, 0xD6990624, 0xF40E3585, 0x106AA070,
-  0x19A4C116, 0x1E376C08, 0x2748774C, 0x34B0BCB5,
-  0x391C0CB3, 0x4ED8AA4A, 0x5B9CCA4F, 0x682E6FF3,
-  0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208,
-  0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2
-]
-
-var W = new Array(64)
-
-function Sha256 () {
-  this.init()
-
-  this._w = W // new Array(64)
-
-  Hash.call(this, 64, 56)
-}
-
-inherits(Sha256, Hash)
-
-Sha256.prototype.init = function () {
-  this._a = 0x6a09e667
-  this._b = 0xbb67ae85
-  this._c = 0x3c6ef372
-  this._d = 0xa54ff53a
-  this._e = 0x510e527f
-  this._f = 0x9b05688c
-  this._g = 0x1f83d9ab
-  this._h = 0x5be0cd19
-
-  return this
-}
-
-function ch (x, y, z) {
-  return z ^ (x & (y ^ z))
-}
-
-function maj (x, y, z) {
-  return (x & y) | (z & (x | y))
-}
-
-function sigma0 (x) {
-  return (x >>> 2 | x << 30) ^ (x >>> 13 | x << 19) ^ (x >>> 22 | x << 10)
-}
-
-function sigma1 (x) {
-  return (x >>> 6 | x << 26) ^ (x >>> 11 | x << 21) ^ (x >>> 25 | x << 7)
-}
-
-function gamma0 (x) {
-  return (x >>> 7 | x << 25) ^ (x >>> 18 | x << 14) ^ (x >>> 3)
-}
-
-function gamma1 (x) {
-  return (x >>> 17 | x << 15) ^ (x >>> 19 | x << 13) ^ (x >>> 10)
-}
-
-Sha256.prototype._update = function (M) {
-  var W = this._w
-
-  var a = this._a | 0
-  var b = this._b | 0
-  var c = this._c | 0
-  var d = this._d | 0
-  var e = this._e | 0
-  var f = this._f | 0
-  var g = this._g | 0
-  var h = this._h | 0
-
-  for (var i = 0; i < 16; ++i) W[i] = M.readInt32BE(i * 4)
-  for (; i < 64; ++i) W[i] = (gamma1(W[i - 2]) + W[i - 7] + gamma0(W[i - 15]) + W[i - 16]) | 0
-
-  for (var j = 0; j < 64; ++j) {
-    var T1 = (h + sigma1(e) + ch(e, f, g) + K[j] + W[j]) | 0
-    var T2 = (sigma0(a) + maj(a, b, c)) | 0
-
-    h = g
-    g = f
-    f = e
-    e = (d + T1) | 0
-    d = c
-    c = b
-    b = a
-    a = (T1 + T2) | 0
-  }
-
-  this._a = (a + this._a) | 0
-  this._b = (b + this._b) | 0
-  this._c = (c + this._c) | 0
-  this._d = (d + this._d) | 0
-  this._e = (e + this._e) | 0
-  this._f = (f + this._f) | 0
-  this._g = (g + this._g) | 0
-  this._h = (h + this._h) | 0
-}
-
-Sha256.prototype._hash = function () {
-  var H = Buffer.allocUnsafe(32)
-
-  H.writeInt32BE(this._a, 0)
-  H.writeInt32BE(this._b, 4)
-  H.writeInt32BE(this._c, 8)
-  H.writeInt32BE(this._d, 12)
-  H.writeInt32BE(this._e, 16)
-  H.writeInt32BE(this._f, 20)
-  H.writeInt32BE(this._g, 24)
-  H.writeInt32BE(this._h, 28)
-
-  return H
-}
-
-module.exports = Sha256
-
-},{"./hash":249,"inherits":120,"safe-buffer":228}],255:[function(require,module,exports){
-var inherits = require('inherits')
-var SHA512 = require('./sha512')
-var Hash = require('./hash')
-var Buffer = require('safe-buffer').Buffer
-
-var W = new Array(160)
-
-function Sha384 () {
-  this.init()
-  this._w = W
-
-  Hash.call(this, 128, 112)
-}
-
-inherits(Sha384, SHA512)
-
-Sha384.prototype.init = function () {
-  this._ah = 0xcbbb9d5d
-  this._bh = 0x629a292a
-  this._ch = 0x9159015a
-  this._dh = 0x152fecd8
-  this._eh = 0x67332667
-  this._fh = 0x8eb44a87
-  this._gh = 0xdb0c2e0d
-  this._hh = 0x47b5481d
-
-  this._al = 0xc1059ed8
-  this._bl = 0x367cd507
-  this._cl = 0x3070dd17
-  this._dl = 0xf70e5939
-  this._el = 0xffc00b31
-  this._fl = 0x68581511
-  this._gl = 0x64f98fa7
-  this._hl = 0xbefa4fa4
-
-  return this
-}
-
-Sha384.prototype._hash = function () {
-  var H = Buffer.allocUnsafe(48)
-
-  function writeInt64BE (h, l, offset) {
-    H.writeInt32BE(h, offset)
-    H.writeInt32BE(l, offset + 4)
-  }
-
-  writeInt64BE(this._ah, this._al, 0)
-  writeInt64BE(this._bh, this._bl, 8)
-  writeInt64BE(this._ch, this._cl, 16)
-  writeInt64BE(this._dh, this._dl, 24)
-  writeInt64BE(this._eh, this._el, 32)
-  writeInt64BE(this._fh, this._fl, 40)
-
-  return H
-}
-
-module.exports = Sha384
-
-},{"./hash":249,"./sha512":256,"inherits":120,"safe-buffer":228}],256:[function(require,module,exports){
-var inherits = require('inherits')
-var Hash = require('./hash')
-var Buffer = require('safe-buffer').Buffer
-
-var K = [
-  0x428a2f98, 0xd728ae22, 0x71374491, 0x23ef65cd,
-  0xb5c0fbcf, 0xec4d3b2f, 0xe9b5dba5, 0x8189dbbc,
-  0x3956c25b, 0xf348b538, 0x59f111f1, 0xb605d019,
-  0x923f82a4, 0xaf194f9b, 0xab1c5ed5, 0xda6d8118,
-  0xd807aa98, 0xa3030242, 0x12835b01, 0x45706fbe,
-  0x243185be, 0x4ee4b28c, 0x550c7dc3, 0xd5ffb4e2,
-  0x72be5d74, 0xf27b896f, 0x80deb1fe, 0x3b1696b1,
-  0x9bdc06a7, 0x25c71235, 0xc19bf174, 0xcf692694,
-  0xe49b69c1, 0x9ef14ad2, 0xefbe4786, 0x384f25e3,
-  0x0fc19dc6, 0x8b8cd5b5, 0x240ca1cc, 0x77ac9c65,
-  0x2de92c6f, 0x592b0275, 0x4a7484aa, 0x6ea6e483,
-  0x5cb0a9dc, 0xbd41fbd4, 0x76f988da, 0x831153b5,
-  0x983e5152, 0xee66dfab, 0xa831c66d, 0x2db43210,
-  0xb00327c8, 0x98fb213f, 0xbf597fc7, 0xbeef0ee4,
-  0xc6e00bf3, 0x3da88fc2, 0xd5a79147, 0x930aa725,
-  0x06ca6351, 0xe003826f, 0x14292967, 0x0a0e6e70,
-  0x27b70a85, 0x46d22ffc, 0x2e1b2138, 0x5c26c926,
-  0x4d2c6dfc, 0x5ac42aed, 0x53380d13, 0x9d95b3df,
-  0x650a7354, 0x8baf63de, 0x766a0abb, 0x3c77b2a8,
-  0x81c2c92e, 0x47edaee6, 0x92722c85, 0x1482353b,
-  0xa2bfe8a1, 0x4cf10364, 0xa81a664b, 0xbc423001,
-  0xc24b8b70, 0xd0f89791, 0xc76c51a3, 0x0654be30,
-  0xd192e819, 0xd6ef5218, 0xd6990624, 0x5565a910,
-  0xf40e3585, 0x5771202a, 0x106aa070, 0x32bbd1b8,
-  0x19a4c116, 0xb8d2d0c8, 0x1e376c08, 0x5141ab53,
-  0x2748774c, 0xdf8eeb99, 0x34b0bcb5, 0xe19b48a8,
-  0x391c0cb3, 0xc5c95a63, 0x4ed8aa4a, 0xe3418acb,
-  0x5b9cca4f, 0x7763e373, 0x682e6ff3, 0xd6b2b8a3,
-  0x748f82ee, 0x5defb2fc, 0x78a5636f, 0x43172f60,
-  0x84c87814, 0xa1f0ab72, 0x8cc70208, 0x1a6439ec,
-  0x90befffa, 0x23631e28, 0xa4506ceb, 0xde82bde9,
-  0xbef9a3f7, 0xb2c67915, 0xc67178f2, 0xe372532b,
-  0xca273ece, 0xea26619c, 0xd186b8c7, 0x21c0c207,
-  0xeada7dd6, 0xcde0eb1e, 0xf57d4f7f, 0xee6ed178,
-  0x06f067aa, 0x72176fba, 0x0a637dc5, 0xa2c898a6,
-  0x113f9804, 0xbef90dae, 0x1b710b35, 0x131c471b,
-  0x28db77f5, 0x23047d84, 0x32caab7b, 0x40c72493,
-  0x3c9ebe0a, 0x15c9bebc, 0x431d67c4, 0x9c100d4c,
-  0x4cc5d4be, 0xcb3e42b6, 0x597f299c, 0xfc657e2a,
-  0x5fcb6fab, 0x3ad6faec, 0x6c44198c, 0x4a475817
-]
-
-var W = new Array(160)
-
-function Sha512 () {
-  this.init()
-  this._w = W
-
-  Hash.call(this, 128, 112)
-}
-
-inherits(Sha512, Hash)
-
-Sha512.prototype.init = function () {
-  this._ah = 0x6a09e667
-  this._bh = 0xbb67ae85
-  this._ch = 0x3c6ef372
-  this._dh = 0xa54ff53a
-  this._eh = 0x510e527f
-  this._fh = 0x9b05688c
-  this._gh = 0x1f83d9ab
-  this._hh = 0x5be0cd19
-
-  this._al = 0xf3bcc908
-  this._bl = 0x84caa73b
-  this._cl = 0xfe94f82b
-  this._dl = 0x5f1d36f1
-  this._el = 0xade682d1
-  this._fl = 0x2b3e6c1f
-  this._gl = 0xfb41bd6b
-  this._hl = 0x137e2179
-
-  return this
-}
-
-function Ch (x, y, z) {
-  return z ^ (x & (y ^ z))
-}
-
-function maj (x, y, z) {
-  return (x & y) | (z & (x | y))
-}
-
-function sigma0 (x, xl) {
-  return (x >>> 28 | xl << 4) ^ (xl >>> 2 | x << 30) ^ (xl >>> 7 | x << 25)
-}
-
-function sigma1 (x, xl) {
-  return (x >>> 14 | xl << 18) ^ (x >>> 18 | xl << 14) ^ (xl >>> 9 | x << 23)
-}
-
-function Gamma0 (x, xl) {
-  return (x >>> 1 | xl << 31) ^ (x >>> 8 | xl << 24) ^ (x >>> 7)
-}
-
-function Gamma0l (x, xl) {
-  return (x >>> 1 | xl << 31) ^ (x >>> 8 | xl << 24) ^ (x >>> 7 | xl << 25)
-}
-
-function Gamma1 (x, xl) {
-  return (x >>> 19 | xl << 13) ^ (xl >>> 29 | x << 3) ^ (x >>> 6)
-}
-
-function Gamma1l (x, xl) {
-  return (x >>> 19 | xl << 13) ^ (xl >>> 29 | x << 3) ^ (x >>> 6 | xl << 26)
-}
-
-function getCarry (a, b) {
-  return (a >>> 0) < (b >>> 0) ? 1 : 0
-}
-
-Sha512.prototype._update = function (M) {
-  var W = this._w
-
-  var ah = this._ah | 0
-  var bh = this._bh | 0
-  var ch = this._ch | 0
-  var dh = this._dh | 0
-  var eh = this._eh | 0
-  var fh = this._fh | 0
-  var gh = this._gh | 0
-  var hh = this._hh | 0
-
-  var al = this._al | 0
-  var bl = this._bl | 0
-  var cl = this._cl | 0
-  var dl = this._dl | 0
-  var el = this._el | 0
-  var fl = this._fl | 0
-  var gl = this._gl | 0
-  var hl = this._hl | 0
-
-  for (var i = 0; i < 32; i += 2) {
-    W[i] = M.readInt32BE(i * 4)
-    W[i + 1] = M.readInt32BE(i * 4 + 4)
-  }
-  for (; i < 160; i += 2) {
-    var xh = W[i - 15 * 2]
-    var xl = W[i - 15 * 2 + 1]
-    var gamma0 = Gamma0(xh, xl)
-    var gamma0l = Gamma0l(xl, xh)
-
-    xh = W[i - 2 * 2]
-    xl = W[i - 2 * 2 + 1]
-    var gamma1 = Gamma1(xh, xl)
-    var gamma1l = Gamma1l(xl, xh)
-
-    // W[i] = gamma0 + W[i - 7] + gamma1 + W[i - 16]
-    var Wi7h = W[i - 7 * 2]
-    var Wi7l = W[i - 7 * 2 + 1]
-
-    var Wi16h = W[i - 16 * 2]
-    var Wi16l = W[i - 16 * 2 + 1]
-
-    var Wil = (gamma0l + Wi7l) | 0
-    var Wih = (gamma0 + Wi7h + getCarry(Wil, gamma0l)) | 0
-    Wil = (Wil + gamma1l) | 0
-    Wih = (Wih + gamma1 + getCarry(Wil, gamma1l)) | 0
-    Wil = (Wil + Wi16l) | 0
-    Wih = (Wih + Wi16h + getCarry(Wil, Wi16l)) | 0
-
-    W[i] = Wih
-    W[i + 1] = Wil
-  }
-
-  for (var j = 0; j < 160; j += 2) {
-    Wih = W[j]
-    Wil = W[j + 1]
-
-    var majh = maj(ah, bh, ch)
-    var majl = maj(al, bl, cl)
-
-    var sigma0h = sigma0(ah, al)
-    var sigma0l = sigma0(al, ah)
-    var sigma1h = sigma1(eh, el)
-    var sigma1l = sigma1(el, eh)
-
-    // t1 = h + sigma1 + ch + K[j] + W[j]
-    var Kih = K[j]
-    var Kil = K[j + 1]
-
-    var chh = Ch(eh, fh, gh)
-    var chl = Ch(el, fl, gl)
-
-    var t1l = (hl + sigma1l) | 0
-    var t1h = (hh + sigma1h + getCarry(t1l, hl)) | 0
-    t1l = (t1l + chl) | 0
-    t1h = (t1h + chh + getCarry(t1l, chl)) | 0
-    t1l = (t1l + Kil) | 0
-    t1h = (t1h + Kih + getCarry(t1l, Kil)) | 0
-    t1l = (t1l + Wil) | 0
-    t1h = (t1h + Wih + getCarry(t1l, Wil)) | 0
-
-    // t2 = sigma0 + maj
-    var t2l = (sigma0l + majl) | 0
-    var t2h = (sigma0h + majh + getCarry(t2l, sigma0l)) | 0
-
-    hh = gh
-    hl = gl
-    gh = fh
-    gl = fl
-    fh = eh
-    fl = el
-    el = (dl + t1l) | 0
-    eh = (dh + t1h + getCarry(el, dl)) | 0
-    dh = ch
-    dl = cl
-    ch = bh
-    cl = bl
-    bh = ah
-    bl = al
-    al = (t1l + t2l) | 0
-    ah = (t1h + t2h + getCarry(al, t1l)) | 0
-  }
-
-  this._al = (this._al + al) | 0
-  this._bl = (this._bl + bl) | 0
-  this._cl = (this._cl + cl) | 0
-  this._dl = (this._dl + dl) | 0
-  this._el = (this._el + el) | 0
-  this._fl = (this._fl + fl) | 0
-  this._gl = (this._gl + gl) | 0
-  this._hl = (this._hl + hl) | 0
-
-  this._ah = (this._ah + ah + getCarry(this._al, al)) | 0
-  this._bh = (this._bh + bh + getCarry(this._bl, bl)) | 0
-  this._ch = (this._ch + ch + getCarry(this._cl, cl)) | 0
-  this._dh = (this._dh + dh + getCarry(this._dl, dl)) | 0
-  this._eh = (this._eh + eh + getCarry(this._el, el)) | 0
-  this._fh = (this._fh + fh + getCarry(this._fl, fl)) | 0
-  this._gh = (this._gh + gh + getCarry(this._gl, gl)) | 0
-  this._hh = (this._hh + hh + getCarry(this._hl, hl)) | 0
-}
-
-Sha512.prototype._hash = function () {
-  var H = Buffer.allocUnsafe(64)
-
-  function writeInt64BE (h, l, offset) {
-    H.writeInt32BE(h, offset)
-    H.writeInt32BE(l, offset + 4)
-  }
-
-  writeInt64BE(this._ah, this._al, 0)
-  writeInt64BE(this._bh, this._bl, 8)
-  writeInt64BE(this._ch, this._cl, 16)
-  writeInt64BE(this._dh, this._dl, 24)
-  writeInt64BE(this._eh, this._el, 32)
-  writeInt64BE(this._fh, this._fl, 40)
-  writeInt64BE(this._gh, this._gl, 48)
-  writeInt64BE(this._hh, this._hl, 56)
-
-  return H
-}
-
-module.exports = Sha512
-
-},{"./hash":249,"inherits":120,"safe-buffer":228}],257:[function(require,module,exports){
-/*
-Copyright (c) 2014-2016, Matteo Collina <hello@matteocollina.com>
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
-IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-'use strict'
-
-var through = require('through2')
-var StringDecoder = require('string_decoder').StringDecoder
-
-function transform (chunk, enc, cb) {
-  this._last += this._decoder.write(chunk)
-  if (this._last.length > this.maxLength) {
-    return cb(new Error('maximum buffer reached'))
-  }
-
-  var list = this._last.split(this.matcher)
-
-  this._last = list.pop()
-
-  for (var i = 0; i < list.length; i++) {
-    push(this, this.mapper(list[i]))
-  }
-
-  cb()
-}
-
-function flush (cb) {
-  // forward any gibberish left in there
-  this._last += this._decoder.end()
-
-  if (this._last) {
-    push(this, this.mapper(this._last))
-  }
-
-  cb()
-}
-
-function push (self, val) {
-  if (val !== undefined) {
-    self.push(val)
-  }
-}
-
-function noop (incoming) {
-  return incoming
-}
-
-function split (matcher, mapper, options) {
-  // Set defaults for any arguments not supplied.
-  matcher = matcher || /\r?\n/
-  mapper = mapper || noop
-  options = options || {}
-
-  // Test arguments explicitly.
-  switch (arguments.length) {
-    case 1:
-      // If mapper is only argument.
-      if (typeof matcher === 'function') {
-        mapper = matcher
-        matcher = /\r?\n/
-      // If options is only argument.
-      } else if (typeof matcher === 'object' && !(matcher instanceof RegExp)) {
-        options = matcher
-        matcher = /\r?\n/
-      }
-      break
-
-    case 2:
-      // If mapper and options are arguments.
-      if (typeof matcher === 'function') {
-        options = mapper
-        mapper = matcher
-        matcher = /\r?\n/
-      // If matcher and options are arguments.
-      } else if (typeof mapper === 'object') {
-        options = mapper
-        mapper = noop
-      }
-  }
-
-  var stream = through(options, transform, flush)
-
-  // this stream is in objectMode only in the readable part
-  stream._readableState.objectMode = true
-
-  // objectMode default hwm is 16 and not 16384
-  if (stream._readableState.highWaterMark && !options.highWaterMark) {
-    stream._readableState.highWaterMark = 16
-  }
-
-  stream._last = ''
-  stream._decoder = new StringDecoder('utf8')
-  stream.matcher = matcher
-  stream.mapper = mapper
-  stream.maxLength = options.maxLength
-
-  return stream
-}
-
-module.exports = split
-
-},{"string_decoder":61,"through2":263}],258:[function(require,module,exports){
+},{"./lib/_stream_writable.js":249}],257:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -71397,114 +72120,282 @@ module.exports = split
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-module.exports = Stream;
+'use strict';
 
-var EE = require('events').EventEmitter;
-var inherits = require('inherits');
+/*<replacement>*/
 
-inherits(Stream, EE);
-Stream.Readable = require('readable-stream/readable.js');
-Stream.Writable = require('readable-stream/writable.js');
-Stream.Duplex = require('readable-stream/duplex.js');
-Stream.Transform = require('readable-stream/transform.js');
-Stream.PassThrough = require('readable-stream/passthrough.js');
+var Buffer = require('safe-buffer').Buffer;
+/*</replacement>*/
 
-// Backwards-compat with node 0.4.x
-Stream.Stream = Stream;
+var isEncoding = Buffer.isEncoding || function (encoding) {
+  encoding = '' + encoding;
+  switch (encoding && encoding.toLowerCase()) {
+    case 'hex':case 'utf8':case 'utf-8':case 'ascii':case 'binary':case 'base64':case 'ucs2':case 'ucs-2':case 'utf16le':case 'utf-16le':case 'raw':
+      return true;
+    default:
+      return false;
+  }
+};
 
+function _normalizeEncoding(enc) {
+  if (!enc) return 'utf8';
+  var retried;
+  while (true) {
+    switch (enc) {
+      case 'utf8':
+      case 'utf-8':
+        return 'utf8';
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return 'utf16le';
+      case 'latin1':
+      case 'binary':
+        return 'latin1';
+      case 'base64':
+      case 'ascii':
+      case 'hex':
+        return enc;
+      default:
+        if (retried) return; // undefined
+        enc = ('' + enc).toLowerCase();
+        retried = true;
+    }
+  }
+};
 
-
-// old-style streams.  Note that the pipe method (the only relevant
-// part of this class) is overridden in the Readable class.
-
-function Stream() {
-  EE.call(this);
+// Do not cache `Buffer.isEncoding` when checking encoding names as some
+// modules monkey-patch it to support additional encodings
+function normalizeEncoding(enc) {
+  var nenc = _normalizeEncoding(enc);
+  if (typeof nenc !== 'string' && (Buffer.isEncoding === isEncoding || !isEncoding(enc))) throw new Error('Unknown encoding: ' + enc);
+  return nenc || enc;
 }
 
-Stream.prototype.pipe = function(dest, options) {
-  var source = this;
+// StringDecoder provides an interface for efficiently splitting a series of
+// buffers into a series of JS strings without breaking apart multi-byte
+// characters.
+exports.StringDecoder = StringDecoder;
+function StringDecoder(encoding) {
+  this.encoding = normalizeEncoding(encoding);
+  var nb;
+  switch (this.encoding) {
+    case 'utf16le':
+      this.text = utf16Text;
+      this.end = utf16End;
+      nb = 4;
+      break;
+    case 'utf8':
+      this.fillLast = utf8FillLast;
+      nb = 4;
+      break;
+    case 'base64':
+      this.text = base64Text;
+      this.end = base64End;
+      nb = 3;
+      break;
+    default:
+      this.write = simpleWrite;
+      this.end = simpleEnd;
+      return;
+  }
+  this.lastNeed = 0;
+  this.lastTotal = 0;
+  this.lastChar = Buffer.allocUnsafe(nb);
+}
 
-  function ondata(chunk) {
-    if (dest.writable) {
-      if (false === dest.write(chunk) && source.pause) {
-        source.pause();
+StringDecoder.prototype.write = function (buf) {
+  if (buf.length === 0) return '';
+  var r;
+  var i;
+  if (this.lastNeed) {
+    r = this.fillLast(buf);
+    if (r === undefined) return '';
+    i = this.lastNeed;
+    this.lastNeed = 0;
+  } else {
+    i = 0;
+  }
+  if (i < buf.length) return r ? r + this.text(buf, i) : this.text(buf, i);
+  return r || '';
+};
+
+StringDecoder.prototype.end = utf8End;
+
+// Returns only complete characters in a Buffer
+StringDecoder.prototype.text = utf8Text;
+
+// Attempts to complete a partial non-UTF-8 character using bytes from a Buffer
+StringDecoder.prototype.fillLast = function (buf) {
+  if (this.lastNeed <= buf.length) {
+    buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, this.lastNeed);
+    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
+  }
+  buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, buf.length);
+  this.lastNeed -= buf.length;
+};
+
+// Checks the type of a UTF-8 byte, whether it's ASCII, a leading byte, or a
+// continuation byte. If an invalid byte is detected, -2 is returned.
+function utf8CheckByte(byte) {
+  if (byte <= 0x7F) return 0;else if (byte >> 5 === 0x06) return 2;else if (byte >> 4 === 0x0E) return 3;else if (byte >> 3 === 0x1E) return 4;
+  return byte >> 6 === 0x02 ? -1 : -2;
+}
+
+// Checks at most 3 bytes at the end of a Buffer in order to detect an
+// incomplete multi-byte UTF-8 character. The total number of bytes (2, 3, or 4)
+// needed to complete the UTF-8 character (if applicable) are returned.
+function utf8CheckIncomplete(self, buf, i) {
+  var j = buf.length - 1;
+  if (j < i) return 0;
+  var nb = utf8CheckByte(buf[j]);
+  if (nb >= 0) {
+    if (nb > 0) self.lastNeed = nb - 1;
+    return nb;
+  }
+  if (--j < i || nb === -2) return 0;
+  nb = utf8CheckByte(buf[j]);
+  if (nb >= 0) {
+    if (nb > 0) self.lastNeed = nb - 2;
+    return nb;
+  }
+  if (--j < i || nb === -2) return 0;
+  nb = utf8CheckByte(buf[j]);
+  if (nb >= 0) {
+    if (nb > 0) {
+      if (nb === 2) nb = 0;else self.lastNeed = nb - 3;
+    }
+    return nb;
+  }
+  return 0;
+}
+
+// Validates as many continuation bytes for a multi-byte UTF-8 character as
+// needed or are available. If we see a non-continuation byte where we expect
+// one, we "replace" the validated continuation bytes we've seen so far with
+// a single UTF-8 replacement character ('\ufffd'), to match v8's UTF-8 decoding
+// behavior. The continuation byte check is included three times in the case
+// where all of the continuation bytes for a character exist in the same buffer.
+// It is also done this way as a slight performance increase instead of using a
+// loop.
+function utf8CheckExtraBytes(self, buf, p) {
+  if ((buf[0] & 0xC0) !== 0x80) {
+    self.lastNeed = 0;
+    return '\ufffd';
+  }
+  if (self.lastNeed > 1 && buf.length > 1) {
+    if ((buf[1] & 0xC0) !== 0x80) {
+      self.lastNeed = 1;
+      return '\ufffd';
+    }
+    if (self.lastNeed > 2 && buf.length > 2) {
+      if ((buf[2] & 0xC0) !== 0x80) {
+        self.lastNeed = 2;
+        return '\ufffd';
       }
     }
   }
+}
 
-  source.on('data', ondata);
+// Attempts to complete a multi-byte UTF-8 character using bytes from a Buffer.
+function utf8FillLast(buf) {
+  var p = this.lastTotal - this.lastNeed;
+  var r = utf8CheckExtraBytes(this, buf, p);
+  if (r !== undefined) return r;
+  if (this.lastNeed <= buf.length) {
+    buf.copy(this.lastChar, p, 0, this.lastNeed);
+    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
+  }
+  buf.copy(this.lastChar, p, 0, buf.length);
+  this.lastNeed -= buf.length;
+}
 
-  function ondrain() {
-    if (source.readable && source.resume) {
-      source.resume();
+// Returns all complete UTF-8 characters in a Buffer. If the Buffer ended on a
+// partial character, the character's bytes are buffered until the required
+// number of bytes are available.
+function utf8Text(buf, i) {
+  var total = utf8CheckIncomplete(this, buf, i);
+  if (!this.lastNeed) return buf.toString('utf8', i);
+  this.lastTotal = total;
+  var end = buf.length - (total - this.lastNeed);
+  buf.copy(this.lastChar, 0, end);
+  return buf.toString('utf8', i, end);
+}
+
+// For UTF-8, a replacement character is added when ending on a partial
+// character.
+function utf8End(buf) {
+  var r = buf && buf.length ? this.write(buf) : '';
+  if (this.lastNeed) return r + '\ufffd';
+  return r;
+}
+
+// UTF-16LE typically needs two bytes per character, but even if we have an even
+// number of bytes available, we need to check if we end on a leading/high
+// surrogate. In that case, we need to wait for the next two bytes in order to
+// decode the last character properly.
+function utf16Text(buf, i) {
+  if ((buf.length - i) % 2 === 0) {
+    var r = buf.toString('utf16le', i);
+    if (r) {
+      var c = r.charCodeAt(r.length - 1);
+      if (c >= 0xD800 && c <= 0xDBFF) {
+        this.lastNeed = 2;
+        this.lastTotal = 4;
+        this.lastChar[0] = buf[buf.length - 2];
+        this.lastChar[1] = buf[buf.length - 1];
+        return r.slice(0, -1);
+      }
     }
+    return r;
   }
+  this.lastNeed = 1;
+  this.lastTotal = 2;
+  this.lastChar[0] = buf[buf.length - 1];
+  return buf.toString('utf16le', i, buf.length - 1);
+}
 
-  dest.on('drain', ondrain);
-
-  // If the 'end' option is not supplied, dest.end() will be called when
-  // source gets the 'end' or 'close' events.  Only dest.end() once.
-  if (!dest._isStdio && (!options || options.end !== false)) {
-    source.on('end', onend);
-    source.on('close', onclose);
+// For UTF-16LE we do not explicitly append special replacement characters if we
+// end on a partial character, we simply let v8 handle that.
+function utf16End(buf) {
+  var r = buf && buf.length ? this.write(buf) : '';
+  if (this.lastNeed) {
+    var end = this.lastTotal - this.lastNeed;
+    return r + this.lastChar.toString('utf16le', 0, end);
   }
+  return r;
+}
 
-  var didOnEnd = false;
-  function onend() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    dest.end();
+function base64Text(buf, i) {
+  var n = (buf.length - i) % 3;
+  if (n === 0) return buf.toString('base64', i);
+  this.lastNeed = 3 - n;
+  this.lastTotal = 3;
+  if (n === 1) {
+    this.lastChar[0] = buf[buf.length - 1];
+  } else {
+    this.lastChar[0] = buf[buf.length - 2];
+    this.lastChar[1] = buf[buf.length - 1];
   }
+  return buf.toString('base64', i, buf.length - n);
+}
 
+function base64End(buf) {
+  var r = buf && buf.length ? this.write(buf) : '';
+  if (this.lastNeed) return r + this.lastChar.toString('base64', 0, 3 - this.lastNeed);
+  return r;
+}
 
-  function onclose() {
-    if (didOnEnd) return;
-    didOnEnd = true;
+// Pass bytes on through for single-byte encodings (e.g. ascii, latin1, hex)
+function simpleWrite(buf) {
+  return buf.toString(this.encoding);
+}
 
-    if (typeof dest.destroy === 'function') dest.destroy();
-  }
-
-  // don't leave dangling pipes when there are errors.
-  function onerror(er) {
-    cleanup();
-    if (EE.listenerCount(this, 'error') === 0) {
-      throw er; // Unhandled stream error in pipe.
-    }
-  }
-
-  source.on('error', onerror);
-  dest.on('error', onerror);
-
-  // remove all the event listeners that were added.
-  function cleanup() {
-    source.removeListener('data', ondata);
-    dest.removeListener('drain', ondrain);
-
-    source.removeListener('end', onend);
-    source.removeListener('close', onclose);
-
-    source.removeListener('error', onerror);
-    dest.removeListener('error', onerror);
-
-    source.removeListener('end', cleanup);
-    source.removeListener('close', cleanup);
-
-    dest.removeListener('close', cleanup);
-  }
-
-  source.on('end', cleanup);
-  source.on('close', cleanup);
-
-  dest.on('close', cleanup);
-
-  dest.emit('pipe', source);
-
-  // Allow for unix-like usage: A.pipe(B).pipe(C)
-  return dest;
-};
-
-},{"events":100,"inherits":120,"readable-stream/duplex.js":210,"readable-stream/passthrough.js":221,"readable-stream/readable.js":222,"readable-stream/transform.js":223,"readable-stream/writable.js":224}],259:[function(require,module,exports){
+function simpleEnd(buf) {
+  return buf && buf.length ? this.write(buf) : '';
+}
+},{"safe-buffer":215}],258:[function(require,module,exports){
 (function (global){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -71592,7 +72483,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":261,"./lib/response":262,"builtin-status-codes":64,"url":266,"xtend":280}],260:[function(require,module,exports){
+},{"./lib/request":260,"./lib/response":261,"builtin-status-codes":62,"url":286,"xtend":300}],259:[function(require,module,exports){
 (function (global){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -71669,7 +72560,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],261:[function(require,module,exports){
+},{}],260:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -72000,7 +72891,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":260,"./response":262,"_process":191,"buffer":63,"inherits":120,"readable-stream":222,"to-arraybuffer":265}],262:[function(require,module,exports){
+},{"./capability":259,"./response":261,"_process":192,"buffer":61,"inherits":118,"readable-stream":270,"to-arraybuffer":285}],261:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -72228,7 +73119,49 @@ IncomingMessage.prototype._onXHRProgress = function () {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":260,"_process":191,"buffer":63,"inherits":120,"readable-stream":222}],263:[function(require,module,exports){
+},{"./capability":259,"_process":192,"buffer":61,"inherits":118,"readable-stream":270}],262:[function(require,module,exports){
+arguments[4][245][0].apply(exports,arguments)
+},{"./_stream_readable":264,"./_stream_writable":266,"core-util-is":64,"dup":245,"inherits":118,"process-nextick-args":191}],263:[function(require,module,exports){
+arguments[4][246][0].apply(exports,arguments)
+},{"./_stream_transform":265,"core-util-is":64,"dup":246,"inherits":118}],264:[function(require,module,exports){
+arguments[4][247][0].apply(exports,arguments)
+},{"./_stream_duplex":262,"./internal/streams/BufferList":267,"./internal/streams/destroy":268,"./internal/streams/stream":269,"_process":192,"core-util-is":64,"dup":247,"events":98,"inherits":118,"isarray":120,"process-nextick-args":191,"safe-buffer":215,"string_decoder/":271,"util":29}],265:[function(require,module,exports){
+arguments[4][248][0].apply(exports,arguments)
+},{"./_stream_duplex":262,"core-util-is":64,"dup":248,"inherits":118}],266:[function(require,module,exports){
+arguments[4][249][0].apply(exports,arguments)
+},{"./_stream_duplex":262,"./internal/streams/destroy":268,"./internal/streams/stream":269,"_process":192,"core-util-is":64,"dup":249,"inherits":118,"process-nextick-args":191,"safe-buffer":215,"timers":284,"util-deprecate":289}],267:[function(require,module,exports){
+arguments[4][250][0].apply(exports,arguments)
+},{"dup":250,"safe-buffer":215,"util":29}],268:[function(require,module,exports){
+arguments[4][251][0].apply(exports,arguments)
+},{"dup":251,"process-nextick-args":191}],269:[function(require,module,exports){
+arguments[4][252][0].apply(exports,arguments)
+},{"dup":252,"events":98}],270:[function(require,module,exports){
+arguments[4][254][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":262,"./lib/_stream_passthrough.js":263,"./lib/_stream_readable.js":264,"./lib/_stream_transform.js":265,"./lib/_stream_writable.js":266,"dup":254}],271:[function(require,module,exports){
+arguments[4][257][0].apply(exports,arguments)
+},{"dup":257,"safe-buffer":215}],272:[function(require,module,exports){
+arguments[4][257][0].apply(exports,arguments)
+},{"dup":257,"safe-buffer":215}],273:[function(require,module,exports){
+arguments[4][245][0].apply(exports,arguments)
+},{"./_stream_readable":275,"./_stream_writable":277,"core-util-is":64,"dup":245,"inherits":118,"process-nextick-args":191}],274:[function(require,module,exports){
+arguments[4][246][0].apply(exports,arguments)
+},{"./_stream_transform":276,"core-util-is":64,"dup":246,"inherits":118}],275:[function(require,module,exports){
+arguments[4][247][0].apply(exports,arguments)
+},{"./_stream_duplex":273,"./internal/streams/BufferList":278,"./internal/streams/destroy":279,"./internal/streams/stream":280,"_process":192,"core-util-is":64,"dup":247,"events":98,"inherits":118,"isarray":120,"process-nextick-args":191,"safe-buffer":215,"string_decoder/":282,"util":29}],276:[function(require,module,exports){
+arguments[4][248][0].apply(exports,arguments)
+},{"./_stream_duplex":273,"core-util-is":64,"dup":248,"inherits":118}],277:[function(require,module,exports){
+arguments[4][249][0].apply(exports,arguments)
+},{"./_stream_duplex":273,"./internal/streams/destroy":279,"./internal/streams/stream":280,"_process":192,"core-util-is":64,"dup":249,"inherits":118,"process-nextick-args":191,"safe-buffer":215,"timers":284,"util-deprecate":289}],278:[function(require,module,exports){
+arguments[4][250][0].apply(exports,arguments)
+},{"dup":250,"safe-buffer":215,"util":29}],279:[function(require,module,exports){
+arguments[4][251][0].apply(exports,arguments)
+},{"dup":251,"process-nextick-args":191}],280:[function(require,module,exports){
+arguments[4][252][0].apply(exports,arguments)
+},{"dup":252,"events":98}],281:[function(require,module,exports){
+arguments[4][254][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":273,"./lib/_stream_passthrough.js":274,"./lib/_stream_readable.js":275,"./lib/_stream_transform.js":276,"./lib/_stream_writable.js":277,"dup":254}],282:[function(require,module,exports){
+arguments[4][257][0].apply(exports,arguments)
+},{"dup":257,"safe-buffer":215}],283:[function(require,module,exports){
 (function (process){
 var Transform = require('readable-stream').Transform
   , inherits  = require('util').inherits
@@ -72328,7 +73261,7 @@ module.exports.obj = through2(function (options, transform, flush) {
 })
 
 }).call(this,require('_process'))
-},{"_process":191,"readable-stream":222,"util":271,"xtend":280}],264:[function(require,module,exports){
+},{"_process":192,"readable-stream":281,"util":291,"xtend":300}],284:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -72407,7 +73340,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":191,"timers":264}],265:[function(require,module,exports){
+},{"process/browser.js":192,"timers":284}],285:[function(require,module,exports){
 var Buffer = require('buffer').Buffer
 
 module.exports = function (buf) {
@@ -72436,7 +73369,7 @@ module.exports = function (buf) {
 	}
 }
 
-},{"buffer":63}],266:[function(require,module,exports){
+},{"buffer":61}],286:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -73170,7 +74103,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":267,"punycode":60,"querystring":207}],267:[function(require,module,exports){
+},{"./util":287,"punycode":201,"querystring":209}],287:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -73188,12 +74121,13 @@ module.exports = {
   }
 };
 
-},{}],268:[function(require,module,exports){
-/* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
+},{}],288:[function(require,module,exports){
+/* Copyright © 2014-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
 var Path = require('path')
 var Util = require('util')
+var Module = require('module')
 
 // Generic plugin loader functionality for Node.js frameworks.
 
@@ -73262,9 +74196,12 @@ function make(useopts) {
   //   * _err_ : Error; plugin load error, if any
   function use() {
     var args = Norma('{plugin:o|f|s, options:o|s|n|b?, callback:f?}', arguments)
-    return use_plugin_desc(build_plugin_desc(args, useopts, eraro), useopts, eraro)
+    return use_plugin_desc(
+      build_plugin_desc(args, useopts, eraro),
+      useopts,
+      eraro
+    )
   }
-
 
   use.Optioner = Optioner
   use.Joi = Optioner.Joi
@@ -73281,9 +74218,7 @@ function make(useopts) {
   return use
 }
 
-
 function use_plugin_desc(plugin_desc, useopts, eraro) {
-  
   plugin_desc.search = build_plugin_names(
     plugin_desc.name,
     useopts.builtin,
@@ -73301,15 +74236,16 @@ function use_plugin_desc(plugin_desc, useopts, eraro) {
   var defaults = Object.assign(
     {},
     plugin_desc.defaults,
-    (plugin_desc.init && plugin_desc.init.defaults))
+    plugin_desc.init && plugin_desc.init.defaults
+  )
 
   plugin_desc.defaults = defaults
-  
+
   if (useopts.merge_defaults && 'object' === typeof defaults) {
     try {
-      plugin_desc.options =
-        Optioner(defaults, {allow_unknown: true})
-        .check(plugin_desc.options)
+      plugin_desc.options = Optioner(defaults, { allow_unknown: true }).check(
+        plugin_desc.options
+      )
     } catch (e) {
       throw eraro('invalid_option', {
         name: plugin_desc.name,
@@ -73321,9 +74257,8 @@ function use_plugin_desc(plugin_desc, useopts, eraro) {
 
   // No init function found, require found nothing, so throw error.
   if ('function' !== typeof plugin_desc.init) {
-
     var foldermap = {}
-    for(var i = 0; i < plugin_desc.history.length; i++) {
+    for (var i = 0; i < plugin_desc.history.length; i++) {
       var item = plugin_desc.history[i]
       var folder = Path.dirname(item.module)
       foldermap[folder] = foldermap[folder] || []
@@ -73332,31 +74267,32 @@ function use_plugin_desc(plugin_desc, useopts, eraro) {
 
     var b = []
     Object.keys(foldermap).forEach(function(folder) {
-      b.push('[ '+Path.resolve(folder)+': ')
+      b.push('[ ' + Path.resolve(folder) + ': ')
       foldermap[folder].forEach(function(path) {
-        b.push(path+', ')
+        b.push(path + ', ')
       })
       b.push(' ] ')
     })
 
     plugin_desc.searchlist = b.join('')
-    
+
     throw eraro('not_found', plugin_desc)
   }
 
   return plugin_desc
 }
 
-
-
 // #### Create description object for the plugin
 function build_plugin_desc(spec, useopts, eraro) {
   var plugin = spec.plugin
 
   // Don't do much with plugin options, just ensure they are an object.
-  var options = null == spec.options ?
-      (null == plugin.options ? {} : plugin.options) :
-      spec.options
+  var options =
+    null == spec.options
+      ? null == plugin.options
+        ? {}
+        : plugin.options
+      : spec.options
   options = 'object' === typeof options ? options : { value$: options }
 
   // Start building the return value.
@@ -73398,7 +74334,10 @@ function build_plugin_desc(spec, useopts, eraro) {
       throw eraro('no_name', { plugin: plugin })
 
     if (null != plugin_desc.init && 'function' !== typeof plugin_desc.init) {
-      throw eraro('no_init_function', { name: plugin_desc.name, plugin: plugin })
+      throw eraro('no_init_function', {
+        name: plugin_desc.name,
+        plugin: plugin
+      })
     }
   }
 
@@ -73420,8 +74359,11 @@ function build_plugin_desc(spec, useopts, eraro) {
     plugin_desc.tag = m[2]
   }
 
-  plugin_desc.full = plugin_desc.name +
-    ((null == plugin_desc.tag || '' == plugin_desc.tag) ? '' : '$' + plugin_desc.tag)
+  plugin_desc.full =
+    plugin_desc.name +
+    (null == plugin_desc.tag || '' == plugin_desc.tag
+      ? ''
+      : '$' + plugin_desc.tag)
 
   // Plugins must have a name.
   if (!plugin_desc.name) {
@@ -73456,7 +74398,12 @@ function load_plugin(plugin_desc, start_module, eraro) {
     funcdesc = perform_require(reqfunc, plugin_desc, builtin, level)
 
     if (funcdesc.error)
-      throw handle_load_error(funcdesc.error, funcdesc.found, plugin_desc, eraro)
+      throw handle_load_error(
+        funcdesc.error,
+        funcdesc.found,
+        plugin_desc,
+        eraro
+      )
 
     builtin = false
     level++
@@ -73546,8 +74493,6 @@ function perform_require(reqfunc, plugin_desc, builtin, level) {
     try {
       plugin_desc.history.push({ module: reqfunc.module, path: search.name })
 
-      //console.log(reqfunc.module, search)
-
       initfunc = reqfunc(search.name)
 
       // Found it!
@@ -73610,6 +74555,12 @@ function build_plugin_names() {
     })
   }
 
+  // Try the prefix first - this ensures something like seneca-joi works
+  // where there is also a joi module
+  prefix_list.forEach(function(prefix) {
+    plugin_names.push({ type: 'normal', name: prefix + name })
+  })
+
   // Vanilla require on the plugin name.
   // Common case: the require succeeds on first module parent,
   // because the plugin is an npm module
@@ -73619,18 +74570,13 @@ function build_plugin_names() {
     plugin_names.push({ type: 'normal', name: name })
   }
 
-  // Try the prefix next.
-  prefix_list.forEach(function(prefix) {
-    plugin_names.push({ type: 'normal', name: prefix + name })
-  })
-
   // OK, probably not an npm module, try locally.
   plugin_names.push({ type: 'normal', name: './' + name })
 
   prefix_list.forEach(function(prefix) {
     plugin_names.push({ type: 'normal', name: './' + prefix + name })
   })
-  
+
   return plugin_names
 }
 
@@ -73655,79 +74601,81 @@ function msgmap() {
 
 const intern = (module.exports.intern = {
   make_system_modules: function() {
-    return [
-      'async_hooks',
-      'assert',
-      'buffer',
-      'child_process',
-      'console',
-      'constants',
-      'crypto',
-      'cluster',
-      'dgram',
-      'dns',
-      'domain',
-      'events',
-      'fs',
-      'http',
-      'http2',
-      '_http_agent',
-      '_http_client',
-      '_http_common',
-      '_http_incoming',
-      '_http_outgoing',
-      '_http_server',
-      'https',
-      'inspector',
-      'module',
-      'net',
-      'os',
-      'path',
-      'perf_hooks',
-      'process',
-      'punycode',
-      'querystring',
-      'readline',
-      'repl',
-      'stream',
-      '_stream_readable',
-      '_stream_writable',
-      '_stream_duplex',
-      '_stream_transform',
-      '_stream_passthrough',
-      '_stream_wrap',
-      'string_decoder',
-      'sys',
-      'timers',
-      'tls',
-      '_tls_common',
-      '_tls_wrap',
-      'trace_events',
-      'tty',
-      'url',
-      'util',
-      'v8',
-      'vm',
-      'zlib',
-      'v8/tools/splaytree',
-      'v8/tools/codemap',
-      'v8/tools/consarray',
-      'v8/tools/csvparser',
-      'v8/tools/profile',
-      'v8/tools/profile_view',
-      'v8/tools/logreader',
-      'v8/tools/arguments',
-      'v8/tools/tickprocessor',
-      'v8/tools/SourceMap',
-      'v8/tools/tickprocessor-driver',
-      'node-inspect/lib/_inspect',
-      'node-inspect/lib/internal/inspect_client',
-      'node-inspect/lib/internal/inspect_repl'
-    ]
+    return Module.builtinModules
+      ? Module.builtinModules
+      : [
+          'async_hooks',
+          'assert',
+          'buffer',
+          'child_process',
+          'console',
+          'constants',
+          'crypto',
+          'cluster',
+          'dgram',
+          'dns',
+          'domain',
+          'events',
+          'fs',
+          'http',
+          'http2',
+          '_http_agent',
+          '_http_client',
+          '_http_common',
+          '_http_incoming',
+          '_http_outgoing',
+          '_http_server',
+          'https',
+          'inspector',
+          'module',
+          'net',
+          'os',
+          'path',
+          'perf_hooks',
+          'process',
+          'punycode',
+          'querystring',
+          'readline',
+          'repl',
+          'stream',
+          '_stream_readable',
+          '_stream_writable',
+          '_stream_duplex',
+          '_stream_transform',
+          '_stream_passthrough',
+          '_stream_wrap',
+          'string_decoder',
+          'sys',
+          'timers',
+          'tls',
+          '_tls_common',
+          '_tls_wrap',
+          'trace_events',
+          'tty',
+          'url',
+          'util',
+          'v8',
+          'vm',
+          'zlib',
+          'v8/tools/splaytree',
+          'v8/tools/codemap',
+          'v8/tools/consarray',
+          'v8/tools/csvparser',
+          'v8/tools/profile',
+          'v8/tools/profile_view',
+          'v8/tools/logreader',
+          'v8/tools/arguments',
+          'v8/tools/tickprocessor',
+          'v8/tools/SourceMap',
+          'v8/tools/tickprocessor-driver',
+          'node-inspect/lib/_inspect',
+          'node-inspect/lib/internal/inspect_client',
+          'node-inspect/lib/internal/inspect_repl'
+        ]
   }
 })
 
-},{"eraro":99,"nid":133,"norma":135,"optioner":161,"path":180,"util":271}],269:[function(require,module,exports){
+},{"eraro":97,"module":59,"nid":132,"norma":135,"optioner":162,"path":181,"util":291}],289:[function(require,module,exports){
 (function (global){
 
 /**
@@ -73798,11 +74746,11 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],270:[function(require,module,exports){
+},{}],290:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"dup":18}],271:[function(require,module,exports){
+},{"dup":18}],291:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"./support/isBuffer":270,"_process":191,"dup":19,"inherits":120}],272:[function(require,module,exports){
+},{"./support/isBuffer":290,"_process":192,"dup":19,"inherits":118}],292:[function(require,module,exports){
 var indexOf = function (xs, item) {
     if (xs.indexOf) return xs.indexOf(item);
     else for (var i = 0; i < xs.length; i++) {
@@ -73953,7 +74901,7 @@ exports.createContext = Script.createContext = function (context) {
     return copy;
 };
 
-},{}],273:[function(require,module,exports){
+},{}],293:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 
@@ -74589,7 +75537,7 @@ internals.findHeader = function (headerName, headers) {
 module.exports = new internals.Client();
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./payload":274,"./recorder":275,"./tap":276,"_process":191,"boom":277,"buffer":63,"events":100,"hoek":279,"http":259,"https":118,"stream":258,"url":266,"zlib":58}],274:[function(require,module,exports){
+},{"./payload":294,"./recorder":295,"./tap":296,"_process":192,"boom":297,"buffer":61,"events":98,"hoek":299,"http":258,"https":116,"stream":243,"url":286,"zlib":58}],294:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -74636,7 +75584,7 @@ internals.Payload.prototype._read = function (size) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":63,"hoek":279,"stream":258}],275:[function(require,module,exports){
+},{"buffer":61,"hoek":299,"stream":243}],295:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -74685,7 +75633,7 @@ internals.Recorder.prototype.collect = function () {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"boom":277,"buffer":63,"hoek":279,"stream":258}],276:[function(require,module,exports){
+},{"boom":297,"buffer":61,"hoek":299,"stream":243}],296:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -74721,7 +75669,7 @@ internals.Tap.prototype.collect = function () {
     return new Payload(this.buffers);
 };
 
-},{"./payload":274,"hoek":279,"stream":258}],277:[function(require,module,exports){
+},{"./payload":294,"hoek":299,"stream":243}],297:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -75180,11 +76128,11 @@ exports.badImplementation = function (message, data) {
     return err;
 };
 
-},{"hoek":279}],278:[function(require,module,exports){
-arguments[4][136][0].apply(exports,arguments)
-},{"buffer":63,"dup":136}],279:[function(require,module,exports){
+},{"hoek":299}],298:[function(require,module,exports){
 arguments[4][137][0].apply(exports,arguments)
-},{"./escape":278,"_process":191,"buffer":63,"crypto":72,"dup":137,"path":180,"util":271}],280:[function(require,module,exports){
+},{"buffer":61,"dup":137}],299:[function(require,module,exports){
+arguments[4][138][0].apply(exports,arguments)
+},{"./escape":298,"_process":192,"buffer":61,"crypto":70,"dup":138,"path":181,"util":291}],300:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -75205,7 +76153,7 @@ function extend() {
     return target
 }
 
-},{}],281:[function(require,module,exports){
+},{}],301:[function(require,module,exports){
 module.exports = Yallist
 
 Yallist.Node = Node
@@ -75577,7 +76525,7 @@ function Node (value, prev, next, list) {
   }
 }
 
-},{}],282:[function(require,module,exports){
+},{}],302:[function(require,module,exports){
 (function (global){
 var Timers = require('timers')
 var SenecaModule = require('seneca')
@@ -75633,5 +76581,5 @@ SenecaExport.prototype = SenecaModule.prototype
 module.exports = SenecaExport
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"seneca":248,"timers":264}]},{},[282])(282)
+},{"seneca":233,"timers":284}]},{},[302])(302)
 });

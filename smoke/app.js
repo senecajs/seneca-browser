@@ -11,6 +11,8 @@ Seneca()
   // error
   .act('c:1,x:3', console.log)
 
+var exp = []
+
 Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
   .test('print')
   .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*'] })
@@ -23,3 +25,11 @@ Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
 
   // error
   .act('c:1,x:3', console.log)
+
+  // ok, explain
+  .act('a:1,x:1', {explain$:exp}, function() {
+    console.log(arguments)
+    console.log('EXPLAIN', exp)
+  })
+
+
