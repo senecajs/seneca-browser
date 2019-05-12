@@ -13,7 +13,7 @@ Seneca()
 
 var exp = []
 
-Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
+var si = Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
   .test('print')
   .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*'] })
 
