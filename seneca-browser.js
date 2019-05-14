@@ -1,4 +1,9492 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Seneca = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+/*
+    From RFC 5321:
+
+        Mailbox         =   Local-part "@" ( Domain / address-literal )
+
+        Local-part      =   Dot-string / Quoted-string
+        Dot-string      =   Atom *("."  Atom)
+        Atom            =   1*atext
+        atext           =   ALPHA / DIGIT / "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
+
+        Domain          =   sub-domain *("." sub-domain)
+        sub-domain      =   Let-dig [Ldh-str]
+        Let-dig         =   ALPHA / DIGIT
+        Ldh-str         =   *( ALPHA / DIGIT / "-" ) Let-dig
+
+        ALPHA           =   %x41-5A / %x61-7A        ; a-z, A-Z
+        DIGIT           =   %x30-39                  ; 0-9
+
+    From RFC 6531:
+
+        sub-domain      =/  U-label
+        atext           =/  UTF8-non-ascii
+
+        UTF8-non-ascii  =   UTF8-2 / UTF8-3 / UTF8-4
+
+        UTF8-2          =   %xC2-DF UTF8-tail
+        UTF8-3          =   %xE0 %xA0-BF UTF8-tail /
+                            %xE1-EC 2( UTF8-tail ) /
+                            %xED %x80-9F UTF8-tail /
+                            %xEE-EF 2( UTF8-tail )
+        UTF8-4          =   %xF0 %x90-BF 2( UTF8-tail ) /
+                            %xF1-F3 3( UTF8-tail ) /
+                            %xF4 %x80-8F 2( UTF8-tail )
+
+        UTF8-tail       =   %x80-BF
+
+    Note: The following are not supported:
+
+        RFC 5321: address-literal, Quoted-string
+        RFC 5322: obs-*, CFWS
+*/
+
+
+internals.atext = '[\\w!#\\$%&\'\\*\\+\\-/=\\?\\^`\\{\\|\\}~]';                 // _ included in \w
+
+
+exports.atextRx = new RegExp(`^${internals.atext}+$`);
+
+
+exports.atomRx = new RegExp([
+
+    internals.atext,
+
+    //  %xC2-DF UTF8-tail
+    '(?:[\\xc2-\\xdf][\\x80-\\xbf])',
+
+    //  %xE0 %xA0-BF UTF8-tail              %xE1-EC 2( UTF8-tail )            %xED %x80-9F UTF8-tail              %xEE-EF 2( UTF8-tail )
+    '(?:\\xe0[\\xa0-\\xbf][\\x80-\\xbf])|(?:[\\xe1-\\xec][\\x80-\\xbf]{2})|(?:\\xed[\\x80-\\x9f][\\x80-\\xbf])|(?:[\\xee-\\xef][\\x80-\\xbf]{2})',
+
+    //  %xF0 %x90-BF 2( UTF8-tail )            %xF1-F3 3( UTF8-tail )            %xF4 %x80-8F 2( UTF8-tail )
+    '(?:\\xf0[\\x90-\\xbf][\\x80-\\xbf]{2})|(?:[\\xf1-\\xf3][\\x80-\\xbf]{3})|(?:\\xf4[\\x80-\\x8f][\\x80-\\xbf]{2})'
+
+].join('|'));
+
+},{}],2:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Punycode = require('punycode');
+
+const Abnf = require('./abnf');
+const Tlds = require('./tlds');
+
+
+const internals = {
+    nonAsciiRx: /[^\x00-\x7f]/,
+    minDomainSegments: 2,
+    defaultTlds: { allow: Tlds, deny: null }
+};
+
+
+module.exports = {
+    email: {
+        analyze: function (email, options) {
+
+            return internals.email(email, options);
+        },
+        isValid: function (email, options) {
+
+            return !internals.email(email, options);
+        }
+    },
+    domain: {
+        analyze: function (domain, options = {}) {
+
+            internals.options(domain, options);
+
+            if (!domain) {
+                return internals.error('Domain must be a non-empty string');
+            }
+
+            if (domain.length > 256) {
+                return internals.error('Domain too long');
+            }
+
+            const ascii = !internals.nonAsciiRx.test(domain);
+            if (!ascii) {
+                if (options.allowUnicode === false) {                                           // Defaults to true
+                    return internals.error('Domain contains forbidden Unicode characters');
+                }
+
+                const normalized = domain.normalize('NFC');
+                domain = Punycode.toASCII(normalized);
+            }
+
+            return internals.domain(domain, options);
+        },
+        isValid: function (domain, options) {
+
+            return !module.exports.domain.analyze(domain, options);
+        }
+    }
+};
+
+
+internals.email = function (email, options = {}) {
+
+    internals.options(email, options);
+
+    if (!email) {
+        return internals.error('Address must be a non-empty string');
+    }
+
+    // Unicode
+
+    const ascii = !internals.nonAsciiRx.test(email);
+    if (!ascii) {
+        if (options.allowUnicode === false) {                                                   // Defaults to true
+            return internals.error('Address contains forbidden Unicode characters');
+        }
+
+        const normalized = email.normalize('NFC');
+        email = Punycode.toASCII(normalized);
+    }
+
+    // Basic structure
+
+    const parts = email.split('@');
+    if (parts.length !== 2) {
+        return internals.error(parts.length > 2 ? 'Address cannot contain more than one @ character' : 'Address must contain one @ character');
+    }
+
+    const local = parts[0];
+    const domain = parts[1];
+
+    if (!local) {
+        return internals.error('Address local part cannot be empty');
+    }
+
+    if (!domain) {
+        return internals.error('Domain cannot be empty');
+    }
+
+    if (email.length > 254) {                                                   // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.3
+        return internals.error('Address too long');
+    }
+
+    if (Buffer.byteLength(local, 'utf-8') > 64) {                               // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.1
+        return internals.error('Address local part too long');
+    }
+
+    // Validate parts
+
+    return internals.local(local, ascii) || internals.domain(domain, options);
+};
+
+
+internals.options = function (value, options) {
+
+    // Options validation
+
+    if (options.tlds &&
+        options.tlds !== true) {
+
+        if (typeof options.tlds !== 'object') {
+            throw new Error('Invalid options: tlds must be a boolean or an object');
+        }
+
+        if (options.tlds.allow !== undefined &&
+            options.tlds.allow !== true &&
+            options.tlds.allow instanceof Set === false) {
+
+            throw new Error('Invalid options: tlds.allow must be a Set object or true');
+        }
+
+        if (options.tlds.deny) {
+            if (options.tlds.deny instanceof Set === false) {
+                throw new Error('Invalid options: tlds.deny must be a Set object');
+            }
+
+            if (options.tlds.allow instanceof Set) {
+                throw new Error('Invalid options: cannot specify both tlds.allow and tlds.deny lists');
+            }
+        }
+    }
+
+    // Input validation
+
+    if (typeof value !== 'string') {
+        throw new Error('Invalid input: value must be a string');
+    }
+};
+
+
+internals.local = function (local, ascii) {
+
+    const segments = local.split('.');
+    for (const segment of segments) {
+        if (!segment.length) {
+            return internals.error('Address local part contains empty dot-separated segment');
+        }
+
+        if (ascii) {
+            if (!Abnf.atextRx.test(segment)) {
+                return internals.error('Address local part contains invalid character');
+            }
+        }
+        else {
+            for (const char of segment) {
+                const binary = Buffer.from(char).toString('binary');
+                if (!Abnf.atomRx.test(binary)) {
+                    return internals.error('Address local part contains invalid character');
+                }
+            }
+        }
+    }
+};
+
+
+internals.tldSegmentRx = /^[a-zA-Z](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/;
+
+
+internals.domainSegmentRx = /^[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/;
+
+
+internals.domain = function (domain, options) {
+
+    // https://tools.ietf.org/html/rfc1035 section 2.3.1
+
+    const minDomainSegments = (options.minDomainSegments || internals.minDomainSegments);
+
+    const segments = domain.split('.');
+    if (segments.length < minDomainSegments) {
+        return internals.error('Domain lacks the minimum required number of segments');
+    }
+
+    const tlds = internals.tlds(options);
+    if (tlds) {
+        const tld = segments[segments.length - 1].toLowerCase();
+        if (tlds.deny && tlds.deny.has(tld) ||
+            tlds.allow && !tlds.allow.has(tld)) {
+
+            return internals.error('Domain uses forbidden TLD');
+        }
+    }
+
+    for (let i = 0; i < segments.length; ++i) {
+        const segment = segments[i];
+
+        if (!segment.length) {
+            return internals.error('Domain contains empty dot-separated segment');
+        }
+
+        if (segment.length > 63) {
+            return internals.error('Domain contains dot-separated segment that is too long');
+        }
+
+        if (i < segments.length - 1) {
+            if (!internals.domainSegmentRx.test(segment)) {
+                return internals.error('Domain contains invalid character');
+            }
+        }
+        else {
+            if (!internals.tldSegmentRx.test(segment)) {
+                return internals.error('Domain contains invalid tld character');
+            }
+        }
+    }
+};
+
+
+internals.tlds = function (options) {
+
+    if (options.tlds === false) {                // Defaults to true
+        return null;
+    }
+
+    if (!options.tlds ||
+        options.tlds === true) {
+
+        return internals.defaultTlds;
+    }
+
+    return {
+        allow: options.tlds.allow === true ? null : options.tlds.allow || Tlds,
+        deny: options.tlds.deny || null
+    };
+};
+
+
+internals.error = function (reason) {
+
+    return { error: reason };
+};
+
+}).call(this,require("buffer").Buffer)
+},{"./abnf":1,"./tlds":3,"buffer":94,"punycode":208}],3:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+// http://data.iana.org/TLD/tlds-alpha-by-domain.txt
+// # Version 2019032300, Last Updated Sat Mar 23 07:07:02 2019 UTC
+
+
+internals.tlds = [
+    'AAA',
+    'AARP',
+    'ABARTH',
+    'ABB',
+    'ABBOTT',
+    'ABBVIE',
+    'ABC',
+    'ABLE',
+    'ABOGADO',
+    'ABUDHABI',
+    'AC',
+    'ACADEMY',
+    'ACCENTURE',
+    'ACCOUNTANT',
+    'ACCOUNTANTS',
+    'ACO',
+    'ACTOR',
+    'AD',
+    'ADAC',
+    'ADS',
+    'ADULT',
+    'AE',
+    'AEG',
+    'AERO',
+    'AETNA',
+    'AF',
+    'AFAMILYCOMPANY',
+    'AFL',
+    'AFRICA',
+    'AG',
+    'AGAKHAN',
+    'AGENCY',
+    'AI',
+    'AIG',
+    'AIGO',
+    'AIRBUS',
+    'AIRFORCE',
+    'AIRTEL',
+    'AKDN',
+    'AL',
+    'ALFAROMEO',
+    'ALIBABA',
+    'ALIPAY',
+    'ALLFINANZ',
+    'ALLSTATE',
+    'ALLY',
+    'ALSACE',
+    'ALSTOM',
+    'AM',
+    'AMERICANEXPRESS',
+    'AMERICANFAMILY',
+    'AMEX',
+    'AMFAM',
+    'AMICA',
+    'AMSTERDAM',
+    'ANALYTICS',
+    'ANDROID',
+    'ANQUAN',
+    'ANZ',
+    'AO',
+    'AOL',
+    'APARTMENTS',
+    'APP',
+    'APPLE',
+    'AQ',
+    'AQUARELLE',
+    'AR',
+    'ARAB',
+    'ARAMCO',
+    'ARCHI',
+    'ARMY',
+    'ARPA',
+    'ART',
+    'ARTE',
+    'AS',
+    'ASDA',
+    'ASIA',
+    'ASSOCIATES',
+    'AT',
+    'ATHLETA',
+    'ATTORNEY',
+    'AU',
+    'AUCTION',
+    'AUDI',
+    'AUDIBLE',
+    'AUDIO',
+    'AUSPOST',
+    'AUTHOR',
+    'AUTO',
+    'AUTOS',
+    'AVIANCA',
+    'AW',
+    'AWS',
+    'AX',
+    'AXA',
+    'AZ',
+    'AZURE',
+    'BA',
+    'BABY',
+    'BAIDU',
+    'BANAMEX',
+    'BANANAREPUBLIC',
+    'BAND',
+    'BANK',
+    'BAR',
+    'BARCELONA',
+    'BARCLAYCARD',
+    'BARCLAYS',
+    'BAREFOOT',
+    'BARGAINS',
+    'BASEBALL',
+    'BASKETBALL',
+    'BAUHAUS',
+    'BAYERN',
+    'BB',
+    'BBC',
+    'BBT',
+    'BBVA',
+    'BCG',
+    'BCN',
+    'BD',
+    'BE',
+    'BEATS',
+    'BEAUTY',
+    'BEER',
+    'BENTLEY',
+    'BERLIN',
+    'BEST',
+    'BESTBUY',
+    'BET',
+    'BF',
+    'BG',
+    'BH',
+    'BHARTI',
+    'BI',
+    'BIBLE',
+    'BID',
+    'BIKE',
+    'BING',
+    'BINGO',
+    'BIO',
+    'BIZ',
+    'BJ',
+    'BLACK',
+    'BLACKFRIDAY',
+    'BLOCKBUSTER',
+    'BLOG',
+    'BLOOMBERG',
+    'BLUE',
+    'BM',
+    'BMS',
+    'BMW',
+    'BN',
+    'BNL',
+    'BNPPARIBAS',
+    'BO',
+    'BOATS',
+    'BOEHRINGER',
+    'BOFA',
+    'BOM',
+    'BOND',
+    'BOO',
+    'BOOK',
+    'BOOKING',
+    'BOSCH',
+    'BOSTIK',
+    'BOSTON',
+    'BOT',
+    'BOUTIQUE',
+    'BOX',
+    'BR',
+    'BRADESCO',
+    'BRIDGESTONE',
+    'BROADWAY',
+    'BROKER',
+    'BROTHER',
+    'BRUSSELS',
+    'BS',
+    'BT',
+    'BUDAPEST',
+    'BUGATTI',
+    'BUILD',
+    'BUILDERS',
+    'BUSINESS',
+    'BUY',
+    'BUZZ',
+    'BV',
+    'BW',
+    'BY',
+    'BZ',
+    'BZH',
+    'CA',
+    'CAB',
+    'CAFE',
+    'CAL',
+    'CALL',
+    'CALVINKLEIN',
+    'CAM',
+    'CAMERA',
+    'CAMP',
+    'CANCERRESEARCH',
+    'CANON',
+    'CAPETOWN',
+    'CAPITAL',
+    'CAPITALONE',
+    'CAR',
+    'CARAVAN',
+    'CARDS',
+    'CARE',
+    'CAREER',
+    'CAREERS',
+    'CARS',
+    'CARTIER',
+    'CASA',
+    'CASE',
+    'CASEIH',
+    'CASH',
+    'CASINO',
+    'CAT',
+    'CATERING',
+    'CATHOLIC',
+    'CBA',
+    'CBN',
+    'CBRE',
+    'CBS',
+    'CC',
+    'CD',
+    'CEB',
+    'CENTER',
+    'CEO',
+    'CERN',
+    'CF',
+    'CFA',
+    'CFD',
+    'CG',
+    'CH',
+    'CHANEL',
+    'CHANNEL',
+    'CHARITY',
+    'CHASE',
+    'CHAT',
+    'CHEAP',
+    'CHINTAI',
+    'CHRISTMAS',
+    'CHROME',
+    'CHRYSLER',
+    'CHURCH',
+    'CI',
+    'CIPRIANI',
+    'CIRCLE',
+    'CISCO',
+    'CITADEL',
+    'CITI',
+    'CITIC',
+    'CITY',
+    'CITYEATS',
+    'CK',
+    'CL',
+    'CLAIMS',
+    'CLEANING',
+    'CLICK',
+    'CLINIC',
+    'CLINIQUE',
+    'CLOTHING',
+    'CLOUD',
+    'CLUB',
+    'CLUBMED',
+    'CM',
+    'CN',
+    'CO',
+    'COACH',
+    'CODES',
+    'COFFEE',
+    'COLLEGE',
+    'COLOGNE',
+    'COM',
+    'COMCAST',
+    'COMMBANK',
+    'COMMUNITY',
+    'COMPANY',
+    'COMPARE',
+    'COMPUTER',
+    'COMSEC',
+    'CONDOS',
+    'CONSTRUCTION',
+    'CONSULTING',
+    'CONTACT',
+    'CONTRACTORS',
+    'COOKING',
+    'COOKINGCHANNEL',
+    'COOL',
+    'COOP',
+    'CORSICA',
+    'COUNTRY',
+    'COUPON',
+    'COUPONS',
+    'COURSES',
+    'CR',
+    'CREDIT',
+    'CREDITCARD',
+    'CREDITUNION',
+    'CRICKET',
+    'CROWN',
+    'CRS',
+    'CRUISE',
+    'CRUISES',
+    'CSC',
+    'CU',
+    'CUISINELLA',
+    'CV',
+    'CW',
+    'CX',
+    'CY',
+    'CYMRU',
+    'CYOU',
+    'CZ',
+    'DABUR',
+    'DAD',
+    'DANCE',
+    'DATA',
+    'DATE',
+    'DATING',
+    'DATSUN',
+    'DAY',
+    'DCLK',
+    'DDS',
+    'DE',
+    'DEAL',
+    'DEALER',
+    'DEALS',
+    'DEGREE',
+    'DELIVERY',
+    'DELL',
+    'DELOITTE',
+    'DELTA',
+    'DEMOCRAT',
+    'DENTAL',
+    'DENTIST',
+    'DESI',
+    'DESIGN',
+    'DEV',
+    'DHL',
+    'DIAMONDS',
+    'DIET',
+    'DIGITAL',
+    'DIRECT',
+    'DIRECTORY',
+    'DISCOUNT',
+    'DISCOVER',
+    'DISH',
+    'DIY',
+    'DJ',
+    'DK',
+    'DM',
+    'DNP',
+    'DO',
+    'DOCS',
+    'DOCTOR',
+    'DODGE',
+    'DOG',
+    'DOHA',
+    'DOMAINS',
+    'DOT',
+    'DOWNLOAD',
+    'DRIVE',
+    'DTV',
+    'DUBAI',
+    'DUCK',
+    'DUNLOP',
+    'DUNS',
+    'DUPONT',
+    'DURBAN',
+    'DVAG',
+    'DVR',
+    'DZ',
+    'EARTH',
+    'EAT',
+    'EC',
+    'ECO',
+    'EDEKA',
+    'EDU',
+    'EDUCATION',
+    'EE',
+    'EG',
+    'EMAIL',
+    'EMERCK',
+    'ENERGY',
+    'ENGINEER',
+    'ENGINEERING',
+    'ENTERPRISES',
+    'EPSON',
+    'EQUIPMENT',
+    'ER',
+    'ERICSSON',
+    'ERNI',
+    'ES',
+    'ESQ',
+    'ESTATE',
+    'ESURANCE',
+    'ET',
+    'ETISALAT',
+    'EU',
+    'EUROVISION',
+    'EUS',
+    'EVENTS',
+    'EVERBANK',
+    'EXCHANGE',
+    'EXPERT',
+    'EXPOSED',
+    'EXPRESS',
+    'EXTRASPACE',
+    'FAGE',
+    'FAIL',
+    'FAIRWINDS',
+    'FAITH',
+    'FAMILY',
+    'FAN',
+    'FANS',
+    'FARM',
+    'FARMERS',
+    'FASHION',
+    'FAST',
+    'FEDEX',
+    'FEEDBACK',
+    'FERRARI',
+    'FERRERO',
+    'FI',
+    'FIAT',
+    'FIDELITY',
+    'FIDO',
+    'FILM',
+    'FINAL',
+    'FINANCE',
+    'FINANCIAL',
+    'FIRE',
+    'FIRESTONE',
+    'FIRMDALE',
+    'FISH',
+    'FISHING',
+    'FIT',
+    'FITNESS',
+    'FJ',
+    'FK',
+    'FLICKR',
+    'FLIGHTS',
+    'FLIR',
+    'FLORIST',
+    'FLOWERS',
+    'FLY',
+    'FM',
+    'FO',
+    'FOO',
+    'FOOD',
+    'FOODNETWORK',
+    'FOOTBALL',
+    'FORD',
+    'FOREX',
+    'FORSALE',
+    'FORUM',
+    'FOUNDATION',
+    'FOX',
+    'FR',
+    'FREE',
+    'FRESENIUS',
+    'FRL',
+    'FROGANS',
+    'FRONTDOOR',
+    'FRONTIER',
+    'FTR',
+    'FUJITSU',
+    'FUJIXEROX',
+    'FUN',
+    'FUND',
+    'FURNITURE',
+    'FUTBOL',
+    'FYI',
+    'GA',
+    'GAL',
+    'GALLERY',
+    'GALLO',
+    'GALLUP',
+    'GAME',
+    'GAMES',
+    'GAP',
+    'GARDEN',
+    'GB',
+    'GBIZ',
+    'GD',
+    'GDN',
+    'GE',
+    'GEA',
+    'GENT',
+    'GENTING',
+    'GEORGE',
+    'GF',
+    'GG',
+    'GGEE',
+    'GH',
+    'GI',
+    'GIFT',
+    'GIFTS',
+    'GIVES',
+    'GIVING',
+    'GL',
+    'GLADE',
+    'GLASS',
+    'GLE',
+    'GLOBAL',
+    'GLOBO',
+    'GM',
+    'GMAIL',
+    'GMBH',
+    'GMO',
+    'GMX',
+    'GN',
+    'GODADDY',
+    'GOLD',
+    'GOLDPOINT',
+    'GOLF',
+    'GOO',
+    'GOODYEAR',
+    'GOOG',
+    'GOOGLE',
+    'GOP',
+    'GOT',
+    'GOV',
+    'GP',
+    'GQ',
+    'GR',
+    'GRAINGER',
+    'GRAPHICS',
+    'GRATIS',
+    'GREEN',
+    'GRIPE',
+    'GROCERY',
+    'GROUP',
+    'GS',
+    'GT',
+    'GU',
+    'GUARDIAN',
+    'GUCCI',
+    'GUGE',
+    'GUIDE',
+    'GUITARS',
+    'GURU',
+    'GW',
+    'GY',
+    'HAIR',
+    'HAMBURG',
+    'HANGOUT',
+    'HAUS',
+    'HBO',
+    'HDFC',
+    'HDFCBANK',
+    'HEALTH',
+    'HEALTHCARE',
+    'HELP',
+    'HELSINKI',
+    'HERE',
+    'HERMES',
+    'HGTV',
+    'HIPHOP',
+    'HISAMITSU',
+    'HITACHI',
+    'HIV',
+    'HK',
+    'HKT',
+    'HM',
+    'HN',
+    'HOCKEY',
+    'HOLDINGS',
+    'HOLIDAY',
+    'HOMEDEPOT',
+    'HOMEGOODS',
+    'HOMES',
+    'HOMESENSE',
+    'HONDA',
+    'HONEYWELL',
+    'HORSE',
+    'HOSPITAL',
+    'HOST',
+    'HOSTING',
+    'HOT',
+    'HOTELES',
+    'HOTELS',
+    'HOTMAIL',
+    'HOUSE',
+    'HOW',
+    'HR',
+    'HSBC',
+    'HT',
+    'HU',
+    'HUGHES',
+    'HYATT',
+    'HYUNDAI',
+    'IBM',
+    'ICBC',
+    'ICE',
+    'ICU',
+    'ID',
+    'IE',
+    'IEEE',
+    'IFM',
+    'IKANO',
+    'IL',
+    'IM',
+    'IMAMAT',
+    'IMDB',
+    'IMMO',
+    'IMMOBILIEN',
+    'IN',
+    'INC',
+    'INDUSTRIES',
+    'INFINITI',
+    'INFO',
+    'ING',
+    'INK',
+    'INSTITUTE',
+    'INSURANCE',
+    'INSURE',
+    'INT',
+    'INTEL',
+    'INTERNATIONAL',
+    'INTUIT',
+    'INVESTMENTS',
+    'IO',
+    'IPIRANGA',
+    'IQ',
+    'IR',
+    'IRISH',
+    'IS',
+    'ISELECT',
+    'ISMAILI',
+    'IST',
+    'ISTANBUL',
+    'IT',
+    'ITAU',
+    'ITV',
+    'IVECO',
+    'JAGUAR',
+    'JAVA',
+    'JCB',
+    'JCP',
+    'JE',
+    'JEEP',
+    'JETZT',
+    'JEWELRY',
+    'JIO',
+    'JLL',
+    'JM',
+    'JMP',
+    'JNJ',
+    'JO',
+    'JOBS',
+    'JOBURG',
+    'JOT',
+    'JOY',
+    'JP',
+    'JPMORGAN',
+    'JPRS',
+    'JUEGOS',
+    'JUNIPER',
+    'KAUFEN',
+    'KDDI',
+    'KE',
+    'KERRYHOTELS',
+    'KERRYLOGISTICS',
+    'KERRYPROPERTIES',
+    'KFH',
+    'KG',
+    'KH',
+    'KI',
+    'KIA',
+    'KIM',
+    'KINDER',
+    'KINDLE',
+    'KITCHEN',
+    'KIWI',
+    'KM',
+    'KN',
+    'KOELN',
+    'KOMATSU',
+    'KOSHER',
+    'KP',
+    'KPMG',
+    'KPN',
+    'KR',
+    'KRD',
+    'KRED',
+    'KUOKGROUP',
+    'KW',
+    'KY',
+    'KYOTO',
+    'KZ',
+    'LA',
+    'LACAIXA',
+    'LADBROKES',
+    'LAMBORGHINI',
+    'LAMER',
+    'LANCASTER',
+    'LANCIA',
+    'LANCOME',
+    'LAND',
+    'LANDROVER',
+    'LANXESS',
+    'LASALLE',
+    'LAT',
+    'LATINO',
+    'LATROBE',
+    'LAW',
+    'LAWYER',
+    'LB',
+    'LC',
+    'LDS',
+    'LEASE',
+    'LECLERC',
+    'LEFRAK',
+    'LEGAL',
+    'LEGO',
+    'LEXUS',
+    'LGBT',
+    'LI',
+    'LIAISON',
+    'LIDL',
+    'LIFE',
+    'LIFEINSURANCE',
+    'LIFESTYLE',
+    'LIGHTING',
+    'LIKE',
+    'LILLY',
+    'LIMITED',
+    'LIMO',
+    'LINCOLN',
+    'LINDE',
+    'LINK',
+    'LIPSY',
+    'LIVE',
+    'LIVING',
+    'LIXIL',
+    'LK',
+    'LLC',
+    'LOAN',
+    'LOANS',
+    'LOCKER',
+    'LOCUS',
+    'LOFT',
+    'LOL',
+    'LONDON',
+    'LOTTE',
+    'LOTTO',
+    'LOVE',
+    'LPL',
+    'LPLFINANCIAL',
+    'LR',
+    'LS',
+    'LT',
+    'LTD',
+    'LTDA',
+    'LU',
+    'LUNDBECK',
+    'LUPIN',
+    'LUXE',
+    'LUXURY',
+    'LV',
+    'LY',
+    'MA',
+    'MACYS',
+    'MADRID',
+    'MAIF',
+    'MAISON',
+    'MAKEUP',
+    'MAN',
+    'MANAGEMENT',
+    'MANGO',
+    'MAP',
+    'MARKET',
+    'MARKETING',
+    'MARKETS',
+    'MARRIOTT',
+    'MARSHALLS',
+    'MASERATI',
+    'MATTEL',
+    'MBA',
+    'MC',
+    'MCKINSEY',
+    'MD',
+    'ME',
+    'MED',
+    'MEDIA',
+    'MEET',
+    'MELBOURNE',
+    'MEME',
+    'MEMORIAL',
+    'MEN',
+    'MENU',
+    'MERCKMSD',
+    'METLIFE',
+    'MG',
+    'MH',
+    'MIAMI',
+    'MICROSOFT',
+    'MIL',
+    'MINI',
+    'MINT',
+    'MIT',
+    'MITSUBISHI',
+    'MK',
+    'ML',
+    'MLB',
+    'MLS',
+    'MM',
+    'MMA',
+    'MN',
+    'MO',
+    'MOBI',
+    'MOBILE',
+    'MOBILY',
+    'MODA',
+    'MOE',
+    'MOI',
+    'MOM',
+    'MONASH',
+    'MONEY',
+    'MONSTER',
+    'MOPAR',
+    'MORMON',
+    'MORTGAGE',
+    'MOSCOW',
+    'MOTO',
+    'MOTORCYCLES',
+    'MOV',
+    'MOVIE',
+    'MOVISTAR',
+    'MP',
+    'MQ',
+    'MR',
+    'MS',
+    'MSD',
+    'MT',
+    'MTN',
+    'MTR',
+    'MU',
+    'MUSEUM',
+    'MUTUAL',
+    'MV',
+    'MW',
+    'MX',
+    'MY',
+    'MZ',
+    'NA',
+    'NAB',
+    'NADEX',
+    'NAGOYA',
+    'NAME',
+    'NATIONWIDE',
+    'NATURA',
+    'NAVY',
+    'NBA',
+    'NC',
+    'NE',
+    'NEC',
+    'NET',
+    'NETBANK',
+    'NETFLIX',
+    'NETWORK',
+    'NEUSTAR',
+    'NEW',
+    'NEWHOLLAND',
+    'NEWS',
+    'NEXT',
+    'NEXTDIRECT',
+    'NEXUS',
+    'NF',
+    'NFL',
+    'NG',
+    'NGO',
+    'NHK',
+    'NI',
+    'NICO',
+    'NIKE',
+    'NIKON',
+    'NINJA',
+    'NISSAN',
+    'NISSAY',
+    'NL',
+    'NO',
+    'NOKIA',
+    'NORTHWESTERNMUTUAL',
+    'NORTON',
+    'NOW',
+    'NOWRUZ',
+    'NOWTV',
+    'NP',
+    'NR',
+    'NRA',
+    'NRW',
+    'NTT',
+    'NU',
+    'NYC',
+    'NZ',
+    'OBI',
+    'OBSERVER',
+    'OFF',
+    'OFFICE',
+    'OKINAWA',
+    'OLAYAN',
+    'OLAYANGROUP',
+    'OLDNAVY',
+    'OLLO',
+    'OM',
+    'OMEGA',
+    'ONE',
+    'ONG',
+    'ONL',
+    'ONLINE',
+    'ONYOURSIDE',
+    'OOO',
+    'OPEN',
+    'ORACLE',
+    'ORANGE',
+    'ORG',
+    'ORGANIC',
+    'ORIGINS',
+    'OSAKA',
+    'OTSUKA',
+    'OTT',
+    'OVH',
+    'PA',
+    'PAGE',
+    'PANASONIC',
+    'PARIS',
+    'PARS',
+    'PARTNERS',
+    'PARTS',
+    'PARTY',
+    'PASSAGENS',
+    'PAY',
+    'PCCW',
+    'PE',
+    'PET',
+    'PF',
+    'PFIZER',
+    'PG',
+    'PH',
+    'PHARMACY',
+    'PHD',
+    'PHILIPS',
+    'PHONE',
+    'PHOTO',
+    'PHOTOGRAPHY',
+    'PHOTOS',
+    'PHYSIO',
+    'PIAGET',
+    'PICS',
+    'PICTET',
+    'PICTURES',
+    'PID',
+    'PIN',
+    'PING',
+    'PINK',
+    'PIONEER',
+    'PIZZA',
+    'PK',
+    'PL',
+    'PLACE',
+    'PLAY',
+    'PLAYSTATION',
+    'PLUMBING',
+    'PLUS',
+    'PM',
+    'PN',
+    'PNC',
+    'POHL',
+    'POKER',
+    'POLITIE',
+    'PORN',
+    'POST',
+    'PR',
+    'PRAMERICA',
+    'PRAXI',
+    'PRESS',
+    'PRIME',
+    'PRO',
+    'PROD',
+    'PRODUCTIONS',
+    'PROF',
+    'PROGRESSIVE',
+    'PROMO',
+    'PROPERTIES',
+    'PROPERTY',
+    'PROTECTION',
+    'PRU',
+    'PRUDENTIAL',
+    'PS',
+    'PT',
+    'PUB',
+    'PW',
+    'PWC',
+    'PY',
+    'QA',
+    'QPON',
+    'QUEBEC',
+    'QUEST',
+    'QVC',
+    'RACING',
+    'RADIO',
+    'RAID',
+    'RE',
+    'READ',
+    'REALESTATE',
+    'REALTOR',
+    'REALTY',
+    'RECIPES',
+    'RED',
+    'REDSTONE',
+    'REDUMBRELLA',
+    'REHAB',
+    'REISE',
+    'REISEN',
+    'REIT',
+    'RELIANCE',
+    'REN',
+    'RENT',
+    'RENTALS',
+    'REPAIR',
+    'REPORT',
+    'REPUBLICAN',
+    'REST',
+    'RESTAURANT',
+    'REVIEW',
+    'REVIEWS',
+    'REXROTH',
+    'RICH',
+    'RICHARDLI',
+    'RICOH',
+    'RIGHTATHOME',
+    'RIL',
+    'RIO',
+    'RIP',
+    'RMIT',
+    'RO',
+    'ROCHER',
+    'ROCKS',
+    'RODEO',
+    'ROGERS',
+    'ROOM',
+    'RS',
+    'RSVP',
+    'RU',
+    'RUGBY',
+    'RUHR',
+    'RUN',
+    'RW',
+    'RWE',
+    'RYUKYU',
+    'SA',
+    'SAARLAND',
+    'SAFE',
+    'SAFETY',
+    'SAKURA',
+    'SALE',
+    'SALON',
+    'SAMSCLUB',
+    'SAMSUNG',
+    'SANDVIK',
+    'SANDVIKCOROMANT',
+    'SANOFI',
+    'SAP',
+    'SARL',
+    'SAS',
+    'SAVE',
+    'SAXO',
+    'SB',
+    'SBI',
+    'SBS',
+    'SC',
+    'SCA',
+    'SCB',
+    'SCHAEFFLER',
+    'SCHMIDT',
+    'SCHOLARSHIPS',
+    'SCHOOL',
+    'SCHULE',
+    'SCHWARZ',
+    'SCIENCE',
+    'SCJOHNSON',
+    'SCOR',
+    'SCOT',
+    'SD',
+    'SE',
+    'SEARCH',
+    'SEAT',
+    'SECURE',
+    'SECURITY',
+    'SEEK',
+    'SELECT',
+    'SENER',
+    'SERVICES',
+    'SES',
+    'SEVEN',
+    'SEW',
+    'SEX',
+    'SEXY',
+    'SFR',
+    'SG',
+    'SH',
+    'SHANGRILA',
+    'SHARP',
+    'SHAW',
+    'SHELL',
+    'SHIA',
+    'SHIKSHA',
+    'SHOES',
+    'SHOP',
+    'SHOPPING',
+    'SHOUJI',
+    'SHOW',
+    'SHOWTIME',
+    'SHRIRAM',
+    'SI',
+    'SILK',
+    'SINA',
+    'SINGLES',
+    'SITE',
+    'SJ',
+    'SK',
+    'SKI',
+    'SKIN',
+    'SKY',
+    'SKYPE',
+    'SL',
+    'SLING',
+    'SM',
+    'SMART',
+    'SMILE',
+    'SN',
+    'SNCF',
+    'SO',
+    'SOCCER',
+    'SOCIAL',
+    'SOFTBANK',
+    'SOFTWARE',
+    'SOHU',
+    'SOLAR',
+    'SOLUTIONS',
+    'SONG',
+    'SONY',
+    'SOY',
+    'SPACE',
+    'SPORT',
+    'SPOT',
+    'SPREADBETTING',
+    'SR',
+    'SRL',
+    'SRT',
+    'SS',
+    'ST',
+    'STADA',
+    'STAPLES',
+    'STAR',
+    'STARHUB',
+    'STATEBANK',
+    'STATEFARM',
+    'STC',
+    'STCGROUP',
+    'STOCKHOLM',
+    'STORAGE',
+    'STORE',
+    'STREAM',
+    'STUDIO',
+    'STUDY',
+    'STYLE',
+    'SU',
+    'SUCKS',
+    'SUPPLIES',
+    'SUPPLY',
+    'SUPPORT',
+    'SURF',
+    'SURGERY',
+    'SUZUKI',
+    'SV',
+    'SWATCH',
+    'SWIFTCOVER',
+    'SWISS',
+    'SX',
+    'SY',
+    'SYDNEY',
+    'SYMANTEC',
+    'SYSTEMS',
+    'SZ',
+    'TAB',
+    'TAIPEI',
+    'TALK',
+    'TAOBAO',
+    'TARGET',
+    'TATAMOTORS',
+    'TATAR',
+    'TATTOO',
+    'TAX',
+    'TAXI',
+    'TC',
+    'TCI',
+    'TD',
+    'TDK',
+    'TEAM',
+    'TECH',
+    'TECHNOLOGY',
+    'TEL',
+    'TELEFONICA',
+    'TEMASEK',
+    'TENNIS',
+    'TEVA',
+    'TF',
+    'TG',
+    'TH',
+    'THD',
+    'THEATER',
+    'THEATRE',
+    'TIAA',
+    'TICKETS',
+    'TIENDA',
+    'TIFFANY',
+    'TIPS',
+    'TIRES',
+    'TIROL',
+    'TJ',
+    'TJMAXX',
+    'TJX',
+    'TK',
+    'TKMAXX',
+    'TL',
+    'TM',
+    'TMALL',
+    'TN',
+    'TO',
+    'TODAY',
+    'TOKYO',
+    'TOOLS',
+    'TOP',
+    'TORAY',
+    'TOSHIBA',
+    'TOTAL',
+    'TOURS',
+    'TOWN',
+    'TOYOTA',
+    'TOYS',
+    'TR',
+    'TRADE',
+    'TRADING',
+    'TRAINING',
+    'TRAVEL',
+    'TRAVELCHANNEL',
+    'TRAVELERS',
+    'TRAVELERSINSURANCE',
+    'TRUST',
+    'TRV',
+    'TT',
+    'TUBE',
+    'TUI',
+    'TUNES',
+    'TUSHU',
+    'TV',
+    'TVS',
+    'TW',
+    'TZ',
+    'UA',
+    'UBANK',
+    'UBS',
+    'UCONNECT',
+    'UG',
+    'UK',
+    'UNICOM',
+    'UNIVERSITY',
+    'UNO',
+    'UOL',
+    'UPS',
+    'US',
+    'UY',
+    'UZ',
+    'VA',
+    'VACATIONS',
+    'VANA',
+    'VANGUARD',
+    'VC',
+    'VE',
+    'VEGAS',
+    'VENTURES',
+    'VERISIGN',
+    'VERSICHERUNG',
+    'VET',
+    'VG',
+    'VI',
+    'VIAJES',
+    'VIDEO',
+    'VIG',
+    'VIKING',
+    'VILLAS',
+    'VIN',
+    'VIP',
+    'VIRGIN',
+    'VISA',
+    'VISION',
+    'VISTAPRINT',
+    'VIVA',
+    'VIVO',
+    'VLAANDEREN',
+    'VN',
+    'VODKA',
+    'VOLKSWAGEN',
+    'VOLVO',
+    'VOTE',
+    'VOTING',
+    'VOTO',
+    'VOYAGE',
+    'VU',
+    'VUELOS',
+    'WALES',
+    'WALMART',
+    'WALTER',
+    'WANG',
+    'WANGGOU',
+    'WARMAN',
+    'WATCH',
+    'WATCHES',
+    'WEATHER',
+    'WEATHERCHANNEL',
+    'WEBCAM',
+    'WEBER',
+    'WEBSITE',
+    'WED',
+    'WEDDING',
+    'WEIBO',
+    'WEIR',
+    'WF',
+    'WHOSWHO',
+    'WIEN',
+    'WIKI',
+    'WILLIAMHILL',
+    'WIN',
+    'WINDOWS',
+    'WINE',
+    'WINNERS',
+    'WME',
+    'WOLTERSKLUWER',
+    'WOODSIDE',
+    'WORK',
+    'WORKS',
+    'WORLD',
+    'WOW',
+    'WS',
+    'WTC',
+    'WTF',
+    'XBOX',
+    'XEROX',
+    'XFINITY',
+    'XIHUAN',
+    'XIN',
+    'XN--11B4C3D',
+    'XN--1CK2E1B',
+    'XN--1QQW23A',
+    'XN--2SCRJ9C',
+    'XN--30RR7Y',
+    'XN--3BST00M',
+    'XN--3DS443G',
+    'XN--3E0B707E',
+    'XN--3HCRJ9C',
+    'XN--3OQ18VL8PN36A',
+    'XN--3PXU8K',
+    'XN--42C2D9A',
+    'XN--45BR5CYL',
+    'XN--45BRJ9C',
+    'XN--45Q11C',
+    'XN--4GBRIM',
+    'XN--54B7FTA0CC',
+    'XN--55QW42G',
+    'XN--55QX5D',
+    'XN--5SU34J936BGSG',
+    'XN--5TZM5G',
+    'XN--6FRZ82G',
+    'XN--6QQ986B3XL',
+    'XN--80ADXHKS',
+    'XN--80AO21A',
+    'XN--80AQECDR1A',
+    'XN--80ASEHDB',
+    'XN--80ASWG',
+    'XN--8Y0A063A',
+    'XN--90A3AC',
+    'XN--90AE',
+    'XN--90AIS',
+    'XN--9DBQ2A',
+    'XN--9ET52U',
+    'XN--9KRT00A',
+    'XN--B4W605FERD',
+    'XN--BCK1B9A5DRE4C',
+    'XN--C1AVG',
+    'XN--C2BR7G',
+    'XN--CCK2B3B',
+    'XN--CG4BKI',
+    'XN--CLCHC0EA0B2G2A9GCD',
+    'XN--CZR694B',
+    'XN--CZRS0T',
+    'XN--CZRU2D',
+    'XN--D1ACJ3B',
+    'XN--D1ALF',
+    'XN--E1A4C',
+    'XN--ECKVDTC9D',
+    'XN--EFVY88H',
+    'XN--ESTV75G',
+    'XN--FCT429K',
+    'XN--FHBEI',
+    'XN--FIQ228C5HS',
+    'XN--FIQ64B',
+    'XN--FIQS8S',
+    'XN--FIQZ9S',
+    'XN--FJQ720A',
+    'XN--FLW351E',
+    'XN--FPCRJ9C3D',
+    'XN--FZC2C9E2C',
+    'XN--FZYS8D69UVGM',
+    'XN--G2XX48C',
+    'XN--GCKR3F0F',
+    'XN--GECRJ9C',
+    'XN--GK3AT1E',
+    'XN--H2BREG3EVE',
+    'XN--H2BRJ9C',
+    'XN--H2BRJ9C8C',
+    'XN--HXT814E',
+    'XN--I1B6B1A6A2E',
+    'XN--IMR513N',
+    'XN--IO0A7I',
+    'XN--J1AEF',
+    'XN--J1AMH',
+    'XN--J6W193G',
+    'XN--JLQ61U9W7B',
+    'XN--JVR189M',
+    'XN--KCRX77D1X4A',
+    'XN--KPRW13D',
+    'XN--KPRY57D',
+    'XN--KPU716F',
+    'XN--KPUT3I',
+    'XN--L1ACC',
+    'XN--LGBBAT1AD8J',
+    'XN--MGB9AWBF',
+    'XN--MGBA3A3EJT',
+    'XN--MGBA3A4F16A',
+    'XN--MGBA7C0BBN0A',
+    'XN--MGBAAKC7DVF',
+    'XN--MGBAAM7A8H',
+    'XN--MGBAB2BD',
+    'XN--MGBAH1A3HJKRD',
+    'XN--MGBAI9AZGQP6J',
+    'XN--MGBAYH7GPA',
+    'XN--MGBB9FBPOB',
+    'XN--MGBBH1A',
+    'XN--MGBBH1A71E',
+    'XN--MGBC0A9AZCG',
+    'XN--MGBCA7DZDO',
+    'XN--MGBERP4A5D4AR',
+    'XN--MGBGU82A',
+    'XN--MGBI4ECEXP',
+    'XN--MGBPL2FH',
+    'XN--MGBT3DHD',
+    'XN--MGBTX2B',
+    'XN--MGBX4CD0AB',
+    'XN--MIX891F',
+    'XN--MK1BU44C',
+    'XN--MXTQ1M',
+    'XN--NGBC5AZD',
+    'XN--NGBE9E0A',
+    'XN--NGBRX',
+    'XN--NODE',
+    'XN--NQV7F',
+    'XN--NQV7FS00EMA',
+    'XN--NYQY26A',
+    'XN--O3CW4H',
+    'XN--OGBPF8FL',
+    'XN--OTU796D',
+    'XN--P1ACF',
+    'XN--P1AI',
+    'XN--PBT977C',
+    'XN--PGBS0DH',
+    'XN--PSSY2U',
+    'XN--Q9JYB4C',
+    'XN--QCKA1PMC',
+    'XN--QXAM',
+    'XN--RHQV96G',
+    'XN--ROVU88B',
+    'XN--RVC1E0AM3E',
+    'XN--S9BRJ9C',
+    'XN--SES554G',
+    'XN--T60B56A',
+    'XN--TCKWE',
+    'XN--TIQ49XQYJ',
+    'XN--UNUP4Y',
+    'XN--VERMGENSBERATER-CTB',
+    'XN--VERMGENSBERATUNG-PWB',
+    'XN--VHQUV',
+    'XN--VUQ861B',
+    'XN--W4R85EL8FHU5DNRA',
+    'XN--W4RS40L',
+    'XN--WGBH1C',
+    'XN--WGBL6A',
+    'XN--XHQ521B',
+    'XN--XKC2AL3HYE2A',
+    'XN--XKC2DL3A5EE0H',
+    'XN--Y9A3AQ',
+    'XN--YFRO4I67O',
+    'XN--YGBI2AMMX',
+    'XN--ZFR164B',
+    'XXX',
+    'XYZ',
+    'YACHTS',
+    'YAHOO',
+    'YAMAXUN',
+    'YANDEX',
+    'YE',
+    'YODOBASHI',
+    'YOGA',
+    'YOKOHAMA',
+    'YOU',
+    'YOUTUBE',
+    'YT',
+    'YUN',
+    'ZA',
+    'ZAPPOS',
+    'ZARA',
+    'ZERO',
+    'ZIP',
+    'ZM',
+    'ZONE',
+    'ZUERICH',
+    'ZW'
+];
+
+
+// Keep as upper-case to make updating from source easier
+
+module.exports = new Set(internals.tlds.map((tld) => tld.toLowerCase()));
+
+},{}],4:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+// Load modules
+
+
+// Declare internals
+
+const internals = {
+    arrayType: Symbol('array'),
+    bufferType: Symbol('buffer'),
+    dateType: Symbol('date'),
+    errorType: Symbol('error'),
+    genericType: Symbol('generic'),
+    mapType: Symbol('map'),
+    regexType: Symbol('regex'),
+    setType: Symbol('set'),
+    weakMapType: Symbol('weak-map'),
+    weakSetType: Symbol('weak-set'),
+    mismatched: Symbol('mismatched')
+};
+
+
+internals.typeMap = {
+    '[object Array]': internals.arrayType,
+    '[object Date]': internals.dateType,
+    '[object Error]': internals.errorType,
+    '[object Map]': internals.mapType,
+    '[object RegExp]': internals.regexType,
+    '[object Set]': internals.setType,
+    '[object WeakMap]': internals.weakMapType,
+    '[object WeakSet]': internals.weakSetType
+};
+
+
+internals.SeenEntry = class {
+
+    constructor(obj, ref) {
+
+        this.obj = obj;
+        this.ref = ref;
+    }
+
+    isSame(obj, ref) {
+
+        return this.obj === obj && this.ref === ref;
+    }
+};
+
+
+internals.getInternalType = function (obj) {
+
+    const { typeMap, bufferType, genericType } = internals;
+
+    if (obj instanceof Buffer) {
+        return bufferType;
+    }
+
+    const objName = Object.prototype.toString.call(obj);
+    return typeMap[objName] || genericType;
+};
+
+
+internals.getSharedType = function (obj, ref, checkPrototype) {
+
+    if (checkPrototype) {
+        if (Object.getPrototypeOf(obj) !== Object.getPrototypeOf(ref)) {
+            return internals.mismatched;
+        }
+
+        return internals.getInternalType(obj);
+    }
+
+    const type = internals.getInternalType(obj);
+    if (type !== internals.getInternalType(ref)) {
+        return internals.mismatched;
+    }
+
+    return type;
+};
+
+
+internals.valueOf = function (obj) {
+
+    const objValueOf = obj.valueOf;
+    if (objValueOf === undefined) {
+        return obj;
+    }
+
+    try {
+        return objValueOf.call(obj);
+    }
+    catch (err) {
+        return err;
+    }
+};
+
+
+internals.hasOwnEnumerableProperty = function (obj, key) {
+
+    return Object.prototype.propertyIsEnumerable.call(obj, key);
+};
+
+
+internals.isSetSimpleEqual = function (obj, ref) {
+
+    for (const entry of obj) {
+        if (!ref.has(entry)) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
+
+internals.isDeepEqualObj = function (instanceType, obj, ref, options, seen) {
+
+    const { isDeepEqual, valueOf, hasOwnEnumerableProperty } = internals;
+    const { keys, getOwnPropertySymbols } = Object;
+
+    if (instanceType === internals.arrayType) {
+        if (options.part) {
+            // Check if any index match any other index
+
+            for (let i = 0; i < obj.length; ++i) {
+                const objValue = obj[i];
+                for (let j = 0; j < ref.length; ++j) {
+                    if (isDeepEqual(objValue, ref[j], options, seen)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        else {
+            if (obj.length !== ref.length) {
+                return false;
+            }
+
+            for (let i = 0; i < obj.length; ++i) {
+                if (!isDeepEqual(obj[i], ref[i], options, seen)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+    else if (instanceType === internals.setType) {
+        if (obj.size !== ref.size) {
+            return false;
+        }
+
+        if (!internals.isSetSimpleEqual(obj, ref)) {
+
+            // Check for deep equality
+
+            const ref2 = new Set(ref);
+            for (const objEntry of obj) {
+                if (ref2.delete(objEntry)) {
+                    continue;
+                }
+
+                let found = false;
+                for (const refEntry of ref2) {
+                    if (isDeepEqual(objEntry, refEntry, options, seen)) {
+                        ref2.delete(refEntry);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    return false;
+                }
+            }
+        }
+    }
+    else if (instanceType === internals.mapType) {
+        if (obj.size !== ref.size) {
+            return false;
+        }
+
+        for (const [key, value] of obj) {
+            if (value === undefined && !ref.has(key)) {
+                return false;
+            }
+
+            if (!isDeepEqual(value, ref.get(key), options, seen)) {
+                return false;
+            }
+        }
+    }
+    else if (instanceType === internals.errorType) {
+        // Always check name and message
+
+        if (obj.name !== ref.name || obj.message !== ref.message) {
+            return false;
+        }
+    }
+
+    // Check .valueOf()
+
+    const valueOfObj = valueOf(obj);
+    const valueOfRef = valueOf(ref);
+    if (!(obj === valueOfObj && ref === valueOfRef) &&
+        !isDeepEqual(valueOfObj, valueOfRef, options, seen)) {
+        return false;
+    }
+
+    // Check properties
+
+    const objKeys = keys(obj);
+    if (!options.part && objKeys.length !== keys(ref).length) {
+        return false;
+    }
+
+    for (let i = 0; i < objKeys.length; ++i) {
+        const key = objKeys[i];
+
+        if (!hasOwnEnumerableProperty(ref, key)) {
+            return false;
+        }
+
+        if (!isDeepEqual(obj[key], ref[key], options, seen)) {
+            return false;
+        }
+    }
+
+    // Check symbols
+
+    if (options.symbols) {
+        const objSymbols = getOwnPropertySymbols(obj);
+        const refSymbols = new Set(getOwnPropertySymbols(ref));
+
+        for (let i = 0; i < objSymbols.length; ++i) {
+            const key = objSymbols[i];
+
+            if (hasOwnEnumerableProperty(obj, key)) {
+                if (!hasOwnEnumerableProperty(ref, key)) {
+                    return false;
+                }
+
+                if (!isDeepEqual(obj[key], ref[key], options, seen)) {
+                    return false;
+                }
+            }
+            else if (hasOwnEnumerableProperty(ref, key)) {
+                return false;
+            }
+
+            refSymbols.delete(key);
+        }
+
+        for (const key of refSymbols) {
+            if (hasOwnEnumerableProperty(ref, key)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+};
+
+
+internals.isDeepEqual = function (obj, ref, options, seen) {
+
+    if (obj === ref) {                                      // Copied from Deep-eql, copyright(c) 2013 Jake Luer, jake@alogicalparadox.com, MIT Licensed, https://github.com/chaijs/deep-eql
+        return obj !== 0 || 1 / obj === 1 / ref;
+    }
+
+    const type = typeof obj;
+
+    if (type !== typeof ref) {
+        return false;
+    }
+
+    if (type !== 'object' ||
+        obj === null ||
+        ref === null) {
+
+        return obj !== obj && ref !== ref;                  // NaN
+    }
+
+    const instanceType = internals.getSharedType(obj, ref, !!options.prototype);
+    switch (instanceType) {
+        case internals.bufferType:
+            return Buffer.prototype.equals.call(obj, ref);
+        case internals.regexType:
+            return obj.toString() === ref.toString();
+        case internals.mismatched:
+            return false;
+    }
+
+    for (let i = seen.length - 1; i >= 0; --i) {
+        if (seen[i].isSame(obj, ref)) {
+            return true;                                    // If previous comparison failed, it would have stopped execution
+        }
+    }
+
+    seen.push(new internals.SeenEntry(obj, ref));
+    try {
+        return !!internals.isDeepEqualObj(instanceType, obj, ref, options, seen);
+    }
+    finally {
+        seen.pop();
+    }
+};
+
+
+module.exports = function (obj, ref, options) {
+
+    options = options || { prototype: true };
+
+    return !!internals.isDeepEqual(obj, ref, options, []);
+};
+
+}).call(this,require("buffer").Buffer)
+},{"buffer":94}],5:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+// Declare internals
+
+const internals = {};
+
+
+exports.escapeHtml = function (input) {
+
+    if (!input) {
+        return '';
+    }
+
+    let escaped = '';
+
+    for (let i = 0; i < input.length; ++i) {
+
+        const charCode = input.charCodeAt(i);
+
+        if (internals.isSafe(charCode)) {
+            escaped += input[i];
+        }
+        else {
+            escaped += internals.escapeHtmlChar(charCode);
+        }
+    }
+
+    return escaped;
+};
+
+
+exports.escapeJson = function (input) {
+
+    if (!input) {
+        return '';
+    }
+
+    const lessThan = 0x3C;
+    const greaterThan = 0x3E;
+    const andSymbol = 0x26;
+    const lineSeperator = 0x2028;
+
+    // replace method
+    let charCode;
+    return input.replace(/[<>&\u2028\u2029]/g, (match) => {
+
+        charCode = match.charCodeAt(0);
+
+        if (charCode === lessThan) {
+            return '\\u003c';
+        }
+
+        if (charCode === greaterThan) {
+            return '\\u003e';
+        }
+
+        if (charCode === andSymbol) {
+            return '\\u0026';
+        }
+
+        if (charCode === lineSeperator) {
+            return '\\u2028';
+        }
+
+        return '\\u2029';
+    });
+};
+
+
+internals.escapeHtmlChar = function (charCode) {
+
+    const namedEscape = internals.namedHtml[charCode];
+    if (typeof namedEscape !== 'undefined') {
+        return namedEscape;
+    }
+
+    if (charCode >= 256) {
+        return '&#' + charCode + ';';
+    }
+
+    const hexValue = Buffer.from(String.fromCharCode(charCode), 'ascii').toString('hex');
+    return `&#x${hexValue};`;
+};
+
+
+internals.isSafe = function (charCode) {
+
+    return (typeof internals.safeCharCodes[charCode] !== 'undefined');
+};
+
+
+internals.namedHtml = {
+    '38': '&amp;',
+    '60': '&lt;',
+    '62': '&gt;',
+    '34': '&quot;',
+    '160': '&nbsp;',
+    '162': '&cent;',
+    '163': '&pound;',
+    '164': '&curren;',
+    '169': '&copy;',
+    '174': '&reg;'
+};
+
+
+internals.safeCharCodes = (function () {
+
+    const safe = {};
+
+    for (let i = 32; i < 123; ++i) {
+
+        if ((i >= 97) ||                    // a-z
+            (i >= 65 && i <= 90) ||         // A-Z
+            (i >= 48 && i <= 57) ||         // 0-9
+            i === 32 ||                     // space
+            i === 46 ||                     // .
+            i === 44 ||                     // ,
+            i === 45 ||                     // -
+            i === 58 ||                     // :
+            i === 95) {                     // _
+
+            safe[i] = null;
+        }
+    }
+
+    return safe;
+}());
+
+}).call(this,require("buffer").Buffer)
+},{"buffer":94}],6:[function(require,module,exports){
+(function (process,Buffer){
+'use strict';
+
+// Load modules
+
+const Assert = require('assert');
+const Crypto = require('crypto');
+const Path = require('path');
+
+const DeepEqual = require('./deep-equal');
+const Escape = require('./escape');
+
+
+// Declare internals
+
+const internals = {};
+
+
+// Deep object or array comparison
+
+exports.deepEqual = DeepEqual;
+
+
+// Clone object or array
+
+exports.clone = function (obj, options = {}, _seen = null) {
+
+    if (typeof obj !== 'object' ||
+        obj === null) {
+
+        return obj;
+    }
+
+    const seen = _seen || new Map();
+
+    const lookup = seen.get(obj);
+    if (lookup) {
+        return lookup;
+    }
+
+    let newObj;
+    let cloneDeep = false;
+    const isArray = Array.isArray(obj);
+
+    if (!isArray) {
+        if (Buffer.isBuffer(obj)) {
+            newObj = Buffer.from(obj);
+        }
+        else if (obj instanceof Date) {
+            newObj = new Date(obj.getTime());
+        }
+        else if (obj instanceof RegExp) {
+            newObj = new RegExp(obj);
+        }
+        else {
+            if (options.prototype !== false) {          // Defaults to true
+                const proto = Object.getPrototypeOf(obj);
+                if (proto &&
+                    proto.isImmutable) {
+
+                    newObj = obj;
+                }
+                else {
+                    newObj = Object.create(proto);
+                    cloneDeep = true;
+                }
+            }
+            else {
+                newObj = {};
+                cloneDeep = true;
+            }
+        }
+    }
+    else {
+        newObj = [];
+        cloneDeep = true;
+    }
+
+    seen.set(obj, newObj);
+
+    if (cloneDeep) {
+        const keys = internals.keys(obj, options);
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+
+            if (isArray && key === 'length') {
+                continue;
+            }
+
+            const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+            if (descriptor &&
+                (descriptor.get ||
+                    descriptor.set)) {
+
+                Object.defineProperty(newObj, key, descriptor);
+            }
+            else {
+                Object.defineProperty(newObj, key, {
+                    enumerable: descriptor ? descriptor.enumerable : true,
+                    writable: true,
+                    configurable: true,
+                    value: exports.clone(obj[key], options, seen)
+                });
+            }
+        }
+
+        if (isArray) {
+            newObj.length = obj.length;
+        }
+    }
+
+    return newObj;
+};
+
+
+internals.keys = function (obj, options = {}) {
+
+    return options.symbols ? Reflect.ownKeys(obj) : Object.getOwnPropertyNames(obj);
+};
+
+
+// Merge all the properties of source into target, source wins in conflict, and by default null and undefined from source are applied
+
+exports.merge = function (target, source, isNullOverride /* = true */, isMergeArrays /* = true */) {
+
+    exports.assert(target && typeof target === 'object', 'Invalid target value: must be an object');
+    exports.assert(source === null || source === undefined || typeof source === 'object', 'Invalid source value: must be null, undefined, or an object');
+
+    if (!source) {
+        return target;
+    }
+
+    if (Array.isArray(source)) {
+        exports.assert(Array.isArray(target), 'Cannot merge array onto an object');
+        if (isMergeArrays === false) {                                                  // isMergeArrays defaults to true
+            target.length = 0;                                                          // Must not change target assignment
+        }
+
+        for (let i = 0; i < source.length; ++i) {
+            target.push(exports.clone(source[i]));
+        }
+
+        return target;
+    }
+
+    const keys = internals.keys(source);
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        if (key === '__proto__' ||
+            !Object.prototype.propertyIsEnumerable.call(source, key)) {
+
+            continue;
+        }
+
+        const value = source[key];
+        if (value &&
+            typeof value === 'object') {
+
+            if (!target[key] ||
+                typeof target[key] !== 'object' ||
+                (Array.isArray(target[key]) !== Array.isArray(value)) ||
+                value instanceof Date ||
+                Buffer.isBuffer(value) ||
+                value instanceof RegExp) {
+
+                target[key] = exports.clone(value);
+            }
+            else {
+                exports.merge(target[key], value, isNullOverride, isMergeArrays);
+            }
+        }
+        else {
+            if (value !== null &&
+                value !== undefined) {                              // Explicit to preserve empty strings
+
+                target[key] = value;
+            }
+            else if (isNullOverride !== false) {                    // Defaults to true
+                target[key] = value;
+            }
+        }
+    }
+
+    return target;
+};
+
+
+// Apply options to a copy of the defaults
+
+exports.applyToDefaults = function (defaults, options, isNullOverride) {
+
+    exports.assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
+    exports.assert(!options || options === true || typeof options === 'object', 'Invalid options value: must be true, falsy or an object');
+
+    if (!options) {                                                 // If no options, return null
+        return null;
+    }
+
+    const copy = exports.clone(defaults);
+
+    if (options === true) {                                         // If options is set to true, use defaults
+        return copy;
+    }
+
+    return exports.merge(copy, options, isNullOverride === true, false);
+};
+
+
+// Clone an object except for the listed keys which are shallow copied
+
+exports.cloneWithShallow = function (source, keys, options) {
+
+    if (!source ||
+        typeof source !== 'object') {
+
+        return source;
+    }
+
+    const storage = internals.store(source, keys);    // Move shallow copy items to storage
+    const copy = exports.clone(source, options);      // Deep copy the rest
+    internals.restore(copy, source, storage);         // Shallow copy the stored items and restore
+    return copy;
+};
+
+
+internals.store = function (source, keys) {
+
+    const storage = new Map();
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        const value = exports.reach(source, key);
+        if (typeof value === 'object' ||
+            typeof value === 'function') {
+
+            storage.set(key, value);
+            internals.reachSet(source, key, undefined);
+        }
+    }
+
+    return storage;
+};
+
+
+internals.restore = function (copy, source, storage) {
+
+    for (const [key, value] of storage) {
+        internals.reachSet(copy, key, value);
+        internals.reachSet(source, key, value);
+    }
+};
+
+
+internals.reachSet = function (obj, key, value) {
+
+    const path = Array.isArray(key) ? key : key.split('.');
+    let ref = obj;
+    for (let i = 0; i < path.length; ++i) {
+        const segment = path[i];
+        if (i + 1 === path.length) {
+            ref[segment] = value;
+        }
+
+        ref = ref[segment];
+    }
+};
+
+
+// Apply options to defaults except for the listed keys which are shallow copied from option without merging
+
+exports.applyToDefaultsWithShallow = function (defaults, options, keys) {
+
+    exports.assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
+    exports.assert(!options || options === true || typeof options === 'object', 'Invalid options value: must be true, falsy or an object');
+    exports.assert(keys && Array.isArray(keys), 'Invalid keys');
+
+    if (!options) {                                                 // If no options, return null
+        return null;
+    }
+
+    const copy = exports.cloneWithShallow(defaults, keys);
+
+    if (options === true) {                                         // If options is set to true, use defaults
+        return copy;
+    }
+
+    const storage = internals.store(options, keys);     // Move shallow copy items to storage
+    exports.merge(copy, options, false, false);         // Deep copy the rest
+    internals.restore(copy, options, storage);          // Shallow copy the stored items and restore
+    return copy;
+};
+
+
+// Find the common unique items in two arrays
+
+exports.intersect = function (array1, array2, justFirst) {
+
+    if (!array1 ||
+        !array2) {
+
+        return (justFirst ? null : []);
+    }
+
+    const common = [];
+    const hash = (Array.isArray(array1) ? new Set(array1) : array1);
+    const found = new Set();
+    for (const value of array2) {
+        if (internals.has(hash, value) &&
+            !found.has(value)) {
+
+            if (justFirst) {
+                return value;
+            }
+
+            common.push(value);
+            found.add(value);
+        }
+    }
+
+    return (justFirst ? null : common);
+};
+
+
+internals.has = function (ref, key) {
+
+    if (typeof ref.has === 'function') {
+        return ref.has(key);
+    }
+
+    return ref[key] !== undefined;
+};
+
+
+// Test if the reference contains the values
+
+exports.contain = function (ref, values, options = {}) {        // options: { deep, once, only, part, symbols }
+
+    /*
+        string -> string(s)
+        array -> item(s)
+        object -> key(s)
+        object -> object (key:value)
+    */
+
+    let valuePairs = null;
+    if (typeof ref === 'object' &&
+        typeof values === 'object' &&
+        !Array.isArray(ref) &&
+        !Array.isArray(values)) {
+
+        valuePairs = values;
+        const symbols = Object.getOwnPropertySymbols(values).filter(Object.prototype.propertyIsEnumerable.bind(values));
+        values = [...Object.keys(values), ...symbols];
+    }
+    else {
+        values = [].concat(values);
+    }
+
+    exports.assert(typeof ref === 'string' || typeof ref === 'object', 'Reference must be string or an object');
+    exports.assert(values.length, 'Values array cannot be empty');
+
+    let compare;
+    let compareFlags;
+    if (options.deep) {
+        compare = exports.deepEqual;
+
+        const hasOnly = options.hasOwnProperty('only');
+        const hasPart = options.hasOwnProperty('part');
+
+        compareFlags = {
+            prototype: hasOnly ? options.only : hasPart ? !options.part : false,
+            part: hasOnly ? !options.only : hasPart ? options.part : false
+        };
+    }
+    else {
+        compare = (a, b) => a === b;
+    }
+
+    let misses = false;
+    const matches = new Array(values.length);
+    for (let i = 0; i < matches.length; ++i) {
+        matches[i] = 0;
+    }
+
+    if (typeof ref === 'string') {
+        let pattern = '(';
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+            exports.assert(typeof value === 'string', 'Cannot compare string reference to non-string value');
+            pattern += (i ? '|' : '') + exports.escapeRegex(value);
+        }
+
+        const regex = new RegExp(pattern + ')', 'g');
+        const leftovers = ref.replace(regex, ($0, $1) => {
+
+            const index = values.indexOf($1);
+            ++matches[index];
+            return '';          // Remove from string
+        });
+
+        misses = !!leftovers;
+    }
+    else if (Array.isArray(ref)) {
+        const onlyOnce = !!(options.only && options.once);
+        if (onlyOnce && ref.length !== values.length) {
+            return false;
+        }
+
+        for (let i = 0; i < ref.length; ++i) {
+            let matched = false;
+            for (let j = 0; j < values.length && matched === false; ++j) {
+                if (!onlyOnce || matches[j] === 0) {
+                    matched = compare(values[j], ref[i], compareFlags) && j;
+                }
+            }
+
+            if (matched !== false) {
+                ++matches[matched];
+            }
+            else {
+                misses = true;
+            }
+        }
+    }
+    else {
+        const keys = internals.keys(ref, options);
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+            const pos = values.indexOf(key);
+            if (pos !== -1) {
+                if (valuePairs &&
+                    !compare(valuePairs[key], ref[key], compareFlags)) {
+
+                    return false;
+                }
+
+                ++matches[pos];
+            }
+            else {
+                misses = true;
+            }
+        }
+    }
+
+    if (options.only) {
+        if (misses || !options.once) {
+            return !misses;
+        }
+    }
+
+    let result = false;
+    for (let i = 0; i < matches.length; ++i) {
+        result = result || !!matches[i];
+        if ((options.once && matches[i] > 1) ||
+            (!options.part && !matches[i])) {
+
+            return false;
+        }
+    }
+
+    return result;
+};
+
+
+// Flatten array
+
+exports.flatten = function (array, target) {
+
+    const result = target || [];
+
+    for (let i = 0; i < array.length; ++i) {
+        if (Array.isArray(array[i])) {
+            exports.flatten(array[i], result);
+        }
+        else {
+            result.push(array[i]);
+        }
+    }
+
+    return result;
+};
+
+
+// Convert an object key chain string ('a.b.c') to reference (object[a][b][c])
+
+exports.reach = function (obj, chain, options) {
+
+    if (chain === false ||
+        chain === null ||
+        typeof chain === 'undefined') {
+
+        return obj;
+    }
+
+    options = options || {};
+    if (typeof options === 'string') {
+        options = { separator: options };
+    }
+
+    const isChainArray = Array.isArray(chain);
+
+    exports.assert(!isChainArray || !options.separator, 'Separator option no valid for array-based chain');
+
+    const path = isChainArray ? chain : chain.split(options.separator || '.');
+    let ref = obj;
+    for (let i = 0; i < path.length; ++i) {
+        let key = path[i];
+
+        if (Array.isArray(ref)) {
+            const number = Number(key);
+
+            if (Number.isInteger(number) && number < 0) {
+                key = ref.length + number;
+            }
+        }
+
+        if (!ref ||
+            !((typeof ref === 'object' || typeof ref === 'function') && key in ref) ||
+            (typeof ref !== 'object' && options.functions === false)) {         // Only object and function can have properties
+
+            exports.assert(!options.strict || i + 1 === path.length, 'Missing segment', key, 'in reach path ', chain);
+            exports.assert(typeof ref === 'object' || options.functions === true || typeof ref !== 'function', 'Invalid segment', key, 'in reach path ', chain);
+            ref = options.default;
+            break;
+        }
+
+        ref = ref[key];
+    }
+
+    return ref;
+};
+
+
+exports.reachTemplate = function (obj, template, options) {
+
+    return template.replace(/{([^}]+)}/g, ($0, chain) => {
+
+        const value = exports.reach(obj, chain, options);
+        return (value === undefined || value === null ? '' : value);
+    });
+};
+
+
+exports.assert = function (condition, ...args) {
+
+    if (condition) {
+        return;
+    }
+
+    if (args.length === 1 && args[0] instanceof Error) {
+        throw args[0];
+    }
+
+    const msgs = args
+        .filter((arg) => arg !== '')
+        .map((arg) => {
+
+            return typeof arg === 'string' ? arg : arg instanceof Error ? arg.message : exports.stringify(arg);
+        });
+
+    throw new Assert.AssertionError({
+        message: msgs.join(' ') || 'Unknown error',
+        actual: false,
+        expected: true,
+        operator: '==',
+        stackStartFunction: exports.assert
+    });
+};
+
+
+exports.Bench = function () {
+
+    this.ts = 0;
+    this.reset();
+};
+
+
+exports.Bench.prototype.reset = function () {
+
+    this.ts = exports.Bench.now();
+};
+
+
+exports.Bench.prototype.elapsed = function () {
+
+    return exports.Bench.now() - this.ts;
+};
+
+
+exports.Bench.now = function () {
+
+    const ts = process.hrtime();
+    return (ts[0] * 1e3) + (ts[1] / 1e6);
+};
+
+
+// Escape string for Regex construction
+
+exports.escapeRegex = function (string) {
+
+    // Escape ^$.*+-?=!:|\/()[]{},
+    return string.replace(/[\^\$\.\*\+\-\?\=\!\:\|\\\/\(\)\[\]\{\}\,]/g, '\\$&');
+};
+
+
+// Escape attribute value for use in HTTP header
+
+exports.escapeHeaderAttribute = function (attribute) {
+
+    // Allowed value characters: !#$%&'()*+,-./:;<=>?@[]^_`{|}~ and space, a-z, A-Z, 0-9, \, "
+
+    exports.assert(/^[ \w\!#\$%&'\(\)\*\+,\-\.\/\:;<\=>\?@\[\]\^`\{\|\}~\"\\]*$/.test(attribute), 'Bad attribute value (' + attribute + ')');
+
+    return attribute.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');                             // Escape quotes and slash
+};
+
+
+exports.escapeHtml = function (string) {
+
+    return Escape.escapeHtml(string);
+};
+
+
+exports.escapeJson = function (string) {
+
+    return Escape.escapeJson(string);
+};
+
+
+exports.once = function (method) {
+
+    if (method._hoekOnce) {
+        return method;
+    }
+
+    let once = false;
+    const wrapped = function (...args) {
+
+        if (!once) {
+            once = true;
+            method(...args);
+        }
+    };
+
+    wrapped._hoekOnce = true;
+    return wrapped;
+};
+
+
+exports.ignore = function () { };
+
+
+exports.uniqueFilename = function (path, extension) {
+
+    if (extension) {
+        extension = extension[0] !== '.' ? '.' + extension : extension;
+    }
+    else {
+        extension = '';
+    }
+
+    path = Path.resolve(path);
+    const name = [Date.now(), process.pid, Crypto.randomBytes(8).toString('hex')].join('-') + extension;
+    return Path.join(path, name);
+};
+
+
+exports.stringify = function (...args) {
+
+    try {
+        return JSON.stringify.apply(null, args);
+    }
+    catch (err) {
+        return '[Cannot display object: ' + err.message + ']';
+    }
+};
+
+
+exports.wait = function (timeout) {
+
+    return new Promise((resolve) => setTimeout(resolve, timeout));
+};
+
+
+exports.block = function () {
+
+    return new Promise(exports.ignore);
+};
+
+}).call(this,require('_process'),require("buffer").Buffer)
+},{"./deep-equal":4,"./escape":5,"_process":199,"assert":49,"buffer":94,"crypto":103,"path":188}],7:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Ref = require('./ref');
+
+
+const internals = {};
+
+
+exports.schema = function (Joi, config) {
+
+    if (config !== undefined && config !== null && typeof config === 'object') {
+
+        if (config.isJoi) {
+            return config;
+        }
+
+        if (Array.isArray(config)) {
+            return Joi.alternatives().try(config);
+        }
+
+        if (config instanceof RegExp) {
+            return Joi.string().regex(config);
+        }
+
+        if (config instanceof Date) {
+            return Joi.date().valid(config);
+        }
+
+        return Joi.object().keys(config);
+    }
+
+    if (typeof config === 'string') {
+        return Joi.string().valid(config);
+    }
+
+    if (typeof config === 'number') {
+        return Joi.number().valid(config);
+    }
+
+    if (typeof config === 'boolean') {
+        return Joi.boolean().valid(config);
+    }
+
+    if (Ref.isRef(config)) {
+        return Joi.valid(config);
+    }
+
+    Hoek.assert(config === null, 'Invalid schema content:', config);
+
+    return Joi.valid(null);
+};
+
+
+exports.ref = function (id) {
+
+    return Ref.isRef(id) ? id : Ref.create(id);
+};
+
+},{"./ref":11,"@hapi/hoek":6}],8:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Language = require('./language');
+
+
+const internals = {
+    annotations: Symbol('joi-annotations')
+};
+
+
+internals.stringify = function (value, wrapArrays) {
+
+    const type = typeof value;
+
+    if (value === null) {
+        return 'null';
+    }
+
+    if (type === 'string') {
+        return value;
+    }
+
+    if (value instanceof exports.Err || type === 'function' || type === 'symbol') {
+        return value.toString();
+    }
+
+    if (type === 'object') {
+        if (Array.isArray(value)) {
+            let partial = '';
+
+            for (let i = 0; i < value.length; ++i) {
+                partial = partial + (partial.length ? ', ' : '') + internals.stringify(value[i], wrapArrays);
+            }
+
+            return wrapArrays ? '[' + partial + ']' : partial;
+        }
+
+        return value.toString();
+    }
+
+    return JSON.stringify(value);
+};
+
+
+exports.Err = class {
+
+    constructor(type, context, state, options, flags, message, template) {
+
+        this.isJoi = true;
+        this.type = type;
+        this.context = context || {};
+        this.context.key = state.path[state.path.length - 1];
+        this.context.label = state.key;
+        this.path = state.path;
+        this.options = options;
+        this.flags = flags;
+        this.message = message;
+        this.template = template;
+
+        const localized = this.options.language;
+
+        if (this.flags.label) {
+            this.context.label = this.flags.label;
+        }
+        else if (localized &&                   // language can be null for arrays exclusion check
+            (this.context.label === '' ||
+            this.context.label === null)) {
+            this.context.label = localized.root || Language.errors.root;
+        }
+    }
+
+    toString() {
+
+        if (this.message) {
+            return this.message;
+        }
+
+        let format;
+
+        if (this.template) {
+            format = this.template;
+        }
+
+        const localized = this.options.language;
+
+        format = format || Hoek.reach(localized, this.type) || Hoek.reach(Language.errors, this.type);
+
+        if (format === undefined) {
+            return `Error code "${this.type}" is not defined, your custom type is missing the correct language definition`;
+        }
+
+        let wrapArrays = Hoek.reach(localized, 'messages.wrapArrays');
+        if (typeof wrapArrays !== 'boolean') {
+            wrapArrays = Language.errors.messages.wrapArrays;
+        }
+
+        if (format === null) {
+            const childrenString = internals.stringify(this.context.reason, wrapArrays);
+            if (wrapArrays) {
+                return childrenString.slice(1, -1);
+            }
+
+            return childrenString;
+        }
+
+        const hasKey = /{{!?label}}/.test(format);
+        const skipKey = format.length > 2 && format[0] === '!' && format[1] === '!';
+
+        if (skipKey) {
+            format = format.slice(2);
+        }
+
+        if (!hasKey && !skipKey) {
+            const localizedKey = Hoek.reach(localized, 'key');
+            if (typeof localizedKey === 'string') {
+                format = localizedKey + format;
+            }
+            else {
+                format = Hoek.reach(Language.errors, 'key') + format;
+            }
+        }
+
+        const message =  format.replace(/{{(!?)([^}]+)}}/g, ($0, isSecure, name) => {
+
+            const value = Hoek.reach(this.context, name);
+            const normalized = internals.stringify(value, wrapArrays);
+            return (isSecure && this.options.escapeHtml ? Hoek.escapeHtml(normalized) : normalized);
+        });
+
+        this.toString = () => message;  // Persist result of last toString call, it won't change
+
+        return message;
+    }
+
+};
+
+
+exports.create = function (type, context, state, options, flags, message, template) {
+
+    return new exports.Err(type, context, state, options, flags, message, template);
+};
+
+
+exports.process = function (errors, object) {
+
+    if (!errors) {
+        return null;
+    }
+
+    // Construct error
+
+    let message = '';
+    const details = [];
+
+    const processErrors = function (localErrors, parent, overrideMessage) {
+
+        for (let i = 0; i < localErrors.length; ++i) {
+            const item = localErrors[i];
+
+            if (item instanceof Error) {
+                return item;
+            }
+
+            if (item.flags.error && typeof item.flags.error !== 'function') {
+                if (!item.flags.selfError || !item.context.reason) {
+                    return item.flags.error;
+                }
+            }
+
+            let itemMessage;
+            if (parent === undefined) {
+                itemMessage = item.toString();
+                message = message + (message ? '. ' : '') + itemMessage;
+            }
+
+            // Do not push intermediate errors, we're only interested in leafs
+
+            if (item.context.reason) {
+                const override = processErrors(item.context.reason, item.path, item.type === 'override' ? item.message : null);
+                if (override) {
+                    return override;
+                }
+            }
+            else {
+                details.push({
+                    message: overrideMessage || itemMessage || item.toString(),
+                    path: item.path,
+                    type: item.type,
+                    context: item.context
+                });
+            }
+        }
+    };
+
+    const override = processErrors(errors);
+    if (override) {
+        return override;
+    }
+
+    const error = new Error(message);
+    error.isJoi = true;
+    error.name = 'ValidationError';
+    error.details = details;
+    error._object = object;
+    error.annotate = internals.annotate;
+    return error;
+};
+
+
+// Inspired by json-stringify-safe
+
+internals.safeStringify = function (obj, spaces) {
+
+    return JSON.stringify(obj, internals.serializer(), spaces);
+};
+
+
+internals.serializer = function () {
+
+    const keys = [];
+    const stack = [];
+
+    const cycleReplacer = (key, value) => {
+
+        if (stack[0] === value) {
+            return '[Circular ~]';
+        }
+
+        return '[Circular ~.' + keys.slice(0, stack.indexOf(value)).join('.') + ']';
+    };
+
+    return function (key, value) {
+
+        if (stack.length > 0) {
+            const thisPos = stack.indexOf(this);
+            if (~thisPos) {
+                stack.length = thisPos + 1;
+                keys.length = thisPos + 1;
+                keys[thisPos] = key;
+            }
+            else {
+                stack.push(this);
+                keys.push(key);
+            }
+
+            if (~stack.indexOf(value)) {
+                value = cycleReplacer.call(this, key, value);
+            }
+        }
+        else {
+            stack.push(value);
+        }
+
+        if (value) {
+            const annotations = value[internals.annotations];
+            if (annotations) {
+                if (Array.isArray(value)) {
+                    const annotated = [];
+
+                    for (let i = 0; i < value.length; ++i) {
+                        if (annotations.errors[i]) {
+                            annotated.push(`_$idx$_${annotations.errors[i].sort().join(', ')}_$end$_`);
+                        }
+
+                        annotated.push(value[i]);
+                    }
+
+                    value = annotated;
+                }
+                else {
+                    const errorKeys = Object.keys(annotations.errors);
+                    for (let i = 0; i < errorKeys.length; ++i) {
+                        const errorKey = errorKeys[i];
+                        value[`${errorKey}_$key$_${annotations.errors[errorKey].sort().join(', ')}_$end$_`] = value[errorKey];
+                        value[errorKey] = undefined;
+                    }
+
+                    const missingKeys = Object.keys(annotations.missing);
+                    for (let i = 0; i < missingKeys.length; ++i) {
+                        const missingKey = missingKeys[i];
+                        value[`_$miss$_${missingKey}|${annotations.missing[missingKey]}_$end$_`] = '__missing__';
+                    }
+                }
+
+                return value;
+            }
+        }
+
+        if (value === Infinity || value === -Infinity || Number.isNaN(value) ||
+            typeof value === 'function' || typeof value === 'symbol') {
+            return '[' + value.toString() + ']';
+        }
+
+        return value;
+    };
+};
+
+
+internals.annotate = function (stripColorCodes) {
+
+    const redFgEscape = stripColorCodes ? '' : '\u001b[31m';
+    const redBgEscape = stripColorCodes ? '' : '\u001b[41m';
+    const endColor = stripColorCodes ? '' : '\u001b[0m';
+
+    if (typeof this._object !== 'object') {
+        return this.details[0].message;
+    }
+
+    const obj = Hoek.clone(this._object || {});
+
+    for (let i = this.details.length - 1; i >= 0; --i) {        // Reverse order to process deepest child first
+        const pos = i + 1;
+        const error = this.details[i];
+        const path = error.path;
+        let ref = obj;
+        for (let j = 0; ; ++j) {
+            const seg = path[j];
+
+            if (ref.isImmutable) {
+                ref = ref.clone();                              // joi schemas are not cloned by hoek, we have to take this extra step
+            }
+
+            if (j + 1 < path.length &&
+                ref[seg] &&
+                typeof ref[seg] !== 'string') {
+
+                ref = ref[seg];
+            }
+            else {
+                const refAnnotations = ref[internals.annotations] = ref[internals.annotations] || { errors: {}, missing: {} };
+                const value = ref[seg];
+                const cacheKey = seg || error.context.label;
+
+                if (value !== undefined) {
+                    refAnnotations.errors[cacheKey] = refAnnotations.errors[cacheKey] || [];
+                    refAnnotations.errors[cacheKey].push(pos);
+                }
+                else {
+                    refAnnotations.missing[cacheKey] = pos;
+                }
+
+                break;
+            }
+        }
+    }
+
+    const replacers = {
+        key: /_\$key\$_([, \d]+)_\$end\$_"/g,
+        missing: /"_\$miss\$_([^|]+)\|(\d+)_\$end\$_": "__missing__"/g,
+        arrayIndex: /\s*"_\$idx\$_([, \d]+)_\$end\$_",?\n(.*)/g,
+        specials: /"\[(NaN|Symbol.*|-?Infinity|function.*|\(.*)]"/g
+    };
+
+    let message = internals.safeStringify(obj, 2)
+        .replace(replacers.key, ($0, $1) => `" ${redFgEscape}[${$1}]${endColor}`)
+        .replace(replacers.missing, ($0, $1, $2) => `${redBgEscape}"${$1}"${endColor}${redFgEscape} [${$2}]: -- missing --${endColor}`)
+        .replace(replacers.arrayIndex, ($0, $1, $2) => `\n${$2} ${redFgEscape}[${$1}]${endColor}`)
+        .replace(replacers.specials, ($0, $1) => $1);
+
+    message = `${message}\n${redFgEscape}`;
+
+    for (let i = 0; i < this.details.length; ++i) {
+        const pos = i + 1;
+        message = `${message}\n[${pos}] ${this.details[i].message}`;
+    }
+
+    message = message + endColor;
+
+    return message;
+};
+
+},{"./language":10,"@hapi/hoek":6}],9:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('./types/any');
+const Cast = require('./cast');
+const Errors = require('./errors');
+const Lazy = require('./types/lazy');
+const Ref = require('./ref');
+
+
+const internals = {
+    alternatives: require('./types/alternatives'),
+    array: require('./types/array'),
+    boolean: require('./types/boolean'),
+    binary: require('./types/binary'),
+    date: require('./types/date'),
+    func: require('./types/func'),
+    number: require('./types/number'),
+    object: require('./types/object'),
+    string: require('./types/string'),
+    symbol: require('./types/symbol')
+};
+
+
+internals.callWithDefaults = function (schema, args) {
+
+    Hoek.assert(this, 'Must be invoked on a Joi instance.');
+
+    if (this._defaults) {
+        schema = this._defaults(schema);
+    }
+
+    schema._currentJoi = this;
+
+    return schema._init(...args);
+};
+
+
+internals.root = function () {
+
+    const any = new Any();
+
+    const root = any.clone();
+    Any.prototype._currentJoi = root;
+    root._currentJoi = root;
+    root._binds = new Set(['any', 'alternatives', 'alt', 'array', 'bool', 'boolean', 'binary', 'date', 'func', 'number', 'object', 'string', 'symbol', 'validate', 'describe', 'compile', 'assert', 'attempt', 'lazy', 'defaults', 'extend', 'allow', 'valid', 'only', 'equal', 'invalid', 'disallow', 'not', 'required', 'exist', 'optional', 'forbidden', 'strip', 'when', 'empty', 'default']);
+
+    root.any = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.any() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, any, args);
+    };
+
+    root.alternatives = root.alt = function (...args) {
+
+        return internals.callWithDefaults.call(this, internals.alternatives, args);
+    };
+
+    root.array = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.array() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.array, args);
+    };
+
+    root.boolean = root.bool = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.boolean() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.boolean, args);
+    };
+
+    root.binary = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.binary() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.binary, args);
+    };
+
+    root.date = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.date() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.date, args);
+    };
+
+    root.func = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.func() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.func, args);
+    };
+
+    root.number = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.number() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.number, args);
+    };
+
+    root.object = function (...args) {
+
+        return internals.callWithDefaults.call(this, internals.object, args);
+    };
+
+    root.string = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.string() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.string, args);
+    };
+
+    root.symbol = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.symbol() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.symbol, args);
+    };
+
+    root.ref = function (...args) {
+
+        return Ref.create(...args);
+    };
+
+    root.isRef = function (ref) {
+
+        return Ref.isRef(ref);
+    };
+
+    root.validate = function (value, ...args /*, [schema], [options], callback */) {
+
+        const last = args[args.length - 1];
+        const callback = typeof last === 'function' ? last : null;
+
+        const count = args.length - (callback ? 1 : 0);
+        if (count === 0) {
+            return any.validate(value, callback);
+        }
+
+        const options = count === 2 ? args[1] : undefined;
+        const schema = this.compile(args[0]);
+
+        return schema._validateWithOptions(value, options, callback);
+    };
+
+    root.describe = function (...args) {
+
+        const schema = args.length ? this.compile(args[0]) : any;
+        return schema.describe();
+    };
+
+    root.compile = function (schema) {
+
+        try {
+            return Cast.schema(this, schema);
+        }
+        catch (err) {
+            if (err.hasOwnProperty('path')) {
+                err.message = err.message + '(' + err.path + ')';
+            }
+
+            throw err;
+        }
+    };
+
+    root.assert = function (value, schema, message) {
+
+        this.attempt(value, schema, message);
+    };
+
+    root.attempt = function (value, schema, message) {
+
+        const result = this.validate(value, schema);
+        const error = result.error;
+        if (error) {
+            if (!message) {
+                if (typeof error.annotate === 'function') {
+                    error.message = error.annotate();
+                }
+
+                throw error;
+            }
+
+            if (!(message instanceof Error)) {
+                if (typeof error.annotate === 'function') {
+                    error.message = `${message} ${error.annotate()}`;
+                }
+
+                throw error;
+            }
+
+            throw message;
+        }
+
+        return result.value;
+    };
+
+    root.reach = function (schema, path) {
+
+        Hoek.assert(schema && schema instanceof Any, 'you must provide a joi schema');
+        Hoek.assert(Array.isArray(path) || typeof path === 'string', 'path must be a string or an array of strings');
+
+        const reach = (sourceSchema, schemaPath) => {
+
+            if (!schemaPath.length) {
+                return sourceSchema;
+            }
+
+            const children = sourceSchema._inner.children;
+            if (!children) {
+                return;
+            }
+
+            const key = schemaPath.shift();
+            for (let i = 0; i < children.length; ++i) {
+                const child = children[i];
+                if (child.key === key) {
+                    return reach(child.schema, schemaPath);
+                }
+            }
+        };
+
+        const schemaPath = typeof path === 'string' ? (path ? path.split('.') : []) : path.slice();
+
+        return reach(schema, schemaPath);
+    };
+
+    root.lazy = function (...args) {
+
+        return internals.callWithDefaults.call(this, Lazy, args);
+    };
+
+    root.defaults = function (fn) {
+
+        Hoek.assert(typeof fn === 'function', 'Defaults must be a function');
+
+        let joi = Object.create(this.any());
+        joi = fn(joi);
+
+        Hoek.assert(joi && joi instanceof this.constructor, 'defaults() must return a schema');
+
+        Object.assign(joi, this, joi.clone()); // Re-add the types from `this` but also keep the settings from joi's potential new defaults
+
+        joi._defaults = (schema) => {
+
+            if (this._defaults) {
+                schema = this._defaults(schema);
+                Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
+            }
+
+            schema = fn(schema);
+            Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
+            return schema;
+        };
+
+        return joi;
+    };
+
+    root.bind = function () {
+
+        const joi = Object.create(this);
+
+        joi._binds.forEach((bind) => {
+
+            joi[bind] = joi[bind].bind(joi);
+        });
+
+        return joi;
+    };
+
+    root.extend = function (...args) {
+
+        const extensions = Hoek.flatten(args);
+        Hoek.assert(extensions.length > 0, 'You need to provide at least one extension');
+
+        this.assert(extensions, root.extensionsSchema);
+
+        const joi = Object.create(this.any());
+        Object.assign(joi, this);
+        joi._currentJoi = joi;
+        joi._binds = new Set(joi._binds);
+
+        for (let i = 0; i < extensions.length; ++i) {
+            let extension = extensions[i];
+
+            if (typeof extension === 'function') {
+                extension = extension(joi);
+            }
+
+            this.assert(extension, root.extensionSchema);
+
+            const base = (extension.base || this.any()).clone(); // Cloning because we're going to override language afterwards
+            const ctor = base.constructor;
+            const type = class extends ctor { // eslint-disable-line no-loop-func
+
+                constructor() {
+
+                    super();
+                    if (extension.base) {
+                        Object.assign(this, base);
+                    }
+
+                    this._type = extension.name;
+                }
+
+            };
+
+            if (extension.language) {
+                const lang = {
+                    [extension.name]: extension.language
+                };
+                type.prototype._language = Hoek.applyToDefaults(type.prototype._language || (base._settings && base._settings.language) || {}, lang);
+            }
+
+
+            if (extension.coerce) {
+                type.prototype._coerce = function (value, state, options) {
+
+                    if (ctor.prototype._coerce) {
+                        const baseRet = ctor.prototype._coerce.call(this, value, state, options);
+
+                        if (baseRet.errors) {
+                            return baseRet;
+                        }
+
+                        value = baseRet.value;
+                    }
+
+                    const ret = extension.coerce.call(this, value, state, options);
+                    if (ret instanceof Errors.Err) {
+                        return { value, errors: ret };
+                    }
+
+                    return { value: ret };
+                };
+            }
+
+            if (extension.pre) {
+                type.prototype._base = function (value, state, options) {
+
+                    if (ctor.prototype._base) {
+                        const baseRet = ctor.prototype._base.call(this, value, state, options);
+
+                        if (baseRet.errors) {
+                            return baseRet;
+                        }
+
+                        value = baseRet.value;
+                    }
+
+                    const ret = extension.pre.call(this, value, state, options);
+                    if (ret instanceof Errors.Err) {
+                        return { value, errors: ret };
+                    }
+
+                    return { value: ret };
+                };
+            }
+
+            if (extension.rules) {
+                for (let j = 0; j < extension.rules.length; ++j) {
+                    const rule = extension.rules[j];
+                    const ruleArgs = rule.params ?
+                        (rule.params instanceof Any ? rule.params._inner.children.map((k) => k.key) : Object.keys(rule.params)) :
+                        [];
+                    const validateArgs = rule.params ? Cast.schema(this, rule.params) : null;
+
+                    type.prototype[rule.name] = function (...rArgs) { // eslint-disable-line no-loop-func
+
+                        if (rArgs.length > ruleArgs.length) {
+                            throw new Error('Unexpected number of arguments');
+                        }
+
+                        let hasRef = false;
+                        let arg = {};
+
+                        for (let k = 0; k < ruleArgs.length; ++k) {
+                            arg[ruleArgs[k]] = rArgs[k];
+                            if (!hasRef && Ref.isRef(rArgs[k])) {
+                                hasRef = true;
+                            }
+                        }
+
+                        if (validateArgs) {
+                            arg = joi.attempt(arg, validateArgs);
+                        }
+
+                        let schema;
+                        if (rule.validate && !rule.setup) {
+                            const validate = function (value, state, options) {
+
+                                return rule.validate.call(this, arg, value, state, options);
+                            };
+
+                            schema = this._test(rule.name, arg, validate, {
+                                description: rule.description,
+                                hasRef
+                            });
+                        }
+                        else {
+                            schema = this.clone();
+                        }
+
+                        if (rule.setup) {
+                            const newSchema = rule.setup.call(schema, arg);
+                            if (newSchema !== undefined) {
+                                Hoek.assert(newSchema instanceof Any, `Setup of extension Joi.${this._type}().${rule.name}() must return undefined or a Joi object`);
+                                schema = newSchema;
+                            }
+
+                            if (rule.validate) {
+                                const validate = function (value, state, options) {
+
+                                    return rule.validate.call(this, arg, value, state, options);
+                                };
+
+                                schema = schema._test(rule.name, arg, validate, {
+                                    description: rule.description,
+                                    hasRef
+                                });
+                            }
+                        }
+
+                        return schema;
+                    };
+                }
+            }
+
+            if (extension.describe) {
+                type.prototype.describe = function () {
+
+                    const description = ctor.prototype.describe.call(this);
+                    return extension.describe.call(this, description);
+                };
+            }
+
+            const instance = new type();
+            joi[extension.name] = function (...extArgs) {
+
+                return internals.callWithDefaults.call(this, instance, extArgs);
+            };
+
+            joi._binds.add(extension.name);
+        }
+
+        return joi;
+    };
+
+    root.extensionSchema = internals.object.keys({
+        base: internals.object.type(Any, 'Joi object'),
+        name: internals.string.required(),
+        coerce: internals.func.arity(3),
+        pre: internals.func.arity(3),
+        language: internals.object,
+        describe: internals.func.arity(1),
+        rules: internals.array.items(internals.object.keys({
+            name: internals.string.required(),
+            setup: internals.func.arity(1),
+            validate: internals.func.arity(4),
+            params: [
+                internals.object.pattern(/.*/, internals.object.type(Any, 'Joi object')),
+                internals.object.type(internals.object.constructor, 'Joi object')
+            ],
+            description: [internals.string, internals.func.arity(1)]
+        }).or('setup', 'validate'))
+    }).strict();
+
+    root.extensionsSchema = internals.array.items([internals.object, internals.func.arity(1)]).strict();
+
+    root.version = require('../package.json').version;
+
+    return root;
+};
+
+
+module.exports = internals.root();
+
+},{"../package.json":32,"./cast":7,"./errors":8,"./ref":11,"./types/alternatives":14,"./types/any":15,"./types/array":17,"./types/binary":18,"./types/boolean":19,"./types/date":20,"./types/func":21,"./types/lazy":22,"./types/number":23,"./types/object":24,"./types/string":26,"./types/symbol":30,"@hapi/hoek":6}],10:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+exports.errors = {
+    root: 'value',
+    key: '"{{!label}}" ',
+    messages: {
+        wrapArrays: true
+    },
+    any: {
+        unknown: 'is not allowed',
+        invalid: 'contains an invalid value',
+        empty: 'is not allowed to be empty',
+        required: 'is required',
+        allowOnly: 'must be one of {{valids}}',
+        default: 'threw an error when running default method'
+    },
+    alternatives: {
+        base: 'not matching any of the allowed alternatives',
+        child: null
+    },
+    array: {
+        base: 'must be an array',
+        includes: 'at position {{pos}} does not match any of the allowed types',
+        includesSingle: 'single value of "{{!label}}" does not match any of the allowed types',
+        includesOne: 'at position {{pos}} fails because {{reason}}',
+        includesOneSingle: 'single value of "{{!label}}" fails because {{reason}}',
+        includesRequiredUnknowns: 'does not contain {{unknownMisses}} required value(s)',
+        includesRequiredKnowns: 'does not contain {{knownMisses}}',
+        includesRequiredBoth: 'does not contain {{knownMisses}} and {{unknownMisses}} other required value(s)',
+        excludes: 'at position {{pos}} contains an excluded value',
+        excludesSingle: 'single value of "{{!label}}" contains an excluded value',
+        hasKnown: 'does not contain at least one required match for type "{{!patternLabel}}"',
+        hasUnknown: 'does not contain at least one required match',
+        min: 'must contain at least {{limit}} items',
+        max: 'must contain less than or equal to {{limit}} items',
+        length: 'must contain {{limit}} items',
+        ordered: 'at position {{pos}} fails because {{reason}}',
+        orderedLength: 'at position {{pos}} fails because array must contain at most {{limit}} items',
+        ref: 'references "{{ref}}" which is not a positive integer',
+        sparse: 'must not be a sparse array',
+        unique: 'position {{pos}} contains a duplicate value'
+    },
+    boolean: {
+        base: 'must be a boolean'
+    },
+    binary: {
+        base: 'must be a buffer or a string',
+        min: 'must be at least {{limit}} bytes',
+        max: 'must be less than or equal to {{limit}} bytes',
+        length: 'must be {{limit}} bytes'
+    },
+    date: {
+        base: 'must be a number of milliseconds or valid date string',
+        strict: 'must be a valid date',
+        min: 'must be larger than or equal to "{{limit}}"',
+        max: 'must be less than or equal to "{{limit}}"',
+        less: 'must be less than "{{limit}}"',
+        greater: 'must be greater than "{{limit}}"',
+        isoDate: 'must be a valid ISO 8601 date',
+        timestamp: {
+            javascript: 'must be a valid timestamp or number of milliseconds',
+            unix: 'must be a valid timestamp or number of seconds'
+        },
+        ref: 'references "{{ref}}" which is not a date'
+    },
+    function: {
+        base: 'must be a Function',
+        arity: 'must have an arity of {{n}}',
+        minArity: 'must have an arity greater or equal to {{n}}',
+        maxArity: 'must have an arity lesser or equal to {{n}}',
+        ref: 'must be a Joi reference',
+        class: 'must be a class'
+    },
+    lazy: {
+        base: '!!schema error: lazy schema must be set',
+        schema: '!!schema error: lazy schema function must return a schema'
+    },
+    object: {
+        base: 'must be an object',
+        child: '!!child "{{!child}}" fails because {{reason}}',
+        min: 'must have at least {{limit}} children',
+        max: 'must have less than or equal to {{limit}} children',
+        length: 'must have {{limit}} children',
+        allowUnknown: '!!"{{!child}}" is not allowed',
+        with: '!!"{{mainWithLabel}}" missing required peer "{{peerWithLabel}}"',
+        without: '!!"{{mainWithLabel}}" conflict with forbidden peer "{{peerWithLabel}}"',
+        missing: 'must contain at least one of {{peersWithLabels}}',
+        xor: 'contains a conflict between exclusive peers {{peersWithLabels}}',
+        oxor: 'contains a conflict between optional exclusive peers {{peersWithLabels}}',
+        and: 'contains {{presentWithLabels}} without its required peers {{missingWithLabels}}',
+        nand: '!!"{{mainWithLabel}}" must not exist simultaneously with {{peersWithLabels}}',
+        assert: '!!"{{ref}}" validation failed because "{{ref}}" failed to {{message}}',
+        rename: {
+            multiple: 'cannot rename child "{{from}}" because multiple renames are disabled and another key was already renamed to "{{to}}"',
+            override: 'cannot rename child "{{from}}" because override is disabled and target "{{to}}" exists',
+            regex: {
+                multiple: 'cannot rename children {{from}} because multiple renames are disabled and another key was already renamed to "{{to}}"',
+                override: 'cannot rename children {{from}} because override is disabled and target "{{to}}" exists'
+            }
+        },
+        type: 'must be an instance of "{{type}}"',
+        schema: 'must be a Joi instance'
+    },
+    number: {
+        base: 'must be a number',
+        unsafe: 'must be a safe number',
+        min: 'must be larger than or equal to {{limit}}',
+        max: 'must be less than or equal to {{limit}}',
+        less: 'must be less than {{limit}}',
+        greater: 'must be greater than {{limit}}',
+        integer: 'must be an integer',
+        negative: 'must be a negative number',
+        positive: 'must be a positive number',
+        precision: 'must have no more than {{limit}} decimal places',
+        ref: 'references "{{ref}}" which is not a number',
+        multiple: 'must be a multiple of {{multiple}}',
+        port: 'must be a valid port'
+    },
+    string: {
+        base: 'must be a string',
+        min: 'length must be at least {{limit}} characters long',
+        max: 'length must be less than or equal to {{limit}} characters long',
+        length: 'length must be {{limit}} characters long',
+        alphanum: 'must only contain alpha-numeric characters',
+        token: 'must only contain alpha-numeric and underscore characters',
+        regex: {
+            base: 'with value "{{!value}}" fails to match the required pattern: {{pattern}}',
+            name: 'with value "{{!value}}" fails to match the {{name}} pattern',
+            invert: {
+                base: 'with value "{{!value}}" matches the inverted pattern: {{pattern}}',
+                name: 'with value "{{!value}}" matches the inverted {{name}} pattern'
+            }
+        },
+        email: 'must be a valid email',
+        uri: 'must be a valid uri',
+        uriRelativeOnly: 'must be a valid relative uri',
+        uriCustomScheme: 'must be a valid uri with a scheme matching the {{scheme}} pattern',
+        isoDate: 'must be a valid ISO 8601 date',
+        guid: 'must be a valid GUID',
+        hex: 'must only contain hexadecimal characters',
+        hexAlign: 'hex decoded representation must be byte aligned',
+        base64: 'must be a valid base64 string',
+        dataUri: 'must be a valid dataUri string',
+        hostname: 'must be a valid hostname',
+        normalize: 'must be unicode normalized in the {{form}} form',
+        lowercase: 'must only contain lowercase characters',
+        uppercase: 'must only contain uppercase characters',
+        trim: 'must not have leading or trailing whitespace',
+        creditCard: 'must be a credit card',
+        ref: 'references "{{ref}}" which is not a number',
+        ip: 'must be a valid ip address with a {{cidr}} CIDR',
+        ipVersion: 'must be a valid ip address of one of the following versions {{version}} with a {{cidr}} CIDR'
+    },
+    symbol: {
+        base: 'must be a symbol',
+        map: 'must be one of {{map}}'
+    }
+};
+
+},{}],11:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+
+const internals = {};
+
+
+exports.create = function (key, options) {
+
+    Hoek.assert(typeof key === 'string', 'Invalid reference key:', key);
+
+    const settings = Hoek.clone(options);         // options can be reused and modified
+
+    const ref = function (value, validationOptions) {
+
+        return Hoek.reach(ref.isContext ? validationOptions.context : value, ref.key, settings);
+    };
+
+    ref.isContext = (key[0] === ((settings && settings.contextPrefix) || '$'));
+    ref.key = (ref.isContext ? key.slice(1) : key);
+    ref.path = ref.key.split((settings && settings.separator) || '.');
+    ref.depth = ref.path.length;
+    ref.root = ref.path[0];
+    ref.isJoi = true;
+
+    ref.toString = function () {
+
+        return (ref.isContext ? 'context:' : 'ref:') + ref.key;
+    };
+
+    return ref;
+};
+
+
+exports.isRef = function (ref) {
+
+    return typeof ref === 'function' && ref.isJoi;
+};
+
+
+exports.push = function (array, ref) {
+
+    if (exports.isRef(ref) &&
+        !ref.isContext) {
+
+        array.push(ref.root);
+    }
+};
+
+},{"@hapi/hoek":6}],12:[function(require,module,exports){
+'use strict';
+
+const Joi = require('./index');
+
+
+const internals = {};
+
+
+exports.options = Joi.object({
+    abortEarly: Joi.boolean(),
+    convert: Joi.boolean(),
+    allowUnknown: Joi.boolean(),
+    skipFunctions: Joi.boolean(),
+    stripUnknown: [Joi.boolean(), Joi.object({ arrays: Joi.boolean(), objects: Joi.boolean() }).or('arrays', 'objects')],
+    language: Joi.object(),
+    presence: Joi.string().only('required', 'optional', 'forbidden', 'ignore'),
+    context: Joi.object(),
+    noDefaults: Joi.boolean(),
+    escapeHtml: Joi.boolean()
+}).strict();
+
+},{"./index":9}],13:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Ref = require('./ref');
+
+
+const internals = {};
+
+
+internals.extendedCheckForValue = function (value, insensitive) {
+
+    const valueType = typeof value;
+
+    if (valueType === 'object') {
+        if (value instanceof Date) {
+            return (item) => {
+
+                return item instanceof Date && value.getTime() === item.getTime();
+            };
+        }
+
+        if (Buffer.isBuffer(value)) {
+            return (item) => {
+
+                return Buffer.isBuffer(item) && value.length === item.length && value.toString('binary') === item.toString('binary');
+            };
+        }
+    }
+    else if (insensitive && valueType === 'string') {
+        const lowercaseValue = value.toLowerCase();
+        return (item) => {
+
+            return typeof item === 'string' && lowercaseValue === item.toLowerCase();
+        };
+    }
+
+    return null;
+};
+
+
+module.exports = class InternalSet {
+
+    constructor(from) {
+
+        this._set = new Set(from);
+        this._hasRef = false;
+    }
+
+    add(value, refs) {
+
+        const isRef = Ref.isRef(value);
+        if (!isRef && this.has(value, null, null, false)) {
+
+            return this;
+        }
+
+        if (refs !== undefined) { // If it's a merge, we don't have any refs
+            Ref.push(refs, value);
+        }
+
+        this._set.add(value);
+
+        this._hasRef |= isRef;
+
+        return this;
+    }
+
+    merge(add, remove) {
+
+        for (const item of add._set) {
+            this.add(item);
+        }
+
+        for (const item of remove._set) {
+            this.remove(item);
+        }
+
+        return this;
+    }
+
+    remove(value) {
+
+        this._set.delete(value);
+        return this;
+    }
+
+    has(value, state, options, insensitive) {
+
+        return !!this.get(value, state, options, insensitive);
+    }
+
+    get(value, state, options, insensitive) {
+
+        if (!this._set.size) {
+            return false;
+        }
+
+        const hasValue = this._set.has(value);
+        if (hasValue) {
+            return { value };
+        }
+
+        const extendedCheck = internals.extendedCheckForValue(value, insensitive);
+        if (!extendedCheck) {
+            if (state && this._hasRef) {
+                for (let item of this._set) {
+                    if (Ref.isRef(item)) {
+                        item = [].concat(item(state.reference || state.parent, options));
+                        const found = item.indexOf(value);
+                        if (found >= 0) {
+                            return { value: item[found] };
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        return this._has(value, state, options, extendedCheck);
+    }
+
+    _has(value, state, options, check) {
+
+        const checkRef = !!(state && this._hasRef);
+
+        const isReallyEqual = function (item) {
+
+            if (value === item) {
+                return true;
+            }
+
+            return check(item);
+        };
+
+        for (let item of this._set) {
+            if (checkRef && Ref.isRef(item)) { // Only resolve references if there is a state, otherwise it's a merge
+                item = item(state.reference || state.parent, options);
+
+                if (Array.isArray(item)) {
+                    const found = item.findIndex(isReallyEqual);
+                    if (found >= 0) {
+                        return {
+                            value: item[found]
+                        };
+                    }
+
+                    continue;
+                }
+            }
+
+            if (isReallyEqual(item)) {
+                return {
+                    value: item
+                };
+            }
+        }
+
+        return false;
+    }
+
+    values(options) {
+
+        if (options && options.stripUndefined) {
+            const values = [];
+
+            for (const item of this._set) {
+                if (item !== undefined) {
+                    values.push(item);
+                }
+            }
+
+            return values;
+        }
+
+        return Array.from(this._set);
+    }
+
+    slice() {
+
+        const set = new InternalSet(this._set);
+        set._hasRef = this._hasRef;
+        return set;
+    }
+
+    concat(source) {
+
+        const set = new InternalSet([...this._set, ...source._set]);
+        set._hasRef = !!(this._hasRef | source._hasRef);
+        return set;
+    }
+};
+
+}).call(this,{"isBuffer":require("../../../is-buffer/index.js")})
+},{"../../../is-buffer/index.js":152,"./ref":11}],14:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Cast = require('../../cast');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+
+internals.Alternatives = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'alternatives';
+        this._invalids.remove(null);
+        this._inner.matches = [];
+    }
+
+    _init(...args) {
+
+        return args.length ? this.try(...args) : this;
+    }
+
+    _base(value, state, options) {
+
+        const errors = [];
+        const il = this._inner.matches.length;
+        const baseType = this._baseType;
+
+        for (let i = 0; i < il; ++i) {
+            const item = this._inner.matches[i];
+            if (!item.schema) {
+                const schema = item.peek || item.is;
+                const input = item.is ? item.ref(state.reference || state.parent, options) : value;
+                const failed = schema._validate(input, null, options, state.parent).errors;
+
+                if (failed) {
+                    if (item.otherwise) {
+                        return item.otherwise._validate(value, state, options);
+                    }
+                }
+                else if (item.then) {
+                    return item.then._validate(value, state, options);
+                }
+
+                if (i === (il - 1) && baseType) {
+                    return baseType._validate(value, state, options);
+                }
+
+                continue;
+            }
+
+            const result = item.schema._validate(value, state, options);
+            if (!result.errors) {     // Found a valid match
+                return result;
+            }
+
+            errors.push(...result.errors);
+        }
+
+        if (errors.length) {
+            return { errors: this.createError('alternatives.child', { reason: errors }, state, options) };
+        }
+
+        return { errors: this.createError('alternatives.base', null, state, options) };
+    }
+
+    try(...schemas) {
+
+        schemas = Hoek.flatten(schemas);
+        Hoek.assert(schemas.length, 'Cannot add other alternatives without at least one schema');
+
+        const obj = this.clone();
+
+        for (let i = 0; i < schemas.length; ++i) {
+            const cast = Cast.schema(this._currentJoi, schemas[i]);
+            if (cast._refs.length) {
+                obj._refs.push(...cast._refs);
+            }
+
+            obj._inner.matches.push({ schema: cast });
+        }
+
+        return obj;
+    }
+
+    when(condition, options) {
+
+        let schemaCondition = false;
+        Hoek.assert(Ref.isRef(condition) || typeof condition === 'string' || (schemaCondition = condition instanceof Any), 'Invalid condition:', condition);
+        Hoek.assert(options, 'Missing options');
+        Hoek.assert(typeof options === 'object', 'Invalid options');
+        if (schemaCondition) {
+            Hoek.assert(!options.hasOwnProperty('is'), '"is" can not be used with a schema condition');
+        }
+        else {
+            Hoek.assert(options.hasOwnProperty('is'), 'Missing "is" directive');
+        }
+
+        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
+
+        const obj = this.clone();
+        let is;
+        if (!schemaCondition) {
+            is = Cast.schema(this._currentJoi, options.is);
+
+            if (options.is === null || !(Ref.isRef(options.is) || options.is instanceof Any)) {
+
+                // Only apply required if this wasn't already a schema or a ref, we'll suppose people know what they're doing
+                is = is.required();
+            }
+        }
+
+        const item = {
+            ref: schemaCondition ? null : Cast.ref(condition),
+            peek: schemaCondition ? condition : null,
+            is,
+            then: options.then !== undefined ? Cast.schema(this._currentJoi, options.then) : undefined,
+            otherwise: options.otherwise !== undefined ? Cast.schema(this._currentJoi, options.otherwise) : undefined
+        };
+
+        if (obj._baseType) {
+
+            item.then = item.then && obj._baseType.concat(item.then);
+            item.otherwise = item.otherwise && obj._baseType.concat(item.otherwise);
+        }
+
+        if (!schemaCondition) {
+            Ref.push(obj._refs, item.ref);
+            obj._refs.push(...item.is._refs);
+        }
+
+        if (item.then && item.then._refs.length) {
+            obj._refs.push(...item.then._refs);
+        }
+
+        if (item.otherwise && item.otherwise._refs.length) {
+            obj._refs.push(...item.otherwise._refs);
+        }
+
+        obj._inner.matches.push(item);
+
+        return obj;
+    }
+
+    label(name) {
+
+        const obj = super.label(name);
+        obj._inner.matches = obj._inner.matches.map((match) => {
+
+            if (match.schema) {
+                return { schema: match.schema.label(name) };
+            }
+
+            match = Object.assign({}, match);
+            if (match.then) {
+                match.then = match.then.label(name);
+            }
+
+            if (match.otherwise) {
+                match.otherwise = match.otherwise.label(name);
+            }
+
+            return match;
+        });
+        return obj;
+    }
+
+    describe() {
+
+        const description = super.describe();
+        const alternatives = [];
+        for (let i = 0; i < this._inner.matches.length; ++i) {
+            const item = this._inner.matches[i];
+            if (item.schema) {
+
+                // try()
+
+                alternatives.push(item.schema.describe());
+            }
+            else {
+
+                // when()
+
+                const when = item.is ? {
+                    ref: item.ref.toString(),
+                    is: item.is.describe()
+                } : {
+                    peek: item.peek.describe()
+                };
+
+                if (item.then) {
+                    when.then = item.then.describe();
+                }
+
+                if (item.otherwise) {
+                    when.otherwise = item.otherwise.describe();
+                }
+
+                alternatives.push(when);
+            }
+        }
+
+        description.alternatives = alternatives;
+        return description;
+    }
+
+};
+
+
+module.exports = new internals.Alternatives();
+
+},{"../../cast":7,"../../ref":11,"../any":15,"@hapi/hoek":6}],15:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Settings = require('./settings');
+const Ref = require('../../ref');
+const Errors = require('../../errors');
+const State = require('../state');
+const Symbols = require('../symbols');
+
+let Alternatives = null;                            // Delay-loaded to prevent circular dependencies
+let Cast = null;
+let Schemas = null;
+
+
+const internals = {
+    Set: require('../../set')
+};
+
+
+internals.defaults = {
+    abortEarly: true,
+    convert: true,
+    allowUnknown: false,
+    skipFunctions: false,
+    stripUnknown: false,
+    language: {},
+    presence: 'optional',
+    noDefaults: false,
+    escapeHtml: false
+
+    // context: null
+};
+
+
+module.exports = internals.Any = class {
+
+    constructor() {
+
+        Cast = Cast || require('../../cast');
+
+        this.isJoi = true;
+        this._type = 'any';
+        this._settings = null;
+        this._valids = new internals.Set();
+        this._invalids = new internals.Set();
+        this._tests = [];
+        this._refs = [];
+        this._flags = {
+            /*
+             presence: 'optional',                   // optional, required, forbidden, ignore
+             allowOnly: false,
+             allowUnknown: undefined,
+             default: undefined,
+             forbidden: false,
+             encoding: undefined,
+             insensitive: false,
+             trim: false,
+             normalize: undefined,                   // NFC, NFD, NFKC, NFKD
+             case: undefined,                        // upper, lower
+             empty: undefined,
+             func: false,
+             raw: false
+             */
+        };
+
+        this._description = null;
+        this._unit = null;
+        this._notes = [];
+        this._tags = [];
+        this._examples = [];
+        this._meta = [];
+
+        this._inner = {};                           // Hash of arrays of immutable objects
+    }
+
+    _init() {
+
+        return this;
+    }
+
+    get schemaType() {
+
+        return this._type;
+    }
+
+    createError(type, context, state, options, flags = this._flags) {
+
+        return Errors.create(type, context, state, options, flags);
+    }
+
+    createOverrideError(type, context, state, options, message, template) {
+
+        return Errors.create(type, context, state, options, this._flags, message, template);
+    }
+
+    checkOptions(options) {
+
+        Schemas = Schemas || require('../../schemas');
+
+        const result = Schemas.options.validate(options);
+
+        if (result.error) {
+            throw new Error(result.error.details[0].message);
+        }
+    }
+
+    clone() {
+
+        const obj = Object.create(Object.getPrototypeOf(this));
+
+        obj.isJoi = true;
+        obj._currentJoi = this._currentJoi;
+        obj._type = this._type;
+        obj._settings = this._settings;
+        obj._baseType = this._baseType;
+        obj._valids = this._valids.slice();
+        obj._invalids = this._invalids.slice();
+        obj._tests = this._tests.slice();
+        obj._refs = this._refs.slice();
+        obj._flags = Hoek.clone(this._flags);
+
+        obj._description = this._description;
+        obj._unit = this._unit;
+        obj._notes = this._notes.slice();
+        obj._tags = this._tags.slice();
+        obj._examples = this._examples.slice();
+        obj._meta = this._meta.slice();
+
+        obj._inner = {};
+        const inners = Object.keys(this._inner);
+        for (let i = 0; i < inners.length; ++i) {
+            const key = inners[i];
+            obj._inner[key] = this._inner[key] ? this._inner[key].slice() : null;
+        }
+
+        return obj;
+    }
+
+    concat(schema) {
+
+        Hoek.assert(schema instanceof internals.Any, 'Invalid schema object');
+        Hoek.assert(this._type === 'any' || schema._type === 'any' || schema._type === this._type, 'Cannot merge type', this._type, 'with another type:', schema._type);
+
+        let obj = this.clone();
+
+        if (this._type === 'any' && schema._type !== 'any') {
+
+            // Reset values as if we were "this"
+            const tmpObj = schema.clone();
+            const keysToRestore = ['_settings', '_valids', '_invalids', '_tests', '_refs', '_flags', '_description', '_unit',
+                '_notes', '_tags', '_examples', '_meta', '_inner'];
+
+            for (let i = 0; i < keysToRestore.length; ++i) {
+                tmpObj[keysToRestore[i]] = obj[keysToRestore[i]];
+            }
+
+            obj = tmpObj;
+        }
+
+        obj._settings = obj._settings ? Settings.concat(obj._settings, schema._settings) : schema._settings;
+        obj._valids.merge(schema._valids, schema._invalids);
+        obj._invalids.merge(schema._invalids, schema._valids);
+        obj._tests.push(...schema._tests);
+        obj._refs.push(...schema._refs);
+        if (obj._flags.empty && schema._flags.empty) {
+            obj._flags.empty = obj._flags.empty.concat(schema._flags.empty);
+            const flags = Object.assign({}, schema._flags);
+            delete flags.empty;
+            Hoek.merge(obj._flags, flags);
+        }
+        else if (schema._flags.empty) {
+            obj._flags.empty = schema._flags.empty;
+            const flags = Object.assign({}, schema._flags);
+            delete flags.empty;
+            Hoek.merge(obj._flags, flags);
+        }
+        else {
+            Hoek.merge(obj._flags, schema._flags);
+        }
+
+        obj._description = schema._description || obj._description;
+        obj._unit = schema._unit || obj._unit;
+        obj._notes.push(...schema._notes);
+        obj._tags.push(...schema._tags);
+        obj._examples.push(...schema._examples);
+        obj._meta.push(...schema._meta);
+
+        const inners = Object.keys(schema._inner);
+        const isObject = obj._type === 'object';
+        for (let i = 0; i < inners.length; ++i) {
+            const key = inners[i];
+            const source = schema._inner[key];
+            if (source) {
+                const target = obj._inner[key];
+                if (target) {
+                    if (isObject && key === 'children') {
+                        const keys = {};
+
+                        for (let j = 0; j < target.length; ++j) {
+                            keys[target[j].key] = j;
+                        }
+
+                        for (let j = 0; j < source.length; ++j) {
+                            const sourceKey = source[j].key;
+                            if (keys[sourceKey] >= 0) {
+                                target[keys[sourceKey]] = {
+                                    key: sourceKey,
+                                    schema: target[keys[sourceKey]].schema.concat(source[j].schema)
+                                };
+                            }
+                            else {
+                                target.push(source[j]);
+                            }
+                        }
+                    }
+                    else {
+                        obj._inner[key] = obj._inner[key].concat(source);
+                    }
+                }
+                else {
+                    obj._inner[key] = source.slice();
+                }
+            }
+        }
+
+        return obj;
+    }
+
+    _test(name, arg, func, options) {
+
+        const obj = this.clone();
+        obj._tests.push({ func, name, arg, options });
+        return obj;
+    }
+
+    _testUnique(name, arg, func, options) {
+
+        const obj = this.clone();
+        obj._tests = obj._tests.filter((test) => test.name !== name);
+        obj._tests.push({ func, name, arg, options });
+        return obj;
+    }
+
+    options(options) {
+
+        Hoek.assert(!options.context, 'Cannot override context');
+        this.checkOptions(options);
+
+        const obj = this.clone();
+        obj._settings = Settings.concat(obj._settings, options);
+        return obj;
+    }
+
+    strict(isStrict) {
+
+        const obj = this.clone();
+
+        const convert = isStrict === undefined ? false : !isStrict;
+        obj._settings = Settings.concat(obj._settings, { convert });
+        return obj;
+    }
+
+    raw(isRaw) {
+
+        const value = isRaw === undefined ? true : isRaw;
+
+        if (this._flags.raw === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.raw = value;
+        return obj;
+    }
+
+    error(err, options = { self: false }) {
+
+        Hoek.assert(err && (err instanceof Error || typeof err === 'function'), 'Must provide a valid Error object or a function');
+
+        const unknownKeys = Object.keys(options).filter((k) => !['self'].includes(k));
+        Hoek.assert(unknownKeys.length === 0, `Options ${unknownKeys} are unknown`);
+
+        const obj = this.clone();
+        obj._flags.error = err;
+
+        if (options.self) {
+            obj._flags.selfError = true;
+        }
+
+        return obj;
+    }
+
+    allow(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
+            obj._invalids.remove(value);
+            obj._valids.add(value, obj._refs);
+        }
+
+        return obj;
+    }
+
+    valid(...values) {
+
+        const obj = this.allow(...values);
+        obj._flags.allowOnly = true;
+        return obj;
+    }
+
+    invalid(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
+            obj._valids.remove(value);
+            obj._invalids.add(value, obj._refs);
+        }
+
+        return obj;
+    }
+
+    required() {
+
+        if (this._flags.presence === 'required') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'required';
+        return obj;
+    }
+
+    optional() {
+
+        if (this._flags.presence === 'optional') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'optional';
+        return obj;
+    }
+
+
+    forbidden() {
+
+        if (this._flags.presence === 'forbidden') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'forbidden';
+        return obj;
+    }
+
+
+    strip() {
+
+        if (this._flags.strip) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.strip = true;
+        return obj;
+    }
+
+    applyFunctionToChildren(children, fn, args = [], root) {
+
+        children = [].concat(children);
+
+        if (children.length !== 1 || children[0] !== '') {
+            root = root ? (root + '.') : '';
+
+            const extraChildren = (children[0] === '' ? children.slice(1) : children).map((child) => {
+
+                return root + child;
+            });
+
+            throw new Error('unknown key(s) ' + extraChildren.join(', '));
+        }
+
+        return this[fn](...args);
+    }
+
+    default(value, description) {
+
+        if (typeof value === 'function' &&
+            !Ref.isRef(value)) {
+
+            if (!value.description &&
+                description) {
+
+                value.description = description;
+            }
+
+            if (!this._flags.func) {
+                Hoek.assert(typeof value.description === 'string' && value.description.length > 0, 'description must be provided when default value is a function');
+            }
+        }
+
+        const obj = this.clone();
+        obj._flags.default = value;
+        Ref.push(obj._refs, value);
+        return obj;
+    }
+
+    empty(schema) {
+
+        const obj = this.clone();
+        if (schema === undefined) {
+            delete obj._flags.empty;
+        }
+        else {
+            obj._flags.empty = Cast.schema(this._currentJoi, schema);
+        }
+
+        return obj;
+    }
+
+    when(condition, options) {
+
+        Hoek.assert(options && typeof options === 'object', 'Invalid options');
+        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
+
+        const then = options.hasOwnProperty('then') ? this.concat(Cast.schema(this._currentJoi, options.then)) : undefined;
+        const otherwise = options.hasOwnProperty('otherwise') ? this.concat(Cast.schema(this._currentJoi, options.otherwise)) : undefined;
+
+        Alternatives = Alternatives || require('../alternatives');
+
+        const alternativeOptions = { then, otherwise };
+        if (Object.prototype.hasOwnProperty.call(options, 'is')) {
+            alternativeOptions.is = options.is;
+        }
+
+        const obj = Alternatives.when(condition, alternativeOptions);
+        obj._flags.presence = 'ignore';
+        obj._baseType = this;
+
+        return obj;
+    }
+
+    description(desc) {
+
+        Hoek.assert(desc && typeof desc === 'string', 'Description must be a non-empty string');
+
+        const obj = this.clone();
+        obj._description = desc;
+        return obj;
+    }
+
+    notes(notes) {
+
+        Hoek.assert(notes && (typeof notes === 'string' || Array.isArray(notes)), 'Notes must be a non-empty string or array');
+
+        const obj = this.clone();
+        obj._notes = obj._notes.concat(notes);
+        return obj;
+    }
+
+    tags(tags) {
+
+        Hoek.assert(tags && (typeof tags === 'string' || Array.isArray(tags)), 'Tags must be a non-empty string or array');
+
+        const obj = this.clone();
+        obj._tags = obj._tags.concat(tags);
+        return obj;
+    }
+
+    meta(meta) {
+
+        Hoek.assert(meta !== undefined, 'Meta cannot be undefined');
+
+        const obj = this.clone();
+        obj._meta = obj._meta.concat(meta);
+        return obj;
+    }
+
+    example(...examples) {
+
+        Hoek.assert(examples.length > 0, 'Missing examples');
+
+        const processed = [];
+        for (let i = 0; i < examples.length; ++i) {
+            const example = [].concat(examples[i]);
+            Hoek.assert(example.length <= 2, `Bad example format at index ${i}`);
+
+            const value = example[0];
+            let options = example[1];
+            if (options !== undefined) {
+                Hoek.assert(options && typeof options === 'object', `Options for example at index ${i} must be an object`);
+                const unknownOptions = Object.keys(options).filter((option) => !['parent', 'context'].includes(option));
+                Hoek.assert(unknownOptions.length === 0, `Unknown example options ${unknownOptions} at index ${i}`);
+            }
+            else {
+                options = {};
+            }
+
+            const localState = new State('', [], options.parent || null);
+            const result = this._validate(value, localState, Settings.concat(internals.defaults, options.context ? { context: options.context } : null));
+            Hoek.assert(!result.errors, `Bad example at index ${i}:`, result.errors && Errors.process(result.errors, value));
+
+            const ex = { value };
+            if (Object.keys(options).length) {
+                ex.options = options;
+            }
+
+            processed.push(ex);
+        }
+
+        const obj = this.clone();
+        obj._examples = processed;
+        return obj;
+    }
+
+    unit(name) {
+
+        Hoek.assert(name && typeof name === 'string', 'Unit name must be a non-empty string');
+
+        const obj = this.clone();
+        obj._unit = name;
+        return obj;
+    }
+
+    _prepareEmptyValue(value) {
+
+        if (typeof value === 'string' && this._flags.trim) {
+            return value.trim();
+        }
+
+        return value;
+    }
+
+    _validate(value, state, options, reference) {
+
+        const originalValue = value;
+
+        // Setup state and settings
+
+        state = state || new State('', [], null, reference);
+
+        if (this._settings) {
+            const isDefaultOptions = options === internals.defaults;
+            if (isDefaultOptions && this._settings[Symbols.settingsCache]) {
+                options = this._settings[Symbols.settingsCache];
+            }
+            else {
+                options = Settings.concat(this._language ? Settings.concat({ language: this._language }, options) : options, this._settings);
+                if (isDefaultOptions) {
+                    this._settings[Symbols.settingsCache] = options;
+                }
+            }
+        }
+        else if (this._language) {
+            options = Settings.concat({ language: this._language }, options);
+        }
+
+        let errors = [];
+
+        if (this._coerce) {
+            const coerced = this._coerce(value, state, options);
+            if (coerced.errors) {
+                value = coerced.value;
+                errors = errors.concat(coerced.errors);
+                return this._finalizeValue(value, originalValue, errors, state, options);                            // Coerced error always aborts early
+            }
+
+            value = coerced.value;
+        }
+
+        if (this._flags.empty && !this._flags.empty._validate(this._prepareEmptyValue(value), null, internals.defaults).errors) {
+            value = undefined;
+        }
+
+        // Check presence requirements
+
+        const presence = this._flags.presence || options.presence;
+        if (presence === 'optional') {
+            if (value === undefined) {
+                const isDeepDefault = this._flags.hasOwnProperty('default') && this._flags.default === undefined;
+                if (isDeepDefault && this._type === 'object') {
+                    value = {};
+                }
+                else {
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+            }
+        }
+        else if (presence === 'required' &&
+            value === undefined) {
+
+            errors.push(this.createError('any.required', null, state, options));
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+        else if (presence === 'forbidden') {
+            if (value === undefined) {
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+
+            errors.push(this.createError('any.unknown', null, state, options));
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+
+        // Check allowed and denied values using the original value
+
+        let match = this._valids.get(value, state, options, this._flags.insensitive);
+        if (match) {
+            if (options.convert) {
+                value = match.value;
+            }
+
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+
+        if (this._invalids.has(value, state, options, this._flags.insensitive)) {
+            errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
+            if (options.abortEarly) {
+
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+        }
+
+        // Convert value and validate type
+
+        if (this._base) {
+            const base = this._base(value, state, options);
+            if (base.errors) {
+                value = base.value;
+                errors = errors.concat(base.errors);
+                return this._finalizeValue(value, originalValue, errors, state, options);                            // Base error always aborts early
+            }
+
+            if (base.value !== value) {
+                value = base.value;
+
+                // Check allowed and denied values using the converted value
+
+                match = this._valids.get(value, state, options, this._flags.insensitive);
+                if (match) {
+                    value = match.value;
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+
+                if (this._invalids.has(value, state, options, this._flags.insensitive)) {
+                    errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
+                    if (options.abortEarly) {
+                        return this._finalizeValue(value, originalValue, errors, state, options);
+                    }
+                }
+            }
+        }
+
+        // Required values did not match
+
+        if (this._flags.allowOnly) {
+            errors.push(this.createError('any.allowOnly', { value, valids: this._valids.values({ stripUndefined: true }) }, state, options));
+            if (options.abortEarly) {
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+        }
+
+        // Validate tests
+
+        for (let i = 0; i < this._tests.length; ++i) {
+            const test = this._tests[i];
+            const ret = test.func.call(this, value, state, options);
+            if (ret instanceof Errors.Err) {
+                errors.push(ret);
+                if (options.abortEarly) {
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+            }
+            else {
+                value = ret;
+            }
+        }
+
+        return this._finalizeValue(value, originalValue, errors, state, options);
+    }
+
+    _finalizeValue(value, originalValue, errors, state, options) {
+
+        let finalValue;
+
+        if (value !== undefined) {
+            finalValue = this._flags.raw ? originalValue : value;
+        }
+        else if (options.noDefaults) {
+            finalValue = value;
+        }
+        else if (Ref.isRef(this._flags.default)) {
+            finalValue = this._flags.default(state.parent, options);
+        }
+        else if (typeof this._flags.default === 'function' &&
+            !(this._flags.func && !this._flags.default.description)) {
+
+            let args;
+
+            if (state.parent !== null &&
+                this._flags.default.length > 0) {
+
+                args = [Hoek.clone(state.parent), options];
+            }
+
+            const defaultValue = internals._try(this._flags.default, args);
+            finalValue = defaultValue.value;
+            if (defaultValue.error) {
+                errors.push(this.createError('any.default', { error: defaultValue.error }, state, options));
+            }
+        }
+        else {
+            finalValue = Hoek.clone(this._flags.default);
+        }
+
+        if (errors.length &&
+            typeof this._flags.error === 'function' &&
+            (
+                !this._flags.selfError ||
+                errors.some((e) => state.path.length === e.path.length)
+            )
+        ) {
+            const change = this._flags.error.call(this, errors);
+
+            if (typeof change === 'string') {
+                errors = [this.createOverrideError('override', { reason: errors }, state, options, change)];
+            }
+            else {
+                errors = [].concat(change)
+                    .map((err) => {
+
+                        return err instanceof Error ?
+                            err :
+                            this.createOverrideError(err.type || 'override', err.context, state, options, err.message, err.template);
+                    });
+            }
+        }
+
+        return {
+            value: this._flags.strip ? undefined : finalValue,
+            finalValue,
+            errors: errors.length ? errors : null
+        };
+    }
+
+    _validateWithOptions(value, options, callback) {
+
+        if (options) {
+            this.checkOptions(options);
+        }
+
+        const settings = Settings.concat(internals.defaults, options);
+        const result = this._validate(value, null, settings);
+        const errors = Errors.process(result.errors, value);
+
+        if (callback) {
+            return callback(errors, result.value);
+        }
+
+        return {
+            error: errors,
+            value: result.value,
+            then(resolve, reject) {
+
+                if (errors) {
+                    return Promise.reject(errors).catch(reject);
+                }
+
+                return Promise.resolve(result.value).then(resolve);
+            },
+            catch(reject) {
+
+                if (errors) {
+                    return Promise.reject(errors).catch(reject);
+                }
+
+                return Promise.resolve(result.value);
+            }
+        };
+    }
+
+    validate(value, options, callback) {
+
+        if (typeof options === 'function') {
+            return this._validateWithOptions(value, null, options);
+        }
+
+        return this._validateWithOptions(value, options, callback);
+    }
+
+    describe() {
+
+        const description = {
+            type: this._type
+        };
+
+        const flags = Object.keys(this._flags);
+        if (flags.length) {
+            if (['empty', 'default', 'lazy', 'label'].some((flag) => this._flags.hasOwnProperty(flag))) {
+                description.flags = {};
+                for (let i = 0; i < flags.length; ++i) {
+                    const flag = flags[i];
+                    if (flag === 'empty') {
+                        description.flags[flag] = this._flags[flag].describe();
+                    }
+                    else if (flag === 'default') {
+                        if (Ref.isRef(this._flags[flag])) {
+                            description.flags[flag] = this._flags[flag].toString();
+                        }
+                        else if (typeof this._flags[flag] === 'function') {
+                            description.flags[flag] = {
+                                description: this._flags[flag].description,
+                                function   : this._flags[flag]
+                            };
+                        }
+                        else {
+                            description.flags[flag] = this._flags[flag];
+                        }
+                    }
+                    else if (flag === 'lazy' || flag === 'label') {
+                        // We don't want it in the description
+                    }
+                    else {
+                        description.flags[flag] = this._flags[flag];
+                    }
+                }
+            }
+            else {
+                description.flags = this._flags;
+            }
+        }
+
+        if (this._settings) {
+            description.options = Hoek.clone(this._settings);
+        }
+
+        if (this._baseType) {
+            description.base = this._baseType.describe();
+        }
+
+        if (this._description) {
+            description.description = this._description;
+        }
+
+        if (this._notes.length) {
+            description.notes = this._notes;
+        }
+
+        if (this._tags.length) {
+            description.tags = this._tags;
+        }
+
+        if (this._meta.length) {
+            description.meta = this._meta;
+        }
+
+        if (this._examples.length) {
+            description.examples = this._examples;
+        }
+
+        if (this._unit) {
+            description.unit = this._unit;
+        }
+
+        const valids = this._valids.values();
+        if (valids.length) {
+            description.valids = valids.map((v) => {
+
+                return Ref.isRef(v) ? v.toString() : v;
+            });
+        }
+
+        const invalids = this._invalids.values();
+        if (invalids.length) {
+            description.invalids = invalids.map((v) => {
+
+                return Ref.isRef(v) ? v.toString() : v;
+            });
+        }
+
+        description.rules = [];
+
+        for (let i = 0; i < this._tests.length; ++i) {
+            const validator = this._tests[i];
+            const item = { name: validator.name };
+
+            if (validator.arg !== void 0) {
+                item.arg = Ref.isRef(validator.arg) ? validator.arg.toString() : validator.arg;
+            }
+
+            const options = validator.options;
+            if (options) {
+                if (options.hasRef) {
+                    item.arg = {};
+                    const keys = Object.keys(validator.arg);
+                    for (let j = 0; j < keys.length; ++j) {
+                        const key = keys[j];
+                        const value = validator.arg[key];
+                        item.arg[key] = Ref.isRef(value) ? value.toString() : value;
+                    }
+                }
+
+                if (typeof options.description === 'string') {
+                    item.description = options.description;
+                }
+                else if (typeof options.description === 'function') {
+                    item.description = options.description(item.arg);
+                }
+            }
+
+            description.rules.push(item);
+        }
+
+        if (!description.rules.length) {
+            delete description.rules;
+        }
+
+        const label = this._getLabel();
+        if (label) {
+            description.label = label;
+        }
+
+        return description;
+    }
+
+    label(name) {
+
+        Hoek.assert(name && typeof name === 'string', 'Label name must be a non-empty string');
+
+        const obj = this.clone();
+        obj._flags.label = name;
+        return obj;
+    }
+
+    _getLabel(def) {
+
+        return this._flags.label || def;
+    }
+
+};
+
+
+internals.Any.prototype.isImmutable = true;     // Prevents Hoek from deep cloning schema objects
+
+// Aliases
+
+internals.Any.prototype.only = internals.Any.prototype.equal = internals.Any.prototype.valid;
+internals.Any.prototype.disallow = internals.Any.prototype.not = internals.Any.prototype.invalid;
+internals.Any.prototype.exist = internals.Any.prototype.required;
+
+
+internals._try = function (fn, args = []) {
+
+    let err;
+    let result;
+
+    try {
+        result = fn(...args);
+    }
+    catch (e) {
+        err = e;
+    }
+
+    return {
+        value: result,
+        error: err
+    };
+};
+
+},{"../../cast":7,"../../errors":8,"../../ref":11,"../../schemas":12,"../../set":13,"../alternatives":14,"../state":25,"../symbols":31,"./settings":16,"@hapi/hoek":6}],16:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Symbols = require('../symbols');
+
+
+const internals = {};
+
+
+exports.concat = function (target, source) {
+
+    if (!source) {
+        return target;
+    }
+
+    const obj = Object.assign({}, target);
+
+    const language = source.language;
+
+    Object.assign(obj, source);
+
+    if (language && target && target.language) {
+        obj.language = Hoek.applyToDefaults(target.language, language);
+    }
+
+    if (obj[Symbols.settingsCache]) {
+        delete obj[Symbols.settingsCache];
+    }
+
+    return obj;
+};
+
+},{"../symbols":31,"@hapi/hoek":6}],17:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Cast = require('../../cast');
+const Ref = require('../../ref');
+const State = require('../state');
+
+
+const internals = {};
+
+
+internals.fastSplice = function (arr, i) {
+
+    let pos = i;
+    while (pos < arr.length) {
+        arr[pos++] = arr[pos];
+    }
+
+    --arr.length;
+};
+
+
+internals.Array = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'array';
+        this._inner.items = [];
+        this._inner.ordereds = [];
+        this._inner.inclusions = [];
+        this._inner.exclusions = [];
+        this._inner.requireds = [];
+        this._flags.sparse = false;
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (value.length > 1 &&
+                (value[0] === '[' || /^\s*\[/.test(value))) {
+
+                try {
+                    result.value = JSON.parse(value);
+                }
+                catch (e) { }
+            }
+        }
+
+        let isArray = Array.isArray(result.value);
+        const wasArray = isArray;
+        if (options.convert && this._flags.single && !isArray) {
+            result.value = [result.value];
+            isArray = true;
+        }
+
+        if (!isArray) {
+            result.errors = this.createError('array.base', null, state, options);
+            return result;
+        }
+
+        if (this._inner.inclusions.length ||
+            this._inner.exclusions.length ||
+            this._inner.requireds.length ||
+            this._inner.ordereds.length ||
+            !this._flags.sparse) {
+
+            // Clone the array so that we don't modify the original
+            if (wasArray) {
+                result.value = result.value.slice(0);
+            }
+
+            result.errors = this._checkItems(result.value, wasArray, state, options);
+
+            if (result.errors && wasArray && options.convert && this._flags.single) {
+
+                // Attempt a 2nd pass by putting the array inside one.
+                const previousErrors = result.errors;
+
+                result.value = [result.value];
+                result.errors = this._checkItems(result.value, wasArray, state, options);
+
+                if (result.errors) {
+
+                    // Restore previous errors and value since this didn't validate either.
+                    result.errors = previousErrors;
+                    result.value = result.value[0];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    _checkItems(items, wasArray, state, options) {
+
+        const errors = [];
+        let errored;
+
+        const requireds = this._inner.requireds.slice();
+        const ordereds = this._inner.ordereds.slice();
+        const inclusions = [...this._inner.inclusions, ...requireds];
+
+        let il = items.length;
+        for (let i = 0; i < il; ++i) {
+            errored = false;
+            const item = items[i];
+            let isValid = false;
+            const key = wasArray ? i : state.key;
+            const path = wasArray ? [...state.path, i] : state.path;
+            const localState = new State(key, path, state.parent, state.reference);
+            let res;
+
+            // Sparse
+
+            if (!this._flags.sparse && item === undefined) {
+                errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                if (options.abortEarly) {
+                    return errors;
+                }
+
+                ordereds.shift();
+
+                continue;
+            }
+
+            // Exclusions
+
+            for (let j = 0; j < this._inner.exclusions.length; ++j) {
+                res = this._inner.exclusions[j]._validate(item, localState, {});                // Not passing options to use defaults
+
+                if (!res.errors) {
+                    errors.push(this.createError(wasArray ? 'array.excludes' : 'array.excludesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
+                    errored = true;
+
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    ordereds.shift();
+
+                    break;
+                }
+            }
+
+            if (errored) {
+                continue;
+            }
+
+            // Ordered
+            if (this._inner.ordereds.length) {
+                if (ordereds.length > 0) {
+                    const ordered = ordereds.shift();
+                    res = ordered._validate(item, localState, options);
+                    if (!res.errors) {
+                        if (ordered._flags.strip) {
+                            internals.fastSplice(items, i);
+                            --i;
+                            --il;
+                        }
+                        else if (!this._flags.sparse && res.value === undefined) {
+                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                            if (options.abortEarly) {
+                                return errors;
+                            }
+
+                            continue;
+                        }
+                        else {
+                            items[i] = res.value;
+                        }
+                    }
+                    else {
+                        errors.push(this.createError('array.ordered', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
+                        if (options.abortEarly) {
+                            return errors;
+                        }
+                    }
+
+                    continue;
+                }
+                else if (!this._inner.items.length) {
+                    errors.push(this.createError('array.orderedLength', { pos: i, limit: this._inner.ordereds.length }, { key: state.key, path: localState.path }, options));
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    continue;
+                }
+            }
+
+            // Requireds
+
+            const requiredChecks = [];
+            let jl = requireds.length;
+            for (let j = 0; j < jl; ++j) {
+                res = requiredChecks[j] = requireds[j]._validate(item, localState, options);
+                if (!res.errors) {
+                    items[i] = res.value;
+                    isValid = true;
+                    internals.fastSplice(requireds, j);
+                    --j;
+                    --jl;
+
+                    if (!this._flags.sparse && res.value === undefined) {
+                        errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                        if (options.abortEarly) {
+                            return errors;
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            if (isValid) {
+                continue;
+            }
+
+            // Inclusions
+
+            const stripUnknown = options.stripUnknown && !!options.stripUnknown.arrays || false;
+
+            jl = inclusions.length;
+            for (let j = 0; j < jl; ++j) {
+                const inclusion = inclusions[j];
+
+                // Avoid re-running requireds that already didn't match in the previous loop
+                const previousCheck = requireds.indexOf(inclusion);
+                if (previousCheck !== -1) {
+                    res = requiredChecks[previousCheck];
+                }
+                else {
+                    res = inclusion._validate(item, localState, options);
+
+                    if (!res.errors) {
+                        if (inclusion._flags.strip) {
+                            internals.fastSplice(items, i);
+                            --i;
+                            --il;
+                        }
+                        else if (!this._flags.sparse && res.value === undefined) {
+                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+                            errored = true;
+                        }
+                        else {
+                            items[i] = res.value;
+                        }
+
+                        isValid = true;
+                        break;
+                    }
+                }
+
+                // Return the actual error if only one inclusion defined
+                if (jl === 1) {
+                    if (stripUnknown) {
+                        internals.fastSplice(items, i);
+                        --i;
+                        --il;
+                        isValid = true;
+                        break;
+                    }
+
+                    errors.push(this.createError(wasArray ? 'array.includesOne' : 'array.includesOneSingle', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
+                    errored = true;
+
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    break;
+                }
+            }
+
+            if (errored) {
+                continue;
+            }
+
+            if (this._inner.inclusions.length && !isValid) {
+                if (stripUnknown) {
+                    internals.fastSplice(items, i);
+                    --i;
+                    --il;
+                    continue;
+                }
+
+                errors.push(this.createError(wasArray ? 'array.includes' : 'array.includesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
+
+                if (options.abortEarly) {
+                    return errors;
+                }
+            }
+        }
+
+        if (requireds.length) {
+            this._fillMissedErrors(errors, requireds, state, options);
+        }
+
+        if (ordereds.length) {
+            this._fillOrderedErrors(errors, ordereds, state, options);
+        }
+
+        return errors.length ? errors : null;
+    }
+
+    describe() {
+
+        const description = super.describe();
+
+        if (this._inner.ordereds.length) {
+            description.orderedItems = [];
+
+            for (let i = 0; i < this._inner.ordereds.length; ++i) {
+                description.orderedItems.push(this._inner.ordereds[i].describe());
+            }
+        }
+
+        if (this._inner.items.length) {
+            description.items = [];
+
+            for (let i = 0; i < this._inner.items.length; ++i) {
+                description.items.push(this._inner.items[i].describe());
+            }
+        }
+
+        if (description.rules) {
+            for (let i = 0; i < description.rules.length; ++i) {
+                const rule = description.rules[i];
+                if (rule.name === 'has') {
+                    rule.arg = rule.arg.describe();
+                }
+            }
+        }
+
+        return description;
+    }
+
+    items(...schemas) {
+
+        const obj = this.clone();
+
+        Hoek.flatten(schemas).forEach((type, index) => {
+
+            try {
+                type = Cast.schema(this._currentJoi, type);
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = index + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = index;
+                }
+
+                castErr.message = `${castErr.message}(${castErr.path})`;
+                throw castErr;
+            }
+
+            obj._inner.items.push(type);
+
+            if (type._flags.presence === 'required') {
+                obj._inner.requireds.push(type);
+            }
+            else if (type._flags.presence === 'forbidden') {
+                obj._inner.exclusions.push(type.optional());
+            }
+            else {
+                obj._inner.inclusions.push(type);
+            }
+        });
+
+        return obj;
+    }
+
+    ordered(...schemas) {
+
+        const obj = this.clone();
+
+        Hoek.flatten(schemas).forEach((type, index) => {
+
+            try {
+                type = Cast.schema(this._currentJoi, type);
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = index + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = index;
+                }
+
+                castErr.message = `${castErr.message}(${castErr.path})`;
+                throw castErr;
+            }
+
+            obj._inner.ordereds.push(type);
+        });
+
+        return obj;
+    }
+
+    min(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('min', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit, value: compareTo }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length >= compareTo) {
+                return value;
+            }
+
+            return this.createError('array.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('max', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length <= compareTo) {
+                return value;
+            }
+
+            return this.createError('array.max', { limit, value }, state, options);
+        });
+    }
+
+    length(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('length', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length === compareTo) {
+                return value;
+            }
+
+            return this.createError('array.length', { limit, value }, state, options);
+        });
+    }
+
+    has(schema) {
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        return this._test('has', schema, function (value, state, options) {
+
+            const isValid = value.some((item, idx) => {
+
+                const localState = new State(idx, [...state.path, idx], state.key, state.reference);
+                return !schema._validate(item, localState, options).errors;
+            });
+
+            if (isValid) {
+                return value;
+            }
+
+            const patternLabel = schema._getLabel();
+            if (patternLabel) {
+                return this.createError('array.hasKnown', { patternLabel }, state, options);
+            }
+
+            return this.createError('array.hasUnknown', null, state, options);
+        });
+    }
+
+    unique(comparator, configs) {
+
+        Hoek.assert(comparator === undefined ||
+            typeof comparator === 'function' ||
+            typeof comparator === 'string', 'comparator must be a function or a string');
+
+        Hoek.assert(configs === undefined ||
+            typeof configs === 'object', 'configs must be an object');
+
+        const settings = {
+            ignoreUndefined: (configs && configs.ignoreUndefined) || false
+        };
+
+
+        if (typeof comparator === 'string') {
+            settings.path = comparator;
+        }
+        else if (typeof comparator === 'function') {
+            settings.comparator = comparator;
+        }
+
+        return this._test('unique', settings, function (value, state, options) {
+
+            const found = {
+                string: Object.create(null),
+                number: Object.create(null),
+                undefined: Object.create(null),
+                boolean: Object.create(null),
+                object: new Map(),
+                function: new Map(),
+                custom: new Map()
+            };
+
+            const compare = settings.comparator || Hoek.deepEqual;
+            const ignoreUndefined = settings.ignoreUndefined;
+
+            for (let i = 0; i < value.length; ++i) {
+                const item = settings.path ? Hoek.reach(value[i], settings.path) : value[i];
+                const records = settings.comparator ? found.custom : found[typeof item];
+
+                // All available types are supported, so it's not possible to reach 100% coverage without ignoring this line.
+                // I still want to keep the test for future js versions with new types (eg. Symbol).
+                if (/* $lab:coverage:off$ */ records /* $lab:coverage:on$ */) {
+                    if (records instanceof Map) {
+                        const entries = records.entries();
+                        let current;
+                        while (!(current = entries.next()).done) {
+                            if (compare(current.value[0], item)) {
+                                const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
+                                const context = {
+                                    pos: i,
+                                    value: value[i],
+                                    dupePos: current.value[1],
+                                    dupeValue: value[current.value[1]]
+                                };
+
+                                if (settings.path) {
+                                    context.path = settings.path;
+                                }
+
+                                return this.createError('array.unique', context, localState, options);
+                            }
+                        }
+
+                        records.set(item, i);
+                    }
+                    else {
+                        if ((!ignoreUndefined || item !== undefined) && records[item] !== undefined) {
+                            const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
+
+                            const context = {
+                                pos: i,
+                                value: value[i],
+                                dupePos: records[item],
+                                dupeValue: value[records[item]]
+                            };
+
+                            if (settings.path) {
+                                context.path = settings.path;
+                            }
+
+                            return this.createError('array.unique', context, localState, options);
+                        }
+
+                        records[item] = i;
+                    }
+                }
+            }
+
+            return value;
+        });
+    }
+
+    sparse(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.sparse === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.sparse = value;
+        return obj;
+    }
+
+    single(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.single === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.single = value;
+        return obj;
+    }
+
+    _fillMissedErrors(errors, requireds, state, options) {
+
+        const knownMisses = [];
+        let unknownMisses = 0;
+        for (let i = 0; i < requireds.length; ++i) {
+            const label = requireds[i]._getLabel();
+            if (label) {
+                knownMisses.push(label);
+            }
+            else {
+                ++unknownMisses;
+            }
+        }
+
+        if (knownMisses.length) {
+            if (unknownMisses) {
+                errors.push(this.createError('array.includesRequiredBoth', { knownMisses, unknownMisses }, { key: state.key, path: state.path }, options));
+            }
+            else {
+                errors.push(this.createError('array.includesRequiredKnowns', { knownMisses }, { key: state.key, path: state.path }, options));
+            }
+        }
+        else {
+            errors.push(this.createError('array.includesRequiredUnknowns', { unknownMisses }, { key: state.key, path: state.path }, options));
+        }
+    }
+
+
+    _fillOrderedErrors(errors, ordereds, state, options) {
+
+        const requiredOrdereds = [];
+
+        for (let i = 0; i < ordereds.length; ++i) {
+            const presence = Hoek.reach(ordereds[i], '_flags.presence');
+            if (presence === 'required') {
+                requiredOrdereds.push(ordereds[i]);
+            }
+        }
+
+        if (requiredOrdereds.length) {
+            this._fillMissedErrors(errors, requiredOrdereds, state, options);
+        }
+    }
+
+};
+
+
+module.exports = new internals.Array();
+
+},{"../../cast":7,"../../ref":11,"../any":15,"../state":25,"@hapi/hoek":6}],18:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Binary = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'binary';
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            try {
+                result.value = Buffer.from(value, this._flags.encoding);
+            }
+            catch (e) { }
+        }
+
+        result.errors = Buffer.isBuffer(result.value) ? null : this.createError('binary.base', null, state, options);
+        return result;
+    }
+
+    encoding(encoding) {
+
+        Hoek.assert(Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
+
+        if (this._flags.encoding === encoding) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.encoding = encoding;
+        return obj;
+    }
+
+    min(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('min', limit, function (value, state, options) {
+
+            if (value.length >= limit) {
+                return value;
+            }
+
+            return this.createError('binary.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('max', limit, function (value, state, options) {
+
+            if (value.length <= limit) {
+                return value;
+            }
+
+            return this.createError('binary.max', { limit, value }, state, options);
+        });
+    }
+
+    length(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('length', limit, function (value, state, options) {
+
+            if (value.length === limit) {
+                return value;
+            }
+
+            return this.createError('binary.length', { limit, value }, state, options);
+        });
+    }
+
+};
+
+
+module.exports = new internals.Binary();
+
+}).call(this,require("buffer").Buffer)
+},{"../any":15,"@hapi/hoek":6,"buffer":94}],19:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {
+    Set: require('../../set')
+};
+
+
+internals.Boolean = class extends Any {
+    constructor() {
+
+        super();
+        this._type = 'boolean';
+        this._flags.insensitive = true;
+        this._inner.truthySet = new internals.Set();
+        this._inner.falsySet = new internals.Set();
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            const normalized = this._flags.insensitive ? value.toLowerCase() : value;
+            result.value = (normalized === 'true' ? true
+                : (normalized === 'false' ? false : value));
+        }
+
+        if (typeof result.value !== 'boolean') {
+            result.value = (this._inner.truthySet.has(value, null, null, this._flags.insensitive) ? true
+                : (this._inner.falsySet.has(value, null, null, this._flags.insensitive) ? false : value));
+        }
+
+        result.errors = (typeof result.value === 'boolean') ? null : this.createError('boolean.base', { value }, state, options);
+        return result;
+    }
+
+    truthy(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call truthy with undefined');
+            obj._inner.truthySet.add(value);
+        }
+
+        return obj;
+    }
+
+    falsy(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call falsy with undefined');
+            obj._inner.falsySet.add(value);
+        }
+
+        return obj;
+    }
+
+    insensitive(enabled) {
+
+        const insensitive = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.insensitive === insensitive) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.insensitive = insensitive;
+        return obj;
+    }
+
+    describe() {
+
+        const description = super.describe();
+        description.truthy = [true, ...this._inner.truthySet.values()];
+        description.falsy = [false, ...this._inner.falsySet.values()];
+        return description;
+    }
+};
+
+
+module.exports = new internals.Boolean();
+
+},{"../../set":13,"../any":15,"@hapi/hoek":6}],20:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+internals.isoDate = /^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/;
+internals.invalidDate = new Date('');
+internals.isIsoDate = (() => {
+
+    const isoString = internals.isoDate.toString();
+
+    return (date) => {
+
+        return date && (date.toString() === isoString);
+    };
+})();
+
+internals.Date = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'date';
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value: (options.convert && internals.Date.toDate(value, this._flags.format, this._flags.timestamp, this._flags.multiplier)) || value
+        };
+
+        if (result.value instanceof Date && !isNaN(result.value.getTime())) {
+            result.errors = null;
+        }
+        else if (!options.convert) {
+            result.errors = this.createError('date.strict', { value }, state, options);
+        }
+        else {
+            let type;
+            if (internals.isIsoDate(this._flags.format)) {
+                type = 'isoDate';
+            }
+            else if (this._flags.timestamp) {
+                type = `timestamp.${this._flags.timestamp}`;
+            }
+            else {
+                type = 'base';
+            }
+
+            result.errors = this.createError(`date.${type}`, { value }, state, options);
+        }
+
+        return result;
+    }
+
+    static toDate(value, format, timestamp, multiplier) {
+
+        if (value instanceof Date) {
+            return value;
+        }
+
+        if (typeof value === 'string' ||
+            (typeof value === 'number' && !isNaN(value) && isFinite(value))) {
+
+            const isIsoDate = format && internals.isIsoDate(format);
+            if (!isIsoDate &&
+                typeof value === 'string' &&
+                /^[+-]?\d+(\.\d+)?$/.test(value)) {
+
+                value = parseFloat(value);
+            }
+
+            let date;
+            if (isIsoDate) {
+                date = format.test(value) ? new Date(value.toString()) : internals.invalidDate;
+            }
+            else if (timestamp) {
+                date = /^\s*$/.test(value) ? internals.invalidDate : new Date(value * multiplier);
+            }
+            else {
+                date = new Date(value);
+            }
+
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+        }
+
+        return null;
+    }
+
+    iso() {
+
+        if (this._flags.format === internals.isoDate) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.format = internals.isoDate;
+        return obj;
+    }
+
+    timestamp(type = 'javascript') {
+
+        const allowed = ['javascript', 'unix'];
+        Hoek.assert(allowed.includes(type), '"type" must be one of "' + allowed.join('", "') + '"');
+
+        if (this._flags.timestamp === type) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.timestamp = type;
+        obj._flags.multiplier = type === 'unix' ? 1000 : 1;
+        return obj;
+    }
+
+    _isIsoDate(value) {
+
+        return internals.isoDate.test(value);
+    }
+
+};
+
+internals.compare = function (type, compare) {
+
+    return function (date) {
+
+        const isNow = date === 'now';
+        const isRef = Ref.isRef(date);
+
+        if (!isNow && !isRef) {
+            date = internals.Date.toDate(date);
+        }
+
+        Hoek.assert(date, 'Invalid date format');
+
+        return this._test(type, date, function (value, state, options) {
+
+            let compareTo;
+            if (isNow) {
+                compareTo = Date.now();
+            }
+            else if (isRef) {
+                const refValue = date(state.reference || state.parent, options);
+                compareTo = internals.Date.toDate(refValue);
+
+                if (!compareTo) {
+                    return this.createError('date.ref', { ref: date, value: refValue }, state, options);
+                }
+
+                compareTo = compareTo.getTime();
+            }
+            else {
+                compareTo = date.getTime();
+            }
+
+            if (compare(value.getTime(), compareTo)) {
+                return value;
+            }
+
+            return this.createError('date.' + type, { limit: new Date(compareTo), value }, state, options);
+        });
+    };
+};
+
+
+internals.Date.prototype.min = internals.compare('min', (value, date) => value >= date);
+internals.Date.prototype.max = internals.compare('max', (value, date) => value <= date);
+internals.Date.prototype.greater = internals.compare('greater', (value, date) => value > date);
+internals.Date.prototype.less = internals.compare('less', (value, date) => value < date);
+
+
+module.exports = new internals.Date();
+
+},{"../../ref":11,"../any":15,"@hapi/hoek":6}],21:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const ObjectType = require('../object');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+
+internals.Func = class extends ObjectType.constructor {
+
+    constructor() {
+
+        super();
+        this._flags.func = true;
+    }
+
+    arity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
+
+        return this._test('arity', n, function (value, state, options) {
+
+            if (value.length === n) {
+                return value;
+            }
+
+            return this.createError('function.arity', { n }, state, options);
+        });
+    }
+
+    minArity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n > 0, 'n must be a strict positive integer');
+
+        return this._test('minArity', n, function (value, state, options) {
+
+            if (value.length >= n) {
+                return value;
+            }
+
+            return this.createError('function.minArity', { n }, state, options);
+        });
+    }
+
+    maxArity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
+
+        return this._test('maxArity', n, function (value, state, options) {
+
+            if (value.length <= n) {
+                return value;
+            }
+
+            return this.createError('function.maxArity', { n }, state, options);
+        });
+    }
+
+    ref() {
+
+        return this._test('ref', null, function (value, state, options) {
+
+            if (Ref.isRef(value)) {
+                return value;
+            }
+
+            return this.createError('function.ref', { value }, state, options);
+        });
+    }
+
+    class() {
+
+        return this._test('class', null, function (value, state, options) {
+
+            if ((/^\s*class\s/).test(value.toString())) {
+                return value;
+            }
+
+            return this.createError('function.class', { value }, state, options);
+        });
+    }
+};
+
+module.exports = new internals.Func();
+
+},{"../../ref":11,"../object":24,"@hapi/hoek":6}],22:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Lazy = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'lazy';
+        this._flags.once = true;
+        this._cache = null;
+    }
+
+    _init(fn, options) {
+
+        return this.set(fn, options);
+    }
+
+    _base(value, state, options) {
+
+        let schema;
+        if (this._cache) {
+            schema = this._cache;
+        }
+        else {
+            const result = { value };
+            const lazy = this._flags.lazy;
+
+            if (!lazy) {
+                result.errors = this.createError('lazy.base', null, state, options);
+                return result;
+            }
+
+            schema = lazy();
+
+            if (!(schema instanceof Any)) {
+                result.errors = this.createError('lazy.schema', { schema }, state, options);
+                return result;
+            }
+
+            if (this._flags.once) {
+                this._cache = schema;
+            }
+        }
+
+        return schema._validate(value, state, options);
+    }
+
+    set(fn, options) {
+
+        Hoek.assert(typeof fn === 'function', 'You must provide a function as first argument');
+        Hoek.assert(options === undefined || (options && typeof options === 'object' && !Array.isArray(options)), `Options must be an object`);
+
+        if (options) {
+            const unknownOptions = Object.keys(options).filter((key) => !['once'].includes(key));
+            Hoek.assert(unknownOptions.length === 0, `Options contain unknown keys: ${unknownOptions}`);
+            Hoek.assert(options.once === undefined || typeof options.once === 'boolean', 'Option "once" must be a boolean');
+        }
+
+        const obj = this.clone();
+        obj._flags.lazy = fn;
+
+        if (options && options.once !== obj._flags.once) {
+            obj._flags.once = options.once;
+        }
+
+        return obj;
+    }
+
+};
+
+module.exports = new internals.Lazy();
+
+},{"../any":15,"@hapi/hoek":6}],23:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+
+
+const internals = {
+    precisionRx: /(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/,
+    normalizeExponent(str) {
+
+        return str
+            .replace(/\.?0+e/, 'e')
+            .replace(/e\+/, 'e')
+            .replace(/^\+/, '')
+            .replace(/^(-?)0+([1-9])/, '$1$2');
+    },
+    normalizeDecimal(str) {
+
+        str = str
+            .replace(/^\+/, '')
+            .replace(/\.0+$/, '')
+            .replace(/^(-?)0+([1-9])/, '$1$2');
+
+        if (str.includes('.') && str.endsWith('0')) {
+            str = str.replace(/0+$/, '');
+        }
+
+        return str;
+    }
+};
+
+
+internals.Number = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'number';
+        this._flags.unsafe = false;
+        this._invalids.add(Infinity);
+        this._invalids.add(-Infinity);
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            errors: null,
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            const matches = value.match(/^\s*[+-]?\d+(?:\.\d+)?(?:e([+-]?\d+))?\s*$/i);
+            if (matches) {
+
+                value = value.trim();
+                result.value = parseFloat(value);
+
+                if (!this._flags.unsafe) {
+                    if (value.includes('e')) {
+                        if (internals.normalizeExponent(`${result.value / Math.pow(10, matches[1])}e${matches[1]}`) !== internals.normalizeExponent(value)) {
+                            result.errors = this.createError('number.unsafe', { value }, state, options);
+                            return result;
+                        }
+                    }
+                    else {
+                        if (result.value.toString() !== internals.normalizeDecimal(value)) {
+                            result.errors = this.createError('number.unsafe', { value }, state, options);
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        const isNumber = typeof result.value === 'number' && !isNaN(result.value);
+
+        if (options.convert && 'precision' in this._flags && isNumber) {
+
+            // This is conceptually equivalent to using toFixed but it should be much faster
+            const precision = Math.pow(10, this._flags.precision);
+            result.value = Math.round(result.value * precision) / precision;
+        }
+
+        if (isNumber) {
+            if (!this._flags.unsafe &&
+                (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) {
+                result.errors = this.createError('number.unsafe', { value }, state, options);
+            }
+        }
+        else {
+            result.errors = this.createError('number.base', { value }, state, options);
+        }
+
+        return result;
+    }
+
+    multiple(base) {
+
+        const isRef = Ref.isRef(base);
+
+        if (!isRef) {
+            Hoek.assert(typeof base === 'number' && isFinite(base), 'multiple must be a number');
+            Hoek.assert(base > 0, 'multiple must be greater than 0');
+        }
+
+        return this._test('multiple', base, function (value, state, options) {
+
+            const divisor = isRef ? base(state.reference || state.parent, options) : base;
+
+            if (isRef && (typeof divisor !== 'number' || !isFinite(divisor))) {
+                return this.createError('number.ref', { ref: base.key }, state, options);
+            }
+
+            if (value % divisor === 0) {
+                return value;
+            }
+
+            return this.createError('number.multiple', { multiple: base, value }, state, options);
+        });
+    }
+
+    integer() {
+
+        return this._test('integer', undefined, function (value, state, options) {
+
+            return Math.trunc(value) - value === 0 ? value : this.createError('number.integer', { value }, state, options);
+        });
+    }
+
+    unsafe(enabled = true) {
+
+        Hoek.assert(typeof enabled === 'boolean', 'enabled must be a boolean');
+
+        if (this._flags.unsafe === enabled) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.unsafe = enabled;
+        return obj;
+    }
+
+    negative() {
+
+        return this._test('negative', undefined, function (value, state, options) {
+
+            if (value < 0) {
+                return value;
+            }
+
+            return this.createError('number.negative', { value }, state, options);
+        });
+    }
+
+    positive() {
+
+        return this._test('positive', undefined, function (value, state, options) {
+
+            if (value > 0) {
+                return value;
+            }
+
+            return this.createError('number.positive', { value }, state, options);
+        });
+    }
+
+    precision(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit), 'limit must be an integer');
+        Hoek.assert(!('precision' in this._flags), 'precision already set');
+
+        const obj = this._test('precision', limit, function (value, state, options) {
+
+            const places = value.toString().match(internals.precisionRx);
+            const decimals = Math.max((places[1] ? places[1].length : 0) - (places[2] ? parseInt(places[2], 10) : 0), 0);
+            if (decimals <= limit) {
+                return value;
+            }
+
+            return this.createError('number.precision', { limit, value }, state, options);
+        });
+
+        obj._flags.precision = limit;
+        return obj;
+    }
+
+    port() {
+
+        return this._test('port', undefined, function (value, state, options) {
+
+            if (!Number.isSafeInteger(value) || value < 0 || value > 65535) {
+                return this.createError('number.port', { value }, state, options);
+            }
+
+            return value;
+        });
+    }
+
+};
+
+
+internals.compare = function (type, compare) {
+
+    return function (limit) {
+
+        const isRef = Ref.isRef(limit);
+        const isNumber = typeof limit === 'number' && !isNaN(limit);
+
+        Hoek.assert(isNumber || isRef, 'limit must be a number or reference');
+
+        return this._test(type, limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(typeof compareTo === 'number' && !isNaN(compareTo))) {
+                    return this.createError('number.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (compare(value, compareTo)) {
+                return value;
+            }
+
+            return this.createError('number.' + type, { limit: compareTo, value }, state, options);
+        });
+    };
+};
+
+
+internals.Number.prototype.min = internals.compare('min', (value, limit) => value >= limit);
+internals.Number.prototype.max = internals.compare('max', (value, limit) => value <= limit);
+internals.Number.prototype.greater = internals.compare('greater', (value, limit) => value > limit);
+internals.Number.prototype.less = internals.compare('less', (value, limit) => value < limit);
+
+
+module.exports = new internals.Number();
+
+},{"../../ref":11,"../any":15,"@hapi/hoek":6}],24:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+const Topo = require('@hapi/topo');
+
+const Any = require('../any');
+const Errors = require('../../errors');
+const Cast = require('../../cast');
+const State = require('../state');
+
+
+const internals = {};
+
+
+internals.Object = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'object';
+        this._inner.children = null;
+        this._inner.renames = [];
+        this._inner.dependencies = [];
+        this._inner.patterns = [];
+    }
+
+    _init(...args) {
+
+        return args.length ? this.keys(...args) : this;
+    }
+
+    _base(value, state, options) {
+
+        let target = value;
+        const errors = [];
+        const finish = () => {
+
+            return {
+                value: target,
+                errors: errors.length ? errors : null
+            };
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (value.length > 1 &&
+                (value[0] === '{' || /^\s*\{/.test(value))) {
+
+                try {
+                    value = JSON.parse(value);
+                }
+                catch (e) { }
+            }
+        }
+
+        const type = this._flags.func ? 'function' : 'object';
+        if (!value ||
+            typeof value !== type ||
+            Array.isArray(value)) {
+
+            errors.push(this.createError(type + '.base', { value }, state, options));
+            return finish();
+        }
+
+        // Skip if there are no other rules to test
+
+        if (!this._inner.renames.length &&
+            !this._inner.dependencies.length &&
+            !this._inner.children &&                    // null allows any keys
+            !this._inner.patterns.length) {
+
+            target = value;
+            return finish();
+        }
+
+        // Ensure target is a local copy (parsed) or shallow copy
+
+        if (target === value) {
+            if (type === 'object') {
+                target = Object.create(Object.getPrototypeOf(value));
+            }
+            else {
+                target = function (...args) {
+
+                    return value.apply(this, args);
+                };
+
+                target.prototype = Hoek.clone(value.prototype);
+            }
+
+            const valueKeys = Object.keys(value);
+            for (let i = 0; i < valueKeys.length; ++i) {
+                target[valueKeys[i]] = value[valueKeys[i]];
+            }
+        }
+        else {
+            target = value;
+        }
+
+        // Rename keys
+
+        const renamed = {};
+        for (let i = 0; i < this._inner.renames.length; ++i) {
+            const rename = this._inner.renames[i];
+
+            if (rename.isRegExp) {
+                const targetKeys = Object.keys(target);
+                const matchedTargetKeys = [];
+
+                for (let j = 0; j < targetKeys.length; ++j) {
+                    if (rename.from.test(targetKeys[j])) {
+                        matchedTargetKeys.push(targetKeys[j]);
+                    }
+                }
+
+                const allUndefined = matchedTargetKeys.every((key) => target[key] === undefined);
+                if (rename.options.ignoreUndefined && allUndefined) {
+                    continue;
+                }
+
+                if (!rename.options.multiple &&
+                    renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.regex.multiple', { from: matchedTargetKeys, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
+                    !rename.options.override &&
+                    !renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.regex.override', { from: matchedTargetKeys, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (allUndefined) {
+                    delete target[rename.to];
+                }
+                else {
+                    target[rename.to] = target[matchedTargetKeys[matchedTargetKeys.length - 1]];
+                }
+
+                renamed[rename.to] = true;
+
+                if (!rename.options.alias) {
+                    for (let j = 0; j < matchedTargetKeys.length; ++j) {
+                        delete target[matchedTargetKeys[j]];
+                    }
+                }
+            }
+            else {
+                if (rename.options.ignoreUndefined && target[rename.from] === undefined) {
+                    continue;
+                }
+
+                if (!rename.options.multiple &&
+                    renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.multiple', { from: rename.from, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
+                    !rename.options.override &&
+                    !renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.override', { from: rename.from, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (target[rename.from] === undefined) {
+                    delete target[rename.to];
+                }
+                else {
+                    target[rename.to] = target[rename.from];
+                }
+
+                renamed[rename.to] = true;
+
+                if (!rename.options.alias) {
+                    delete target[rename.from];
+                }
+            }
+        }
+
+        // Validate schema
+
+        if (!this._inner.children &&            // null allows any keys
+            !this._inner.patterns.length &&
+            !this._inner.dependencies.length) {
+
+            return finish();
+        }
+
+        const unprocessed = new Set(Object.keys(target));
+
+        if (this._inner.children) {
+            const stripProps = [];
+
+            for (let i = 0; i < this._inner.children.length; ++i) {
+                const child = this._inner.children[i];
+                const key = child.key;
+                const item = target[key];
+
+                unprocessed.delete(key);
+
+                const localState = new State(key, [...state.path, key], target, state.reference);
+                const result = child.schema._validate(item, localState, options);
+                if (result.errors) {
+                    errors.push(this.createError('object.child', { key, child: child.schema._getLabel(key), reason: result.errors }, localState, options));
+
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+                else {
+                    if (child.schema._flags.strip || (result.value === undefined && result.value !== item)) {
+                        stripProps.push(key);
+                        target[key] = result.finalValue;
+                    }
+                    else if (result.value !== undefined) {
+                        target[key] = result.value;
+                    }
+                }
+            }
+
+            for (let i = 0; i < stripProps.length; ++i) {
+                delete target[stripProps[i]];
+            }
+        }
+
+        // Unknown keys
+
+        if (unprocessed.size && this._inner.patterns.length) {
+
+            for (const key of unprocessed) {
+                const localState = new State(key, [...state.path, key], target, state.reference);
+                const item = target[key];
+
+                for (let i = 0; i < this._inner.patterns.length; ++i) {
+                    const pattern = this._inner.patterns[i];
+
+                    if (pattern.regex ?
+                        pattern.regex.test(key) :
+                        !pattern.schema._validate(key, state, { ...options, abortEarly:true }).errors) {
+
+                        unprocessed.delete(key);
+
+                        const result = pattern.rule._validate(item, localState, options);
+                        if (result.errors) {
+                            errors.push(this.createError('object.child', {
+                                key,
+                                child: pattern.rule._getLabel(key),
+                                reason: result.errors
+                            }, localState, options));
+
+                            if (options.abortEarly) {
+                                return finish();
+                            }
+                        }
+
+                        target[key] = result.value;
+                    }
+                }
+            }
+        }
+
+        if (unprocessed.size && (this._inner.children || this._inner.patterns.length)) {
+            if ((options.stripUnknown && this._flags.allowUnknown !== true) ||
+                options.skipFunctions) {
+
+                const stripUnknown = options.stripUnknown
+                    ? (options.stripUnknown === true ? true : !!options.stripUnknown.objects)
+                    : false;
+
+
+                for (const key of unprocessed) {
+                    if (stripUnknown) {
+                        delete target[key];
+                        unprocessed.delete(key);
+                    }
+                    else if (typeof target[key] === 'function') {
+                        unprocessed.delete(key);
+                    }
+                }
+            }
+
+            if ((this._flags.allowUnknown !== undefined ? !this._flags.allowUnknown : !options.allowUnknown)) {
+
+                for (const unprocessedKey of unprocessed) {
+                    errors.push(this.createError('object.allowUnknown', { child: unprocessedKey, value: target[unprocessedKey] }, {
+                        key: unprocessedKey,
+                        path: [...state.path, unprocessedKey]
+                    }, options, {}));
+                }
+            }
+        }
+
+        // Validate dependencies
+
+        for (let i = 0; i < this._inner.dependencies.length; ++i) {
+            const dep = this._inner.dependencies[i];
+            const hasKey = dep.key !== null;
+            const splitKey = hasKey && dep.key.split('.');
+            const localState = hasKey ? new State(splitKey[splitKey.length - 1], [...state.path, ...splitKey]) : new State(null, state.path);
+            const err = internals[dep.type].call(this, dep.key, hasKey && Hoek.reach(target, dep.key, { functions: true }), dep.peers, target, localState, options);
+            if (err instanceof Errors.Err) {
+                errors.push(err);
+                if (options.abortEarly) {
+                    return finish();
+                }
+            }
+        }
+
+        return finish();
+    }
+
+    keys(schema) {
+
+        Hoek.assert(schema === null || schema === undefined || typeof schema === 'object', 'Object schema must be a valid object');
+        Hoek.assert(!schema || !(schema instanceof Any), 'Object schema cannot be a joi schema');
+
+        const obj = this.clone();
+
+        if (!schema) {
+            obj._inner.children = null;
+            return obj;
+        }
+
+        const children = Object.keys(schema);
+
+        if (!children.length) {
+            obj._inner.children = [];
+            return obj;
+        }
+
+        const topo = new Topo();
+        if (obj._inner.children) {
+            for (let i = 0; i < obj._inner.children.length; ++i) {
+                const child = obj._inner.children[i];
+
+                // Only add the key if we are not going to replace it later
+                if (!children.includes(child.key)) {
+                    topo.add(child, { after: child._refs, group: child.key });
+                }
+            }
+        }
+
+        for (let i = 0; i < children.length; ++i) {
+            const key = children[i];
+            const child = schema[key];
+            try {
+                const cast = Cast.schema(this._currentJoi, child);
+                topo.add({ key, schema: cast }, { after: cast._refs, group: key });
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = key + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = key;
+                }
+
+                throw castErr;
+            }
+        }
+
+        obj._inner.children = topo.nodes;
+
+        return obj;
+    }
+
+    append(schema) {
+        // Skip any changes
+        if (schema === null || schema === undefined || Object.keys(schema).length === 0) {
+            return this;
+        }
+
+        return this.keys(schema);
+    }
+
+    unknown(allow) {
+
+        const value = allow !== false;
+
+        if (this._flags.allowUnknown === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.allowUnknown = value;
+        return obj;
+    }
+
+    length(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('length', limit, function (value, state, options) {
+
+            if (Object.keys(value).length === limit) {
+                return value;
+            }
+
+            return this.createError('object.length', { limit, value }, state, options);
+        });
+    }
+
+    min(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('min', limit, function (value, state, options) {
+
+            if (Object.keys(value).length >= limit) {
+                return value;
+            }
+
+            return this.createError('object.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('max', limit, function (value, state, options) {
+
+            if (Object.keys(value).length <= limit) {
+                return value;
+            }
+
+            return this.createError('object.max', { limit, value }, state, options);
+        });
+    }
+
+    pattern(pattern, schema) {
+
+        const isRegExp = pattern instanceof RegExp;
+        Hoek.assert(isRegExp || pattern instanceof Any, 'pattern must be a regex or schema');
+        Hoek.assert(schema !== undefined, 'Invalid rule');
+
+        if (isRegExp) {
+            Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
+        }
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        const obj = this.clone();
+        if (isRegExp) {
+            obj._inner.patterns.push({ regex: pattern, rule: schema });
+        }
+        else {
+            obj._inner.patterns.push({ schema: pattern, rule: schema });
+        }
+
+        return obj;
+    }
+
+    schema() {
+
+        return this._test('schema', null, function (value, state, options) {
+
+            if (value instanceof Any) {
+                return value;
+            }
+
+            return this.createError('object.schema', null, state, options);
+        });
+    }
+
+    with(key, peers) {
+
+        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
+
+        return this._dependency('with', key, peers);
+    }
+
+    without(key, peers) {
+
+        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
+
+        return this._dependency('without', key, peers);
+    }
+
+    xor(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('xor', null, peers);
+    }
+
+    oxor(...peers) {
+
+        return this._dependency('oxor', null, peers);
+    }
+
+    or(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('or', null, peers);
+    }
+
+    and(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('and', null, peers);
+    }
+
+    nand(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('nand', null, peers);
+    }
+
+    requiredKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'required');
+    }
+
+    optionalKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'optional');
+    }
+
+    forbiddenKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'forbidden');
+    }
+
+    rename(from, to, options) {
+
+        Hoek.assert(typeof from === 'string' || from instanceof RegExp, 'Rename missing the from argument');
+        Hoek.assert(typeof to === 'string', 'Rename missing the to argument');
+        Hoek.assert(to !== from, 'Cannot rename key to same name:', from);
+
+        for (let i = 0; i < this._inner.renames.length; ++i) {
+            Hoek.assert(this._inner.renames[i].from !== from, 'Cannot rename the same key multiple times');
+        }
+
+        const obj = this.clone();
+
+        obj._inner.renames.push({
+            from,
+            to,
+            options: Hoek.applyToDefaults(internals.renameDefaults, options || {}),
+            isRegExp: from instanceof RegExp
+        });
+
+        return obj;
+    }
+
+    applyFunctionToChildren(children, fn, args = [], root) {
+
+        children = [].concat(children);
+        Hoek.assert(children.length > 0, 'expected at least one children');
+
+        const groupedChildren = internals.groupChildren(children);
+        let obj;
+
+        if ('' in groupedChildren) {
+            obj = this[fn](...args);
+            delete groupedChildren[''];
+        }
+        else {
+            obj = this.clone();
+        }
+
+        if (obj._inner.children) {
+            root = root ? (root + '.') : '';
+
+            for (let i = 0; i < obj._inner.children.length; ++i) {
+                const child = obj._inner.children[i];
+                const group = groupedChildren[child.key];
+
+                if (group) {
+                    obj._inner.children[i] = {
+                        key: child.key,
+                        _refs: child._refs,
+                        schema: child.schema.applyFunctionToChildren(group, fn, args, root + child.key)
+                    };
+
+                    delete groupedChildren[child.key];
+                }
+            }
+        }
+
+        const remaining = Object.keys(groupedChildren);
+        Hoek.assert(remaining.length === 0, 'unknown key(s)', remaining.join(', '));
+
+        return obj;
+    }
+
+    _dependency(type, key, peers) {
+
+        peers = [].concat(peers);
+        for (let i = 0; i < peers.length; ++i) {
+            Hoek.assert(typeof peers[i] === 'string', type, 'peers must be a string or array of strings');
+        }
+
+        const obj = this.clone();
+        obj._inner.dependencies.push({ type, key, peers });
+        return obj;
+    }
+
+    describe(shallow) {
+
+        const description = super.describe();
+
+        if (description.rules) {
+            for (let i = 0; i < description.rules.length; ++i) {
+                const rule = description.rules[i];
+                // Coverage off for future-proof descriptions, only object().assert() is use right now
+                if (/* $lab:coverage:off$ */rule.arg &&
+                    typeof rule.arg === 'object' &&
+                    rule.arg.schema &&
+                    rule.arg.ref /* $lab:coverage:on$ */) {
+                    rule.arg = {
+                        schema: rule.arg.schema.describe(),
+                        ref: rule.arg.ref.toString()
+                    };
+                }
+            }
+        }
+
+        if (this._inner.children &&
+            !shallow) {
+
+            description.children = {};
+            for (let i = 0; i < this._inner.children.length; ++i) {
+                const child = this._inner.children[i];
+                description.children[child.key] = child.schema.describe();
+            }
+        }
+
+        if (this._inner.dependencies.length) {
+            description.dependencies = Hoek.clone(this._inner.dependencies);
+        }
+
+        if (this._inner.patterns.length) {
+            description.patterns = [];
+
+            for (let i = 0; i < this._inner.patterns.length; ++i) {
+                const pattern = this._inner.patterns[i];
+                if (pattern.regex) {
+                    description.patterns.push({ regex: pattern.regex.toString(), rule: pattern.rule.describe() });
+                }
+                else {
+                    description.patterns.push({ schema: pattern.schema.describe(), rule: pattern.rule.describe() });
+                }
+            }
+        }
+
+        if (this._inner.renames.length > 0) {
+            description.renames = Hoek.clone(this._inner.renames);
+        }
+
+        return description;
+    }
+
+    assert(ref, schema, message) {
+
+        ref = Cast.ref(ref);
+        Hoek.assert(ref.isContext || ref.depth > 1, 'Cannot use assertions for root level references - use direct key rules instead');
+        message = message || 'pass the assertion test';
+        Hoek.assert(typeof message === 'string', 'Message must be a string');
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        const key = ref.path[ref.path.length - 1];
+        const path = ref.path.join('.');
+
+        return this._test('assert', { schema, ref }, function (value, state, options) {
+
+            const result = schema._validate(ref(value), null, options, value);
+            if (!result.errors) {
+                return value;
+            }
+
+            const localState = new State(key, ref.path, state.parent, state.reference);
+            return this.createError('object.assert', { ref: path, message }, localState, options);
+        });
+    }
+
+    type(constructor, name = constructor.name) {
+
+        Hoek.assert(typeof constructor === 'function', 'type must be a constructor function');
+        const typeData = {
+            name,
+            ctor: constructor
+        };
+
+        return this._test('type', typeData, function (value, state, options) {
+
+            if (value instanceof constructor) {
+                return value;
+            }
+
+            return this.createError('object.type', { type: typeData.name, value }, state, options);
+        });
+    }
+};
+
+
+internals.renameDefaults = {
+    alias: false,                   // Keep old value in place
+    multiple: false,                // Allow renaming multiple keys into the same target
+    override: false                 // Overrides an existing key
+};
+
+
+internals.groupChildren = function (children) {
+
+    children.sort();
+
+    const grouped = {};
+
+    for (let i = 0; i < children.length; ++i) {
+        const child = children[i];
+        Hoek.assert(typeof child === 'string', 'children must be strings');
+        const group = child.split('.')[0];
+        const childGroup = grouped[group] = (grouped[group] || []);
+        childGroup.push(child.substring(group.length + 1));
+    }
+
+    return grouped;
+};
+
+
+internals.keysToLabels = function (schema, keys) {
+
+    const children = schema._inner.children;
+
+    if (!children) {
+        return keys;
+    }
+
+    const findLabel = function (key) {
+
+        const matchingChild = schema._currentJoi.reach(schema, key);
+        return matchingChild ? matchingChild._getLabel(key) : key;
+    };
+
+    if (Array.isArray(keys)) {
+        return keys.map(findLabel);
+    }
+
+    return findLabel(keys);
+};
+
+
+internals.with = function (key, value, peers, parent, state, options) {
+
+    if (value === undefined) {
+        return;
+    }
+
+    for (let i = 0; i < peers.length; ++i) {
+
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist === undefined) {
+
+            return this.createError('object.with', {
+                main: key,
+                mainWithLabel: internals.keysToLabels(this, key),
+                peer,
+                peerWithLabel: internals.keysToLabels(this, peer)
+            }, state, options);
+        }
+    }
+};
+
+
+internals.without = function (key, value, peers, parent, state, options) {
+
+    if (value === undefined) {
+        return;
+    }
+
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+
+            return this.createError('object.without', {
+                main: key,
+                mainWithLabel: internals.keysToLabels(this, key),
+                peer,
+                peerWithLabel: internals.keysToLabels(this, peer)
+            }, state, options);
+        }
+    }
+};
+
+
+internals.xor = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            present.push(peer);
+        }
+    }
+
+    if (present.length === 1) {
+        return;
+    }
+
+    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
+
+    if (present.length === 0) {
+        return this.createError('object.missing', context, state, options);
+    }
+
+    context.present = present;
+    context.presentWithLabels = internals.keysToLabels(this, present);
+
+    return this.createError('object.xor', context, state, options);
+};
+
+
+internals.oxor = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            present.push(peer);
+        }
+    }
+
+    if (!present.length ||
+        present.length === 1) {
+
+        return;
+    }
+
+    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
+    context.present = present;
+    context.presentWithLabels = internals.keysToLabels(this, present);
+
+    return this.createError('object.oxor', context, state, options);
+};
+
+
+internals.or = function (key, value, peers, parent, state, options) {
+
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            return;
+        }
+    }
+
+    return this.createError('object.missing', {
+        peers,
+        peersWithLabels: internals.keysToLabels(this, peers)
+    }, state, options);
+};
+
+
+internals.and = function (key, value, peers, parent, state, options) {
+
+    const missing = [];
+    const present = [];
+    const count = peers.length;
+    for (let i = 0; i < count; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist === undefined) {
+
+            missing.push(peer);
+        }
+        else {
+            present.push(peer);
+        }
+    }
+
+    const aon = (missing.length === count || present.length === count);
+
+    if (!aon) {
+
+        return this.createError('object.and', {
+            present,
+            presentWithLabels: internals.keysToLabels(this, present),
+            missing,
+            missingWithLabels: internals.keysToLabels(this, missing)
+        }, state, options);
+    }
+};
+
+
+internals.nand = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+
+            present.push(peer);
+        }
+    }
+
+    const main = peers[0];
+    const values = peers.slice(1);
+    const allPresent = (present.length === peers.length);
+    return allPresent ? this.createError('object.nand', {
+        main,
+        mainWithLabel: internals.keysToLabels(this, main),
+        peers: values,
+        peersWithLabels: internals.keysToLabels(this, values)
+    }, state, options) : null;
+};
+
+
+module.exports = new internals.Object();
+
+},{"../../cast":7,"../../errors":8,"../any":15,"../state":25,"@hapi/hoek":6,"@hapi/topo":33}],25:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = class {
+    constructor(key, path, parent, reference) {
+
+        this.key = key;
+        this.path = path;
+        this.parent = parent;
+        this.reference = reference;
+    }
+};
+
+},{}],26:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Net = require('net');
+
+const Address = require('@hapi/address');
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+const JoiDate = require('../date');
+
+const Uri = require('./uri');
+const Ip = require('./ip');
+
+
+const internals = {
+    uriRegex: Uri.createUriRegex(),
+    ipRegex: Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], 'optional'),
+    guidBrackets: {
+        '{': '}', '[': ']', '(': ')', '': ''
+    },
+    guidVersions: {
+        uuidv1: '1',
+        uuidv2: '2',
+        uuidv3: '3',
+        uuidv4: '4',
+        uuidv5: '5'
+    },
+    cidrPresences: ['required', 'optional', 'forbidden'],
+    normalizationForms: ['NFC', 'NFD', 'NFKC', 'NFKD']
+};
+
+
+internals.String = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'string';
+        this._invalids.add('');
+    }
+
+    _base(value, state, options) {
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (this._flags.normalize) {
+                value = value.normalize(this._flags.normalize);
+            }
+
+            if (this._flags.case) {
+                value = (this._flags.case === 'upper' ? value.toLocaleUpperCase() : value.toLocaleLowerCase());
+            }
+
+            if (this._flags.trim) {
+                value = value.trim();
+            }
+
+            if (this._inner.replacements) {
+
+                for (let i = 0; i < this._inner.replacements.length; ++i) {
+                    const replacement = this._inner.replacements[i];
+                    value = value.replace(replacement.pattern, replacement.replacement);
+                }
+            }
+
+            if (this._flags.truncate) {
+                for (let i = 0; i < this._tests.length; ++i) {
+                    const test = this._tests[i];
+                    if (test.name === 'max') {
+                        value = value.slice(0, test.arg);
+                        break;
+                    }
+                }
+            }
+
+            if (this._flags.byteAligned && value.length % 2 !== 0) {
+                value = `0${value}`;
+            }
+        }
+
+        return {
+            value,
+            errors: (typeof value === 'string') ? null : this.createError('string.base', { value }, state, options)
+        };
+    }
+
+    insensitive() {
+
+        if (this._flags.insensitive) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.insensitive = true;
+        return obj;
+    }
+
+    creditCard() {
+
+        return this._test('creditCard', undefined, function (value, state, options) {
+
+            let i = value.length;
+            let sum = 0;
+            let mul = 1;
+
+            while (i--) {
+                const char = value.charAt(i) * mul;
+                sum = sum + (char - (char > 9) * 9);
+                mul = mul ^ 3;
+            }
+
+            const check = (sum % 10 === 0) && (sum > 0);
+            return check ? value : this.createError('string.creditCard', { value }, state, options);
+        });
+    }
+
+    regex(pattern, patternOptions) {
+
+        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
+        Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
+
+        const patternObject = { pattern };
+
+        if (typeof patternOptions === 'string') {
+            patternObject.name = patternOptions;
+        }
+        else if (typeof patternOptions === 'object') {
+            patternObject.invert = !!patternOptions.invert;
+
+            if (patternOptions.name) {
+                patternObject.name = patternOptions.name;
+            }
+        }
+
+        const errorCode = ['string.regex', patternObject.invert ? '.invert' : '', patternObject.name ? '.name' : '.base'].join('');
+
+        return this._test('regex', patternObject, function (value, state, options) {
+
+            const patternMatch = patternObject.pattern.test(value);
+
+            if (patternMatch ^ patternObject.invert) {
+                return value;
+            }
+
+            return this.createError(errorCode, { name: patternObject.name, pattern: patternObject.pattern, value }, state, options);
+        });
+    }
+
+    alphanum() {
+
+        return this._test('alphanum', undefined, function (value, state, options) {
+
+            if (/^[a-zA-Z0-9]+$/.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.alphanum', { value }, state, options);
+        });
+    }
+
+    token() {
+
+        return this._test('token', undefined, function (value, state, options) {
+
+            if (/^\w+$/.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.token', { value }, state, options);
+        });
+    }
+
+    email(validationOptions) {
+
+        if (validationOptions) {
+            Hoek.assert(typeof validationOptions === 'object', 'email options must be an object');
+
+            // Migration validation for unsupported options
+
+            Hoek.assert(validationOptions.checkDNS === undefined, 'checkDNS option is not supported');
+            Hoek.assert(validationOptions.errorLevel === undefined, 'errorLevel option is not supported');
+            Hoek.assert(validationOptions.minDomainAtoms === undefined, 'minDomainAtoms option is not supported, use minDomainSegments instead');
+            Hoek.assert(validationOptions.tldBlacklist === undefined, 'tldBlacklist option is not supported, use tlds.deny instead');
+            Hoek.assert(validationOptions.tldWhitelist === undefined, 'tldWhitelist option is not supported, use tlds.allow instead');
+
+            // Validate options
+
+            if (validationOptions.tlds &&
+                typeof validationOptions.tlds === 'object') {
+
+                Hoek.assert(validationOptions.tlds.allow === undefined ||
+                    validationOptions.tlds.allow === false ||
+                    validationOptions.tlds.allow === true ||
+                    Array.isArray(validationOptions.tlds.allow) ||
+                    validationOptions.tlds.allow instanceof Set, 'tlds.allow must be an array, Set, or boolean');
+
+                Hoek.assert(validationOptions.tlds.deny === undefined ||
+                    Array.isArray(validationOptions.tlds.deny) ||
+                    validationOptions.tlds.deny instanceof Set, 'tlds.deny must be an array or Set');
+
+                const normalizeTable = (table) => {
+
+                    if (table === undefined ||
+                        typeof table === 'boolean' ||
+                        table instanceof Set) {
+
+                        return table;
+                    }
+
+                    return new Set(table);
+                };
+
+                validationOptions = Object.assign({}, validationOptions);       // Shallow cloned
+                validationOptions.tlds = {
+                    allow: normalizeTable(validationOptions.tlds.allow),
+                    deny: normalizeTable(validationOptions.tlds.deny)
+                };
+            }
+
+            Hoek.assert(validationOptions.minDomainSegments === undefined ||
+                Number.isSafeInteger(validationOptions.minDomainSegments) && validationOptions.minDomainSegments > 0, 'minDomainSegments must be a positive integer');
+        }
+
+        return this._test('email', validationOptions, function (value, state, options) {
+
+            if (Address.email.isValid(value, validationOptions)) {
+                return value;
+            }
+
+            return this.createError('string.email', { value }, state, options);
+        });
+    }
+
+    ip(ipOptions = {}) {
+
+        let regex = internals.ipRegex;
+        Hoek.assert(typeof ipOptions === 'object', 'options must be an object');
+
+        if (ipOptions.cidr) {
+            Hoek.assert(typeof ipOptions.cidr === 'string', 'cidr must be a string');
+            ipOptions.cidr = ipOptions.cidr.toLowerCase();
+
+            Hoek.assert(Hoek.contain(internals.cidrPresences, ipOptions.cidr), 'cidr must be one of ' + internals.cidrPresences.join(', '));
+
+            // If we only received a `cidr` setting, create a regex for it. But we don't need to create one if `cidr` is "optional" since that is the default
+            if (!ipOptions.version && ipOptions.cidr !== 'optional') {
+                regex = Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], ipOptions.cidr);
+            }
+        }
+        else {
+
+            // Set our default cidr strategy
+            ipOptions.cidr = 'optional';
+        }
+
+        let versions;
+        if (ipOptions.version) {
+            if (!Array.isArray(ipOptions.version)) {
+                ipOptions.version = [ipOptions.version];
+            }
+
+            Hoek.assert(ipOptions.version.length >= 1, 'version must have at least 1 version specified');
+
+            versions = [];
+            for (let i = 0; i < ipOptions.version.length; ++i) {
+                let version = ipOptions.version[i];
+                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
+                version = version.toLowerCase();
+                Hoek.assert(Ip.versions[version], 'version at position ' + i + ' must be one of ' + Object.keys(Ip.versions).join(', '));
+                versions.push(version);
+            }
+
+            // Make sure we have a set of versions
+            versions = Array.from(new Set(versions));
+
+            regex = Ip.createIpRegex(versions, ipOptions.cidr);
+        }
+
+        return this._test('ip', ipOptions, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            if (versions) {
+                return this.createError('string.ipVersion', { value, cidr: ipOptions.cidr, version: versions }, state, options);
+            }
+
+            return this.createError('string.ip', { value, cidr: ipOptions.cidr }, state, options);
+        });
+    }
+
+    uri(uriOptions) {
+
+        let customScheme = '';
+        let allowRelative = false;
+        let relativeOnly = false;
+        let allowQuerySquareBrackets = false;
+        let regex = internals.uriRegex;
+
+        if (uriOptions) {
+            Hoek.assert(typeof uriOptions === 'object', 'options must be an object');
+
+            const unknownOptions = Object.keys(uriOptions).filter((key) => !['scheme', 'allowRelative', 'relativeOnly', 'allowQuerySquareBrackets'].includes(key));
+            Hoek.assert(unknownOptions.length === 0, `options contain unknown keys: ${unknownOptions}`);
+
+            if (uriOptions.scheme) {
+                Hoek.assert(uriOptions.scheme instanceof RegExp || typeof uriOptions.scheme === 'string' || Array.isArray(uriOptions.scheme), 'scheme must be a RegExp, String, or Array');
+
+                if (!Array.isArray(uriOptions.scheme)) {
+                    uriOptions.scheme = [uriOptions.scheme];
+                }
+
+                Hoek.assert(uriOptions.scheme.length >= 1, 'scheme must have at least 1 scheme specified');
+
+                // Flatten the array into a string to be used to match the schemes.
+                for (let i = 0; i < uriOptions.scheme.length; ++i) {
+                    const scheme = uriOptions.scheme[i];
+                    Hoek.assert(scheme instanceof RegExp || typeof scheme === 'string', 'scheme at position ' + i + ' must be a RegExp or String');
+
+                    // Add OR separators if a value already exists
+                    customScheme = customScheme + (customScheme ? '|' : '');
+
+                    // If someone wants to match HTTP or HTTPS for example then we need to support both RegExp and String so we don't escape their pattern unknowingly.
+                    if (scheme instanceof RegExp) {
+                        customScheme = customScheme + scheme.source;
+                    }
+                    else {
+                        Hoek.assert(/[a-zA-Z][a-zA-Z0-9+-\.]*/.test(scheme), 'scheme at position ' + i + ' must be a valid scheme');
+                        customScheme = customScheme + Hoek.escapeRegex(scheme);
+                    }
+                }
+            }
+
+            if (uriOptions.allowRelative) {
+                allowRelative = true;
+            }
+
+            if (uriOptions.relativeOnly) {
+                relativeOnly = true;
+            }
+
+            if (uriOptions.allowQuerySquareBrackets) {
+                allowQuerySquareBrackets = true;
+            }
+        }
+
+        if (customScheme || allowRelative || relativeOnly || allowQuerySquareBrackets) {
+            regex = Uri.createUriRegex(customScheme, allowRelative, relativeOnly, allowQuerySquareBrackets);
+        }
+
+        return this._test('uri', uriOptions, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            if (relativeOnly) {
+                return this.createError('string.uriRelativeOnly', { value }, state, options);
+            }
+
+            if (customScheme) {
+                return this.createError('string.uriCustomScheme', { scheme: customScheme, value }, state, options);
+            }
+
+            return this.createError('string.uri', { value }, state, options);
+        });
+    }
+
+    isoDate() {
+
+        return this._test('isoDate', undefined, function (value, state, options) {
+
+            if (JoiDate._isIsoDate(value)) {
+                if (!options.convert) {
+                    return value;
+                }
+
+                const d = new Date(value);
+                if (!isNaN(d.getTime())) {
+                    return d.toISOString();
+                }
+            }
+
+            return this.createError('string.isoDate', { value }, state, options);
+        });
+    }
+
+    guid(guidOptions) {
+
+        let versionNumbers = '';
+
+        if (guidOptions && guidOptions.version) {
+            if (!Array.isArray(guidOptions.version)) {
+                guidOptions.version = [guidOptions.version];
+            }
+
+            Hoek.assert(guidOptions.version.length >= 1, 'version must have at least 1 valid version specified');
+            const versions = new Set();
+
+            for (let i = 0; i < guidOptions.version.length; ++i) {
+                let version = guidOptions.version[i];
+                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
+                version = version.toLowerCase();
+                const versionNumber = internals.guidVersions[version];
+                Hoek.assert(versionNumber, 'version at position ' + i + ' must be one of ' + Object.keys(internals.guidVersions).join(', '));
+                Hoek.assert(!(versions.has(versionNumber)), 'version at position ' + i + ' must not be a duplicate.');
+
+                versionNumbers += versionNumber;
+                versions.add(versionNumber);
+            }
+        }
+
+        const guidRegex = new RegExp(`^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[${versionNumbers || '0-9A-F'}][0-9A-F]{3}\\2?[${versionNumbers ? '89AB' : '0-9A-F'}][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$`, 'i');
+
+        return this._test('guid', guidOptions, function (value, state, options) {
+
+            const results = guidRegex.exec(value);
+
+            if (!results) {
+                return this.createError('string.guid', { value }, state, options);
+            }
+
+            // Matching braces
+            if (internals.guidBrackets[results[1]] !== results[results.length - 1]) {
+                return this.createError('string.guid', { value }, state, options);
+            }
+
+            return value;
+        });
+    }
+
+    hex(hexOptions = {}) {
+
+        Hoek.assert(typeof hexOptions === 'object', 'hex options must be an object');
+        Hoek.assert(typeof hexOptions.byteAligned === 'undefined' || typeof hexOptions.byteAligned === 'boolean',
+            'byteAligned must be boolean');
+
+        const byteAligned = hexOptions.byteAligned === true;
+        const regex = /^[a-f0-9]+$/i;
+
+        const obj = this._test('hex', regex, function (value, state, options) {
+
+            if (regex.test(value)) {
+                if (byteAligned && value.length % 2 !== 0) {
+                    return this.createError('string.hexAlign', { value }, state, options);
+                }
+
+                return value;
+            }
+
+            return this.createError('string.hex', { value }, state, options);
+        });
+
+        if (byteAligned) {
+            obj._flags.byteAligned = true;
+        }
+
+        return obj;
+    }
+
+    base64(base64Options = {}) {
+
+        // Validation.
+        Hoek.assert(typeof base64Options === 'object', 'base64 options must be an object');
+        Hoek.assert(typeof base64Options.paddingRequired === 'undefined' || typeof base64Options.paddingRequired === 'boolean',
+            'paddingRequired must be boolean');
+
+        // Determine if padding is required.
+        const paddingRequired = base64Options.paddingRequired === false ?
+            base64Options.paddingRequired
+            : base64Options.paddingRequired || true;
+
+        // Set validation based on preference.
+        const regex = paddingRequired ?
+            // Padding is required.
+            /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+            // Padding is optional.
+            : /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
+
+        return this._test('base64', regex, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.base64', { value }, state, options);
+        });
+    }
+
+    dataUri(dataUriOptions = {}) {
+
+        const regex = /^data:[\w+.-]+\/[\w+.-]+;((charset=[\w-]+|base64),)?(.*)$/;
+
+        // Determine if padding is required.
+        const paddingRequired = dataUriOptions.paddingRequired === false ?
+            dataUriOptions.paddingRequired
+            : dataUriOptions.paddingRequired || true;
+
+        const base64regex = paddingRequired ?
+            /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+            : /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
+
+        return this._test('dataUri', regex, function (value, state, options) {
+
+            const matches = value.match(regex);
+
+            if (matches) {
+                if (!matches[2]) {
+                    return value;
+                }
+
+                if (matches[2] !== 'base64') {
+                    return value;
+                }
+
+                if (base64regex.test(matches[3])) {
+                    return value;
+                }
+            }
+
+            return this.createError('string.dataUri', { value }, state, options);
+        });
+    }
+
+    hostname() {
+
+        const regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+
+        return this._test('hostname', undefined, function (value, state, options) {
+
+            if ((value.length <= 255 && regex.test(value)) ||
+                Net.isIPv6(value)) {
+
+                return value;
+            }
+
+            return this.createError('string.hostname', { value }, state, options);
+        });
+    }
+
+    normalize(form = 'NFC') {
+
+        Hoek.assert(Hoek.contain(internals.normalizationForms, form), 'normalization form must be one of ' + internals.normalizationForms.join(', '));
+
+        const obj = this._test('normalize', form, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.normalize(form)) {
+
+                return value;
+            }
+
+            return this.createError('string.normalize', { value, form }, state, options);
+        });
+
+        obj._flags.normalize = form;
+        return obj;
+    }
+
+    lowercase() {
+
+        const obj = this._test('lowercase', undefined, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.toLocaleLowerCase()) {
+
+                return value;
+            }
+
+            return this.createError('string.lowercase', { value }, state, options);
+        });
+
+        obj._flags.case = 'lower';
+        return obj;
+    }
+
+    uppercase() {
+
+        const obj = this._test('uppercase', undefined, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.toLocaleUpperCase()) {
+
+                return value;
+            }
+
+            return this.createError('string.uppercase', { value }, state, options);
+        });
+
+        obj._flags.case = 'upper';
+        return obj;
+    }
+
+    trim(enabled = true) {
+
+        Hoek.assert(typeof enabled === 'boolean', 'option must be a boolean');
+
+        if ((this._flags.trim && enabled) || (!this._flags.trim && !enabled)) {
+            return this;
+        }
+
+        let obj;
+        if (enabled) {
+            obj = this._test('trim', undefined, function (value, state, options) {
+
+                if (options.convert ||
+                    value === value.trim()) {
+
+                    return value;
+                }
+
+                return this.createError('string.trim', { value }, state, options);
+            });
+        }
+        else {
+            obj = this.clone();
+            obj._tests = obj._tests.filter((test) => test.name !== 'trim');
+        }
+
+        obj._flags.trim = enabled;
+        return obj;
+    }
+
+    replace(pattern, replacement) {
+
+        if (typeof pattern === 'string') {
+            pattern = new RegExp(Hoek.escapeRegex(pattern), 'g');
+        }
+
+        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
+        Hoek.assert(typeof replacement === 'string', 'replacement must be a String');
+
+        // This can not be considere a test like trim, we can't "reject"
+        // anything from this rule, so just clone the current object
+        const obj = this.clone();
+
+        if (!obj._inner.replacements) {
+            obj._inner.replacements = [];
+        }
+
+        obj._inner.replacements.push({
+            pattern,
+            replacement
+        });
+
+        return obj;
+    }
+
+    truncate(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.truncate === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.truncate = value;
+        return obj;
+    }
+
+};
+
+internals.compare = function (type, compare) {
+
+    return function (limit, encoding) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+        Hoek.assert(!encoding || Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
+
+        return this._test(type, limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!Number.isSafeInteger(compareTo)) {
+                    return this.createError('string.ref', { ref: limit, value: compareTo }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (compare(value, compareTo, encoding)) {
+                return value;
+            }
+
+            return this.createError('string.' + type, { limit: compareTo, value, encoding }, state, options);
+        });
+    };
+};
+
+
+internals.String.prototype.min = internals.compare('min', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length >= limit;
+});
+
+
+internals.String.prototype.max = internals.compare('max', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length <= limit;
+});
+
+
+internals.String.prototype.length = internals.compare('length', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length === limit;
+});
+
+// Aliases
+
+internals.String.prototype.uuid = internals.String.prototype.guid;
+
+module.exports = new internals.String();
+
+}).call(this,require("buffer").Buffer)
+},{"../../ref":11,"../any":15,"../date":20,"./ip":27,"./uri":29,"@hapi/address":2,"@hapi/hoek":6,"buffer":94,"net":92}],27:[function(require,module,exports){
+'use strict';
+
+const RFC3986 = require('./rfc3986');
+
+
+const internals = {
+    Ip: {
+        cidrs: {
+            ipv4: {
+                required: '\\/(?:' + RFC3986.ipv4Cidr + ')',
+                optional: '(?:\\/(?:' + RFC3986.ipv4Cidr + '))?',
+                forbidden: ''
+            },
+            ipv6: {
+                required: '\\/' + RFC3986.ipv6Cidr,
+                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
+                forbidden: ''
+            },
+            ipvfuture: {
+                required: '\\/' + RFC3986.ipv6Cidr,
+                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
+                forbidden: ''
+            }
+        },
+        versions: {
+            ipv4: RFC3986.IPv4address,
+            ipv6: RFC3986.IPv6address,
+            ipvfuture: RFC3986.IPvFuture
+        }
+    }
+};
+
+
+internals.Ip.createIpRegex = function (versions, cidr) {
+
+    let regex;
+    for (let i = 0; i < versions.length; ++i) {
+        const version = versions[i];
+        if (!regex) {
+            regex = '^(?:' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
+        }
+        else {
+            regex += '|' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
+        }
+    }
+
+    return new RegExp(regex + ')$');
+};
+
+module.exports = internals.Ip;
+
+},{"./rfc3986":28}],28:[function(require,module,exports){
+'use strict';
+
+const internals = {
+    rfc3986: {}
+};
+
+
+internals.generate = function () {
+
+    /**
+     * elements separated by forward slash ("/") are alternatives.
+     */
+    const or = '|';
+
+    /**
+     * Rule to support zero-padded addresses.
+     */
+    const zeroPad = '0?';
+
+    /**
+     * DIGIT = %x30-39 ; 0-9
+     */
+    const digit = '0-9';
+    const digitOnly = '[' + digit + ']';
+
+    /**
+     * ALPHA = %x41-5A / %x61-7A   ; A-Z / a-z
+     */
+    const alpha = 'a-zA-Z';
+    const alphaOnly = '[' + alpha + ']';
+
+    /**
+     * IPv4
+     * cidr       = DIGIT                ; 0-9
+     *            / %x31-32 DIGIT         ; 10-29
+     *            / "3" %x30-32           ; 30-32
+     */
+    internals.rfc3986.ipv4Cidr = digitOnly + or + '[1-2]' + digitOnly + or + '3' + '[0-2]';
+
+    /**
+     * IPv6
+     * cidr       = DIGIT                 ; 0-9
+     *            / %x31-39 DIGIT         ; 10-99
+     *            / "1" %x0-1 DIGIT       ; 100-119
+     *            / "12" %x0-8            ; 120-128
+     */
+    internals.rfc3986.ipv6Cidr = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + '[01]' + digitOnly + or + '12[0-8])';
+
+    /**
+     * HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+     */
+    const hexDigit = digit + 'A-Fa-f';
+    const hexDigitOnly = '[' + hexDigit + ']';
+
+    /**
+     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+     */
+    const unreserved = alpha + digit + '-\\._~';
+
+    /**
+     * sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+     */
+    const subDelims = '!\\$&\'\\(\\)\\*\\+,;=';
+
+    /**
+     * pct-encoded = "%" HEXDIG HEXDIG
+     */
+    const pctEncoded = '%' + hexDigit;
+
+    /**
+     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+     */
+    const pchar = unreserved + pctEncoded + subDelims + ':@';
+    const pcharOnly = '[' + pchar + ']';
+
+    /**
+     * squareBrackets example: []
+     */
+    const squareBrackets = '\\[\\]';
+
+    /**
+     * dec-octet   = DIGIT                 ; 0-9
+     *            / %x31-39 DIGIT         ; 10-99
+     *            / "1" 2DIGIT            ; 100-199
+     *            / "2" %x30-34 DIGIT     ; 200-249
+     *            / "25" %x30-35          ; 250-255
+     */
+    const decOctect = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + digitOnly + digitOnly + or + '2' + '[0-4]' + digitOnly + or + '25' + '[0-5])';
+
+    /**
+     * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+     */
+    internals.rfc3986.IPv4address = '(?:' + decOctect + '\\.){3}' + decOctect;
+
+    /**
+     * h16 = 1*4HEXDIG ; 16 bits of address represented in hexadecimal
+     * ls32 = ( h16 ":" h16 ) / IPv4address ; least-significant 32 bits of address
+     * IPv6address =                            6( h16 ":" ) ls32
+     *             /                       "::" 5( h16 ":" ) ls32
+     *             / [               h16 ] "::" 4( h16 ":" ) ls32
+     *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+     *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+     *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
+     *             / [ *4( h16 ":" ) h16 ] "::"              ls32
+     *             / [ *5( h16 ":" ) h16 ] "::"              h16
+     *             / [ *6( h16 ":" ) h16 ] "::"
+     */
+    const h16 = hexDigitOnly + '{1,4}';
+    const ls32 = '(?:' + h16 + ':' + h16 + '|' + internals.rfc3986.IPv4address + ')';
+    const IPv6SixHex = '(?:' + h16 + ':){6}' + ls32;
+    const IPv6FiveHex = '::(?:' + h16 + ':){5}' + ls32;
+    const IPv6FourHex = '(?:' + h16 + ')?::(?:' + h16 + ':){4}' + ls32;
+    const IPv6ThreeHex = '(?:(?:' + h16 + ':){0,1}' + h16 + ')?::(?:' + h16 + ':){3}' + ls32;
+    const IPv6TwoHex = '(?:(?:' + h16 + ':){0,2}' + h16 + ')?::(?:' + h16 + ':){2}' + ls32;
+    const IPv6OneHex = '(?:(?:' + h16 + ':){0,3}' + h16 + ')?::' + h16 + ':' + ls32;
+    const IPv6NoneHex = '(?:(?:' + h16 + ':){0,4}' + h16 + ')?::' + ls32;
+    const IPv6NoneHex2 = '(?:(?:' + h16 + ':){0,5}' + h16 + ')?::' + h16;
+    const IPv6NoneHex3 = '(?:(?:' + h16 + ':){0,6}' + h16 + ')?::';
+    internals.rfc3986.IPv6address = '(?:' + IPv6SixHex + or + IPv6FiveHex + or + IPv6FourHex + or + IPv6ThreeHex + or + IPv6TwoHex + or + IPv6OneHex + or + IPv6NoneHex + or + IPv6NoneHex2 + or + IPv6NoneHex3 + ')';
+
+    /**
+     * IPvFuture = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+     */
+    internals.rfc3986.IPvFuture = 'v' + hexDigitOnly + '+\\.[' + unreserved + subDelims + ':]+';
+
+    /**
+     * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+     */
+    internals.rfc3986.scheme = alphaOnly + '[' + alpha + digit + '+-\\.]*';
+
+    /**
+     * userinfo = *( unreserved / pct-encoded / sub-delims / ":" )
+     */
+    const userinfo = '[' + unreserved + pctEncoded + subDelims + ':]*';
+
+    /**
+     * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+     */
+    const IPLiteral = '\\[(?:' + internals.rfc3986.IPv6address + or + internals.rfc3986.IPvFuture + ')\\]';
+
+    /**
+     * reg-name = *( unreserved / pct-encoded / sub-delims )
+     */
+    const regName = '[' + unreserved + pctEncoded + subDelims + ']{0,255}';
+
+    /**
+     * host = IP-literal / IPv4address / reg-name
+     */
+    const host = '(?:' + IPLiteral + or + internals.rfc3986.IPv4address + or + regName + ')';
+
+    /**
+     * port = *DIGIT
+     */
+    const port = digitOnly + '*';
+
+    /**
+     * authority   = [ userinfo "@" ] host [ ":" port ]
+     */
+    const authority = '(?:' + userinfo + '@)?' + host + '(?::' + port + ')?';
+
+    /**
+     * segment       = *pchar
+     * segment-nz    = 1*pchar
+     * path          = path-abempty    ; begins with "/" or is empty
+     *               / path-absolute   ; begins with "/" but not "//"
+     *               / path-noscheme   ; begins with a non-colon segment
+     *               / path-rootless   ; begins with a segment
+     *               / path-empty      ; zero characters
+     * path-abempty  = *( "/" segment )
+     * path-absolute = "/" [ segment-nz *( "/" segment ) ]
+     * path-rootless = segment-nz *( "/" segment )
+     */
+    const segment = pcharOnly + '*';
+    const segmentNz = pcharOnly + '+';
+    const segmentNzNc = '[' + unreserved + pctEncoded + subDelims + '@' + ']+';
+    const pathEmpty = '';
+    const pathAbEmpty = '(?:\\/' + segment + ')*';
+    const pathAbsolute = '\\/(?:' + segmentNz + pathAbEmpty + ')?';
+    const pathRootless = segmentNz + pathAbEmpty;
+    const pathNoScheme = segmentNzNc + pathAbEmpty;
+
+    /**
+     * hier-part = "//" authority path
+     */
+    internals.rfc3986.hierPart = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty + ')' + or + pathAbsolute + or + pathRootless + ')';
+
+    /**
+     * relative-part = "//" authority path-abempty
+     *                 / path-absolute
+     *                 / path-noscheme
+     *                 / path-empty
+     */
+    internals.rfc3986.relativeRef = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty  + ')' + or + pathAbsolute + or + pathNoScheme + or + pathEmpty + ')';
+
+    /**
+     * query = *( pchar / "/" / "?" )
+     */
+    internals.rfc3986.query = '[' + pchar + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
+
+    /**
+     * query = *( pchar / "[" / "]" / "/" / "?" )
+     */
+    internals.rfc3986.queryWithSquareBrackets = '[' + pchar + squareBrackets + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
+
+    /**
+     * fragment = *( pchar / "/" / "?" )
+     */
+    internals.rfc3986.fragment = '[' + pchar + '\\/\\?]*';
+};
+
+
+internals.generate();
+
+module.exports = internals.rfc3986;
+
+},{}],29:[function(require,module,exports){
+'use strict';
+
+const RFC3986 = require('./rfc3986');
+
+
+const internals = {
+    Uri: {
+        createUriRegex: function (optionalScheme, allowRelative, relativeOnly, allowQuerySquareBrackets) {
+
+            let scheme = RFC3986.scheme;
+            let prefix;
+
+            if (relativeOnly) {
+                prefix = '(?:' + RFC3986.relativeRef + ')';
+            }
+            else {
+                // If we were passed a scheme, use it instead of the generic one
+                if (optionalScheme) {
+
+                    // Have to put this in a non-capturing group to handle the OR statements
+                    scheme = '(?:' + optionalScheme + ')';
+                }
+
+                const withScheme = '(?:' + scheme + ':' + RFC3986.hierPart + ')';
+
+                prefix = allowRelative ? '(?:' + withScheme + '|' + RFC3986.relativeRef + ')' : withScheme;
+            }
+
+            /**
+             * URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+             *
+             * OR
+             *
+             * relative-ref = relative-part [ "?" query ] [ "#" fragment ]
+             */
+            return new RegExp('^' + prefix + '(?:\\?' + (allowQuerySquareBrackets ? RFC3986.queryWithSquareBrackets : RFC3986.query) + ')?' + '(?:#' + RFC3986.fragment + ')?$');
+        }
+    }
+};
+
+module.exports = internals.Uri;
+
+},{"./rfc3986":28}],30:[function(require,module,exports){
+'use strict';
+
+const Util = require('util');
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Map = class extends Map {
+
+    slice() {
+
+        return new internals.Map(this);
+    }
+
+    toString() {
+
+        return Util.inspect(this);
+    }
+};
+
+
+internals.Symbol = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'symbol';
+        this._inner.map = new internals.Map();
+    }
+
+    _base(value, state, options) {
+
+        if (options.convert) {
+            const lookup = this._inner.map.get(value);
+            if (lookup) {
+                value = lookup;
+            }
+
+            if (this._flags.allowOnly) {
+                return {
+                    value,
+                    errors: (typeof value === 'symbol') ? null : this.createError('symbol.map', { value, map: this._inner.map }, state, options)
+                };
+            }
+        }
+
+        return {
+            value,
+            errors: (typeof value === 'symbol') ? null : this.createError('symbol.base', { value }, state, options)
+        };
+    }
+
+    map(iterable) {
+
+        if (iterable && !iterable[Symbol.iterator] && typeof iterable === 'object') {
+            iterable = Object.entries(iterable);
+        }
+
+        Hoek.assert(iterable && iterable[Symbol.iterator], 'Iterable must be an iterable or object');
+        const obj = this.clone();
+
+        const symbols = [];
+        for (const entry of iterable) {
+            Hoek.assert(entry && entry[Symbol.iterator], 'Entry must be an iterable');
+            const [key, value] = entry;
+
+            Hoek.assert(typeof key !== 'object' && typeof key !== 'function' && typeof key !== 'symbol', 'Key must not be an object, function, or Symbol');
+            Hoek.assert(typeof value === 'symbol', 'Value must be a Symbol');
+            obj._inner.map.set(key, value);
+            symbols.push(value);
+        }
+
+        return obj.valid(...symbols);
+    }
+
+    describe() {
+
+        const description = super.describe();
+        description.map = new Map(this._inner.map);
+        return description;
+    }
+};
+
+
+module.exports = new internals.Symbol();
+
+},{"../any":15,"@hapi/hoek":6,"util":278}],31:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = {
+    settingsCache: Symbol('settingsCache')
+};
+
+},{}],32:[function(require,module,exports){
+module.exports={
+  "_from": "@hapi/joi@^15.0.3",
+  "_id": "@hapi/joi@15.0.3",
+  "_inBundle": false,
+  "_integrity": "sha512-z6CesJ2YBwgVCi+ci8SI8zixoj8bGFn/vZb9MBPbSyoxsS2PnWYjHcyTM17VLK6tx64YVK38SDIh10hJypB+ig==",
+  "_location": "/@hapi/joi",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "@hapi/joi@^15.0.3",
+    "name": "@hapi/joi",
+    "escapedName": "@hapi%2fjoi",
+    "scope": "@hapi",
+    "rawSpec": "^15.0.3",
+    "saveSpec": null,
+    "fetchSpec": "^15.0.3"
+  },
+  "_requiredBy": [
+    "/optioner",
+    "/seneca"
+  ],
+  "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.0.3.tgz",
+  "_shasum": "e94568fd859e5e945126d5675e7dd218484638a7",
+  "_spec": "@hapi/joi@^15.0.3",
+  "_where": "/Users/richard/Projects/seneca/browser/node_modules/seneca",
+  "bugs": {
+    "url": "https://github.com/hapijs/joi/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "@hapi/address": "2.x.x",
+    "@hapi/hoek": "6.x.x",
+    "@hapi/topo": "3.x.x"
+  },
+  "deprecated": false,
+  "description": "Object schema validation",
+  "devDependencies": {
+    "@hapi/code": "5.x.x",
+    "@hapi/lab": "18.x.x",
+    "hapitoc": "1.x.x"
+  },
+  "homepage": "https://github.com/hapijs/joi",
+  "keywords": [
+    "schema",
+    "validation"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "lib/index.js",
+  "name": "@hapi/joi",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hapijs/joi.git"
+  },
+  "scripts": {
+    "test": "lab -t 100 -a @hapi/code -L",
+    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code",
+    "toc": "hapitoc && node docs/check-errors-list.js",
+    "version": "npm run toc && git add API.md README.md"
+  },
+  "version": "15.0.3"
+}
+
+},{}],33:[function(require,module,exports){
+'use strict';
+
+// Load modules
+
+const Hoek = require('@hapi/hoek');
+
+
+// Declare internals
+
+const internals = {};
+
+
+module.exports = class Topo {
+
+    constructor() {
+
+        this._items = [];
+        this.nodes = [];
+    }
+
+    add(nodes, options) {
+
+        options = options || {};
+
+        // Validate rules
+
+        const before = [].concat(options.before || []);
+        const after = [].concat(options.after || []);
+        const group = options.group || '?';
+        const sort = options.sort || 0;                   // Used for merging only
+
+        Hoek.assert(!before.includes(group), `Item cannot come before itself: ${group}`);
+        Hoek.assert(!before.includes('?'), 'Item cannot come before unassociated items');
+        Hoek.assert(!after.includes(group), `Item cannot come after itself: ${group}`);
+        Hoek.assert(!after.includes('?'), 'Item cannot come after unassociated items');
+
+        ([].concat(nodes)).forEach((node, i) => {
+
+            const item = {
+                seq: this._items.length,
+                sort,
+                before,
+                after,
+                group,
+                node
+            };
+
+            this._items.push(item);
+        });
+
+        // Insert event
+
+        const error = this._sort();
+        Hoek.assert(!error, 'item', (group !== '?' ? `added into group ${group}` : ''), 'created a dependencies error');
+
+        return this.nodes;
+    }
+
+    merge(others) {
+
+        others = [].concat(others);
+        for (let i = 0; i < others.length; ++i) {
+            const other = others[i];
+            if (other) {
+                for (let j = 0; j < other._items.length; ++j) {
+                    const item = Object.assign({}, other._items[j]);        // Shallow cloned
+                    this._items.push(item);
+                }
+            }
+        }
+
+        // Sort items
+
+        this._items.sort(internals.mergeSort);
+        for (let i = 0; i < this._items.length; ++i) {
+            this._items[i].seq = i;
+        }
+
+        const error = this._sort();
+        Hoek.assert(!error, 'merge created a dependencies error');
+
+        return this.nodes;
+    }
+
+    _sort() {
+
+        // Construct graph
+
+        const graph = {};
+        const graphAfters = Object.create(null); // A prototype can bungle lookups w/ false positives
+        const groups = Object.create(null);
+
+        for (let i = 0; i < this._items.length; ++i) {
+            const item = this._items[i];
+            const seq = item.seq;                         // Unique across all items
+            const group = item.group;
+
+            // Determine Groups
+
+            groups[group] = groups[group] || [];
+            groups[group].push(seq);
+
+            // Build intermediary graph using 'before'
+
+            graph[seq] = item.before;
+
+            // Build second intermediary graph with 'after'
+
+            const after = item.after;
+            for (let j = 0; j < after.length; ++j) {
+                graphAfters[after[j]] = (graphAfters[after[j]] || []).concat(seq);
+            }
+        }
+
+        // Expand intermediary graph
+
+        let graphNodes = Object.keys(graph);
+        for (let i = 0; i < graphNodes.length; ++i) {
+            const node = graphNodes[i];
+            const expandedGroups = [];
+
+            const graphNodeItems = Object.keys(graph[node]);
+            for (let j = 0; j < graphNodeItems.length; ++j) {
+                const group = graph[node][graphNodeItems[j]];
+                groups[group] = groups[group] || [];
+
+                for (let k = 0; k < groups[group].length; ++k) {
+                    expandedGroups.push(groups[group][k]);
+                }
+            }
+
+            graph[node] = expandedGroups;
+        }
+
+        // Merge intermediary graph using graphAfters into final graph
+
+        const afterNodes = Object.keys(graphAfters);
+        for (let i = 0; i < afterNodes.length; ++i) {
+            const group = afterNodes[i];
+
+            if (groups[group]) {
+                for (let j = 0; j < groups[group].length; ++j) {
+                    const node = groups[group][j];
+                    graph[node] = graph[node].concat(graphAfters[group]);
+                }
+            }
+        }
+
+        // Compile ancestors
+
+        let children;
+        const ancestors = {};
+        graphNodes = Object.keys(graph);
+        for (let i = 0; i < graphNodes.length; ++i) {
+            const node = graphNodes[i];
+            children = graph[node];
+
+            for (let j = 0; j < children.length; ++j) {
+                ancestors[children[j]] = (ancestors[children[j]] || []).concat(node);
+            }
+        }
+
+        // Topo sort
+
+        const visited = {};
+        const sorted = [];
+
+        for (let i = 0; i < this._items.length; ++i) {          // Really looping thru item.seq values out of order
+            let next = i;
+
+            if (ancestors[i]) {
+                next = null;
+                for (let j = 0; j < this._items.length; ++j) {  // As above, these are item.seq values
+                    if (visited[j] === true) {
+                        continue;
+                    }
+
+                    if (!ancestors[j]) {
+                        ancestors[j] = [];
+                    }
+
+                    const shouldSeeCount = ancestors[j].length;
+                    let seenCount = 0;
+                    for (let k = 0; k < shouldSeeCount; ++k) {
+                        if (visited[ancestors[j][k]]) {
+                            ++seenCount;
+                        }
+                    }
+
+                    if (seenCount === shouldSeeCount) {
+                        next = j;
+                        break;
+                    }
+                }
+            }
+
+            if (next !== null) {
+                visited[next] = true;
+                sorted.push(next);
+            }
+        }
+
+        if (sorted.length !== this._items.length) {
+            return new Error('Invalid dependencies');
+        }
+
+        const seqIndex = {};
+        for (let i = 0; i < this._items.length; ++i) {
+            const item = this._items[i];
+            seqIndex[item.seq] = item;
+        }
+
+        const sortedNodes = [];
+        this._items = sorted.map((value) => {
+
+            const sortedItem = seqIndex[value];
+            sortedNodes.push(sortedItem.node);
+            return sortedItem;
+        });
+
+        this.nodes = sortedNodes;
+    }
+};
+
+internals.mergeSort = (a, b) => {
+
+    return a.sort === b.sort ? 0 : (a.sort < b.sort ? -1 : 1);
+};
+
+},{"@hapi/hoek":6}],34:[function(require,module,exports){
 module.exports = function archy (obj, prefix, opts) {
     if (prefix === undefined) prefix = '';
     if (!opts) opts = {};
@@ -35,7 +9523,7 @@ module.exports = function archy (obj, prefix, opts) {
     ;
 };
 
-},{}],2:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 var asn1 = exports;
 
 asn1.bignum = require('bn.js');
@@ -46,7 +9534,7 @@ asn1.constants = require('./asn1/constants');
 asn1.decoders = require('./asn1/decoders');
 asn1.encoders = require('./asn1/encoders');
 
-},{"./asn1/api":3,"./asn1/base":5,"./asn1/constants":9,"./asn1/decoders":11,"./asn1/encoders":14,"bn.js":27}],3:[function(require,module,exports){
+},{"./asn1/api":36,"./asn1/base":38,"./asn1/constants":42,"./asn1/decoders":44,"./asn1/encoders":47,"bn.js":60}],36:[function(require,module,exports){
 var asn1 = require('../asn1');
 var inherits = require('inherits');
 
@@ -109,7 +9597,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"../asn1":2,"inherits":118,"vm":272}],4:[function(require,module,exports){
+},{"../asn1":35,"inherits":151,"vm":279}],37:[function(require,module,exports){
 var inherits = require('inherits');
 var Reporter = require('../base').Reporter;
 var Buffer = require('buffer').Buffer;
@@ -227,7 +9715,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base":5,"buffer":61,"inherits":118}],5:[function(require,module,exports){
+},{"../base":38,"buffer":94,"inherits":151}],38:[function(require,module,exports){
 var base = exports;
 
 base.Reporter = require('./reporter').Reporter;
@@ -235,7 +9723,7 @@ base.DecoderBuffer = require('./buffer').DecoderBuffer;
 base.EncoderBuffer = require('./buffer').EncoderBuffer;
 base.Node = require('./node');
 
-},{"./buffer":4,"./node":6,"./reporter":7}],6:[function(require,module,exports){
+},{"./buffer":37,"./node":39,"./reporter":40}],39:[function(require,module,exports){
 var Reporter = require('../base').Reporter;
 var EncoderBuffer = require('../base').EncoderBuffer;
 var DecoderBuffer = require('../base').DecoderBuffer;
@@ -871,7 +10359,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '\(\)\+,\-\.\/:=\?]*$/.test(str);
 };
 
-},{"../base":5,"minimalistic-assert":128}],7:[function(require,module,exports){
+},{"../base":38,"minimalistic-assert":160}],40:[function(require,module,exports){
 var inherits = require('inherits');
 
 function Reporter(options) {
@@ -994,7 +10482,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":118}],8:[function(require,module,exports){
+},{"inherits":151}],41:[function(require,module,exports){
 var constants = require('../constants');
 
 exports.tagClass = {
@@ -1038,7 +10526,7 @@ exports.tag = {
 };
 exports.tagByName = constants._reverse(exports.tag);
 
-},{"../constants":9}],9:[function(require,module,exports){
+},{"../constants":42}],42:[function(require,module,exports){
 var constants = exports;
 
 // Helper
@@ -1059,7 +10547,7 @@ constants._reverse = function reverse(map) {
 
 constants.der = require('./der');
 
-},{"./der":8}],10:[function(require,module,exports){
+},{"./der":41}],43:[function(require,module,exports){
 var inherits = require('inherits');
 
 var asn1 = require('../../asn1');
@@ -1385,13 +10873,13 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../../asn1":2,"inherits":118}],11:[function(require,module,exports){
+},{"../../asn1":35,"inherits":151}],44:[function(require,module,exports){
 var decoders = exports;
 
 decoders.der = require('./der');
 decoders.pem = require('./pem');
 
-},{"./der":10,"./pem":12}],12:[function(require,module,exports){
+},{"./der":43,"./pem":45}],45:[function(require,module,exports){
 var inherits = require('inherits');
 var Buffer = require('buffer').Buffer;
 
@@ -1442,7 +10930,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":10,"buffer":61,"inherits":118}],13:[function(require,module,exports){
+},{"./der":43,"buffer":94,"inherits":151}],46:[function(require,module,exports){
 var inherits = require('inherits');
 var Buffer = require('buffer').Buffer;
 
@@ -1739,13 +11227,13 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../../asn1":2,"buffer":61,"inherits":118}],14:[function(require,module,exports){
+},{"../../asn1":35,"buffer":94,"inherits":151}],47:[function(require,module,exports){
 var encoders = exports;
 
 encoders.der = require('./der');
 encoders.pem = require('./pem');
 
-},{"./der":13,"./pem":15}],15:[function(require,module,exports){
+},{"./der":46,"./pem":48}],48:[function(require,module,exports){
 var inherits = require('inherits');
 
 var DEREncoder = require('./der');
@@ -1768,7 +11256,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":13,"inherits":118}],16:[function(require,module,exports){
+},{"./der":46,"inherits":151}],49:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -2278,7 +11766,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":136,"util/":19}],17:[function(require,module,exports){
+},{"object-assign":168,"util/":52}],50:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -2303,14 +11791,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],18:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],19:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2900,7 +12388,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":18,"_process":192,"inherits":17}],20:[function(require,module,exports){
+},{"./support/isBuffer":51,"_process":199,"inherits":50}],53:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -2933,7 +12421,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":21,"./lib/function_call.js":22,"./lib/strategy/exponential":23,"./lib/strategy/fibonacci":24}],21:[function(require,module,exports){
+},{"./lib/backoff":54,"./lib/function_call.js":55,"./lib/strategy/exponential":56,"./lib/strategy/fibonacci":57}],54:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3000,7 +12488,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":98,"precond":188,"util":271}],22:[function(require,module,exports){
+},{"events":131,"precond":195,"util":278}],55:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3192,7 +12680,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":21,"./strategy/fibonacci":24,"events":98,"precond":188,"util":271}],23:[function(require,module,exports){
+},{"./backoff":54,"./strategy/fibonacci":57,"events":131,"precond":195,"util":278}],56:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3235,7 +12723,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":25,"precond":188,"util":271}],24:[function(require,module,exports){
+},{"./strategy":58,"precond":195,"util":278}],57:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3265,7 +12753,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":25,"util":271}],25:[function(require,module,exports){
+},{"./strategy":58,"util":278}],58:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -3347,7 +12835,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":98,"util":271}],26:[function(require,module,exports){
+},{"events":131,"util":278}],59:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -3500,7 +12988,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],27:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -6929,7 +16417,7 @@ function fromByteArray (uint8) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":29}],28:[function(require,module,exports){
+},{"buffer":62}],61:[function(require,module,exports){
 var r;
 
 module.exports = function rand(len) {
@@ -6996,9 +16484,9 @@ if (typeof self === 'object') {
   }
 }
 
-},{"crypto":29}],29:[function(require,module,exports){
+},{"crypto":62}],62:[function(require,module,exports){
 
-},{}],30:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -7228,7 +16716,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":229}],31:[function(require,module,exports){
+},{"safe-buffer":236}],64:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -7347,7 +16835,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":30,"./ghash":35,"./incr32":36,"buffer-xor":60,"cipher-base":63,"inherits":118,"safe-buffer":229}],32:[function(require,module,exports){
+},{"./aes":63,"./ghash":68,"./incr32":69,"buffer-xor":93,"cipher-base":96,"inherits":151,"safe-buffer":236}],65:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -7362,7 +16850,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":33,"./encrypter":34,"./modes/list.json":44}],33:[function(require,module,exports){
+},{"./decrypter":66,"./encrypter":67,"./modes/list.json":77}],66:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -7488,7 +16976,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":30,"./authCipher":31,"./modes":43,"./streamCipher":46,"cipher-base":63,"evp_bytestokey":99,"inherits":118,"safe-buffer":229}],34:[function(require,module,exports){
+},{"./aes":63,"./authCipher":64,"./modes":76,"./streamCipher":79,"cipher-base":96,"evp_bytestokey":132,"inherits":151,"safe-buffer":236}],67:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -7604,7 +17092,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":30,"./authCipher":31,"./modes":43,"./streamCipher":46,"cipher-base":63,"evp_bytestokey":99,"inherits":118,"safe-buffer":229}],35:[function(require,module,exports){
+},{"./aes":63,"./authCipher":64,"./modes":76,"./streamCipher":79,"cipher-base":96,"evp_bytestokey":132,"inherits":151,"safe-buffer":236}],68:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -7695,7 +17183,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":229}],36:[function(require,module,exports){
+},{"safe-buffer":236}],69:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -7712,7 +17200,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],37:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -7731,7 +17219,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":60}],38:[function(require,module,exports){
+},{"buffer-xor":93}],71:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -7766,7 +17254,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":60,"safe-buffer":229}],39:[function(require,module,exports){
+},{"buffer-xor":93,"safe-buffer":236}],72:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -7810,7 +17298,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":229}],40:[function(require,module,exports){
+},{"safe-buffer":236}],73:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -7837,7 +17325,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":229}],41:[function(require,module,exports){
+},{"safe-buffer":236}],74:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -7869,7 +17357,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":36,"buffer-xor":60,"safe-buffer":229}],42:[function(require,module,exports){
+},{"../incr32":69,"buffer-xor":93,"safe-buffer":236}],75:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -7878,7 +17366,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],43:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -7898,7 +17386,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":37,"./cfb":38,"./cfb1":39,"./cfb8":40,"./ctr":41,"./ecb":42,"./list.json":44,"./ofb":45}],44:[function(require,module,exports){
+},{"./cbc":70,"./cfb":71,"./cfb1":72,"./cfb8":73,"./ctr":74,"./ecb":75,"./list.json":77,"./ofb":78}],77:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -8091,7 +17579,7 @@ module.exports={
   }
 }
 
-},{}],45:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 (function (Buffer){
 var xor = require('buffer-xor')
 
@@ -8111,7 +17599,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":61,"buffer-xor":60}],46:[function(require,module,exports){
+},{"buffer":94,"buffer-xor":93}],79:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -8140,7 +17628,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":30,"cipher-base":63,"inherits":118,"safe-buffer":229}],47:[function(require,module,exports){
+},{"./aes":63,"cipher-base":96,"inherits":151,"safe-buffer":236}],80:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -8209,7 +17697,7 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":32,"browserify-aes/modes":43,"browserify-des":48,"browserify-des/modes":49,"evp_bytestokey":99}],48:[function(require,module,exports){
+},{"browserify-aes/browser":65,"browserify-aes/modes":76,"browserify-des":81,"browserify-des/modes":82,"evp_bytestokey":132}],81:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
@@ -8261,7 +17749,7 @@ DES.prototype._final = function () {
   return Buffer.from(this._des.final())
 }
 
-},{"cipher-base":63,"des.js":71,"inherits":118,"safe-buffer":229}],49:[function(require,module,exports){
+},{"cipher-base":96,"des.js":104,"inherits":151,"safe-buffer":236}],82:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -8287,7 +17775,7 @@ exports['des-ede'] = {
   iv: 0
 }
 
-},{}],50:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 (function (Buffer){
 var bn = require('bn.js');
 var randomBytes = require('randombytes');
@@ -8331,10 +17819,10 @@ function getr(priv) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":27,"buffer":61,"randombytes":210}],51:[function(require,module,exports){
+},{"bn.js":60,"buffer":94,"randombytes":217}],84:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
-},{"./browser/algorithms.json":52}],52:[function(require,module,exports){
+},{"./browser/algorithms.json":85}],85:[function(require,module,exports){
 module.exports={
   "sha224WithRSAEncryption": {
     "sign": "rsa",
@@ -8488,7 +17976,7 @@ module.exports={
   }
 }
 
-},{}],53:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 module.exports={
   "1.3.132.0.10": "secp256k1",
   "1.3.132.0.33": "p224",
@@ -8498,7 +17986,7 @@ module.exports={
   "1.3.132.0.35": "p521"
 }
 
-},{}],54:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 (function (Buffer){
 var createHash = require('create-hash')
 var stream = require('stream')
@@ -8593,7 +18081,7 @@ module.exports = {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./algorithms.json":52,"./sign":55,"./verify":56,"buffer":61,"create-hash":66,"inherits":118,"stream":257}],55:[function(require,module,exports){
+},{"./algorithms.json":85,"./sign":88,"./verify":89,"buffer":94,"create-hash":99,"inherits":151,"stream":264}],88:[function(require,module,exports){
 (function (Buffer){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var createHmac = require('create-hmac')
@@ -8742,7 +18230,7 @@ module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
 }).call(this,require("buffer").Buffer)
-},{"./curves.json":53,"bn.js":27,"browserify-rsa":50,"buffer":61,"create-hmac":68,"elliptic":81,"parse-asn1":180}],56:[function(require,module,exports){
+},{"./curves.json":86,"bn.js":60,"browserify-rsa":83,"buffer":94,"create-hmac":101,"elliptic":114,"parse-asn1":187}],89:[function(require,module,exports){
 (function (Buffer){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var BN = require('bn.js')
@@ -8829,7 +18317,7 @@ function checkValue (b, q) {
 module.exports = verify
 
 }).call(this,require("buffer").Buffer)
-},{"./curves.json":53,"bn.js":27,"buffer":61,"elliptic":81,"parse-asn1":180}],57:[function(require,module,exports){
+},{"./curves.json":86,"bn.js":60,"buffer":94,"elliptic":114,"parse-asn1":187}],90:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 /* eslint camelcase: "off" */
@@ -9241,7 +18729,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":192,"assert":16,"buffer":61,"pako/lib/zlib/constants":167,"pako/lib/zlib/deflate.js":169,"pako/lib/zlib/inflate.js":171,"pako/lib/zlib/zstream":175}],58:[function(require,module,exports){
+},{"_process":199,"assert":49,"buffer":94,"pako/lib/zlib/constants":174,"pako/lib/zlib/deflate.js":176,"pako/lib/zlib/inflate.js":178,"pako/lib/zlib/zstream":182}],91:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -9853,9 +19341,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this,require('_process'))
-},{"./binding":57,"_process":192,"assert":16,"buffer":61,"stream":257,"util":271}],59:[function(require,module,exports){
-arguments[4][29][0].apply(exports,arguments)
-},{"dup":29}],60:[function(require,module,exports){
+},{"./binding":90,"_process":199,"assert":49,"buffer":94,"stream":264,"util":278}],92:[function(require,module,exports){
+arguments[4][62][0].apply(exports,arguments)
+},{"dup":62}],93:[function(require,module,exports){
 (function (Buffer){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -9869,7 +19357,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":61}],61:[function(require,module,exports){
+},{"buffer":94}],94:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -11650,7 +21138,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":26,"buffer":61,"ieee754":117}],62:[function(require,module,exports){
+},{"base64-js":59,"buffer":94,"ieee754":150}],95:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -11716,7 +21204,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],63:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -11817,7 +21305,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":118,"safe-buffer":229,"stream":257,"string_decoder":262}],64:[function(require,module,exports){
+},{"inherits":151,"safe-buffer":236,"stream":264,"string_decoder":269}],97:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -11928,7 +21416,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":119}],65:[function(require,module,exports){
+},{"../../is-buffer/index.js":152}],98:[function(require,module,exports){
 (function (Buffer){
 var elliptic = require('elliptic')
 var BN = require('bn.js')
@@ -12056,7 +21544,7 @@ function formatReturnValue (bn, enc, len) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":27,"buffer":61,"elliptic":81}],66:[function(require,module,exports){
+},{"bn.js":60,"buffer":94,"elliptic":114}],99:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -12088,14 +21576,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":63,"inherits":118,"md5.js":126,"ripemd160":227,"sha.js":249}],67:[function(require,module,exports){
+},{"cipher-base":96,"inherits":151,"md5.js":158,"ripemd160":234,"sha.js":256}],100:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":126}],68:[function(require,module,exports){
+},{"md5.js":158}],101:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -12159,7 +21647,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":69,"cipher-base":63,"create-hash/md5":67,"inherits":118,"ripemd160":227,"safe-buffer":229,"sha.js":249}],69:[function(require,module,exports){
+},{"./legacy":102,"cipher-base":96,"create-hash/md5":100,"inherits":151,"ripemd160":234,"safe-buffer":236,"sha.js":256}],102:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -12207,7 +21695,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":63,"inherits":118,"safe-buffer":229}],70:[function(require,module,exports){
+},{"cipher-base":96,"inherits":151,"safe-buffer":236}],103:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -12306,7 +21794,7 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":47,"browserify-sign":54,"browserify-sign/algos":51,"create-ecdh":65,"create-hash":66,"create-hmac":68,"diffie-hellman":77,"pbkdf2":183,"public-encrypt":195,"randombytes":210,"randomfill":211}],71:[function(require,module,exports){
+},{"browserify-cipher":80,"browserify-sign":87,"browserify-sign/algos":84,"create-ecdh":98,"create-hash":99,"create-hmac":101,"diffie-hellman":110,"pbkdf2":190,"public-encrypt":202,"randombytes":217,"randomfill":218}],104:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -12315,7 +21803,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":72,"./des/cipher":73,"./des/des":74,"./des/ede":75,"./des/utils":76}],72:[function(require,module,exports){
+},{"./des/cbc":105,"./des/cipher":106,"./des/des":107,"./des/ede":108,"./des/utils":109}],105:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -12382,7 +21870,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":118,"minimalistic-assert":128}],73:[function(require,module,exports){
+},{"inherits":151,"minimalistic-assert":160}],106:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -12525,7 +22013,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":128}],74:[function(require,module,exports){
+},{"minimalistic-assert":160}],107:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -12670,7 +22158,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"../des":71,"inherits":118,"minimalistic-assert":128}],75:[function(require,module,exports){
+},{"../des":104,"inherits":151,"minimalistic-assert":160}],108:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -12727,7 +22215,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"../des":71,"inherits":118,"minimalistic-assert":128}],76:[function(require,module,exports){
+},{"../des":104,"inherits":151,"minimalistic-assert":160}],109:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -12985,7 +22473,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],77:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 (function (Buffer){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -13031,7 +22519,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this,require("buffer").Buffer)
-},{"./lib/dh":78,"./lib/generatePrime":79,"./lib/primes.json":80,"buffer":61}],78:[function(require,module,exports){
+},{"./lib/dh":111,"./lib/generatePrime":112,"./lib/primes.json":113,"buffer":94}],111:[function(require,module,exports){
 (function (Buffer){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -13199,7 +22687,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./generatePrime":79,"bn.js":27,"buffer":61,"miller-rabin":127,"randombytes":210}],79:[function(require,module,exports){
+},{"./generatePrime":112,"bn.js":60,"buffer":94,"miller-rabin":159,"randombytes":217}],112:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -13306,7 +22794,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":27,"miller-rabin":127,"randombytes":210}],80:[function(require,module,exports){
+},{"bn.js":60,"miller-rabin":159,"randombytes":217}],113:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -13341,7 +22829,7 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],81:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -13356,7 +22844,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":96,"./elliptic/curve":84,"./elliptic/curves":87,"./elliptic/ec":88,"./elliptic/eddsa":91,"./elliptic/utils":95,"brorand":28}],82:[function(require,module,exports){
+},{"../package.json":129,"./elliptic/curve":117,"./elliptic/curves":120,"./elliptic/ec":121,"./elliptic/eddsa":124,"./elliptic/utils":128,"brorand":61}],115:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -13733,7 +23221,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../../elliptic":81,"bn.js":27}],83:[function(require,module,exports){
+},{"../../elliptic":114,"bn.js":60}],116:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -14168,7 +23656,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../../elliptic":81,"../curve":84,"bn.js":27,"inherits":118}],84:[function(require,module,exports){
+},{"../../elliptic":114,"../curve":117,"bn.js":60,"inherits":151}],117:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -14178,7 +23666,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":82,"./edwards":83,"./mont":85,"./short":86}],85:[function(require,module,exports){
+},{"./base":115,"./edwards":116,"./mont":118,"./short":119}],118:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -14360,7 +23848,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../../elliptic":81,"../curve":84,"bn.js":27,"inherits":118}],86:[function(require,module,exports){
+},{"../../elliptic":114,"../curve":117,"bn.js":60,"inherits":151}],119:[function(require,module,exports){
 'use strict';
 
 var curve = require('../curve');
@@ -15299,7 +24787,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../../elliptic":81,"../curve":84,"bn.js":27,"inherits":118}],87:[function(require,module,exports){
+},{"../../elliptic":114,"../curve":117,"bn.js":60,"inherits":151}],120:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -15506,7 +24994,7 @@ defineCurve('secp256k1', {
   ]
 });
 
-},{"../elliptic":81,"./precomputed/secp256k1":94,"hash.js":103}],88:[function(require,module,exports){
+},{"../elliptic":114,"./precomputed/secp256k1":127,"hash.js":136}],121:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -15748,7 +25236,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../../elliptic":81,"./key":89,"./signature":90,"bn.js":27,"hmac-drbg":115}],89:[function(require,module,exports){
+},{"../../elliptic":114,"./key":122,"./signature":123,"bn.js":60,"hmac-drbg":148}],122:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -15869,7 +25357,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../../elliptic":81,"bn.js":27}],90:[function(require,module,exports){
+},{"../../elliptic":114,"bn.js":60}],123:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -16006,7 +25494,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../../elliptic":81,"bn.js":27}],91:[function(require,module,exports){
+},{"../../elliptic":114,"bn.js":60}],124:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -16126,7 +25614,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../../elliptic":81,"./key":92,"./signature":93,"hash.js":103}],92:[function(require,module,exports){
+},{"../../elliptic":114,"./key":125,"./signature":126,"hash.js":136}],125:[function(require,module,exports){
 'use strict';
 
 var elliptic = require('../../elliptic');
@@ -16224,7 +25712,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../../elliptic":81}],93:[function(require,module,exports){
+},{"../../elliptic":114}],126:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -16292,7 +25780,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../../elliptic":81,"bn.js":27}],94:[function(require,module,exports){
+},{"../../elliptic":114,"bn.js":60}],127:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -17074,7 +26562,7 @@ module.exports = {
   }
 };
 
-},{}],95:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -17196,7 +26684,7 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":27,"minimalistic-assert":128,"minimalistic-crypto-utils":129}],96:[function(require,module,exports){
+},{"bn.js":60,"minimalistic-assert":160,"minimalistic-crypto-utils":161}],129:[function(require,module,exports){
 module.exports={
   "_from": "elliptic@^6.0.0",
   "_id": "elliptic@6.4.1",
@@ -17285,7 +26773,7 @@ module.exports={
   "version": "6.4.1"
 }
 
-},{}],97:[function(require,module,exports){
+},{}],130:[function(require,module,exports){
 /* Copyright (c) 2014-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -17564,7 +27052,7 @@ function originalmsg(override, ex) {
   return ex.message
 }
 
-},{"lodash":124,"util":271}],98:[function(require,module,exports){
+},{"lodash":156,"util":278}],131:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -18089,7 +27577,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],99:[function(require,module,exports){
+},{}],132:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -18136,7 +27624,7 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":126,"safe-buffer":229}],100:[function(require,module,exports){
+},{"md5.js":158,"safe-buffer":236}],133:[function(require,module,exports){
 (function (setImmediate){
 /* Copyright (c) 2014-2016 Richard Rodger, MIT License */
 'use strict'
@@ -18516,7 +28004,7 @@ function GateExecutor (options, instance_counter) {
 module.exports = make_GateExecutor
 
 }).call(this,require("timers").setImmediate)
-},{"assert":16,"timers":264}],101:[function(require,module,exports){
+},{"assert":49,"timers":271}],134:[function(require,module,exports){
 /* Copyright (c) 2011-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -18663,7 +28151,7 @@ module.exports = make_GateExecutor
   }
 }.call(this))
 
-},{"lodash":124}],102:[function(require,module,exports){
+},{"lodash":156}],135:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
@@ -18760,7 +28248,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":118,"safe-buffer":229,"stream":257}],103:[function(require,module,exports){
+},{"inherits":151,"safe-buffer":236,"stream":264}],136:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -18777,7 +28265,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":104,"./hash/hmac":105,"./hash/ripemd":106,"./hash/sha":107,"./hash/utils":114}],104:[function(require,module,exports){
+},{"./hash/common":137,"./hash/hmac":138,"./hash/ripemd":139,"./hash/sha":140,"./hash/utils":147}],137:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -18871,7 +28359,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":114,"minimalistic-assert":128}],105:[function(require,module,exports){
+},{"./utils":147,"minimalistic-assert":160}],138:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -18920,7 +28408,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":114,"minimalistic-assert":128}],106:[function(require,module,exports){
+},{"./utils":147,"minimalistic-assert":160}],139:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -19068,7 +28556,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":104,"./utils":114}],107:[function(require,module,exports){
+},{"./common":137,"./utils":147}],140:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -19077,7 +28565,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":108,"./sha/224":109,"./sha/256":110,"./sha/384":111,"./sha/512":112}],108:[function(require,module,exports){
+},{"./sha/1":141,"./sha/224":142,"./sha/256":143,"./sha/384":144,"./sha/512":145}],141:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19153,7 +28641,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":104,"../utils":114,"./common":113}],109:[function(require,module,exports){
+},{"../common":137,"../utils":147,"./common":146}],142:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19185,7 +28673,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":114,"./256":110}],110:[function(require,module,exports){
+},{"../utils":147,"./256":143}],143:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19292,7 +28780,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":104,"../utils":114,"./common":113,"minimalistic-assert":128}],111:[function(require,module,exports){
+},{"../common":137,"../utils":147,"./common":146,"minimalistic-assert":160}],144:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19329,7 +28817,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":114,"./512":112}],112:[function(require,module,exports){
+},{"../utils":147,"./512":145}],145:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19661,7 +29149,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":104,"../utils":114,"minimalistic-assert":128}],113:[function(require,module,exports){
+},{"../common":137,"../utils":147,"minimalistic-assert":160}],146:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -19712,7 +29200,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":114}],114:[function(require,module,exports){
+},{"../utils":147}],147:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -19992,7 +29480,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":118,"minimalistic-assert":128}],115:[function(require,module,exports){
+},{"inherits":151,"minimalistic-assert":160}],148:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -20107,7 +29595,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":103,"minimalistic-assert":128,"minimalistic-crypto-utils":129}],116:[function(require,module,exports){
+},{"hash.js":136,"minimalistic-assert":160,"minimalistic-crypto-utils":161}],149:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -20140,7 +29628,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":258,"url":266}],117:[function(require,module,exports){
+},{"http":265,"url":273}],150:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -20226,9 +29714,9 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],118:[function(require,module,exports){
-arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],119:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
+arguments[4][50][0].apply(exports,arguments)
+},{"dup":50}],152:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -20251,1517 +29739,14 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],120:[function(require,module,exports){
+},{}],153:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],121:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-// Load modules
-
-const Punycode = require('punycode');
-const Util = require('util');
-
-// Declare internals
-
-const internals = {
-    hasOwn: Object.prototype.hasOwnProperty,
-    indexOf: Array.prototype.indexOf,
-    defaultThreshold: 16,
-    maxIPv6Groups: 8,
-
-    categories: {
-        valid: 1,
-        dnsWarn: 7,
-        rfc5321: 15,
-        cfws: 31,
-        deprecated: 63,
-        rfc5322: 127,
-        error: 255
-    },
-
-    diagnoses: {
-
-        // Address is valid
-
-        valid: 0,
-
-        // Address is valid for SMTP but has unusual elements
-
-        rfc5321TLD: 9,
-        rfc5321TLDNumeric: 10,
-        rfc5321QuotedString: 11,
-        rfc5321AddressLiteral: 12,
-
-        // Address is valid for message, but must be modified for envelope
-
-        cfwsComment: 17,
-        cfwsFWS: 18,
-
-        // Address contains non-ASCII when the allowUnicode option is false
-        // Has to be > internals.defaultThreshold so that it's rejected
-        // without an explicit errorLevel:
-        undesiredNonAscii: 25,
-
-        // Address contains deprecated elements, but may still be valid in some contexts
-
-        deprecatedLocalPart: 33,
-        deprecatedFWS: 34,
-        deprecatedQTEXT: 35,
-        deprecatedQP: 36,
-        deprecatedComment: 37,
-        deprecatedCTEXT: 38,
-        deprecatedIPv6: 39,
-        deprecatedCFWSNearAt: 49,
-
-        // Address is only valid according to broad definition in RFC 5322, but is otherwise invalid
-
-        rfc5322Domain: 65,
-        rfc5322TooLong: 66,
-        rfc5322LocalTooLong: 67,
-        rfc5322DomainTooLong: 68,
-        rfc5322LabelTooLong: 69,
-        rfc5322DomainLiteral: 70,
-        rfc5322DomainLiteralOBSDText: 71,
-        rfc5322IPv6GroupCount: 72,
-        rfc5322IPv62x2xColon: 73,
-        rfc5322IPv6BadCharacter: 74,
-        rfc5322IPv6MaxGroups: 75,
-        rfc5322IPv6ColonStart: 76,
-        rfc5322IPv6ColonEnd: 77,
-
-        // Address is invalid for any purpose
-
-        errExpectingDTEXT: 129,
-        errNoLocalPart: 130,
-        errNoDomain: 131,
-        errConsecutiveDots: 132,
-        errATEXTAfterCFWS: 133,
-        errATEXTAfterQS: 134,
-        errATEXTAfterDomainLiteral: 135,
-        errExpectingQPair: 136,
-        errExpectingATEXT: 137,
-        errExpectingQTEXT: 138,
-        errExpectingCTEXT: 139,
-        errBackslashEnd: 140,
-        errDotStart: 141,
-        errDotEnd: 142,
-        errDomainHyphenStart: 143,
-        errDomainHyphenEnd: 144,
-        errUnclosedQuotedString: 145,
-        errUnclosedComment: 146,
-        errUnclosedDomainLiteral: 147,
-        errFWSCRLFx2: 148,
-        errFWSCRLFEnd: 149,
-        errCRNoLF: 150,
-        errUnknownTLD: 160,
-        errDomainTooShort: 161,
-        errDotAfterDomainLiteral: 162
-    },
-
-    components: {
-        localpart: 0,
-        domain: 1,
-        literal: 2,
-        contextComment: 3,
-        contextFWS: 4,
-        contextQuotedString: 5,
-        contextQuotedPair: 6
-    }
-};
-
-
-internals.specials = function () {
-
-    const specials = '()<>[]:;@\\,."';        // US-ASCII visible characters not valid for atext (http://tools.ietf.org/html/rfc5322#section-3.2.3)
-    const lookup = new Array(0x100);
-    lookup.fill(false);
-
-    for (let i = 0; i < specials.length; ++i) {
-        lookup[specials.codePointAt(i)] = true;
-    }
-
-    return function (code) {
-
-        return lookup[code];
-    };
-}();
-
-internals.c0Controls = function () {
-
-    const lookup = new Array(0x100);
-    lookup.fill(false);
-
-    // add C0 control characters
-
-    for (let i = 0; i < 33; ++i) {
-        lookup[i] = true;
-    }
-
-    return function (code) {
-
-        return lookup[code];
-    };
-}();
-
-internals.c1Controls = function () {
-
-    const lookup = new Array(0x100);
-    lookup.fill(false);
-
-    // add C1 control characters
-
-    for (let i = 127; i < 160; ++i) {
-        lookup[i] = true;
-    }
-
-    return function (code) {
-
-        return lookup[code];
-    };
-}();
-
-internals.regex = {
-    ipV4: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/,
-    ipV6: /^[a-fA-F\d]{0,4}$/
-};
-
-internals.normalizeSupportsNul = '\0'.normalize('NFC') === '\0';
-
-
-// $lab:coverage:off$
-internals.nulNormalize = function (email) {
-
-    return email.split('\0').map((part) => part.normalize('NFC')).join('\0');
-};
-// $lab:coverage:on$
-
-
-internals.normalize = function (email) {
-
-    return email.normalize('NFC');
-};
-
-
-// $lab:coverage:off$
-if (!internals.normalizeSupportsNul) {
-    internals.normalize = function (email) {
-
-        if (email.indexOf('\0') >= 0) {
-            return internals.nulNormalize(email);
-        }
-
-        return email.normalize('NFC');
-    };
-}
-// $lab:coverage:on$
-
-
-internals.checkIpV6 = function (items) {
-
-    return items.every((value) => internals.regex.ipV6.test(value));
-};
-
-
-internals.isIterable = Array.isArray;
-
-
-/* $lab:coverage:off$ */
-if (typeof Symbol !== 'undefined') {
-    internals.isIterable = (value) => Array.isArray(value) || (!!value && typeof value === 'object' && typeof value[Symbol.iterator] === 'function');
-}
-/* $lab:coverage:on$ */
-
-
-// Node 10 introduced isSet and isMap, which are useful for cross-context type
-// checking.
-// $lab:coverage:off$
-internals._isSet = (value) => value instanceof Set;
-internals._isMap = (value) => value instanceof Map;
-internals.isSet = Util.types && Util.types.isSet || internals._isSet;
-internals.isMap = Util.types && Util.types.isMap || internals._isMap;
-// $lab:coverage:on$
-
-
-/**
- * Normalize the given lookup "table" to an iterator. Outputs items in arrays
- * and sets, keys from maps (regardless of the corresponding value), and own
- * enumerable keys from all other objects (intended to be plain objects).
- *
- * @param {*} table The table to convert.
- * @returns {Iterable<*>} The converted table.
- */
-internals.normalizeTable = function (table) {
-
-    if (internals.isSet(table) || Array.isArray(table)) {
-        return table;
-    }
-
-    if (internals.isMap(table)) {
-        return table.keys();
-    }
-
-    return Object.keys(table);
-};
-
-
-/**
- * Convert the given domain atom to its canonical form using Nameprep and string
- * lowercasing. Domain atoms that are all-ASCII will not undergo any changes via
- * Nameprep, and domain atoms that have already been canonicalized will not be
- * altered.
- *
- * @param {string} atom The atom to canonicalize.
- * @returns {string} The canonicalized atom.
- */
-internals.canonicalizeAtom = function (atom) {
-
-    return Punycode.toASCII(atom).toLowerCase();
-};
-
-
-/**
- * Check whether any of the values in the given iterable, when passed through
- * the iteratee function, are equal to the given value.
- *
- * @param {Iterable<*>} iterable The iterable to check.
- * @param {function(*): *} iteratee The iteratee that receives each item from
- *   the iterable.
- * @param {*} value The reference value.
- * @returns {boolean} Whether the given value matches any of the items in the
- *   iterable per the iteratee.
- */
-internals.includesMapped = function (iterable, iteratee, value) {
-
-    for (const item of iterable) {
-        if (value === iteratee(item)) {
-            return true;
-        }
-    }
-
-    return false;
-};
-
-
-/**
- * Check whether the given top-level domain atom is valid based on the
- * configured blacklist/whitelist.
- *
- * @param {string} tldAtom The atom to check.
- * @param {Object} options
- *   {*} tldBlacklist The set of domains to consider invalid.
- *   {*} tldWhitelist The set of domains to consider valid.
- * @returns {boolean} Whether the given domain atom is valid per the blacklist/
- *   whitelist.
- */
-internals.validDomain = function (tldAtom, options) {
-
-    // Nameprep handles case-sensitive unicode stuff, but doesn't touch
-    // uppercase ASCII characters.
-    const canonicalTldAtom = internals.canonicalizeAtom(tldAtom);
-
-    if (options.tldBlacklist) {
-        return !internals.includesMapped(
-            internals.normalizeTable(options.tldBlacklist),
-            internals.canonicalizeAtom, canonicalTldAtom);
-    }
-
-    return internals.includesMapped(
-        internals.normalizeTable(options.tldWhitelist),
-        internals.canonicalizeAtom, canonicalTldAtom);
-};
-
-
-/**
- * Check whether the domain atoms has an address literal part followed by a
- * normal domain atom part. For example, [127.0.0.1].com.
- *
- * @param {string[]} domainAtoms The parsed domain atoms.
- * @returns {boolean} Whether there exists both a normal domain atom and an
- *   address literal.
- */
-internals.hasDomainLiteralThenAtom = function (domainAtoms) {
-
-    let hasDomainLiteral = false;
-    for (let i = 0; i < domainAtoms.length; ++i) {
-        if (domainAtoms[i][0] === '[') {
-            hasDomainLiteral = true;
-        }
-        else if (hasDomainLiteral) {
-            return true;
-        }
-    }
-
-    return false;
-};
-
-
-/**
- * Check that an email address conforms to RFCs 5321, 5322, 6530 and others
- *
- * We distinguish clearly between a Mailbox as defined by RFC 5321 and an
- * addr-spec as defined by RFC 5322. Depending on the context, either can be
- * regarded as a valid email address. The RFC 5321 Mailbox specification is
- * more restrictive (comments, white space and obsolete forms are not allowed).
- *
- * @param {string} email The email address to check. See README for specifics.
- * @param {Object} options The (optional) options:
- *   {*} errorLevel Determines the boundary between valid and invalid
- *     addresses.
- *   {*} tldBlacklist The set of domains to consider invalid.
- *   {*} tldWhitelist The set of domains to consider valid.
- *   {*} allowUnicode Whether to allow non-ASCII characters, defaults to true.
- *   {*} minDomainAtoms The minimum number of domain atoms which must be present
- *     for the address to be valid.
- * @param {function(number|boolean)} callback The (optional) callback handler.
- * @return {*}
- */
-
-exports.validate = internals.validate = function (email, options, callback) {
-
-    options = options || {};
-
-    if (typeof email !== 'string') {
-        throw new TypeError('expected string email');
-    }
-
-    email = internals.normalize(email);
-
-    // The callback function is deprecated.
-    // $lab:coverage:off$
-    if (typeof options === 'function') {
-        callback = options;
-        options = {};
-    }
-
-    if (typeof callback !== 'function') {
-        callback = null;
-    }
-    // $lab:coverage:on$
-
-    let diagnose;
-    let threshold;
-
-    if (typeof options.errorLevel === 'number') {
-        diagnose = true;
-        threshold = options.errorLevel;
-    }
-    else {
-        diagnose = !!options.errorLevel;
-        threshold = internals.diagnoses.valid;
-    }
-
-    if (options.tldWhitelist) {
-        if (typeof options.tldWhitelist === 'string') {
-            options.tldWhitelist = [options.tldWhitelist];
-        }
-        else if (typeof options.tldWhitelist !== 'object') {
-            throw new TypeError('expected array or object tldWhitelist');
-        }
-    }
-
-    if (options.tldBlacklist) {
-        if (typeof options.tldBlacklist === 'string') {
-            options.tldBlacklist = [options.tldBlacklist];
-        }
-        else if (typeof options.tldBlacklist !== 'object') {
-            throw new TypeError('expected array or object tldBlacklist');
-        }
-    }
-
-    if (options.minDomainAtoms && (options.minDomainAtoms !== ((+options.minDomainAtoms) | 0) || options.minDomainAtoms < 0)) {
-        throw new TypeError('expected positive integer minDomainAtoms');
-    }
-
-    // Normalize the set of excluded diagnoses.
-    if (options.excludeDiagnoses) {
-        if (!internals.isIterable(options.excludeDiagnoses)) {
-            throw new TypeError('expected iterable excludeDiagnoses');
-        }
-
-        // This won't catch cross-realm Sets pre-Node 10, but it will cast the
-        // value to an in-realm Set representation.
-        if (!internals.isSet(options.excludeDiagnoses)) {
-            options.excludeDiagnoses = new Set(options.excludeDiagnoses);
-        }
-    }
-
-    let maxResult = internals.diagnoses.valid;
-    const updateResult = (value) => {
-
-        if (value > maxResult && (!options.excludeDiagnoses || !options.excludeDiagnoses.has(value))) {
-            maxResult = value;
-        }
-    };
-
-    const allowUnicode = options.allowUnicode === undefined || !!options.allowUnicode;
-    if (!allowUnicode && /[^\x00-\x7f]/.test(email)) {
-        updateResult(internals.diagnoses.undesiredNonAscii);
-    }
-
-    const context = {
-        now: internals.components.localpart,
-        prev: internals.components.localpart,
-        stack: [internals.components.localpart]
-    };
-
-    let prevToken = '';
-
-    const parseData = {
-        local: '',
-        domain: ''
-    };
-    const atomData = {
-        locals: [''],
-        domains: ['']
-    };
-
-    let elementCount = 0;
-    let elementLength = 0;
-    let crlfCount = 0;
-    let charCode;
-
-    let hyphenFlag = false;
-    let assertEnd = false;
-
-    const emailLength = email.length;
-
-    let token;                                      // Token is used outside the loop, must declare similarly
-    for (let i = 0; i < emailLength; i += token.length) {
-        // Utilize codepoints to account for Unicode surrogate pairs
-        token = String.fromCodePoint(email.codePointAt(i));
-
-        switch (context.now) {
-            // Local-part
-            case internals.components.localpart:
-                // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                //   local-part      =   dot-atom / quoted-string / obs-local-part
-                //
-                //   dot-atom        =   [CFWS] dot-atom-text [CFWS]
-                //
-                //   dot-atom-text   =   1*atext *("." 1*atext)
-                //
-                //   quoted-string   =   [CFWS]
-                //                       DQUOTE *([FWS] qcontent) [FWS] DQUOTE
-                //                       [CFWS]
-                //
-                //   obs-local-part  =   word *("." word)
-                //
-                //   word            =   atom / quoted-string
-                //
-                //   atom            =   [CFWS] 1*atext [CFWS]
-                switch (token) {
-                    // Comment
-                    case '(':
-                        if (elementLength === 0) {
-                            // Comments are OK at the beginning of an element
-                            updateResult(elementCount === 0 ? internals.diagnoses.cfwsComment : internals.diagnoses.deprecatedComment);
-                        }
-                        else {
-                            updateResult(internals.diagnoses.cfwsComment);
-                            // Cannot start a comment in an element, should be end
-                            assertEnd = true;
-                        }
-
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextComment;
-                        break;
-
-                        // Next dot-atom element
-                    case '.':
-                        if (elementLength === 0) {
-                            // Another dot, already?
-                            updateResult(elementCount === 0 ? internals.diagnoses.errDotStart : internals.diagnoses.errConsecutiveDots);
-                        }
-                        else {
-                            // The entire local-part can be a quoted string for RFC 5321; if one atom is quoted it's an RFC 5322 obsolete form
-                            if (assertEnd) {
-                                updateResult(internals.diagnoses.deprecatedLocalPart);
-                            }
-
-                            // CFWS & quoted strings are OK again now we're at the beginning of an element (although they are obsolete forms)
-                            assertEnd = false;
-                            elementLength = 0;
-                            ++elementCount;
-                            parseData.local += token;
-                            atomData.locals[elementCount] = '';
-                        }
-
-                        break;
-
-                        // Quoted string
-                    case '"':
-                        if (elementLength === 0) {
-                            // The entire local-part can be a quoted string for RFC 5321; if one atom is quoted it's an RFC 5322 obsolete form
-                            updateResult(elementCount === 0 ? internals.diagnoses.rfc5321QuotedString : internals.diagnoses.deprecatedLocalPart);
-
-                            parseData.local += token;
-                            atomData.locals[elementCount] += token;
-                            elementLength += Buffer.byteLength(token, 'utf8');
-
-                            // Quoted string must be the entire element
-                            assertEnd = true;
-                            context.stack.push(context.now);
-                            context.now = internals.components.contextQuotedString;
-                        }
-                        else {
-                            updateResult(internals.diagnoses.errExpectingATEXT);
-                        }
-
-                        break;
-
-                        // Folding white space
-                    case '\r':
-                        if (emailLength === ++i || email[i] !== '\n') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errCRNoLF);
-                            break;
-                        }
-
-                        // Fallthrough
-
-                    case ' ':
-                    case '\t':
-                        if (elementLength === 0) {
-                            updateResult(elementCount === 0 ? internals.diagnoses.cfwsFWS : internals.diagnoses.deprecatedFWS);
-                        }
-                        else {
-                            // We can't start FWS in the middle of an element, better be end
-                            assertEnd = true;
-                        }
-
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextFWS;
-                        prevToken = token;
-                        break;
-
-                    case '@':
-                        // At this point we should have a valid local-part
-                        // $lab:coverage:off$
-                        if (context.stack.length !== 1) {
-                            throw new Error('unexpected item on context stack');
-                        }
-                        // $lab:coverage:on$
-
-                        if (parseData.local.length === 0) {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errNoLocalPart);
-                        }
-                        else if (elementLength === 0) {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errDotEnd);
-                        }
-                        // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.1 the maximum total length of a user name or other local-part is 64
-                        //    octets
-                        else if (Buffer.byteLength(parseData.local, 'utf8') > 64) {
-                            updateResult(internals.diagnoses.rfc5322LocalTooLong);
-                        }
-                        // http://tools.ietf.org/html/rfc5322#section-3.4.1 comments and folding white space SHOULD NOT be used around "@" in the
-                        //    addr-spec
-                        //
-                        // http://tools.ietf.org/html/rfc2119
-                        // 4. SHOULD NOT this phrase, or the phrase "NOT RECOMMENDED" mean that there may exist valid reasons in particular
-                        //    circumstances when the particular behavior is acceptable or even useful, but the full implications should be understood
-                        //    and the case carefully weighed before implementing any behavior described with this label.
-                        else if (context.prev === internals.components.contextComment || context.prev === internals.components.contextFWS) {
-                            updateResult(internals.diagnoses.deprecatedCFWSNearAt);
-                        }
-
-                        // Clear everything down for the domain parsing
-                        context.now = internals.components.domain;
-                        context.stack[0] = internals.components.domain;
-                        elementCount = 0;
-                        elementLength = 0;
-                        assertEnd = false; // CFWS can only appear at the end of the element
-                        break;
-
-                        // ATEXT
-                    default:
-                        // http://tools.ietf.org/html/rfc5322#section-3.2.3
-                        //    atext = ALPHA / DIGIT / ; Printable US-ASCII
-                        //            "!" / "#" /     ;  characters not including
-                        //            "$" / "%" /     ;  specials.  Used for atoms.
-                        //            "&" / "'" /
-                        //            "*" / "+" /
-                        //            "-" / "/" /
-                        //            "=" / "?" /
-                        //            "^" / "_" /
-                        //            "`" / "{" /
-                        //            "|" / "}" /
-                        //            "~"
-                        if (assertEnd) {
-                            // We have encountered atext where it is no longer valid
-                            switch (context.prev) {
-                                case internals.components.contextComment:
-                                case internals.components.contextFWS:
-                                    updateResult(internals.diagnoses.errATEXTAfterCFWS);
-                                    break;
-
-                                case internals.components.contextQuotedString:
-                                    updateResult(internals.diagnoses.errATEXTAfterQS);
-                                    break;
-
-                                    // $lab:coverage:off$
-                                default:
-                                    throw new Error('more atext found where none is allowed, but unrecognized prev context: ' + context.prev);
-                                    // $lab:coverage:on$
-                            }
-                        }
-                        else {
-                            context.prev = context.now;
-                            charCode = token.codePointAt(0);
-
-                            // Especially if charCode == 10
-                            if (internals.specials(charCode) || internals.c0Controls(charCode) || internals.c1Controls(charCode)) {
-
-                                // Fatal error
-                                updateResult(internals.diagnoses.errExpectingATEXT);
-                            }
-
-                            parseData.local += token;
-                            atomData.locals[elementCount] += token;
-                            elementLength += Buffer.byteLength(token, 'utf8');
-                        }
-                }
-
-                break;
-
-            case internals.components.domain:
-                // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                //   domain          =   dot-atom / domain-literal / obs-domain
-                //
-                //   dot-atom        =   [CFWS] dot-atom-text [CFWS]
-                //
-                //   dot-atom-text   =   1*atext *("." 1*atext)
-                //
-                //   domain-literal  =   [CFWS] "[" *([FWS] dtext) [FWS] "]" [CFWS]
-                //
-                //   dtext           =   %d33-90 /          ; Printable US-ASCII
-                //                       %d94-126 /         ;  characters not including
-                //                       obs-dtext          ;  "[", "]", or "\"
-                //
-                //   obs-domain      =   atom *("." atom)
-                //
-                //   atom            =   [CFWS] 1*atext [CFWS]
-
-                // http://tools.ietf.org/html/rfc5321#section-4.1.2
-                //   Mailbox        = Local-part "@" ( Domain / address-literal )
-                //
-                //   Domain         = sub-domain *("." sub-domain)
-                //
-                //   address-literal  = "[" ( IPv4-address-literal /
-                //                    IPv6-address-literal /
-                //                    General-address-literal ) "]"
-                //                    ; See Section 4.1.3
-
-                // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                //      Note: A liberal syntax for the domain portion of addr-spec is
-                //      given here.  However, the domain portion contains addressing
-                //      information specified by and used in other protocols (e.g.,
-                //      [RFC1034], [RFC1035], [RFC1123], [RFC5321]).  It is therefore
-                //      incumbent upon implementations to conform to the syntax of
-                //      addresses for the context in which they are used.
-                //
-                // is_email() author's note: it's not clear how to interpret this in
-                // he context of a general email address validator. The conclusion I
-                // have reached is this: "addressing information" must comply with
-                // RFC 5321 (and in turn RFC 1035), anything that is "semantically
-                // invisible" must comply only with RFC 5322.
-                switch (token) {
-                    // Comment
-                    case '(':
-                        if (elementLength === 0) {
-                            // Comments at the start of the domain are deprecated in the text, comments at the start of a subdomain are obs-domain
-                            // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                            updateResult(elementCount === 0 ? internals.diagnoses.deprecatedCFWSNearAt : internals.diagnoses.deprecatedComment);
-                        }
-                        else {
-                            // We can't start a comment mid-element, better be at the end
-                            assertEnd = true;
-                            updateResult(internals.diagnoses.cfwsComment);
-                        }
-
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextComment;
-                        break;
-
-                        // Next dot-atom element
-                    case '.':
-                        const punycodeLength = Punycode.toASCII(atomData.domains[elementCount]).length;
-                        if (elementLength === 0) {
-                            // Another dot, already? Fatal error.
-                            updateResult(elementCount === 0 ? internals.diagnoses.errDotStart : internals.diagnoses.errConsecutiveDots);
-                        }
-                        else if (hyphenFlag) {
-                            // Previous subdomain ended in a hyphen. Fatal error.
-                            updateResult(internals.diagnoses.errDomainHyphenEnd);
-                        }
-                        else if (punycodeLength > 63) {
-                            // RFC 5890 specifies that domain labels that are encoded using the Punycode algorithm
-                            // must adhere to the <= 63 octet requirement.
-                            // This includes string prefixes from the Punycode algorithm.
-                            //
-                            // https://tools.ietf.org/html/rfc5890#section-2.3.2.1
-                            // labels          63 octets or less
-
-                            updateResult(internals.diagnoses.rfc5322LabelTooLong);
-                        }
-
-                        // CFWS is OK again now we're at the beginning of an element (although
-                        // it may be obsolete CFWS)
-                        assertEnd = false;
-                        elementLength = 0;
-                        ++elementCount;
-                        atomData.domains[elementCount] = '';
-                        parseData.domain += token;
-
-                        break;
-
-                        // Domain literal
-                    case '[':
-                        if (atomData.domains[elementCount].length === 0) {
-                            if (parseData.domain.length) {
-                                // Domain literal interspersed with domain refs.
-                                updateResult(internals.diagnoses.errDotAfterDomainLiteral);
-                            }
-
-                            assertEnd = true;
-                            elementLength += Buffer.byteLength(token, 'utf8');
-                            context.stack.push(context.now);
-                            context.now = internals.components.literal;
-                            parseData.domain += token;
-                            atomData.domains[elementCount] += token;
-                            parseData.literal = '';
-                        }
-                        else {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errExpectingATEXT);
-                        }
-
-                        break;
-
-                        // Folding white space
-                    case '\r':
-                        if (emailLength === ++i || email[i] !== '\n') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errCRNoLF);
-                            break;
-                        }
-
-                        // Fallthrough
-
-                    case ' ':
-                    case '\t':
-                        if (elementLength === 0) {
-                            updateResult(elementCount === 0 ? internals.diagnoses.deprecatedCFWSNearAt : internals.diagnoses.deprecatedFWS);
-                        }
-                        else {
-                            // We can't start FWS in the middle of an element, so this better be the end
-                            updateResult(internals.diagnoses.cfwsFWS);
-                            assertEnd = true;
-                        }
-
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextFWS;
-                        prevToken = token;
-                        break;
-
-                        // This must be ATEXT
-                    default:
-                        // RFC 5322 allows any atext...
-                        // http://tools.ietf.org/html/rfc5322#section-3.2.3
-                        //    atext = ALPHA / DIGIT / ; Printable US-ASCII
-                        //            "!" / "#" /     ;  characters not including
-                        //            "$" / "%" /     ;  specials.  Used for atoms.
-                        //            "&" / "'" /
-                        //            "*" / "+" /
-                        //            "-" / "/" /
-                        //            "=" / "?" /
-                        //            "^" / "_" /
-                        //            "`" / "{" /
-                        //            "|" / "}" /
-                        //            "~"
-
-                        // But RFC 5321 only allows letter-digit-hyphen to comply with DNS rules
-                        //   (RFCs 1034 & 1123)
-                        // http://tools.ietf.org/html/rfc5321#section-4.1.2
-                        //   sub-domain     = Let-dig [Ldh-str]
-                        //
-                        //   Let-dig        = ALPHA / DIGIT
-                        //
-                        //   Ldh-str        = *( ALPHA / DIGIT / "-" ) Let-dig
-                        //
-                        if (assertEnd) {
-                            // We have encountered ATEXT where it is no longer valid
-                            switch (context.prev) {
-                                case internals.components.contextComment:
-                                case internals.components.contextFWS:
-                                    updateResult(internals.diagnoses.errATEXTAfterCFWS);
-                                    break;
-
-                                case internals.components.literal:
-                                    updateResult(internals.diagnoses.errATEXTAfterDomainLiteral);
-                                    break;
-
-                                    // $lab:coverage:off$
-                                default:
-                                    throw new Error('more atext found where none is allowed, but unrecognized prev context: ' + context.prev);
-                                    // $lab:coverage:on$
-                            }
-                        }
-
-                        charCode = token.codePointAt(0);
-                        // Assume this token isn't a hyphen unless we discover it is
-                        hyphenFlag = false;
-
-                        if (internals.specials(charCode) || internals.c0Controls(charCode) || internals.c1Controls(charCode)) {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errExpectingATEXT);
-                        }
-                        else if (token === '-') {
-                            if (elementLength === 0) {
-                                // Hyphens cannot be at the beginning of a subdomain, fatal error
-                                updateResult(internals.diagnoses.errDomainHyphenStart);
-                            }
-
-                            hyphenFlag = true;
-                        }
-                        // Check if it's a neither a number nor a latin/unicode letter
-                        else if (charCode < 48 || (charCode > 122 && charCode < 192) || (charCode > 57 && charCode < 65) || (charCode > 90 && charCode < 97)) {
-                            // This is not an RFC 5321 subdomain, but still OK by RFC 5322
-                            updateResult(internals.diagnoses.rfc5322Domain);
-                        }
-
-                        parseData.domain += token;
-                        atomData.domains[elementCount] += token;
-                        elementLength += Buffer.byteLength(token, 'utf8');
-                }
-
-                break;
-
-                // Domain literal
-            case internals.components.literal:
-                // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                //   domain-literal  =   [CFWS] "[" *([FWS] dtext) [FWS] "]" [CFWS]
-                //
-                //   dtext           =   %d33-90 /          ; Printable US-ASCII
-                //                       %d94-126 /         ;  characters not including
-                //                       obs-dtext          ;  "[", "]", or "\"
-                //
-                //   obs-dtext       =   obs-NO-WS-CTL / quoted-pair
-                switch (token) {
-                    // End of domain literal
-                    case ']':
-                        if (maxResult < internals.categories.deprecated) {
-                            // Could be a valid RFC 5321 address literal, so let's check
-
-                            // http://tools.ietf.org/html/rfc5321#section-4.1.2
-                            //   address-literal  = "[" ( IPv4-address-literal /
-                            //                    IPv6-address-literal /
-                            //                    General-address-literal ) "]"
-                            //                    ; See Section 4.1.3
-                            //
-                            // http://tools.ietf.org/html/rfc5321#section-4.1.3
-                            //   IPv4-address-literal  = Snum 3("."  Snum)
-                            //
-                            //   IPv6-address-literal  = "IPv6:" IPv6-addr
-                            //
-                            //   General-address-literal  = Standardized-tag ":" 1*dcontent
-                            //
-                            //   Standardized-tag  = Ldh-str
-                            //                     ; Standardized-tag MUST be specified in a
-                            //                     ; Standards-Track RFC and registered with IANA
-                            //
-                            //   dcontent      = %d33-90 / ; Printable US-ASCII
-                            //                 %d94-126 ; excl. "[", "\", "]"
-                            //
-                            //   Snum          = 1*3DIGIT
-                            //                 ; representing a decimal integer
-                            //                 ; value in the range 0 through 255
-                            //
-                            //   IPv6-addr     = IPv6-full / IPv6-comp / IPv6v4-full / IPv6v4-comp
-                            //
-                            //   IPv6-hex      = 1*4HEXDIG
-                            //
-                            //   IPv6-full     = IPv6-hex 7(":" IPv6-hex)
-                            //
-                            //   IPv6-comp     = [IPv6-hex *5(":" IPv6-hex)] "::"
-                            //                 [IPv6-hex *5(":" IPv6-hex)]
-                            //                 ; The "::" represents at least 2 16-bit groups of
-                            //                 ; zeros.  No more than 6 groups in addition to the
-                            //                 ; "::" may be present.
-                            //
-                            //   IPv6v4-full   = IPv6-hex 5(":" IPv6-hex) ":" IPv4-address-literal
-                            //
-                            //   IPv6v4-comp   = [IPv6-hex *3(":" IPv6-hex)] "::"
-                            //                 [IPv6-hex *3(":" IPv6-hex) ":"]
-                            //                 IPv4-address-literal
-                            //                 ; The "::" represents at least 2 16-bit groups of
-                            //                 ; zeros.  No more than 4 groups in addition to the
-                            //                 ; "::" and IPv4-address-literal may be present.
-
-                            let index = -1;
-                            let addressLiteral = parseData.literal;
-                            const matchesIP = internals.regex.ipV4.exec(addressLiteral);
-
-                            // Maybe extract IPv4 part from the end of the address-literal
-                            if (matchesIP) {
-                                index = matchesIP.index;
-                                if (index !== 0) {
-                                    // Convert IPv4 part to IPv6 format for futher testing
-                                    addressLiteral = addressLiteral.slice(0, index) + '0:0';
-                                }
-                            }
-
-                            if (index === 0) {
-                                // Nothing there except a valid IPv4 address, so...
-                                updateResult(internals.diagnoses.rfc5321AddressLiteral);
-                            }
-                            else if (addressLiteral.slice(0, 5).toLowerCase() !== 'ipv6:') {
-                                updateResult(internals.diagnoses.rfc5322DomainLiteral);
-                            }
-                            else {
-                                const match = addressLiteral.slice(5);
-                                let maxGroups = internals.maxIPv6Groups;
-                                const groups = match.split(':');
-                                index = match.indexOf('::');
-
-                                if (!~index) {
-                                    // Need exactly the right number of groups
-                                    if (groups.length !== maxGroups) {
-                                        updateResult(internals.diagnoses.rfc5322IPv6GroupCount);
-                                    }
-                                }
-                                else if (index !== match.lastIndexOf('::')) {
-                                    updateResult(internals.diagnoses.rfc5322IPv62x2xColon);
-                                }
-                                else {
-                                    if (index === 0 || index === match.length - 2) {
-                                        // RFC 4291 allows :: at the start or end of an address with 7 other groups in addition
-                                        ++maxGroups;
-                                    }
-
-                                    if (groups.length > maxGroups) {
-                                        updateResult(internals.diagnoses.rfc5322IPv6MaxGroups);
-                                    }
-                                    else if (groups.length === maxGroups) {
-                                        // Eliding a single "::"
-                                        updateResult(internals.diagnoses.deprecatedIPv6);
-                                    }
-                                }
-
-                                // IPv6 testing strategy
-                                if (match[0] === ':' && match[1] !== ':') {
-                                    updateResult(internals.diagnoses.rfc5322IPv6ColonStart);
-                                }
-                                else if (match[match.length - 1] === ':' && match[match.length - 2] !== ':') {
-                                    updateResult(internals.diagnoses.rfc5322IPv6ColonEnd);
-                                }
-                                else if (internals.checkIpV6(groups)) {
-                                    updateResult(internals.diagnoses.rfc5321AddressLiteral);
-                                }
-                                else {
-                                    updateResult(internals.diagnoses.rfc5322IPv6BadCharacter);
-                                }
-                            }
-                        }
-                        else {
-                            updateResult(internals.diagnoses.rfc5322DomainLiteral);
-                        }
-
-                        parseData.domain += token;
-                        atomData.domains[elementCount] += token;
-                        elementLength += Buffer.byteLength(token, 'utf8');
-                        context.prev = context.now;
-                        context.now = context.stack.pop();
-                        break;
-
-                    case '\\':
-                        updateResult(internals.diagnoses.rfc5322DomainLiteralOBSDText);
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextQuotedPair;
-                        break;
-
-                        // Folding white space
-                    case '\r':
-                        if (emailLength === ++i || email[i] !== '\n') {
-                            updateResult(internals.diagnoses.errCRNoLF);
-                            break;
-                        }
-
-                        // Fallthrough
-
-                    case ' ':
-                    case '\t':
-                        updateResult(internals.diagnoses.cfwsFWS);
-
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextFWS;
-                        prevToken = token;
-                        break;
-
-                        // DTEXT
-                    default:
-                        // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                        //   dtext         =   %d33-90 /  ; Printable US-ASCII
-                        //                     %d94-126 / ;  characters not including
-                        //                     obs-dtext  ;  "[", "]", or "\"
-                        //
-                        //   obs-dtext     =   obs-NO-WS-CTL / quoted-pair
-                        //
-                        //   obs-NO-WS-CTL =   %d1-8 /    ; US-ASCII control
-                        //                     %d11 /     ;  characters that do not
-                        //                     %d12 /     ;  include the carriage
-                        //                     %d14-31 /  ;  return, line feed, and
-                        //                     %d127      ;  white space characters
-                        charCode = token.codePointAt(0);
-
-                        // '\r', '\n', ' ', and '\t' have already been parsed above
-                        if ((charCode !== 127 && internals.c1Controls(charCode)) || charCode === 0 || token === '[') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errExpectingDTEXT);
-                            break;
-                        }
-                        else if (internals.c0Controls(charCode) || charCode === 127) {
-                            updateResult(internals.diagnoses.rfc5322DomainLiteralOBSDText);
-                        }
-
-                        parseData.literal += token;
-                        parseData.domain += token;
-                        atomData.domains[elementCount] += token;
-                        elementLength += Buffer.byteLength(token, 'utf8');
-                }
-
-                break;
-
-                // Quoted string
-            case internals.components.contextQuotedString:
-                // http://tools.ietf.org/html/rfc5322#section-3.2.4
-                //   quoted-string = [CFWS]
-                //                   DQUOTE *([FWS] qcontent) [FWS] DQUOTE
-                //                   [CFWS]
-                //
-                //   qcontent      = qtext / quoted-pair
-                switch (token) {
-                    // Quoted pair
-                    case '\\':
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextQuotedPair;
-                        break;
-
-                        // Folding white space. Spaces are allowed as regular characters inside a quoted string - it's only FWS if we include '\t' or '\r\n'
-                    case '\r':
-                        if (emailLength === ++i || email[i] !== '\n') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errCRNoLF);
-                            break;
-                        }
-
-                        // Fallthrough
-
-                    case '\t':
-                        // http://tools.ietf.org/html/rfc5322#section-3.2.2
-                        //   Runs of FWS, comment, or CFWS that occur between lexical tokens in
-                        //   a structured header field are semantically interpreted as a single
-                        //   space character.
-
-                        // http://tools.ietf.org/html/rfc5322#section-3.2.4
-                        //   the CRLF in any FWS/CFWS that appears within the quoted-string [is]
-                        //   semantically "invisible" and therefore not part of the
-                        //   quoted-string
-
-                        parseData.local += ' ';
-                        atomData.locals[elementCount] += ' ';
-                        elementLength += Buffer.byteLength(token, 'utf8');
-
-                        updateResult(internals.diagnoses.cfwsFWS);
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextFWS;
-                        prevToken = token;
-                        break;
-
-                        // End of quoted string
-                    case '"':
-                        parseData.local += token;
-                        atomData.locals[elementCount] += token;
-                        elementLength += Buffer.byteLength(token, 'utf8');
-                        context.prev = context.now;
-                        context.now = context.stack.pop();
-                        break;
-
-                        // QTEXT
-                    default:
-                        // http://tools.ietf.org/html/rfc5322#section-3.2.4
-                        //   qtext          =   %d33 /             ; Printable US-ASCII
-                        //                      %d35-91 /          ;  characters not including
-                        //                      %d93-126 /         ;  "\" or the quote character
-                        //                      obs-qtext
-                        //
-                        //   obs-qtext      =   obs-NO-WS-CTL
-                        //
-                        //   obs-NO-WS-CTL  =   %d1-8 /            ; US-ASCII control
-                        //                      %d11 /             ;  characters that do not
-                        //                      %d12 /             ;  include the carriage
-                        //                      %d14-31 /          ;  return, line feed, and
-                        //                      %d127              ;  white space characters
-                        charCode = token.codePointAt(0);
-
-                        if ((charCode !== 127 && internals.c1Controls(charCode)) || charCode === 0 || charCode === 10) {
-                            updateResult(internals.diagnoses.errExpectingQTEXT);
-                        }
-                        else if (internals.c0Controls(charCode) || charCode === 127) {
-                            updateResult(internals.diagnoses.deprecatedQTEXT);
-                        }
-
-                        parseData.local += token;
-                        atomData.locals[elementCount] += token;
-                        elementLength += Buffer.byteLength(token, 'utf8');
-                }
-
-                // http://tools.ietf.org/html/rfc5322#section-3.4.1
-                //   If the string can be represented as a dot-atom (that is, it contains
-                //   no characters other than atext characters or "." surrounded by atext
-                //   characters), then the dot-atom form SHOULD be used and the quoted-
-                //   string form SHOULD NOT be used.
-
-                break;
-                // Quoted pair
-            case internals.components.contextQuotedPair:
-                // http://tools.ietf.org/html/rfc5322#section-3.2.1
-                //   quoted-pair     =   ("\" (VCHAR / WSP)) / obs-qp
-                //
-                //   VCHAR           =  %d33-126   ; visible (printing) characters
-                //   WSP             =  SP / HTAB  ; white space
-                //
-                //   obs-qp          =   "\" (%d0 / obs-NO-WS-CTL / LF / CR)
-                //
-                //   obs-NO-WS-CTL   =   %d1-8 /   ; US-ASCII control
-                //                       %d11 /    ;  characters that do not
-                //                       %d12 /    ;  include the carriage
-                //                       %d14-31 / ;  return, line feed, and
-                //                       %d127     ;  white space characters
-                //
-                // i.e. obs-qp       =  "\" (%d0-8, %d10-31 / %d127)
-                charCode = token.codePointAt(0);
-
-                if (charCode !== 127 &&  internals.c1Controls(charCode)) {
-                    // Fatal error
-                    updateResult(internals.diagnoses.errExpectingQPair);
-                }
-                else if ((charCode < 31 && charCode !== 9) || charCode === 127) {
-                    // ' ' and '\t' are allowed
-                    updateResult(internals.diagnoses.deprecatedQP);
-                }
-
-                // At this point we know where this qpair occurred so we could check to see if the character actually needed to be quoted at all.
-                // http://tools.ietf.org/html/rfc5321#section-4.1.2
-                //   the sending system SHOULD transmit the form that uses the minimum quoting possible.
-
-                context.prev = context.now;
-                // End of qpair
-                context.now = context.stack.pop();
-                const escapeToken = '\\' + token;
-
-                switch (context.now) {
-                    case internals.components.contextComment:
-                        break;
-
-                    case internals.components.contextQuotedString:
-                        parseData.local += escapeToken;
-                        atomData.locals[elementCount] += escapeToken;
-
-                        // The maximum sizes specified by RFC 5321 are octet counts, so we must include the backslash
-                        elementLength += 2;
-                        break;
-
-                    case internals.components.literal:
-                        parseData.domain += escapeToken;
-                        atomData.domains[elementCount] += escapeToken;
-
-                        // The maximum sizes specified by RFC 5321 are octet counts, so we must include the backslash
-                        elementLength += 2;
-                        break;
-
-                        // $lab:coverage:off$
-                    default:
-                        throw new Error('quoted pair logic invoked in an invalid context: ' + context.now);
-                        // $lab:coverage:on$
-                }
-
-                break;
-
-                // Comment
-            case internals.components.contextComment:
-                // http://tools.ietf.org/html/rfc5322#section-3.2.2
-                //   comment  = "(" *([FWS] ccontent) [FWS] ")"
-                //
-                //   ccontent = ctext / quoted-pair / comment
-                switch (token) {
-                    // Nested comment
-                    case '(':
-                        // Nested comments are ok
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextComment;
-                        break;
-
-                        // End of comment
-                    case ')':
-                        context.prev = context.now;
-                        context.now = context.stack.pop();
-                        break;
-
-                        // Quoted pair
-                    case '\\':
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextQuotedPair;
-                        break;
-
-                        // Folding white space
-                    case '\r':
-                        if (emailLength === ++i || email[i] !== '\n') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errCRNoLF);
-                            break;
-                        }
-
-                        // Fallthrough
-
-                    case ' ':
-                    case '\t':
-                        updateResult(internals.diagnoses.cfwsFWS);
-
-                        context.stack.push(context.now);
-                        context.now = internals.components.contextFWS;
-                        prevToken = token;
-                        break;
-
-                        // CTEXT
-                    default:
-                        // http://tools.ietf.org/html/rfc5322#section-3.2.3
-                        //   ctext         = %d33-39 /  ; Printable US-ASCII
-                        //                   %d42-91 /  ;  characters not including
-                        //                   %d93-126 / ;  "(", ")", or "\"
-                        //                   obs-ctext
-                        //
-                        //   obs-ctext     = obs-NO-WS-CTL
-                        //
-                        //   obs-NO-WS-CTL = %d1-8 /    ; US-ASCII control
-                        //                   %d11 /     ;  characters that do not
-                        //                   %d12 /     ;  include the carriage
-                        //                   %d14-31 /  ;  return, line feed, and
-                        //                   %d127      ;  white space characters
-                        charCode = token.codePointAt(0);
-
-                        if (charCode === 0 || charCode === 10 || (charCode !== 127 && internals.c1Controls(charCode))) {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errExpectingCTEXT);
-                            break;
-                        }
-                        else if (internals.c0Controls(charCode) || charCode === 127) {
-                            updateResult(internals.diagnoses.deprecatedCTEXT);
-                        }
-                }
-
-                break;
-
-                // Folding white space
-            case internals.components.contextFWS:
-                // http://tools.ietf.org/html/rfc5322#section-3.2.2
-                //   FWS     =   ([*WSP CRLF] 1*WSP) /  obs-FWS
-                //                                   ; Folding white space
-
-                // But note the erratum:
-                // http://www.rfc-editor.org/errata_search.php?rfc=5322&eid=1908:
-                //   In the obsolete syntax, any amount of folding white space MAY be
-                //   inserted where the obs-FWS rule is allowed.  This creates the
-                //   possibility of having two consecutive "folds" in a line, and
-                //   therefore the possibility that a line which makes up a folded header
-                //   field could be composed entirely of white space.
-                //
-                //   obs-FWS =   1*([CRLF] WSP)
-
-                if (prevToken === '\r') {
-                    if (token === '\r') {
-                        // Fatal error
-                        updateResult(internals.diagnoses.errFWSCRLFx2);
-                        break;
-                    }
-
-                    if (++crlfCount > 1) {
-                        // Multiple folds => obsolete FWS
-                        updateResult(internals.diagnoses.deprecatedFWS);
-                    }
-                    else {
-                        crlfCount = 1;
-                    }
-                }
-
-                switch (token) {
-                    case '\r':
-                        if (emailLength === ++i || email[i] !== '\n') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errCRNoLF);
-                        }
-
-                        break;
-
-                    case ' ':
-                    case '\t':
-                        break;
-
-                    default:
-                        if (prevToken === '\r') {
-                            // Fatal error
-                            updateResult(internals.diagnoses.errFWSCRLFEnd);
-                        }
-
-                        crlfCount = 0;
-
-                        // End of FWS
-                        context.prev = context.now;
-                        context.now = context.stack.pop();
-
-                        // Look at this token again in the parent context
-                        --i;
-                }
-
-                prevToken = token;
-                break;
-
-                // Unexpected context
-                // $lab:coverage:off$
-            default:
-                throw new Error('unknown context: ' + context.now);
-                // $lab:coverage:on$
-        } // Primary state machine
-
-        if (maxResult > internals.categories.rfc5322) {
-            // Fatal error, no point continuing
-            break;
-        }
-    } // Token loop
-
-    // Check for errors
-    if (maxResult < internals.categories.rfc5322) {
-        const punycodeLength = Punycode.toASCII(parseData.domain).length;
-        // Fatal errors
-        if (context.now === internals.components.contextQuotedString) {
-            updateResult(internals.diagnoses.errUnclosedQuotedString);
-        }
-        else if (context.now === internals.components.contextQuotedPair) {
-            updateResult(internals.diagnoses.errBackslashEnd);
-        }
-        else if (context.now === internals.components.contextComment) {
-            updateResult(internals.diagnoses.errUnclosedComment);
-        }
-        else if (context.now === internals.components.literal) {
-            updateResult(internals.diagnoses.errUnclosedDomainLiteral);
-        }
-        else if (token === '\r') {
-            updateResult(internals.diagnoses.errFWSCRLFEnd);
-        }
-        else if (parseData.domain.length === 0) {
-            updateResult(internals.diagnoses.errNoDomain);
-        }
-        else if (elementLength === 0) {
-            updateResult(internals.diagnoses.errDotEnd);
-        }
-        else if (hyphenFlag) {
-            updateResult(internals.diagnoses.errDomainHyphenEnd);
-        }
-
-        // Other errors
-        else if (punycodeLength > 255) {
-            // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.2
-            //   The maximum total length of a domain name or number is 255 octets.
-            updateResult(internals.diagnoses.rfc5322DomainTooLong);
-        }
-        else if (Buffer.byteLength(parseData.local, 'utf8') + punycodeLength + /* '@' */ 1 > 254) {
-            // http://tools.ietf.org/html/rfc5321#section-4.1.2
-            //   Forward-path   = Path
-            //
-            //   Path           = "<" [ A-d-l ":" ] Mailbox ">"
-            //
-            // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.3
-            //   The maximum total length of a reverse-path or forward-path is 256 octets (including the punctuation and element separators).
-            //
-            // Thus, even without (obsolete) routing information, the Mailbox can only be 254 characters long. This is confirmed by this verified
-            // erratum to RFC 3696:
-            //
-            // http://www.rfc-editor.org/errata_search.php?rfc=3696&eid=1690
-            //   However, there is a restriction in RFC 2821 on the length of an address in MAIL and RCPT commands of 254 characters.  Since
-            //   addresses that do not fit in those fields are not normally useful, the upper limit on address lengths should normally be considered
-            //   to be 254.
-            updateResult(internals.diagnoses.rfc5322TooLong);
-        }
-        else if (elementLength > 63) {
-            // http://tools.ietf.org/html/rfc1035#section-2.3.4
-            // labels   63 octets or less
-            updateResult(internals.diagnoses.rfc5322LabelTooLong);
-        }
-        else if (options.minDomainAtoms && atomData.domains.length < options.minDomainAtoms && (atomData.domains.length !== 1 || atomData.domains[0][0] !== '[')) {
-            updateResult(internals.diagnoses.errDomainTooShort);
-        }
-        else if (internals.hasDomainLiteralThenAtom(atomData.domains)) {
-            updateResult(internals.diagnoses.errDotAfterDomainLiteral);
-        }
-        else if (options.tldWhitelist || options.tldBlacklist) {
-            const tldAtom = atomData.domains[elementCount];
-
-            if (!internals.validDomain(tldAtom, options)) {
-                updateResult(internals.diagnoses.errUnknownTLD);
-            }
-        }
-    } // Check for errors
-
-    // Finish
-    if (maxResult < internals.categories.dnsWarn) {
-        // Per RFC 5321, domain atoms are limited to letter-digit-hyphen, so we only need to check code <= 57 to check for a digit
-        const code = atomData.domains[elementCount].codePointAt(0);
-
-        if (code <= 57) {
-            updateResult(internals.diagnoses.rfc5321TLDNumeric);
-        }
-    }
-
-    if (maxResult < threshold) {
-        maxResult = internals.diagnoses.valid;
-    }
-
-    const finishResult = diagnose ? maxResult : maxResult < internals.defaultThreshold;
-
-    // $lab:coverage:off$
-    if (callback) {
-        callback(finishResult);
-    }
-    // $lab:coverage:on$
-
-    return finishResult;
-};
-
-
-exports.diagnoses = internals.validate.diagnoses = (function () {
-
-    const diag = {};
-    const keys = Object.keys(internals.diagnoses);
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        diag[key] = internals.diagnoses[key];
-    }
-
-    return diag;
-})();
-
-
-exports.normalize = internals.normalize;
-
-}).call(this,require("buffer").Buffer)
-},{"buffer":61,"punycode":201,"util":271}],122:[function(require,module,exports){
+},{}],154:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -21790,7 +29775,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],123:[function(require,module,exports){
+},{}],155:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License, https://github.com/rjrodger/jsonic */
 "use strict";
 
@@ -24004,7 +31989,7 @@ var jsonic_parser = (function() {
 
 
 
-},{}],124:[function(require,module,exports){
+},{}],156:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -41115,7 +49100,7 @@ var jsonic_parser = (function() {
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],125:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -41587,7 +49572,7 @@ function Entry (key, value, length, now, maxAge) {
 }
 
 }).call(this,require('_process'))
-},{"_process":192,"pseudomap":193,"util":271,"yallist":281}],126:[function(require,module,exports){
+},{"_process":199,"pseudomap":200,"util":278,"yallist":288}],158:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
@@ -41735,7 +49720,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-},{"hash-base":102,"inherits":118,"safe-buffer":229}],127:[function(require,module,exports){
+},{"hash-base":135,"inherits":151,"safe-buffer":236}],159:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -41852,7 +49837,7 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":27,"brorand":28}],128:[function(require,module,exports){
+},{"bn.js":60,"brorand":61}],160:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -41865,7 +49850,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],129:[function(require,module,exports){
+},{}],161:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -41925,7 +49910,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],130:[function(require,module,exports){
+},{}],162:[function(require,module,exports){
 module.exports = function (args, opts) {
     if (!opts) opts = {};
     
@@ -42163,7 +50148,7 @@ function isNumber (x) {
 }
 
 
-},{}],131:[function(require,module,exports){
+},{}],163:[function(require,module,exports){
 var through = require('through2')
 var split = require('split2')
 var EOL = require('os').EOL
@@ -42196,7 +50181,7 @@ function serialize (opts) {
   })
 }
 
-},{"json-stringify-safe":122,"os":164,"split2":256,"through2":263}],132:[function(require,module,exports){
+},{"json-stringify-safe":154,"os":171,"split2":263,"through2":270}],164:[function(require,module,exports){
 /* Copyright (c) 2013 Richard Rodger, MIT License */
 "use strict";
 
@@ -42344,7 +50329,7 @@ nid.__defaults = defaults
 
 module.exports = nid
 
-},{}],133:[function(require,module,exports){
+},{}],165:[function(require,module,exports){
 /* Copyright (c) 2014-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -42619,7 +50604,7 @@ function originalmsg(override, ex) {
   return ex.message
 }
 
-},{"lodash":124,"util":271}],134:[function(require,module,exports){
+},{"lodash":156,"util":278}],166:[function(require,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -43727,7 +51712,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],135:[function(require,module,exports){
+},{}],167:[function(require,module,exports){
 /* Copyright (c) 2014-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 "use strict";
@@ -44059,7 +52044,7 @@ module.exports.compile = function( spec ) {
 }
 
 
-},{"./norma-parser":134,"eraro":133,"lodash":124,"util":271}],136:[function(require,module,exports){
+},{"./norma-parser":166,"eraro":165,"lodash":156,"util":278}],168:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -44151,7008 +52136,14 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],137:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-// Declare internals
-
-const internals = {};
-
-
-exports.escapeJavaScript = function (input) {
-
-    if (!input) {
-        return '';
-    }
-
-    let escaped = '';
-
-    for (let i = 0; i < input.length; ++i) {
-
-        const charCode = input.charCodeAt(i);
-
-        if (internals.isSafe(charCode)) {
-            escaped += input[i];
-        }
-        else {
-            escaped += internals.escapeJavaScriptChar(charCode);
-        }
-    }
-
-    return escaped;
-};
-
-
-exports.escapeHtml = function (input) {
-
-    if (!input) {
-        return '';
-    }
-
-    let escaped = '';
-
-    for (let i = 0; i < input.length; ++i) {
-
-        const charCode = input.charCodeAt(i);
-
-        if (internals.isSafe(charCode)) {
-            escaped += input[i];
-        }
-        else {
-            escaped += internals.escapeHtmlChar(charCode);
-        }
-    }
-
-    return escaped;
-};
-
-
-exports.escapeJson = function (input) {
-
-    if (!input) {
-        return '';
-    }
-
-    const lessThan = 0x3C;
-    const greaterThan = 0x3E;
-    const andSymbol = 0x26;
-    const lineSeperator = 0x2028;
-
-    // replace method
-    let charCode;
-    return input.replace(/[<>&\u2028\u2029]/g, (match) => {
-
-        charCode = match.charCodeAt(0);
-
-        if (charCode === lessThan) {
-            return '\\u003c';
-        }
-        else if (charCode === greaterThan) {
-            return '\\u003e';
-        }
-        else if (charCode === andSymbol) {
-            return '\\u0026';
-        }
-        else if (charCode === lineSeperator) {
-            return '\\u2028';
-        }
-        return '\\u2029';
-    });
-};
-
-
-internals.escapeJavaScriptChar = function (charCode) {
-
-    if (charCode >= 256) {
-        return '\\u' + internals.padLeft('' + charCode, 4);
-    }
-
-    const hexValue = new Buffer(String.fromCharCode(charCode), 'ascii').toString('hex');
-    return '\\x' + internals.padLeft(hexValue, 2);
-};
-
-
-internals.escapeHtmlChar = function (charCode) {
-
-    const namedEscape = internals.namedHtml[charCode];
-    if (typeof namedEscape !== 'undefined') {
-        return namedEscape;
-    }
-
-    if (charCode >= 256) {
-        return '&#' + charCode + ';';
-    }
-
-    const hexValue = new Buffer(String.fromCharCode(charCode), 'ascii').toString('hex');
-    return '&#x' + internals.padLeft(hexValue, 2) + ';';
-};
-
-
-internals.padLeft = function (str, len) {
-
-    while (str.length < len) {
-        str = '0' + str;
-    }
-
-    return str;
-};
-
-
-internals.isSafe = function (charCode) {
-
-    return (typeof internals.safeCharCodes[charCode] !== 'undefined');
-};
-
-
-internals.namedHtml = {
-    '38': '&amp;',
-    '60': '&lt;',
-    '62': '&gt;',
-    '34': '&quot;',
-    '160': '&nbsp;',
-    '162': '&cent;',
-    '163': '&pound;',
-    '164': '&curren;',
-    '169': '&copy;',
-    '174': '&reg;'
-};
-
-
-internals.safeCharCodes = (function () {
-
-    const safe = {};
-
-    for (let i = 32; i < 123; ++i) {
-
-        if ((i >= 97) ||                    // a-z
-            (i >= 65 && i <= 90) ||         // A-Z
-            (i >= 48 && i <= 57) ||         // 0-9
-            i === 32 ||                     // space
-            i === 46 ||                     // .
-            i === 44 ||                     // ,
-            i === 45 ||                     // -
-            i === 58 ||                     // :
-            i === 95) {                     // _
-
-            safe[i] = null;
-        }
-    }
-
-    return safe;
-}());
-
-}).call(this,require("buffer").Buffer)
-},{"buffer":61}],138:[function(require,module,exports){
-(function (process,Buffer){
-'use strict';
-
-// Load modules
-
-const Crypto = require('crypto');
-const Path = require('path');
-const Util = require('util');
-const Escape = require('./escape');
-
-
-// Declare internals
-
-const internals = {};
-
-
-// Clone object or array
-
-exports.clone = function (obj, seen) {
-
-    if (typeof obj !== 'object' ||
-        obj === null) {
-
-        return obj;
-    }
-
-    seen = seen || new Map();
-
-    const lookup = seen.get(obj);
-    if (lookup) {
-        return lookup;
-    }
-
-    let newObj;
-    let cloneDeep = false;
-
-    if (!Array.isArray(obj)) {
-        if (Buffer.isBuffer(obj)) {
-            newObj = new Buffer(obj);
-        }
-        else if (obj instanceof Date) {
-            newObj = new Date(obj.getTime());
-        }
-        else if (obj instanceof RegExp) {
-            newObj = new RegExp(obj);
-        }
-        else {
-            const proto = Object.getPrototypeOf(obj);
-            if (proto &&
-                proto.isImmutable) {
-
-                newObj = obj;
-            }
-            else {
-                newObj = Object.create(proto);
-                cloneDeep = true;
-            }
-        }
-    }
-    else {
-        newObj = [];
-        cloneDeep = true;
-    }
-
-    seen.set(obj, newObj);
-
-    if (cloneDeep) {
-        const keys = Object.getOwnPropertyNames(obj);
-        for (let i = 0; i < keys.length; ++i) {
-            const key = keys[i];
-            const descriptor = Object.getOwnPropertyDescriptor(obj, key);
-            if (descriptor &&
-                (descriptor.get ||
-                 descriptor.set)) {
-
-                Object.defineProperty(newObj, key, descriptor);
-            }
-            else {
-                newObj[key] = exports.clone(obj[key], seen);
-            }
-        }
-    }
-
-    return newObj;
-};
-
-
-// Merge all the properties of source into target, source wins in conflict, and by default null and undefined from source are applied
-
-/*eslint-disable */
-exports.merge = function (target, source, isNullOverride /* = true */, isMergeArrays /* = true */) {
-/*eslint-enable */
-
-    exports.assert(target && typeof target === 'object', 'Invalid target value: must be an object');
-    exports.assert(source === null || source === undefined || typeof source === 'object', 'Invalid source value: must be null, undefined, or an object');
-
-    if (!source) {
-        return target;
-    }
-
-    if (Array.isArray(source)) {
-        exports.assert(Array.isArray(target), 'Cannot merge array onto an object');
-        if (isMergeArrays === false) {                                                  // isMergeArrays defaults to true
-            target.length = 0;                                                          // Must not change target assignment
-        }
-
-        for (let i = 0; i < source.length; ++i) {
-            target.push(exports.clone(source[i]));
-        }
-
-        return target;
-    }
-
-    const keys = Object.keys(source);
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        if (key === '__proto__') {
-            continue;
-        }
-
-        const value = source[key];
-        if (value &&
-            typeof value === 'object') {
-
-            if (!target[key] ||
-                typeof target[key] !== 'object' ||
-                (Array.isArray(target[key]) !== Array.isArray(value)) ||
-                value instanceof Date ||
-                Buffer.isBuffer(value) ||
-                value instanceof RegExp) {
-
-                target[key] = exports.clone(value);
-            }
-            else {
-                exports.merge(target[key], value, isNullOverride, isMergeArrays);
-            }
-        }
-        else {
-            if (value !== null &&
-                value !== undefined) {                              // Explicit to preserve empty strings
-
-                target[key] = value;
-            }
-            else if (isNullOverride !== false) {                    // Defaults to true
-                target[key] = value;
-            }
-        }
-    }
-
-    return target;
-};
-
-
-// Apply options to a copy of the defaults
-
-exports.applyToDefaults = function (defaults, options, isNullOverride) {
-
-    exports.assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
-    exports.assert(!options || options === true || typeof options === 'object', 'Invalid options value: must be true, falsy or an object');
-
-    if (!options) {                                                 // If no options, return null
-        return null;
-    }
-
-    const copy = exports.clone(defaults);
-
-    if (options === true) {                                         // If options is set to true, use defaults
-        return copy;
-    }
-
-    return exports.merge(copy, options, isNullOverride === true, false);
-};
-
-
-// Clone an object except for the listed keys which are shallow copied
-
-exports.cloneWithShallow = function (source, keys) {
-
-    if (!source ||
-        typeof source !== 'object') {
-
-        return source;
-    }
-
-    const storage = internals.store(source, keys);    // Move shallow copy items to storage
-    const copy = exports.clone(source);               // Deep copy the rest
-    internals.restore(copy, source, storage);       // Shallow copy the stored items and restore
-    return copy;
-};
-
-
-internals.store = function (source, keys) {
-
-    const storage = {};
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        const value = exports.reach(source, key);
-        if (value !== undefined) {
-            storage[key] = value;
-            internals.reachSet(source, key, undefined);
-        }
-    }
-
-    return storage;
-};
-
-
-internals.restore = function (copy, source, storage) {
-
-    const keys = Object.keys(storage);
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        internals.reachSet(copy, key, storage[key]);
-        internals.reachSet(source, key, storage[key]);
-    }
-};
-
-
-internals.reachSet = function (obj, key, value) {
-
-    const path = key.split('.');
-    let ref = obj;
-    for (let i = 0; i < path.length; ++i) {
-        const segment = path[i];
-        if (i + 1 === path.length) {
-            ref[segment] = value;
-        }
-
-        ref = ref[segment];
-    }
-};
-
-
-// Apply options to defaults except for the listed keys which are shallow copied from option without merging
-
-exports.applyToDefaultsWithShallow = function (defaults, options, keys) {
-
-    exports.assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
-    exports.assert(!options || options === true || typeof options === 'object', 'Invalid options value: must be true, falsy or an object');
-    exports.assert(keys && Array.isArray(keys), 'Invalid keys');
-
-    if (!options) {                                                 // If no options, return null
-        return null;
-    }
-
-    const copy = exports.cloneWithShallow(defaults, keys);
-
-    if (options === true) {                                         // If options is set to true, use defaults
-        return copy;
-    }
-
-    const storage = internals.store(options, keys);   // Move shallow copy items to storage
-    exports.merge(copy, options, false, false);     // Deep copy the rest
-    internals.restore(copy, options, storage);      // Shallow copy the stored items and restore
-    return copy;
-};
-
-
-// Deep object or array comparison
-
-exports.deepEqual = function (obj, ref, options, seen) {
-
-    options = options || { prototype: true };
-
-    const type = typeof obj;
-
-    if (type !== typeof ref) {
-        return false;
-    }
-
-    if (type !== 'object' ||
-        obj === null ||
-        ref === null) {
-
-        if (obj === ref) {                                                      // Copied from Deep-eql, copyright(c) 2013 Jake Luer, jake@alogicalparadox.com, MIT Licensed, https://github.com/chaijs/deep-eql
-            return obj !== 0 || 1 / obj === 1 / ref;        // -0 / +0
-        }
-
-        return obj !== obj && ref !== ref;                  // NaN
-    }
-
-    seen = seen || [];
-    if (seen.indexOf(obj) !== -1) {
-        return true;                            // If previous comparison failed, it would have stopped execution
-    }
-
-    seen.push(obj);
-
-    if (Array.isArray(obj)) {
-        if (!Array.isArray(ref)) {
-            return false;
-        }
-
-        if (!options.part && obj.length !== ref.length) {
-            return false;
-        }
-
-        for (let i = 0; i < obj.length; ++i) {
-            if (options.part) {
-                let found = false;
-                for (let j = 0; j < ref.length; ++j) {
-                    if (exports.deepEqual(obj[i], ref[j], options)) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                return found;
-            }
-
-            if (!exports.deepEqual(obj[i], ref[i], options)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    if (Buffer.isBuffer(obj)) {
-        if (!Buffer.isBuffer(ref)) {
-            return false;
-        }
-
-        if (obj.length !== ref.length) {
-            return false;
-        }
-
-        for (let i = 0; i < obj.length; ++i) {
-            if (obj[i] !== ref[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    if (obj instanceof Date) {
-        return (ref instanceof Date && obj.getTime() === ref.getTime());
-    }
-
-    if (obj instanceof RegExp) {
-        return (ref instanceof RegExp && obj.toString() === ref.toString());
-    }
-
-    if (options.prototype) {
-        if (Object.getPrototypeOf(obj) !== Object.getPrototypeOf(ref)) {
-            return false;
-        }
-    }
-
-    const keys = Object.getOwnPropertyNames(obj);
-
-    if (!options.part && keys.length !== Object.getOwnPropertyNames(ref).length) {
-        return false;
-    }
-
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        const descriptor = Object.getOwnPropertyDescriptor(obj, key);
-        if (descriptor.get) {
-            if (!exports.deepEqual(descriptor, Object.getOwnPropertyDescriptor(ref, key), options, seen)) {
-                return false;
-            }
-        }
-        else if (!exports.deepEqual(obj[key], ref[key], options, seen)) {
-            return false;
-        }
-    }
-
-    return true;
-};
-
-
-// Remove duplicate items from array
-
-exports.unique = (array, key) => {
-
-    let result;
-    if (key) {
-        result = [];
-        const index = new Set();
-        array.forEach((item) => {
-
-            const identifier = item[key];
-            if (!index.has(identifier)) {
-                index.add(identifier);
-                result.push(item);
-            }
-        });
-    }
-    else {
-        result = Array.from(new Set(array));
-    }
-
-    return result;
-};
-
-
-// Convert array into object
-
-exports.mapToObject = function (array, key) {
-
-    if (!array) {
-        return null;
-    }
-
-    const obj = {};
-    for (let i = 0; i < array.length; ++i) {
-        if (key) {
-            if (array[i][key]) {
-                obj[array[i][key]] = true;
-            }
-        }
-        else {
-            obj[array[i]] = true;
-        }
-    }
-
-    return obj;
-};
-
-
-// Find the common unique items in two arrays
-
-exports.intersect = function (array1, array2, justFirst) {
-
-    if (!array1 || !array2) {
-        return [];
-    }
-
-    const common = [];
-    const hash = (Array.isArray(array1) ? exports.mapToObject(array1) : array1);
-    const found = {};
-    for (let i = 0; i < array2.length; ++i) {
-        if (hash[array2[i]] && !found[array2[i]]) {
-            if (justFirst) {
-                return array2[i];
-            }
-
-            common.push(array2[i]);
-            found[array2[i]] = true;
-        }
-    }
-
-    return (justFirst ? null : common);
-};
-
-
-// Test if the reference contains the values
-
-exports.contain = function (ref, values, options) {
-
-    /*
-        string -> string(s)
-        array -> item(s)
-        object -> key(s)
-        object -> object (key:value)
-    */
-
-    let valuePairs = null;
-    if (typeof ref === 'object' &&
-        typeof values === 'object' &&
-        !Array.isArray(ref) &&
-        !Array.isArray(values)) {
-
-        valuePairs = values;
-        values = Object.keys(values);
-    }
-    else {
-        values = [].concat(values);
-    }
-
-    options = options || {};            // deep, once, only, part
-
-    exports.assert(arguments.length >= 2, 'Insufficient arguments');
-    exports.assert(typeof ref === 'string' || typeof ref === 'object', 'Reference must be string or an object');
-    exports.assert(values.length, 'Values array cannot be empty');
-
-    let compare;
-    let compareFlags;
-    if (options.deep) {
-        compare = exports.deepEqual;
-
-        const hasOnly = options.hasOwnProperty('only');
-        const hasPart = options.hasOwnProperty('part');
-
-        compareFlags = {
-            prototype: hasOnly ? options.only : hasPart ? !options.part : false,
-            part: hasOnly ? !options.only : hasPart ? options.part : true
-        };
-    }
-    else {
-        compare = (a, b) => a === b;
-    }
-
-    let misses = false;
-    const matches = new Array(values.length);
-    for (let i = 0; i < matches.length; ++i) {
-        matches[i] = 0;
-    }
-
-    if (typeof ref === 'string') {
-        let pattern = '(';
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-            exports.assert(typeof value === 'string', 'Cannot compare string reference to non-string value');
-            pattern += (i ? '|' : '') + exports.escapeRegex(value);
-        }
-
-        const regex = new RegExp(pattern + ')', 'g');
-        const leftovers = ref.replace(regex, ($0, $1) => {
-
-            const index = values.indexOf($1);
-            ++matches[index];
-            return '';          // Remove from string
-        });
-
-        misses = !!leftovers;
-    }
-    else if (Array.isArray(ref)) {
-        for (let i = 0; i < ref.length; ++i) {
-            let matched = false;
-            for (let j = 0; j < values.length && matched === false; ++j) {
-                matched = compare(values[j], ref[i], compareFlags) && j;
-            }
-
-            if (matched !== false) {
-                ++matches[matched];
-            }
-            else {
-                misses = true;
-            }
-        }
-    }
-    else {
-        const keys = Object.getOwnPropertyNames(ref);
-        for (let i = 0; i < keys.length; ++i) {
-            const key = keys[i];
-            const pos = values.indexOf(key);
-            if (pos !== -1) {
-                if (valuePairs &&
-                    !compare(valuePairs[key], ref[key], compareFlags)) {
-
-                    return false;
-                }
-
-                ++matches[pos];
-            }
-            else {
-                misses = true;
-            }
-        }
-    }
-
-    let result = false;
-    for (let i = 0; i < matches.length; ++i) {
-        result = result || !!matches[i];
-        if ((options.once && matches[i] > 1) ||
-            (!options.part && !matches[i])) {
-
-            return false;
-        }
-    }
-
-    if (options.only &&
-        misses) {
-
-        return false;
-    }
-
-    return result;
-};
-
-
-// Flatten array
-
-exports.flatten = function (array, target) {
-
-    const result = target || [];
-
-    for (let i = 0; i < array.length; ++i) {
-        if (Array.isArray(array[i])) {
-            exports.flatten(array[i], result);
-        }
-        else {
-            result.push(array[i]);
-        }
-    }
-
-    return result;
-};
-
-
-// Convert an object key chain string ('a.b.c') to reference (object[a][b][c])
-
-exports.reach = function (obj, chain, options) {
-
-    if (chain === false ||
-        chain === null ||
-        typeof chain === 'undefined') {
-
-        return obj;
-    }
-
-    options = options || {};
-    if (typeof options === 'string') {
-        options = { separator: options };
-    }
-
-    const path = chain.split(options.separator || '.');
-    let ref = obj;
-    for (let i = 0; i < path.length; ++i) {
-        let key = path[i];
-        if (key[0] === '-' && Array.isArray(ref)) {
-            key = key.slice(1, key.length);
-            key = ref.length - key;
-        }
-
-        if (!ref ||
-            !((typeof ref === 'object' || typeof ref === 'function') && key in ref) ||
-            (typeof ref !== 'object' && options.functions === false)) {         // Only object and function can have properties
-
-            exports.assert(!options.strict || i + 1 === path.length, 'Missing segment', key, 'in reach path ', chain);
-            exports.assert(typeof ref === 'object' || options.functions === true || typeof ref !== 'function', 'Invalid segment', key, 'in reach path ', chain);
-            ref = options.default;
-            break;
-        }
-
-        ref = ref[key];
-    }
-
-    return ref;
-};
-
-
-exports.reachTemplate = function (obj, template, options) {
-
-    return template.replace(/{([^}]+)}/g, ($0, chain) => {
-
-        const value = exports.reach(obj, chain, options);
-        return (value === undefined || value === null ? '' : value);
-    });
-};
-
-
-exports.formatStack = function (stack) {
-
-    const trace = [];
-    for (let i = 0; i < stack.length; ++i) {
-        const item = stack[i];
-        trace.push([item.getFileName(), item.getLineNumber(), item.getColumnNumber(), item.getFunctionName(), item.isConstructor()]);
-    }
-
-    return trace;
-};
-
-
-exports.formatTrace = function (trace) {
-
-    const display = [];
-
-    for (let i = 0; i < trace.length; ++i) {
-        const row = trace[i];
-        display.push((row[4] ? 'new ' : '') + row[3] + ' (' + row[0] + ':' + row[1] + ':' + row[2] + ')');
-    }
-
-    return display;
-};
-
-
-exports.callStack = function (slice) {
-
-    // http://code.google.com/p/v8/wiki/JavaScriptStackTraceApi
-
-    const v8 = Error.prepareStackTrace;
-    Error.prepareStackTrace = function (_, stack) {
-
-        return stack;
-    };
-
-    const capture = {};
-    Error.captureStackTrace(capture, this);     // arguments.callee is not supported in strict mode so we use this and slice the trace of this off the result
-    const stack = capture.stack;
-
-    Error.prepareStackTrace = v8;
-
-    const trace = exports.formatStack(stack);
-
-    return trace.slice(1 + slice);
-};
-
-
-exports.displayStack = function (slice) {
-
-    const trace = exports.callStack(slice === undefined ? 1 : slice + 1);
-
-    return exports.formatTrace(trace);
-};
-
-
-exports.abortThrow = false;
-
-
-exports.abort = function (message, hideStack) {
-
-    if (process.env.NODE_ENV === 'test' || exports.abortThrow === true) {
-        throw new Error(message || 'Unknown error');
-    }
-
-    let stack = '';
-    if (!hideStack) {
-        stack = exports.displayStack(1).join('\n\t');
-    }
-    console.log('ABORT: ' + message + '\n\t' + stack);
-    process.exit(1);
-};
-
-
-exports.assert = function (condition /*, msg1, msg2, msg3 */) {
-
-    if (condition) {
-        return;
-    }
-
-    if (arguments.length === 2 && arguments[1] instanceof Error) {
-        throw arguments[1];
-    }
-
-    let msgs = [];
-    for (let i = 1; i < arguments.length; ++i) {
-        if (arguments[i] !== '') {
-            msgs.push(arguments[i]);            // Avoids Array.slice arguments leak, allowing for V8 optimizations
-        }
-    }
-
-    msgs = msgs.map((msg) => {
-
-        return typeof msg === 'string' ? msg : msg instanceof Error ? msg.message : exports.stringify(msg);
-    });
-
-    throw new Error(msgs.join(' ') || 'Unknown error');
-};
-
-
-exports.Timer = function () {
-
-    this.ts = 0;
-    this.reset();
-};
-
-
-exports.Timer.prototype.reset = function () {
-
-    this.ts = Date.now();
-};
-
-
-exports.Timer.prototype.elapsed = function () {
-
-    return Date.now() - this.ts;
-};
-
-
-exports.Bench = function () {
-
-    this.ts = 0;
-    this.reset();
-};
-
-
-exports.Bench.prototype.reset = function () {
-
-    this.ts = exports.Bench.now();
-};
-
-
-exports.Bench.prototype.elapsed = function () {
-
-    return exports.Bench.now() - this.ts;
-};
-
-
-exports.Bench.now = function () {
-
-    const ts = process.hrtime();
-    return (ts[0] * 1e3) + (ts[1] / 1e6);
-};
-
-
-// Escape string for Regex construction
-
-exports.escapeRegex = function (string) {
-
-    // Escape ^$.*+-?=!:|\/()[]{},
-    return string.replace(/[\^\$\.\*\+\-\?\=\!\:\|\\\/\(\)\[\]\{\}\,]/g, '\\$&');
-};
-
-
-// Base64url (RFC 4648) encode
-
-exports.base64urlEncode = function (value, encoding) {
-
-    exports.assert(typeof value === 'string' || Buffer.isBuffer(value), 'value must be string or buffer');
-    const buf = (Buffer.isBuffer(value) ? value : new Buffer(value, encoding || 'binary'));
-    return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/\=/g, '');
-};
-
-
-// Base64url (RFC 4648) decode
-
-exports.base64urlDecode = function (value, encoding) {
-
-    if (typeof value !== 'string') {
-
-        return new Error('Value not a string');
-    }
-
-    if (!/^[\w\-]*$/.test(value)) {
-
-        return new Error('Invalid character');
-    }
-
-    const buf = new Buffer(value, 'base64');
-    return (encoding === 'buffer' ? buf : buf.toString(encoding || 'binary'));
-};
-
-
-// Escape attribute value for use in HTTP header
-
-exports.escapeHeaderAttribute = function (attribute) {
-
-    // Allowed value characters: !#$%&'()*+,-./:;<=>?@[]^_`{|}~ and space, a-z, A-Z, 0-9, \, "
-
-    exports.assert(/^[ \w\!#\$%&'\(\)\*\+,\-\.\/\:;<\=>\?@\[\]\^`\{\|\}~\"\\]*$/.test(attribute), 'Bad attribute value (' + attribute + ')');
-
-    return attribute.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');                             // Escape quotes and slash
-};
-
-
-exports.escapeHtml = function (string) {
-
-    return Escape.escapeHtml(string);
-};
-
-
-exports.escapeJavaScript = function (string) {
-
-    return Escape.escapeJavaScript(string);
-};
-
-exports.escapeJson = function (string) {
-
-    return Escape.escapeJson(string);
-};
-
-exports.nextTick = function (callback) {
-
-    return function () {
-
-        const args = arguments;
-        process.nextTick(() => {
-
-            callback.apply(null, args);
-        });
-    };
-};
-
-
-exports.once = function (method) {
-
-    if (method._hoekOnce) {
-        return method;
-    }
-
-    let once = false;
-    const wrapped = function () {
-
-        if (!once) {
-            once = true;
-            method.apply(null, arguments);
-        }
-    };
-
-    wrapped._hoekOnce = true;
-
-    return wrapped;
-};
-
-
-exports.isInteger = Number.isSafeInteger;
-
-
-exports.ignore = function () { };
-
-
-exports.inherits = Util.inherits;
-
-
-exports.format = Util.format;
-
-
-exports.transform = function (source, transform, options) {
-
-    exports.assert(source === null || source === undefined || typeof source === 'object' || Array.isArray(source), 'Invalid source object: must be null, undefined, an object, or an array');
-    const separator = (typeof options === 'object' && options !== null) ? (options.separator || '.') : '.';
-
-    if (Array.isArray(source)) {
-        const results = [];
-        for (let i = 0; i < source.length; ++i) {
-            results.push(exports.transform(source[i], transform, options));
-        }
-        return results;
-    }
-
-    const result = {};
-    const keys = Object.keys(transform);
-
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        const path = key.split(separator);
-        const sourcePath = transform[key];
-
-        exports.assert(typeof sourcePath === 'string', 'All mappings must be "." delineated strings');
-
-        let segment;
-        let res = result;
-
-        while (path.length > 1) {
-            segment = path.shift();
-            if (!res[segment]) {
-                res[segment] = {};
-            }
-            res = res[segment];
-        }
-        segment = path.shift();
-        res[segment] = exports.reach(source, sourcePath, options);
-    }
-
-    return result;
-};
-
-
-exports.uniqueFilename = function (path, extension) {
-
-    if (extension) {
-        extension = extension[0] !== '.' ? '.' + extension : extension;
-    }
-    else {
-        extension = '';
-    }
-
-    path = Path.resolve(path);
-    const name = [Date.now(), process.pid, Crypto.randomBytes(8).toString('hex')].join('-') + extension;
-    return Path.join(path, name);
-};
-
-
-exports.stringify = function () {
-
-    try {
-        return JSON.stringify.apply(null, arguments);
-    }
-    catch (err) {
-        return '[Cannot display object: ' + err.message + ']';
-    }
-};
-
-
-exports.shallow = function (source) {
-
-    const target = {};
-    const keys = Object.keys(source);
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        target[key] = source[key];
-    }
-
-    return target;
-};
-
-}).call(this,require('_process'),require("buffer").Buffer)
-},{"./escape":137,"_process":192,"buffer":61,"crypto":70,"path":181,"util":271}],139:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const Ref = require('./ref');
-
-// Type modules are delay-loaded to prevent circular dependencies
-
-
-// Declare internals
-
-const internals = {};
-
-
-exports.schema = function (Joi, config) {
-
-    if (config !== undefined && config !== null && typeof config === 'object') {
-
-        if (config.isJoi) {
-            return config;
-        }
-
-        if (Array.isArray(config)) {
-            return Joi.alternatives().try(config);
-        }
-
-        if (config instanceof RegExp) {
-            return Joi.string().regex(config);
-        }
-
-        if (config instanceof Date) {
-            return Joi.date().valid(config);
-        }
-
-        return Joi.object().keys(config);
-    }
-
-    if (typeof config === 'string') {
-        return Joi.string().valid(config);
-    }
-
-    if (typeof config === 'number') {
-        return Joi.number().valid(config);
-    }
-
-    if (typeof config === 'boolean') {
-        return Joi.boolean().valid(config);
-    }
-
-    if (Ref.isRef(config)) {
-        return Joi.valid(config);
-    }
-
-    Hoek.assert(config === null, 'Invalid schema content:', config);
-
-    return Joi.valid(null);
-};
-
-
-exports.ref = function (id) {
-
-    return Ref.isRef(id) ? id : Ref.create(id);
-};
-
-},{"./ref":143,"hoek":138}],140:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const Language = require('./language');
-
-
-// Declare internals
-
-const internals = {
-    annotations: Symbol('joi-annotations')
-};
-
-internals.stringify = function (value, wrapArrays) {
-
-    const type = typeof value;
-
-    if (value === null) {
-        return 'null';
-    }
-
-    if (type === 'string') {
-        return value;
-    }
-
-    if (value instanceof exports.Err || type === 'function' || type === 'symbol') {
-        return value.toString();
-    }
-
-    if (type === 'object') {
-        if (Array.isArray(value)) {
-            let partial = '';
-
-            for (let i = 0; i < value.length; ++i) {
-                partial = partial + (partial.length ? ', ' : '') + internals.stringify(value[i], wrapArrays);
-            }
-
-            return wrapArrays ? '[' + partial + ']' : partial;
-        }
-
-        return value.toString();
-    }
-
-    return JSON.stringify(value);
-};
-
-exports.Err = class {
-
-    constructor(type, context, state, options, flags, message, template) {
-
-        this.isJoi = true;
-        this.type = type;
-        this.context = context || {};
-        this.context.key = state.path[state.path.length - 1];
-        this.context.label = state.key;
-        this.path = state.path;
-        this.options = options;
-        this.flags = flags;
-        this.message = message;
-        this.template = template;
-
-        const localized = this.options.language;
-
-        if (this.flags.label) {
-            this.context.label = this.flags.label;
-        }
-        else if (localized &&                   // language can be null for arrays exclusion check
-            (this.context.label === '' ||
-            this.context.label === null)) {
-            this.context.label = localized.root || Language.errors.root;
-        }
-    }
-
-    toString() {
-
-        if (this.message) {
-            return this.message;
-        }
-
-        let format;
-
-        if (this.template) {
-            format = this.template;
-        }
-
-        const localized = this.options.language;
-
-        format = format || Hoek.reach(localized, this.type) || Hoek.reach(Language.errors, this.type);
-
-        if (format === undefined) {
-            return `Error code "${this.type}" is not defined, your custom type is missing the correct language definition`;
-        }
-
-        let wrapArrays = Hoek.reach(localized, 'messages.wrapArrays');
-        if (typeof wrapArrays !== 'boolean') {
-            wrapArrays = Language.errors.messages.wrapArrays;
-        }
-
-        if (format === null) {
-            const childrenString = internals.stringify(this.context.reason, wrapArrays);
-            if (wrapArrays) {
-                return childrenString.slice(1, -1);
-            }
-            return childrenString;
-        }
-
-        const hasKey = /\{\{\!?label\}\}/.test(format);
-        const skipKey = format.length > 2 && format[0] === '!' && format[1] === '!';
-
-        if (skipKey) {
-            format = format.slice(2);
-        }
-
-        if (!hasKey && !skipKey) {
-            format = (Hoek.reach(localized, 'key') || Hoek.reach(Language.errors, 'key')) + format;
-        }
-
-        return format.replace(/\{\{(\!?)([^}]+)\}\}/g, ($0, isSecure, name) => {
-
-            const value = Hoek.reach(this.context, name);
-            const normalized = internals.stringify(value, wrapArrays);
-            return (isSecure && this.options.escapeHtml ? Hoek.escapeHtml(normalized) : normalized);
-        });
-    }
-
-};
-
-
-exports.create = function (type, context, state, options, flags, message, template) {
-
-    return new exports.Err(type, context, state, options, flags, message, template);
-};
-
-
-exports.process = function (errors, object) {
-
-    if (!errors || !errors.length) {
-        return null;
-    }
-
-    // Construct error
-
-    let message = '';
-    const details = [];
-
-    const processErrors = function (localErrors, parent) {
-
-        for (let i = 0; i < localErrors.length; ++i) {
-            const item = localErrors[i];
-
-            if (item instanceof Error) {
-                return item;
-            }
-
-            if (item.flags.error && typeof item.flags.error !== 'function') {
-                return item.flags.error;
-            }
-
-            let itemMessage;
-            if (parent === undefined) {
-                itemMessage = item.toString();
-                message = message + (message ? '. ' : '') + itemMessage;
-            }
-
-            // Do not push intermediate errors, we're only interested in leafs
-
-            if (item.context.reason && item.context.reason.length) {
-                const override = processErrors(item.context.reason, item.path);
-                if (override) {
-                    return override;
-                }
-            }
-            else {
-                details.push({
-                    message: itemMessage || item.toString(),
-                    path: item.path,
-                    type: item.type,
-                    context: item.context
-                });
-            }
-        }
-    };
-
-    const override = processErrors(errors);
-    if (override) {
-        return override;
-    }
-
-    const error = new Error(message);
-    error.isJoi = true;
-    error.name = 'ValidationError';
-    error.details = details;
-    error._object = object;
-    error.annotate = internals.annotate;
-    return error;
-};
-
-
-// Inspired by json-stringify-safe
-internals.safeStringify = function (obj, spaces) {
-
-    return JSON.stringify(obj, internals.serializer(), spaces);
-};
-
-internals.serializer = function () {
-
-    const keys = [];
-    const stack = [];
-
-    const cycleReplacer = (key, value) => {
-
-        if (stack[0] === value) {
-            return '[Circular ~]';
-        }
-
-        return '[Circular ~.' + keys.slice(0, stack.indexOf(value)).join('.') + ']';
-    };
-
-    return function (key, value) {
-
-        if (stack.length > 0) {
-            const thisPos = stack.indexOf(this);
-            if (~thisPos) {
-                stack.length = thisPos + 1;
-                keys.length = thisPos + 1;
-                keys[thisPos] = key;
-            }
-            else {
-                stack.push(this);
-                keys.push(key);
-            }
-
-            if (~stack.indexOf(value)) {
-                value = cycleReplacer.call(this, key, value);
-            }
-        }
-        else {
-            stack.push(value);
-        }
-
-        if (value) {
-            const annotations = value[internals.annotations];
-            if (annotations) {
-                if (Array.isArray(value)) {
-                    const annotated = [];
-
-                    for (let i = 0; i < value.length; ++i) {
-                        if (annotations.errors[i]) {
-                            annotated.push(`_$idx$_${annotations.errors[i].sort().join(', ')}_$end$_`);
-                        }
-                        annotated.push(value[i]);
-                    }
-
-                    value = annotated;
-                }
-                else {
-                    const errorKeys = Object.keys(annotations.errors);
-                    for (let i = 0; i < errorKeys.length; ++i) {
-                        const errorKey = errorKeys[i];
-                        value[`${errorKey}_$key$_${annotations.errors[errorKey].sort().join(', ')}_$end$_`] = value[errorKey];
-                        value[errorKey] = undefined;
-                    }
-
-                    const missingKeys = Object.keys(annotations.missing);
-                    for (let i = 0; i < missingKeys.length; ++i) {
-                        const missingKey = missingKeys[i];
-                        value[`_$miss$_${missingKey}|${annotations.missing[missingKey]}_$end$_`] = '__missing__';
-                    }
-                }
-
-                return value;
-            }
-        }
-
-        if (value === Infinity || value === -Infinity || Number.isNaN(value) ||
-            typeof value === 'function' || typeof value === 'symbol') {
-            return '[' + value.toString() + ']';
-        }
-
-        return value;
-    };
-};
-
-
-internals.annotate = function (stripColorCodes) {
-
-    const redFgEscape = stripColorCodes ? '' : '\u001b[31m';
-    const redBgEscape = stripColorCodes ? '' : '\u001b[41m';
-    const endColor = stripColorCodes ? '' : '\u001b[0m';
-
-    if (typeof this._object !== 'object') {
-        return this.details[0].message;
-    }
-
-    const obj = Hoek.clone(this._object || {});
-
-    for (let i = this.details.length - 1; i >= 0; --i) {        // Reverse order to process deepest child first
-        const pos = i + 1;
-        const error = this.details[i];
-        const path = error.path;
-        let ref = obj;
-        for (let j = 0; ; ++j) {
-            const seg = path[j];
-
-            if (ref.isImmutable) {
-                ref = ref.clone();                              // joi schemas are not cloned by hoek, we have to take this extra step
-            }
-
-            if (j + 1 < path.length &&
-                ref[seg] &&
-                typeof ref[seg] !== 'string') {
-
-                ref = ref[seg];
-            }
-            else {
-                const refAnnotations = ref[internals.annotations] = ref[internals.annotations] || { errors: {}, missing: {} };
-                const value = ref[seg];
-                const cacheKey = seg || error.context.label;
-
-                if (value !== undefined) {
-                    refAnnotations.errors[cacheKey] = refAnnotations.errors[cacheKey] || [];
-                    refAnnotations.errors[cacheKey].push(pos);
-                }
-                else {
-                    refAnnotations.missing[cacheKey] = pos;
-                }
-
-                break;
-            }
-        }
-    }
-
-    const replacers = {
-        key: /_\$key\$_([, \d]+)_\$end\$_\"/g,
-        missing: /\"_\$miss\$_([^\|]+)\|(\d+)_\$end\$_\"\: \"__missing__\"/g,
-        arrayIndex: /\s*\"_\$idx\$_([, \d]+)_\$end\$_\",?\n(.*)/g,
-        specials: /"\[(NaN|Symbol.*|-?Infinity|function.*|\(.*)\]"/g
-    };
-
-    let message = internals.safeStringify(obj, 2)
-        .replace(replacers.key, ($0, $1) => `" ${redFgEscape}[${$1}]${endColor}`)
-        .replace(replacers.missing, ($0, $1, $2) => `${redBgEscape}"${$1}"${endColor}${redFgEscape} [${$2}]: -- missing --${endColor}`)
-        .replace(replacers.arrayIndex, ($0, $1, $2) => `\n${$2} ${redFgEscape}[${$1}]${endColor}`)
-        .replace(replacers.specials, ($0, $1) => $1);
-
-    message = `${message}\n${redFgEscape}`;
-
-    for (let i = 0; i < this.details.length; ++i) {
-        const pos = i + 1;
-        message = `${message}\n[${pos}] ${this.details[i].message}`;
-    }
-
-    message = message + endColor;
-
-    return message;
-};
-
-},{"./language":142,"hoek":138}],141:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const Any = require('./types/any');
-const Cast = require('./cast');
-const Errors = require('./errors');
-const Lazy = require('./types/lazy');
-const Ref = require('./ref');
-
-
-// Declare internals
-
-const internals = {
-    alternatives: require('./types/alternatives'),
-    array: require('./types/array'),
-    boolean: require('./types/boolean'),
-    binary: require('./types/binary'),
-    date: require('./types/date'),
-    func: require('./types/func'),
-    number: require('./types/number'),
-    object: require('./types/object'),
-    string: require('./types/string')
-};
-
-internals.applyDefaults = function (schema) {
-
-    Hoek.assert(this, 'Must be invoked on a Joi instance.');
-
-    if (this._defaults) {
-        schema = this._defaults(schema);
-    }
-
-    schema._currentJoi = this;
-
-    return schema;
-};
-
-internals.root = function () {
-
-    const any = new Any();
-
-    const root = any.clone();
-    Any.prototype._currentJoi = root;
-    root._currentJoi = root;
-
-    root.any = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.any() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, any);
-    };
-
-    root.alternatives = root.alt = function () {
-
-        const alternatives = internals.applyDefaults.call(this, internals.alternatives);
-        return arguments.length ? alternatives.try.apply(alternatives, arguments) : alternatives;
-    };
-
-    root.array = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.array() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.array);
-    };
-
-    root.boolean = root.bool = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.boolean() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.boolean);
-    };
-
-    root.binary = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.binary() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.binary);
-    };
-
-    root.date = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.date() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.date);
-    };
-
-    root.func = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.func() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.func);
-    };
-
-    root.number = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.number() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.number);
-    };
-
-    root.object = function () {
-
-        const object = internals.applyDefaults.call(this, internals.object);
-        return arguments.length ? object.keys.apply(object, arguments) : object;
-    };
-
-    root.string = function () {
-
-        Hoek.assert(arguments.length === 0, 'Joi.string() does not allow arguments.');
-
-        return internals.applyDefaults.call(this, internals.string);
-    };
-
-    root.ref = function () {
-
-        return Ref.create.apply(null, arguments);
-    };
-
-    root.isRef = function (ref) {
-
-        return Ref.isRef(ref);
-    };
-
-    root.validate = function (value /*, [schema], [options], callback */) {
-
-        const last = arguments[arguments.length - 1];
-        const callback = typeof last === 'function' ? last : null;
-
-        const count = arguments.length - (callback ? 1 : 0);
-        if (count === 1) {
-            return any.validate(value, callback);
-        }
-
-        const options = count === 3 ? arguments[2] : {};
-        const schema = root.compile(arguments[1]);
-
-        return schema._validateWithOptions(value, options, callback);
-    };
-
-    root.describe = function () {
-
-        const schema = arguments.length ? root.compile(arguments[0]) : any;
-        return schema.describe();
-    };
-
-    root.compile = function (schema) {
-
-        try {
-            return Cast.schema(this, schema);
-        }
-        catch (err) {
-            if (err.hasOwnProperty('path')) {
-                err.message = err.message + '(' + err.path + ')';
-            }
-            throw err;
-        }
-    };
-
-    root.assert = function (value, schema, message) {
-
-        root.attempt(value, schema, message);
-    };
-
-    root.attempt = function (value, schema, message) {
-
-        const result = root.validate(value, schema);
-        const error = result.error;
-        if (error) {
-            if (!message) {
-                if (typeof error.annotate === 'function') {
-                    error.message = error.annotate();
-                }
-                throw error;
-            }
-
-            if (!(message instanceof Error)) {
-                if (typeof error.annotate === 'function') {
-                    error.message = `${message} ${error.annotate()}`;
-                }
-                throw error;
-            }
-
-            throw message;
-        }
-
-        return result.value;
-    };
-
-    root.reach = function (schema, path) {
-
-        Hoek.assert(schema && schema instanceof Any, 'you must provide a joi schema');
-        Hoek.assert(typeof path === 'string', 'path must be a string');
-
-        if (path === '') {
-            return schema;
-        }
-
-        const parts = path.split('.');
-        const children = schema._inner.children;
-        if (!children) {
-            return;
-        }
-
-        const key = parts[0];
-        for (let i = 0; i < children.length; ++i) {
-            const child = children[i];
-            if (child.key === key) {
-                return this.reach(child.schema, path.substr(key.length + 1));
-            }
-        }
-    };
-
-    root.lazy = function (fn) {
-
-        return Lazy.set(fn);
-    };
-
-    root.defaults = function (fn) {
-
-        Hoek.assert(typeof fn === 'function', 'Defaults must be a function');
-
-        let joi = Object.create(this.any());
-        joi = fn(joi);
-
-        Hoek.assert(joi && joi instanceof this.constructor, 'defaults() must return a schema');
-
-        Object.assign(joi, this, joi.clone()); // Re-add the types from `this` but also keep the settings from joi's potential new defaults
-
-        joi._defaults = (schema) => {
-
-            if (this._defaults) {
-                schema = this._defaults(schema);
-                Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
-            }
-
-            schema = fn(schema);
-            Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
-            return schema;
-        };
-
-        return joi;
-    };
-
-    root.extend = function () {
-
-        const extensions = Hoek.flatten(Array.prototype.slice.call(arguments));
-        Hoek.assert(extensions.length > 0, 'You need to provide at least one extension');
-
-        this.assert(extensions, root.extensionsSchema);
-
-        const joi = Object.create(this.any());
-        Object.assign(joi, this);
-
-        for (let i = 0; i < extensions.length; ++i) {
-            let extension = extensions[i];
-
-            if (typeof extension === 'function') {
-                extension = extension(joi);
-            }
-
-            this.assert(extension, root.extensionSchema);
-
-            const base = (extension.base || this.any()).clone(); // Cloning because we're going to override language afterwards
-            const ctor = base.constructor;
-            const type = class extends ctor { // eslint-disable-line no-loop-func
-
-                constructor() {
-
-                    super();
-                    if (extension.base) {
-                        Object.assign(this, base);
-                    }
-
-                    this._type = extension.name;
-
-                    if (extension.language) {
-                        this._settings = this._settings || { language: {} };
-                        this._settings.language = Hoek.applyToDefaults(this._settings.language, {
-                            [extension.name]: extension.language
-                        });
-                    }
-                }
-
-            };
-
-            if (extension.coerce) {
-                type.prototype._coerce = function (value, state, options) {
-
-                    if (ctor.prototype._coerce) {
-                        const baseRet = ctor.prototype._coerce.call(this, value, state, options);
-
-                        if (baseRet.errors) {
-                            return baseRet;
-                        }
-
-                        value = baseRet.value;
-                    }
-
-                    const ret = extension.coerce.call(this, value, state, options);
-                    if (ret instanceof Errors.Err) {
-                        return { value, errors: ret };
-                    }
-
-                    return { value: ret };
-                };
-            }
-            if (extension.pre) {
-                type.prototype._base = function (value, state, options) {
-
-                    if (ctor.prototype._base) {
-                        const baseRet = ctor.prototype._base.call(this, value, state, options);
-
-                        if (baseRet.errors) {
-                            return baseRet;
-                        }
-
-                        value = baseRet.value;
-                    }
-
-                    const ret = extension.pre.call(this, value, state, options);
-                    if (ret instanceof Errors.Err) {
-                        return { value, errors: ret };
-                    }
-
-                    return { value: ret };
-                };
-            }
-
-            if (extension.rules) {
-                for (let j = 0; j < extension.rules.length; ++j) {
-                    const rule = extension.rules[j];
-                    const ruleArgs = rule.params ?
-                        (rule.params instanceof Any ? rule.params._inner.children.map((k) => k.key) : Object.keys(rule.params)) :
-                        [];
-                    const validateArgs = rule.params ? Cast.schema(this, rule.params) : null;
-
-                    type.prototype[rule.name] = function () { // eslint-disable-line no-loop-func
-
-                        if (arguments.length > ruleArgs.length) {
-                            throw new Error('Unexpected number of arguments');
-                        }
-
-                        const args = Array.prototype.slice.call(arguments);
-                        let hasRef = false;
-                        let arg = {};
-
-                        for (let k = 0; k < ruleArgs.length; ++k) {
-                            arg[ruleArgs[k]] = args[k];
-                            if (!hasRef && Ref.isRef(args[k])) {
-                                hasRef = true;
-                            }
-                        }
-
-                        if (validateArgs) {
-                            arg = joi.attempt(arg, validateArgs);
-                        }
-
-                        let schema;
-                        if (rule.validate) {
-                            const validate = function (value, state, options) {
-
-                                return rule.validate.call(this, arg, value, state, options);
-                            };
-
-                            schema = this._test(rule.name, arg, validate, {
-                                description: rule.description,
-                                hasRef
-                            });
-                        }
-                        else {
-                            schema = this.clone();
-                        }
-
-                        if (rule.setup) {
-                            const newSchema = rule.setup.call(schema, arg);
-                            if (newSchema !== undefined) {
-                                Hoek.assert(newSchema instanceof Any, `Setup of extension Joi.${this._type}().${rule.name}() must return undefined or a Joi object`);
-                                schema = newSchema;
-                            }
-                        }
-
-                        return schema;
-                    };
-                }
-            }
-
-            if (extension.describe) {
-                type.prototype.describe = function () {
-
-                    const description = ctor.prototype.describe.call(this);
-                    return extension.describe.call(this, description);
-                };
-            }
-
-            const instance = new type();
-            joi[extension.name] = function () {
-
-                return internals.applyDefaults.call(this, instance);
-            };
-        }
-
-        return joi;
-    };
-
-    root.extensionSchema = internals.object.keys({
-        base: internals.object.type(Any, 'Joi object'),
-        name: internals.string.required(),
-        coerce: internals.func.arity(3),
-        pre: internals.func.arity(3),
-        language: internals.object,
-        describe: internals.func.arity(1),
-        rules: internals.array.items(internals.object.keys({
-            name: internals.string.required(),
-            setup: internals.func.arity(1),
-            validate: internals.func.arity(4),
-            params: [
-                internals.object.pattern(/.*/, internals.object.type(Any, 'Joi object')),
-                internals.object.type(internals.object.constructor, 'Joi object')
-            ],
-            description: [internals.string, internals.func.arity(1)]
-        }).or('setup', 'validate'))
-    }).strict();
-
-    root.extensionsSchema = internals.array.items([internals.object, internals.func.arity(1)]).strict();
-
-    root.version = require('../package.json').version;
-
-    return root;
-};
-
-
-module.exports = internals.root();
-
-},{"../package.json":160,"./cast":139,"./errors":140,"./ref":143,"./types/alternatives":146,"./types/any":147,"./types/array":148,"./types/binary":149,"./types/boolean":150,"./types/date":151,"./types/func":152,"./types/lazy":153,"./types/number":154,"./types/object":155,"./types/string":156,"hoek":138}],142:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-
-// Declare internals
-
-const internals = {};
-
-
-exports.errors = {
-    root: 'value',
-    key: '"{{!label}}" ',
-    messages: {
-        wrapArrays: true
-    },
-    any: {
-        unknown: 'is not allowed',
-        invalid: 'contains an invalid value',
-        empty: 'is not allowed to be empty',
-        required: 'is required',
-        allowOnly: 'must be one of {{valids}}',
-        default: 'threw an error when running default method'
-    },
-    alternatives: {
-        base: 'not matching any of the allowed alternatives',
-        child: null
-    },
-    array: {
-        base: 'must be an array',
-        includes: 'at position {{pos}} does not match any of the allowed types',
-        includesSingle: 'single value of "{{!label}}" does not match any of the allowed types',
-        includesOne: 'at position {{pos}} fails because {{reason}}',
-        includesOneSingle: 'single value of "{{!label}}" fails because {{reason}}',
-        includesRequiredUnknowns: 'does not contain {{unknownMisses}} required value(s)',
-        includesRequiredKnowns: 'does not contain {{knownMisses}}',
-        includesRequiredBoth: 'does not contain {{knownMisses}} and {{unknownMisses}} other required value(s)',
-        excludes: 'at position {{pos}} contains an excluded value',
-        excludesSingle: 'single value of "{{!label}}" contains an excluded value',
-        min: 'must contain at least {{limit}} items',
-        max: 'must contain less than or equal to {{limit}} items',
-        length: 'must contain {{limit}} items',
-        ordered: 'at position {{pos}} fails because {{reason}}',
-        orderedLength: 'at position {{pos}} fails because array must contain at most {{limit}} items',
-        ref: 'references "{{ref}}" which is not a positive integer',
-        sparse: 'must not be a sparse array',
-        unique: 'position {{pos}} contains a duplicate value'
-    },
-    boolean: {
-        base: 'must be a boolean'
-    },
-    binary: {
-        base: 'must be a buffer or a string',
-        min: 'must be at least {{limit}} bytes',
-        max: 'must be less than or equal to {{limit}} bytes',
-        length: 'must be {{limit}} bytes'
-    },
-    date: {
-        base: 'must be a number of milliseconds or valid date string',
-        format: 'must be a string with one of the following formats {{format}}',
-        strict: 'must be a valid date',
-        min: 'must be larger than or equal to "{{limit}}"',
-        max: 'must be less than or equal to "{{limit}}"',
-        isoDate: 'must be a valid ISO 8601 date',
-        timestamp: {
-            javascript: 'must be a valid timestamp or number of milliseconds',
-            unix: 'must be a valid timestamp or number of seconds'
-        },
-        ref: 'references "{{ref}}" which is not a date'
-    },
-    function: {
-        base: 'must be a Function',
-        arity: 'must have an arity of {{n}}',
-        minArity: 'must have an arity greater or equal to {{n}}',
-        maxArity: 'must have an arity lesser or equal to {{n}}',
-        ref: 'must be a Joi reference',
-        class: 'must be a class'
-    },
-    lazy: {
-        base: '!!schema error: lazy schema must be set',
-        schema: '!!schema error: lazy schema function must return a schema'
-    },
-    object: {
-        base: 'must be an object',
-        child: '!!child "{{!child}}" fails because {{reason}}',
-        min: 'must have at least {{limit}} children',
-        max: 'must have less than or equal to {{limit}} children',
-        length: 'must have {{limit}} children',
-        allowUnknown: '!!"{{!child}}" is not allowed',
-        with: '!!"{{mainWithLabel}}" missing required peer "{{peerWithLabel}}"',
-        without: '!!"{{mainWithLabel}}" conflict with forbidden peer "{{peerWithLabel}}"',
-        missing: 'must contain at least one of {{peersWithLabels}}',
-        xor: 'contains a conflict between exclusive peers {{peersWithLabels}}',
-        or: 'must contain at least one of {{peersWithLabels}}',
-        and: 'contains {{presentWithLabels}} without its required peers {{missingWithLabels}}',
-        nand: '!!"{{mainWithLabel}}" must not exist simultaneously with {{peersWithLabels}}',
-        assert: '!!"{{ref}}" validation failed because "{{ref}}" failed to {{message}}',
-        rename: {
-            multiple: 'cannot rename child "{{from}}" because multiple renames are disabled and another key was already renamed to "{{to}}"',
-            override: 'cannot rename child "{{from}}" because override is disabled and target "{{to}}" exists',
-            regex: {
-                multiple: 'cannot rename children {{from}} because multiple renames are disabled and another key was already renamed to "{{to}}"',
-                override: 'cannot rename children {{from}} because override is disabled and target "{{to}}" exists'
-            }
-        },
-        type: 'must be an instance of "{{type}}"',
-        schema: 'must be a Joi instance'
-    },
-    number: {
-        base: 'must be a number',
-        min: 'must be larger than or equal to {{limit}}',
-        max: 'must be less than or equal to {{limit}}',
-        less: 'must be less than {{limit}}',
-        greater: 'must be greater than {{limit}}',
-        float: 'must be a float or double',
-        integer: 'must be an integer',
-        negative: 'must be a negative number',
-        positive: 'must be a positive number',
-        precision: 'must have no more than {{limit}} decimal places',
-        ref: 'references "{{ref}}" which is not a number',
-        multiple: 'must be a multiple of {{multiple}}'
-    },
-    string: {
-        base: 'must be a string',
-        min: 'length must be at least {{limit}} characters long',
-        max: 'length must be less than or equal to {{limit}} characters long',
-        length: 'length must be {{limit}} characters long',
-        alphanum: 'must only contain alpha-numeric characters',
-        token: 'must only contain alpha-numeric and underscore characters',
-        regex: {
-            base: 'with value "{{!value}}" fails to match the required pattern: {{pattern}}',
-            name: 'with value "{{!value}}" fails to match the {{name}} pattern',
-            invert: {
-                base: 'with value "{{!value}}" matches the inverted pattern: {{pattern}}',
-                name: 'with value "{{!value}}" matches the inverted {{name}} pattern'
-            }
-        },
-        email: 'must be a valid email',
-        uri: 'must be a valid uri',
-        uriRelativeOnly: 'must be a valid relative uri',
-        uriCustomScheme: 'must be a valid uri with a scheme matching the {{scheme}} pattern',
-        isoDate: 'must be a valid ISO 8601 date',
-        guid: 'must be a valid GUID',
-        hex: 'must only contain hexadecimal characters',
-        base64: 'must be a valid base64 string',
-        hostname: 'must be a valid hostname',
-        normalize: 'must be unicode normalized in the {{form}} form',
-        lowercase: 'must only contain lowercase characters',
-        uppercase: 'must only contain uppercase characters',
-        trim: 'must not have leading or trailing whitespace',
-        creditCard: 'must be a credit card',
-        ref: 'references "{{ref}}" which is not a number',
-        ip: 'must be a valid ip address with a {{cidr}} CIDR',
-        ipVersion: 'must be a valid ip address of one of the following versions {{version}} with a {{cidr}} CIDR'
-    }
-};
-
-},{}],143:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {};
-
-
-exports.create = function (key, options) {
-
-    Hoek.assert(typeof key === 'string', 'Invalid reference key:', key);
-
-    const settings = Hoek.clone(options);         // options can be reused and modified
-
-    const ref = function (value, validationOptions) {
-
-        return Hoek.reach(ref.isContext ? validationOptions.context : value, ref.key, settings);
-    };
-
-    ref.isContext = (key[0] === ((settings && settings.contextPrefix) || '$'));
-    ref.key = (ref.isContext ? key.slice(1) : key);
-    ref.path = ref.key.split((settings && settings.separator) || '.');
-    ref.depth = ref.path.length;
-    ref.root = ref.path[0];
-    ref.isJoi = true;
-
-    ref.toString = function () {
-
-        return (ref.isContext ? 'context:' : 'ref:') + ref.key;
-    };
-
-    return ref;
-};
-
-
-exports.isRef = function (ref) {
-
-    return typeof ref === 'function' && ref.isJoi;
-};
-
-
-exports.push = function (array, ref) {
-
-    if (exports.isRef(ref) &&
-        !ref.isContext) {
-
-        array.push(ref.root);
-    }
-};
-
-},{"hoek":138}],144:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Joi = require('../');
-
-
-// Declare internals
-
-const internals = {};
-
-exports.options = Joi.object({
-    abortEarly: Joi.boolean(),
-    convert: Joi.boolean(),
-    allowUnknown: Joi.boolean(),
-    skipFunctions: Joi.boolean(),
-    stripUnknown: [Joi.boolean(), Joi.object({ arrays: Joi.boolean(), objects: Joi.boolean() }).or('arrays', 'objects')],
-    language: Joi.object(),
-    presence: Joi.string().only('required', 'optional', 'forbidden', 'ignore'),
-    raw: Joi.boolean(),
-    context: Joi.object(),
-    strip: Joi.boolean(),
-    noDefaults: Joi.boolean(),
-    escapeHtml: Joi.boolean()
-}).strict();
-
-},{"../":141}],145:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Ref = require('./ref');
-
-module.exports = class Set {
-
-    constructor() {
-
-        this._set = [];
-    }
-
-    add(value, refs) {
-
-        if (!Ref.isRef(value) && this.has(value, null, null, false)) {
-
-            return;
-        }
-
-        if (refs !== undefined) { // If it's a merge, we don't have any refs
-            Ref.push(refs, value);
-        }
-
-        this._set.push(value);
-        return this;
-    }
-
-    merge(add, remove) {
-
-        for (let i = 0; i < add._set.length; ++i) {
-            this.add(add._set[i]);
-        }
-
-        for (let i = 0; i < remove._set.length; ++i) {
-            this.remove(remove._set[i]);
-        }
-
-        return this;
-    }
-
-    remove(value) {
-
-        this._set = this._set.filter((item) => value !== item);
-        return this;
-    }
-
-    has(value, state, options, insensitive) {
-
-        for (let i = 0; i < this._set.length; ++i) {
-            let items = this._set[i];
-
-            if (state && Ref.isRef(items)) { // Only resolve references if there is a state, otherwise it's a merge
-                items = items(state.reference || state.parent, options);
-            }
-
-            if (!Array.isArray(items)) {
-                items = [items];
-            }
-
-            for (let j = 0; j < items.length; ++j) {
-                const item = items[j];
-                if (typeof value !== typeof item) {
-                    continue;
-                }
-
-                if (value === item ||
-                    (value instanceof Date && item instanceof Date && value.getTime() === item.getTime()) ||
-                    (insensitive && typeof value === 'string' && value.toLowerCase() === item.toLowerCase()) ||
-                    (Buffer.isBuffer(value) && Buffer.isBuffer(item) && value.length === item.length && value.toString('binary') === item.toString('binary'))) {
-
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    values(options) {
-
-        if (options && options.stripUndefined) {
-            const values = [];
-
-            for (let i = 0; i < this._set.length; ++i) {
-                const item = this._set[i];
-                if (item !== undefined) {
-                    values.push(item);
-                }
-            }
-
-            return values;
-        }
-
-        return this._set.slice();
-    }
-
-    slice() {
-
-        const newSet = new Set();
-        newSet._set = this._set.slice();
-
-        return newSet;
-    }
-
-    concat(source) {
-
-        const newSet = new Set();
-        newSet._set = this._set.concat(source._set);
-
-        return newSet;
-    }
-};
-
-}).call(this,{"isBuffer":require("../../../../is-buffer/index.js")})
-},{"../../../../is-buffer/index.js":119,"./ref":143}],146:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const Any = require('../any');
-const Cast = require('../../cast');
-const Ref = require('../../ref');
-
-
-// Declare internals
-
-const internals = {};
-
-
-internals.Alternatives = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'alternatives';
-        this._invalids.remove(null);
-        this._inner.matches = [];
-    }
-
-    _base(value, state, options) {
-
-        let errors = [];
-        const il = this._inner.matches.length;
-        const baseType = this._baseType;
-
-        for (let i = 0; i < il; ++i) {
-            const item = this._inner.matches[i];
-            if (!item.schema) {
-                const schema = item.peek || item.is;
-                const input = item.is ? item.ref(state.reference || state.parent, options) : value;
-                const failed = schema._validate(input, null, options, state.parent).errors;
-
-                if (failed) {
-                    if (item.otherwise) {
-                        return item.otherwise._validate(value, state, options);
-                    }
-                }
-                else if (item.then) {
-                    return item.then._validate(value, state, options);
-                }
-
-                if (i === (il - 1) && baseType) {
-                    return baseType._validate(value, state, options);
-                }
-
-                continue;
-            }
-
-            const result = item.schema._validate(value, state, options);
-            if (!result.errors) {     // Found a valid match
-                return result;
-            }
-
-            errors = errors.concat(result.errors);
-        }
-
-        if (errors.length) {
-            return { errors: this.createError('alternatives.child', { reason: errors }, state, options) };
-        }
-
-        return { errors: this.createError('alternatives.base', null, state, options) };
-    }
-
-    try(/* schemas */) {
-
-        const schemas = Hoek.flatten(Array.prototype.slice.call(arguments));
-        Hoek.assert(schemas.length, 'Cannot add other alternatives without at least one schema');
-
-        const obj = this.clone();
-
-        for (let i = 0; i < schemas.length; ++i) {
-            const cast = Cast.schema(this._currentJoi, schemas[i]);
-            if (cast._refs.length) {
-                obj._refs = obj._refs.concat(cast._refs);
-            }
-            obj._inner.matches.push({ schema: cast });
-        }
-
-        return obj;
-    }
-
-    when(condition, options) {
-
-        let schemaCondition = false;
-        Hoek.assert(Ref.isRef(condition) || typeof condition === 'string' || (schemaCondition = condition instanceof Any), 'Invalid condition:', condition);
-        Hoek.assert(options, 'Missing options');
-        Hoek.assert(typeof options === 'object', 'Invalid options');
-        if (schemaCondition) {
-            Hoek.assert(!options.hasOwnProperty('is'), '"is" can not be used with a schema condition');
-        }
-        else {
-            Hoek.assert(options.hasOwnProperty('is'), 'Missing "is" directive');
-        }
-        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
-
-        const obj = this.clone();
-        let is;
-        if (!schemaCondition) {
-            is = Cast.schema(this._currentJoi, options.is);
-
-            if (options.is === null || !(Ref.isRef(options.is) || options.is instanceof Any)) {
-
-                // Only apply required if this wasn't already a schema or a ref, we'll suppose people know what they're doing
-                is = is.required();
-            }
-        }
-
-        const item = {
-            ref: schemaCondition ? null : Cast.ref(condition),
-            peek: schemaCondition ? condition : null,
-            is,
-            then: options.then !== undefined ? Cast.schema(this._currentJoi, options.then) : undefined,
-            otherwise: options.otherwise !== undefined ? Cast.schema(this._currentJoi, options.otherwise) : undefined
-        };
-
-        if (obj._baseType) {
-
-            item.then = item.then && obj._baseType.concat(item.then);
-            item.otherwise = item.otherwise && obj._baseType.concat(item.otherwise);
-        }
-
-        if (!schemaCondition) {
-            Ref.push(obj._refs, item.ref);
-            obj._refs = obj._refs.concat(item.is._refs);
-        }
-
-        if (item.then && item.then._refs) {
-            obj._refs = obj._refs.concat(item.then._refs);
-        }
-
-        if (item.otherwise && item.otherwise._refs) {
-            obj._refs = obj._refs.concat(item.otherwise._refs);
-        }
-
-        obj._inner.matches.push(item);
-
-        return obj;
-    }
-
-    describe() {
-
-        const description = Any.prototype.describe.call(this);
-        const alternatives = [];
-        for (let i = 0; i < this._inner.matches.length; ++i) {
-            const item = this._inner.matches[i];
-            if (item.schema) {
-
-                // try()
-
-                alternatives.push(item.schema.describe());
-            }
-            else {
-
-                // when()
-
-                const when = item.is ? {
-                    ref: item.ref.toString(),
-                    is: item.is.describe()
-                } : {
-                    peek: item.peek.describe()
-                };
-
-                if (item.then) {
-                    when.then = item.then.describe();
-                }
-
-                if (item.otherwise) {
-                    when.otherwise = item.otherwise.describe();
-                }
-
-                alternatives.push(when);
-            }
-        }
-
-        description.alternatives = alternatives;
-        return description;
-    }
-
-};
-
-
-module.exports = new internals.Alternatives();
-
-},{"../../cast":139,"../../ref":143,"../any":147,"hoek":138}],147:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const Ref = require('../../ref');
-const Errors = require('../../errors');
-let Alternatives = null;                // Delay-loaded to prevent circular dependencies
-let Cast = null;
-
-
-// Declare internals
-
-const internals = {
-    Set: require('../../set')
-};
-
-
-internals.defaults = {
-    abortEarly: true,
-    convert: true,
-    allowUnknown: false,
-    skipFunctions: false,
-    stripUnknown: false,
-    language: {},
-    presence: 'optional',
-    strip: false,
-    noDefaults: false,
-    escapeHtml: false
-
-    // context: null
-};
-
-
-module.exports = internals.Any = class {
-
-    constructor() {
-
-        Cast = Cast || require('../../cast');
-
-        this.isJoi = true;
-        this._type = 'any';
-        this._settings = null;
-        this._valids = new internals.Set();
-        this._invalids = new internals.Set();
-        this._tests = [];
-        this._refs = [];
-        this._flags = {
-            /*
-             presence: 'optional',                   // optional, required, forbidden, ignore
-             allowOnly: false,
-             allowUnknown: undefined,
-             default: undefined,
-             forbidden: false,
-             encoding: undefined,
-             insensitive: false,
-             trim: false,
-             normalize: undefined,                   // NFC, NFD, NFKC, NFKD
-             case: undefined,                        // upper, lower
-             empty: undefined,
-             func: false,
-             raw: false
-             */
-        };
-
-        this._description = null;
-        this._unit = null;
-        this._notes = [];
-        this._tags = [];
-        this._examples = [];
-        this._meta = [];
-
-        this._inner = {};                           // Hash of arrays of immutable objects
-    }
-
-    get schemaType() {
-
-        return this._type;
-    }
-
-    createError(type, context, state, options, flags) {
-
-        return Errors.create(type, context, state, options, flags || this._flags);
-    }
-
-    createOverrideError(type, context, state, options, message, template) {
-
-        return Errors.create(type, context, state, options, this._flags, message, template);
-    }
-
-    checkOptions(options) {
-
-        const Schemas = require('../../schemas');
-        const result = Schemas.options.validate(options);
-        if (result.error) {
-            throw new Error(result.error.details[0].message);
-        }
-    }
-
-    clone() {
-
-        const obj = Object.create(Object.getPrototypeOf(this));
-
-        obj.isJoi = true;
-        obj._currentJoi = this._currentJoi;
-        obj._type = this._type;
-        obj._settings = internals.concatSettings(this._settings);
-        obj._baseType = this._baseType;
-        obj._valids = Hoek.clone(this._valids);
-        obj._invalids = Hoek.clone(this._invalids);
-        obj._tests = this._tests.slice();
-        obj._refs = this._refs.slice();
-        obj._flags = Hoek.clone(this._flags);
-
-        obj._description = this._description;
-        obj._unit = this._unit;
-        obj._notes = this._notes.slice();
-        obj._tags = this._tags.slice();
-        obj._examples = this._examples.slice();
-        obj._meta = this._meta.slice();
-
-        obj._inner = {};
-        const inners = Object.keys(this._inner);
-        for (let i = 0; i < inners.length; ++i) {
-            const key = inners[i];
-            obj._inner[key] = this._inner[key] ? this._inner[key].slice() : null;
-        }
-
-        return obj;
-    }
-
-    concat(schema) {
-
-        Hoek.assert(schema instanceof internals.Any, 'Invalid schema object');
-        Hoek.assert(this._type === 'any' || schema._type === 'any' || schema._type === this._type, 'Cannot merge type', this._type, 'with another type:', schema._type);
-
-        let obj = this.clone();
-
-        if (this._type === 'any' && schema._type !== 'any') {
-
-            // Reset values as if we were "this"
-            const tmpObj = schema.clone();
-            const keysToRestore = ['_settings', '_valids', '_invalids', '_tests', '_refs', '_flags', '_description', '_unit',
-                '_notes', '_tags', '_examples', '_meta', '_inner'];
-
-            for (let i = 0; i < keysToRestore.length; ++i) {
-                tmpObj[keysToRestore[i]] = obj[keysToRestore[i]];
-            }
-
-            obj = tmpObj;
-        }
-
-        obj._settings = obj._settings ? internals.concatSettings(obj._settings, schema._settings) : schema._settings;
-        obj._valids.merge(schema._valids, schema._invalids);
-        obj._invalids.merge(schema._invalids, schema._valids);
-        obj._tests = obj._tests.concat(schema._tests);
-        obj._refs = obj._refs.concat(schema._refs);
-        Hoek.merge(obj._flags, schema._flags);
-
-        obj._description = schema._description || obj._description;
-        obj._unit = schema._unit || obj._unit;
-        obj._notes = obj._notes.concat(schema._notes);
-        obj._tags = obj._tags.concat(schema._tags);
-        obj._examples = obj._examples.concat(schema._examples);
-        obj._meta = obj._meta.concat(schema._meta);
-
-        const inners = Object.keys(schema._inner);
-        const isObject = obj._type === 'object';
-        for (let i = 0; i < inners.length; ++i) {
-            const key = inners[i];
-            const source = schema._inner[key];
-            if (source) {
-                const target = obj._inner[key];
-                if (target) {
-                    if (isObject && key === 'children') {
-                        const keys = {};
-
-                        for (let j = 0; j < target.length; ++j) {
-                            keys[target[j].key] = j;
-                        }
-
-                        for (let j = 0; j < source.length; ++j) {
-                            const sourceKey = source[j].key;
-                            if (keys[sourceKey] >= 0) {
-                                target[keys[sourceKey]] = {
-                                    key: sourceKey,
-                                    schema: target[keys[sourceKey]].schema.concat(source[j].schema)
-                                };
-                            }
-                            else {
-                                target.push(source[j]);
-                            }
-                        }
-                    }
-                    else {
-                        obj._inner[key] = obj._inner[key].concat(source);
-                    }
-                }
-                else {
-                    obj._inner[key] = source.slice();
-                }
-            }
-        }
-
-        return obj;
-    }
-
-    _test(name, arg, func, options) {
-
-        const obj = this.clone();
-        obj._tests.push({ func, name, arg, options });
-        return obj;
-    }
-
-    options(options) {
-
-        Hoek.assert(!options.context, 'Cannot override context');
-        this.checkOptions(options);
-
-        const obj = this.clone();
-        obj._settings = internals.concatSettings(obj._settings, options);
-        return obj;
-    }
-
-    strict(isStrict) {
-
-        const obj = this.clone();
-        obj._settings = obj._settings || {};
-        obj._settings.convert = isStrict === undefined ? false : !isStrict;
-        return obj;
-    }
-
-    raw(isRaw) {
-
-        const value = isRaw === undefined ? true : isRaw;
-
-        if (this._flags.raw === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.raw = value;
-        return obj;
-    }
-
-    error(err) {
-
-        Hoek.assert(err && (err instanceof Error || typeof err === 'function'), 'Must provide a valid Error object or a function');
-
-        const obj = this.clone();
-        obj._flags.error = err;
-        return obj;
-    }
-
-    allow() {
-
-        const obj = this.clone();
-        const values = Hoek.flatten(Array.prototype.slice.call(arguments));
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
-            obj._invalids.remove(value);
-            obj._valids.add(value, obj._refs);
-        }
-        return obj;
-    }
-
-    valid() {
-
-        const obj = this.allow.apply(this, arguments);
-        obj._flags.allowOnly = true;
-        return obj;
-    }
-
-    invalid(value) {
-
-        const obj = this.clone();
-        const values = Hoek.flatten(Array.prototype.slice.call(arguments));
-        for (let i = 0; i < values.length; ++i) {
-            value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
-            obj._valids.remove(value);
-            obj._invalids.add(value, obj._refs);
-        }
-
-        return obj;
-    }
-
-    required() {
-
-        if (this._flags.presence === 'required') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'required';
-        return obj;
-    }
-
-    optional() {
-
-        if (this._flags.presence === 'optional') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'optional';
-        return obj;
-    }
-
-
-    forbidden() {
-
-        if (this._flags.presence === 'forbidden') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'forbidden';
-        return obj;
-    }
-
-
-    strip() {
-
-        if (this._flags.strip) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.strip = true;
-        return obj;
-    }
-
-    applyFunctionToChildren(children, fn, args, root) {
-
-        children = [].concat(children);
-
-        if (children.length !== 1 || children[0] !== '') {
-            root = root ? (root + '.') : '';
-
-            const extraChildren = (children[0] === '' ? children.slice(1) : children).map((child) => {
-
-                return root + child;
-            });
-
-            throw new Error('unknown key(s) ' + extraChildren.join(', '));
-        }
-
-        return this[fn].apply(this, args);
-    }
-
-    default(value, description) {
-
-        if (typeof value === 'function' &&
-            !Ref.isRef(value)) {
-
-            if (!value.description &&
-                description) {
-
-                value.description = description;
-            }
-
-            if (!this._flags.func) {
-                Hoek.assert(typeof value.description === 'string' && value.description.length > 0, 'description must be provided when default value is a function');
-            }
-        }
-
-        const obj = this.clone();
-        obj._flags.default = value;
-        Ref.push(obj._refs, value);
-        return obj;
-    }
-
-    empty(schema) {
-
-        const obj = this.clone();
-        if (schema === undefined) {
-            delete obj._flags.empty;
-        }
-        else {
-            obj._flags.empty = Cast.schema(this._currentJoi, schema);
-        }
-        return obj;
-    }
-
-    when(condition, options) {
-
-        Hoek.assert(options && typeof options === 'object', 'Invalid options');
-        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
-
-        const then = options.hasOwnProperty('then') ? this.concat(Cast.schema(this._currentJoi, options.then)) : undefined;
-        const otherwise = options.hasOwnProperty('otherwise') ? this.concat(Cast.schema(this._currentJoi, options.otherwise)) : undefined;
-
-        Alternatives = Alternatives || require('../alternatives');
-
-        const alternativeOptions = { then, otherwise };
-        if (Object.prototype.hasOwnProperty.call(options, 'is')) {
-            alternativeOptions.is = options.is;
-        }
-        const obj = Alternatives.when(condition, alternativeOptions);
-        obj._flags.presence = 'ignore';
-        obj._baseType = this;
-
-        return obj;
-    }
-
-    description(desc) {
-
-        Hoek.assert(desc && typeof desc === 'string', 'Description must be a non-empty string');
-
-        const obj = this.clone();
-        obj._description = desc;
-        return obj;
-    }
-
-    notes(notes) {
-
-        Hoek.assert(notes && (typeof notes === 'string' || Array.isArray(notes)), 'Notes must be a non-empty string or array');
-
-        const obj = this.clone();
-        obj._notes = obj._notes.concat(notes);
-        return obj;
-    }
-
-    tags(tags) {
-
-        Hoek.assert(tags && (typeof tags === 'string' || Array.isArray(tags)), 'Tags must be a non-empty string or array');
-
-        const obj = this.clone();
-        obj._tags = obj._tags.concat(tags);
-        return obj;
-    }
-
-    meta(meta) {
-
-        Hoek.assert(meta !== undefined, 'Meta cannot be undefined');
-
-        const obj = this.clone();
-        obj._meta = obj._meta.concat(meta);
-        return obj;
-    }
-
-    example(value) {
-
-        Hoek.assert(arguments.length, 'Missing example');
-        const result = this._validate(value, null, internals.defaults);
-        Hoek.assert(!result.errors, 'Bad example:', result.errors && Errors.process(result.errors, value));
-
-        const obj = this.clone();
-        obj._examples.push(value);
-        return obj;
-    }
-
-    unit(name) {
-
-        Hoek.assert(name && typeof name === 'string', 'Unit name must be a non-empty string');
-
-        const obj = this.clone();
-        obj._unit = name;
-        return obj;
-    }
-
-    _prepareEmptyValue(value) {
-
-        if (typeof value === 'string' && this._flags.trim) {
-            return value.trim();
-        }
-
-        return value;
-    }
-
-    _validate(value, state, options, reference) {
-
-        const originalValue = value;
-
-        // Setup state and settings
-
-        state = state || { key: '', path: [], parent: null, reference };
-
-        if (this._settings) {
-            options = internals.concatSettings(options, this._settings);
-        }
-
-        let errors = [];
-        const finish = () => {
-
-            let finalValue;
-
-            if (value !== undefined) {
-                finalValue = this._flags.raw ? originalValue : value;
-            }
-            else if (options.noDefaults) {
-                finalValue = value;
-            }
-            else if (Ref.isRef(this._flags.default)) {
-                finalValue = this._flags.default(state.parent, options);
-            }
-            else if (typeof this._flags.default === 'function' &&
-                !(this._flags.func && !this._flags.default.description)) {
-
-                let args;
-
-                if (state.parent !== null &&
-                    this._flags.default.length > 0) {
-
-                    args = [Hoek.clone(state.parent), options];
-                }
-
-                const defaultValue = internals._try(this._flags.default, args);
-                finalValue = defaultValue.value;
-                if (defaultValue.error) {
-                    errors.push(this.createError('any.default', { error: defaultValue.error }, state, options));
-                }
-            }
-            else {
-                finalValue = Hoek.clone(this._flags.default);
-            }
-
-            if (errors.length && typeof this._flags.error === 'function') {
-                const change = this._flags.error.call(this, errors);
-
-                if (typeof change === 'string') {
-                    errors = [this.createOverrideError('override', { reason: errors }, state, options, change)];
-                }
-                else {
-                    errors = [].concat(change)
-                        .map((err) => {
-
-                            return err instanceof Error ?
-                                err :
-                                this.createOverrideError(err.type || 'override', err.context, state, options, err.message, err.template);
-                        });
-                }
-            }
-
-            return {
-                value: this._flags.strip ? undefined : finalValue,
-                finalValue,
-                errors: errors.length ? errors : null
-            };
-        };
-
-        if (this._coerce) {
-            const coerced = this._coerce.call(this, value, state, options);
-            if (coerced.errors) {
-                value = coerced.value;
-                errors = errors.concat(coerced.errors);
-                return finish();                            // Coerced error always aborts early
-            }
-
-            value = coerced.value;
-        }
-
-        if (this._flags.empty && !this._flags.empty._validate(this._prepareEmptyValue(value), null, internals.defaults).errors) {
-            value = undefined;
-        }
-
-        // Check presence requirements
-
-        const presence = this._flags.presence || options.presence;
-        if (presence === 'optional') {
-            if (value === undefined) {
-                const isDeepDefault = this._flags.hasOwnProperty('default') && this._flags.default === undefined;
-                if (isDeepDefault && this._type === 'object') {
-                    value = {};
-                }
-                else {
-                    return finish();
-                }
-            }
-        }
-        else if (presence === 'required' &&
-            value === undefined) {
-
-            errors.push(this.createError('any.required', null, state, options));
-            return finish();
-        }
-        else if (presence === 'forbidden') {
-            if (value === undefined) {
-                return finish();
-            }
-
-            errors.push(this.createError('any.unknown', null, state, options));
-            return finish();
-        }
-
-        // Check allowed and denied values using the original value
-
-        if (this._valids.has(value, state, options, this._flags.insensitive)) {
-            return finish();
-        }
-
-        if (this._invalids.has(value, state, options, this._flags.insensitive)) {
-            errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', null, state, options));
-            if (options.abortEarly ||
-                value === undefined) {          // No reason to keep validating missing value
-
-                return finish();
-            }
-        }
-
-        // Convert value and validate type
-
-        if (this._base) {
-            const base = this._base.call(this, value, state, options);
-            if (base.errors) {
-                value = base.value;
-                errors = errors.concat(base.errors);
-                return finish();                            // Base error always aborts early
-            }
-
-            if (base.value !== value) {
-                value = base.value;
-
-                // Check allowed and denied values using the converted value
-
-                if (this._valids.has(value, state, options, this._flags.insensitive)) {
-                    return finish();
-                }
-
-                if (this._invalids.has(value, state, options, this._flags.insensitive)) {
-                    errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', null, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-            }
-        }
-
-        // Required values did not match
-
-        if (this._flags.allowOnly) {
-            errors.push(this.createError('any.allowOnly', { valids: this._valids.values({ stripUndefined: true }) }, state, options));
-            if (options.abortEarly) {
-                return finish();
-            }
-        }
-
-        // Helper.validate tests
-
-        for (let i = 0; i < this._tests.length; ++i) {
-            const test = this._tests[i];
-            const ret = test.func.call(this, value, state, options);
-            if (ret instanceof Errors.Err) {
-                errors.push(ret);
-                if (options.abortEarly) {
-                    return finish();
-                }
-            }
-            else {
-                value = ret;
-            }
-        }
-
-        return finish();
-    }
-
-    _validateWithOptions(value, options, callback) {
-
-        if (options) {
-            this.checkOptions(options);
-        }
-
-        const settings = internals.concatSettings(internals.defaults, options);
-        const result = this._validate(value, null, settings);
-        const errors = Errors.process(result.errors, value);
-
-        if (callback) {
-            return callback(errors, result.value);
-        }
-
-        return {
-            error: errors,
-            value: result.value,
-            then(resolve, reject) {
-
-                if (errors) {
-                    return Promise.reject(errors).catch(reject);
-                }
-
-                return Promise.resolve(result.value).then(resolve);
-            },
-            catch(reject) {
-
-                if (errors) {
-                    return Promise.reject(errors).catch(reject);
-                }
-
-                return Promise.resolve(result.value);
-            }
-        };
-    }
-
-    validate(value, options, callback) {
-
-        if (typeof options === 'function') {
-            return this._validateWithOptions(value, null, options);
-        }
-
-        return this._validateWithOptions(value, options, callback);
-    }
-
-    describe() {
-
-        const description = {
-            type: this._type
-        };
-
-        const flags = Object.keys(this._flags);
-        if (flags.length) {
-            if (['empty', 'default', 'lazy', 'label'].some((flag) => this._flags.hasOwnProperty(flag))) {
-                description.flags = {};
-                for (let i = 0; i < flags.length; ++i) {
-                    const flag = flags[i];
-                    if (flag === 'empty') {
-                        description.flags[flag] = this._flags[flag].describe();
-                    }
-                    else if (flag === 'default') {
-                        if (Ref.isRef(this._flags[flag])) {
-                            description.flags[flag] = this._flags[flag].toString();
-                        }
-                        else if (typeof this._flags[flag] === 'function') {
-                            description.flags[flag] = {
-                                description: this._flags[flag].description,
-                                function   : this._flags[flag]
-                            };
-                        }
-                        else {
-                            description.flags[flag] = this._flags[flag];
-                        }
-                    }
-                    else if (flag === 'lazy' || flag === 'label') {
-                        // We don't want it in the description
-                    }
-                    else {
-                        description.flags[flag] = this._flags[flag];
-                    }
-                }
-            }
-            else {
-                description.flags = this._flags;
-            }
-        }
-
-        if (this._settings) {
-            description.options = Hoek.clone(this._settings);
-        }
-
-        if (this._baseType) {
-            description.base = this._baseType.describe();
-        }
-
-        if (this._description) {
-            description.description = this._description;
-        }
-
-        if (this._notes.length) {
-            description.notes = this._notes;
-        }
-
-        if (this._tags.length) {
-            description.tags = this._tags;
-        }
-
-        if (this._meta.length) {
-            description.meta = this._meta;
-        }
-
-        if (this._examples.length) {
-            description.examples = this._examples;
-        }
-
-        if (this._unit) {
-            description.unit = this._unit;
-        }
-
-        const valids = this._valids.values();
-        if (valids.length) {
-            description.valids = valids.map((v) => {
-
-                return Ref.isRef(v) ? v.toString() : v;
-            });
-        }
-
-        const invalids = this._invalids.values();
-        if (invalids.length) {
-            description.invalids = invalids.map((v) => {
-
-                return Ref.isRef(v) ? v.toString() : v;
-            });
-        }
-
-        description.rules = [];
-
-        for (let i = 0; i < this._tests.length; ++i) {
-            const validator = this._tests[i];
-            const item = { name: validator.name };
-
-            if (validator.arg !== void 0) {
-                item.arg = Ref.isRef(validator.arg) ? validator.arg.toString() : validator.arg;
-            }
-
-            const options = validator.options;
-            if (options) {
-                if (options.hasRef) {
-                    item.arg = {};
-                    const keys = Object.keys(validator.arg);
-                    for (let j = 0; j < keys.length; ++j) {
-                        const key = keys[j];
-                        const value = validator.arg[key];
-                        item.arg[key] = Ref.isRef(value) ? value.toString() : value;
-                    }
-                }
-
-                if (typeof options.description === 'string') {
-                    item.description = options.description;
-                }
-                else if (typeof options.description === 'function') {
-                    item.description = options.description(item.arg);
-                }
-            }
-
-            description.rules.push(item);
-        }
-
-        if (!description.rules.length) {
-            delete description.rules;
-        }
-
-        const label = this._getLabel();
-        if (label) {
-            description.label = label;
-        }
-
-        return description;
-    }
-
-    label(name) {
-
-        Hoek.assert(name && typeof name === 'string', 'Label name must be a non-empty string');
-
-        const obj = this.clone();
-        obj._flags.label = name;
-        return obj;
-    }
-
-    _getLabel(def) {
-
-        return this._flags.label || def;
-    }
-
-};
-
-
-internals.Any.prototype.isImmutable = true;     // Prevents Hoek from deep cloning schema objects
-
-// Aliases
-
-internals.Any.prototype.only = internals.Any.prototype.equal = internals.Any.prototype.valid;
-internals.Any.prototype.disallow = internals.Any.prototype.not = internals.Any.prototype.invalid;
-internals.Any.prototype.exist = internals.Any.prototype.required;
-
-
-internals._try = function (fn, args) {
-
-    let err;
-    let result;
-
-    try {
-        result = fn.apply(null, args);
-    }
-    catch (e) {
-        err = e;
-    }
-
-    return {
-        value: result,
-        error: err
-    };
-};
-
-internals.concatSettings = function (target, source) {
-
-    // Used to avoid cloning context
-
-    if (!target &&
-        !source) {
-
-        return null;
-    }
-
-    const obj = {};
-
-    if (target) {
-        Object.assign(obj, target);
-    }
-
-    if (source) {
-        const sKeys = Object.keys(source);
-        for (let i = 0; i < sKeys.length; ++i) {
-            const key = sKeys[i];
-            if (key !== 'language' ||
-                !obj.hasOwnProperty(key)) {
-
-                obj[key] = source[key];
-            }
-            else {
-                obj[key] = Hoek.applyToDefaults(obj[key], source[key]);
-            }
-        }
-    }
-
-    return obj;
-};
-
-},{"../../cast":139,"../../errors":140,"../../ref":143,"../../schemas":144,"../../set":145,"../alternatives":146,"hoek":138}],148:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Any = require('../any');
-const Cast = require('../../cast');
-const Ref = require('../../ref');
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {};
-
-
-internals.fastSplice = function (arr, i) {
-
-    let pos = i;
-    while (pos < arr.length) {
-        arr[pos++] = arr[pos];
-    }
-
-    --arr.length;
-};
-
-
-internals.Array = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'array';
-        this._inner.items = [];
-        this._inner.ordereds = [];
-        this._inner.inclusions = [];
-        this._inner.exclusions = [];
-        this._inner.requireds = [];
-        this._flags.sparse = false;
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            internals.safeParse(value, result);
-        }
-
-        let isArray = Array.isArray(result.value);
-        const wasArray = isArray;
-        if (options.convert && this._flags.single && !isArray) {
-            result.value = [result.value];
-            isArray = true;
-        }
-
-        if (!isArray) {
-            result.errors = this.createError('array.base', null, state, options);
-            return result;
-        }
-
-        if (this._inner.inclusions.length ||
-            this._inner.exclusions.length ||
-            this._inner.requireds.length ||
-            this._inner.ordereds.length ||
-            !this._flags.sparse) {
-
-            // Clone the array so that we don't modify the original
-            if (wasArray) {
-                result.value = result.value.slice(0);
-            }
-
-            result.errors = this._checkItems.call(this, result.value, wasArray, state, options);
-
-            if (result.errors && wasArray && options.convert && this._flags.single) {
-
-                // Attempt a 2nd pass by putting the array inside one.
-                const previousErrors = result.errors;
-
-                result.value = [result.value];
-                result.errors = this._checkItems.call(this, result.value, wasArray, state, options);
-
-                if (result.errors) {
-
-                    // Restore previous errors and value since this didn't validate either.
-                    result.errors = previousErrors;
-                    result.value = result.value[0];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    _checkItems(items, wasArray, state, options) {
-
-        const errors = [];
-        let errored;
-
-        const requireds = this._inner.requireds.slice();
-        const ordereds = this._inner.ordereds.slice();
-        const inclusions = this._inner.inclusions.concat(requireds);
-
-        let il = items.length;
-        for (let i = 0; i < il; ++i) {
-            errored = false;
-            const item = items[i];
-            let isValid = false;
-            const key = wasArray ? i : state.key;
-            const path = wasArray ? state.path.concat(i) : state.path;
-            const localState = { key, path, parent: state.parent, reference: state.reference };
-            let res;
-
-            // Sparse
-
-            if (!this._flags.sparse && item === undefined) {
-                errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                if (options.abortEarly) {
-                    return errors;
-                }
-
-                continue;
-            }
-
-            // Exclusions
-
-            for (let j = 0; j < this._inner.exclusions.length; ++j) {
-                res = this._inner.exclusions[j]._validate(item, localState, {});                // Not passing options to use defaults
-
-                if (!res.errors) {
-                    errors.push(this.createError(wasArray ? 'array.excludes' : 'array.excludesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
-                    errored = true;
-
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    break;
-                }
-            }
-
-            if (errored) {
-                continue;
-            }
-
-            // Ordered
-            if (this._inner.ordereds.length) {
-                if (ordereds.length > 0) {
-                    const ordered = ordereds.shift();
-                    res = ordered._validate(item, localState, options);
-                    if (!res.errors) {
-                        if (ordered._flags.strip) {
-                            internals.fastSplice(items, i);
-                            --i;
-                            --il;
-                        }
-                        else if (!this._flags.sparse && res.value === undefined) {
-                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                            if (options.abortEarly) {
-                                return errors;
-                            }
-
-                            continue;
-                        }
-                        else {
-                            items[i] = res.value;
-                        }
-                    }
-                    else {
-                        errors.push(this.createError('array.ordered', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
-                        if (options.abortEarly) {
-                            return errors;
-                        }
-                    }
-                    continue;
-                }
-                else if (!this._inner.items.length) {
-                    errors.push(this.createError('array.orderedLength', { pos: i, limit: this._inner.ordereds.length }, { key: state.key, path: localState.path }, options));
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-                    continue;
-                }
-            }
-
-            // Requireds
-
-            const requiredChecks = [];
-            let jl = requireds.length;
-            for (let j = 0; j < jl; ++j) {
-                res = requiredChecks[j] = requireds[j]._validate(item, localState, options);
-                if (!res.errors) {
-                    items[i] = res.value;
-                    isValid = true;
-                    internals.fastSplice(requireds, j);
-                    --j;
-                    --jl;
-
-                    if (!this._flags.sparse && res.value === undefined) {
-                        errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                        if (options.abortEarly) {
-                            return errors;
-                        }
-                    }
-
-                    break;
-                }
-            }
-
-            if (isValid) {
-                continue;
-            }
-
-            // Inclusions
-
-            const stripUnknown = options.stripUnknown
-                ? (options.stripUnknown === true ? true : !!options.stripUnknown.arrays)
-                : false;
-
-            jl = inclusions.length;
-            for (let j = 0; j < jl; ++j) {
-                const inclusion = inclusions[j];
-
-                // Avoid re-running requireds that already didn't match in the previous loop
-                const previousCheck = requireds.indexOf(inclusion);
-                if (previousCheck !== -1) {
-                    res = requiredChecks[previousCheck];
-                }
-                else {
-                    res = inclusion._validate(item, localState, options);
-
-                    if (!res.errors) {
-                        if (inclusion._flags.strip) {
-                            internals.fastSplice(items, i);
-                            --i;
-                            --il;
-                        }
-                        else if (!this._flags.sparse && res.value === undefined) {
-                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-                            errored = true;
-                        }
-                        else {
-                            items[i] = res.value;
-                        }
-                        isValid = true;
-                        break;
-                    }
-                }
-
-                // Return the actual error if only one inclusion defined
-                if (jl === 1) {
-                    if (stripUnknown) {
-                        internals.fastSplice(items, i);
-                        --i;
-                        --il;
-                        isValid = true;
-                        break;
-                    }
-
-                    errors.push(this.createError(wasArray ? 'array.includesOne' : 'array.includesOneSingle', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
-                    errored = true;
-
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    break;
-                }
-            }
-
-            if (errored) {
-                continue;
-            }
-
-            if (this._inner.inclusions.length && !isValid) {
-                if (stripUnknown) {
-                    internals.fastSplice(items, i);
-                    --i;
-                    --il;
-                    continue;
-                }
-
-                errors.push(this.createError(wasArray ? 'array.includes' : 'array.includesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
-
-                if (options.abortEarly) {
-                    return errors;
-                }
-            }
-        }
-
-        if (requireds.length) {
-            this._fillMissedErrors.call(this, errors, requireds, state, options);
-        }
-
-        if (ordereds.length) {
-            this._fillOrderedErrors.call(this, errors, ordereds, state, options);
-        }
-
-        return errors.length ? errors : null;
-    }
-
-    describe() {
-
-        const description = Any.prototype.describe.call(this);
-
-        if (this._inner.ordereds.length) {
-            description.orderedItems = [];
-
-            for (let i = 0; i < this._inner.ordereds.length; ++i) {
-                description.orderedItems.push(this._inner.ordereds[i].describe());
-            }
-        }
-
-        if (this._inner.items.length) {
-            description.items = [];
-
-            for (let i = 0; i < this._inner.items.length; ++i) {
-                description.items.push(this._inner.items[i].describe());
-            }
-        }
-
-        return description;
-    }
-
-    items() {
-
-        const obj = this.clone();
-
-        Hoek.flatten(Array.prototype.slice.call(arguments)).forEach((type, index) => {
-
-            try {
-                type = Cast.schema(this._currentJoi, type);
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = index + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = index;
-                }
-                castErr.message = castErr.message + '(' + castErr.path + ')';
-                throw castErr;
-            }
-
-            obj._inner.items.push(type);
-
-            if (type._flags.presence === 'required') {
-                obj._inner.requireds.push(type);
-            }
-            else if (type._flags.presence === 'forbidden') {
-                obj._inner.exclusions.push(type.optional());
-            }
-            else {
-                obj._inner.inclusions.push(type);
-            }
-        });
-
-        return obj;
-    }
-
-    ordered() {
-
-        const obj = this.clone();
-
-        Hoek.flatten(Array.prototype.slice.call(arguments)).forEach((type, index) => {
-
-            try {
-                type = Cast.schema(this._currentJoi, type);
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = index + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = index;
-                }
-                castErr.message = castErr.message + '(' + castErr.path + ')';
-                throw castErr;
-            }
-            obj._inner.ordereds.push(type);
-        });
-
-        return obj;
-    }
-
-    min(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length >= compareTo) {
-                return value;
-            }
-
-            return this.createError('array.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length <= compareTo) {
-                return value;
-            }
-
-            return this.createError('array.max', { limit, value }, state, options);
-        });
-    }
-
-    length(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length === compareTo) {
-                return value;
-            }
-
-            return this.createError('array.length', { limit, value }, state, options);
-        });
-    }
-
-    unique(comparator) {
-
-        Hoek.assert(comparator === undefined ||
-            typeof comparator === 'function' ||
-            typeof comparator === 'string', 'comparator must be a function or a string');
-
-        const settings = {};
-
-        if (typeof comparator === 'string') {
-            settings.path = comparator;
-        }
-        else if (typeof comparator === 'function') {
-            settings.comparator = comparator;
-        }
-
-        return this._test('unique', settings, function (value, state, options) {
-
-            const found = {
-                string: {},
-                number: {},
-                undefined: {},
-                boolean: {},
-                object: new Map(),
-                function: new Map(),
-                custom: new Map()
-            };
-
-            const compare = settings.comparator || Hoek.deepEqual;
-
-            for (let i = 0; i < value.length; ++i) {
-                const item = settings.path ? Hoek.reach(value[i], settings.path) : value[i];
-                const records = settings.comparator ? found.custom : found[typeof item];
-
-                // All available types are supported, so it's not possible to reach 100% coverage without ignoring this line.
-                // I still want to keep the test for future js versions with new types (eg. Symbol).
-                if (/* $lab:coverage:off$ */ records /* $lab:coverage:on$ */) {
-                    if (records instanceof Map) {
-                        const entries = records.entries();
-                        let current;
-                        while (!(current = entries.next()).done) {
-                            if (compare(current.value[0], item)) {
-                                const localState = {
-                                    key: state.key,
-                                    path: state.path.concat(i),
-                                    parent: state.parent,
-                                    reference: state.reference
-                                };
-
-                                const context = {
-                                    pos: i,
-                                    value: value[i],
-                                    dupePos: current.value[1],
-                                    dupeValue: value[current.value[1]]
-                                };
-
-                                if (settings.path) {
-                                    context.path = settings.path;
-                                }
-
-                                return this.createError('array.unique', context, localState, options);
-                            }
-                        }
-
-                        records.set(item, i);
-                    }
-                    else {
-                        if (records[item] !== undefined) {
-                            const localState = {
-                                key: state.key,
-                                path: state.path.concat(i),
-                                parent: state.parent,
-                                reference: state.reference
-                            };
-
-                            const context = {
-                                pos: i,
-                                value: value[i],
-                                dupePos: records[item],
-                                dupeValue: value[records[item]]
-                            };
-
-                            if (settings.path) {
-                                context.path = settings.path;
-                            }
-
-                            return this.createError('array.unique', context, localState, options);
-                        }
-
-                        records[item] = i;
-                    }
-                }
-            }
-
-            return value;
-        });
-    }
-
-    sparse(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.sparse === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.sparse = value;
-        return obj;
-    }
-
-    single(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.single === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.single = value;
-        return obj;
-    }
-
-    _fillMissedErrors(errors, requireds, state, options) {
-
-        const knownMisses = [];
-        let unknownMisses = 0;
-        for (let i = 0; i < requireds.length; ++i) {
-            const label = requireds[i]._getLabel();
-            if (label) {
-                knownMisses.push(label);
-            }
-            else {
-                ++unknownMisses;
-            }
-        }
-
-        if (knownMisses.length) {
-            if (unknownMisses) {
-                errors.push(this.createError('array.includesRequiredBoth', { knownMisses, unknownMisses }, { key: state.key, path: state.path }, options));
-            }
-            else {
-                errors.push(this.createError('array.includesRequiredKnowns', { knownMisses }, { key: state.key, path: state.path }, options));
-            }
-        }
-        else {
-            errors.push(this.createError('array.includesRequiredUnknowns', { unknownMisses }, { key: state.key, path: state.path }, options));
-        }
-    }
-
-
-    _fillOrderedErrors(errors, ordereds, state, options) {
-
-        const requiredOrdereds = [];
-
-        for (let i = 0; i < ordereds.length; ++i) {
-            const presence = Hoek.reach(ordereds[i], '_flags.presence');
-            if (presence === 'required') {
-                requiredOrdereds.push(ordereds[i]);
-            }
-        }
-
-        if (requiredOrdereds.length) {
-            this._fillMissedErrors.call(this, errors, requiredOrdereds, state, options);
-        }
-    }
-
-};
-
-
-internals.safeParse = function (value, result) {
-
-    try {
-        const converted = JSON.parse(value);
-        if (Array.isArray(converted)) {
-            result.value = converted;
-        }
-    }
-    catch (e) { }
-};
-
-
-module.exports = new internals.Array();
-
-},{"../../cast":139,"../../ref":143,"../any":147,"hoek":138}],149:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-// Load modules
-
-const Any = require('../any');
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {};
-
-
-internals.Binary = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'binary';
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            try {
-                result.value = new Buffer(value, this._flags.encoding);
-            }
-            catch (e) {
-            }
-        }
-
-        result.errors = Buffer.isBuffer(result.value) ? null : this.createError('binary.base', null, state, options);
-        return result;
-    }
-
-    encoding(encoding) {
-
-        Hoek.assert(Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
-
-        if (this._flags.encoding === encoding) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.encoding = encoding;
-        return obj;
-    }
-
-    min(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            if (value.length >= limit) {
-                return value;
-            }
-
-            return this.createError('binary.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            if (value.length <= limit) {
-                return value;
-            }
-
-            return this.createError('binary.max', { limit, value }, state, options);
-        });
-    }
-
-    length(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            if (value.length === limit) {
-                return value;
-            }
-
-            return this.createError('binary.length', { limit, value }, state, options);
-        });
-    }
-
-};
-
-
-module.exports = new internals.Binary();
-
-}).call(this,require("buffer").Buffer)
-},{"../any":147,"buffer":61,"hoek":138}],150:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Any = require('../any');
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {
-    Set: require('../../set')
-};
-
-
-internals.Boolean = class extends Any {
-    constructor() {
-
-        super();
-        this._type = 'boolean';
-        this._flags.insensitive = true;
-        this._inner.truthySet = new internals.Set();
-        this._inner.falsySet = new internals.Set();
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            const normalized = this._flags.insensitive ? value.toLowerCase() : value;
-            result.value = (normalized === 'true' ? true
-                : (normalized === 'false' ? false : value));
-        }
-
-        if (typeof result.value !== 'boolean') {
-            result.value = (this._inner.truthySet.has(value, null, null, this._flags.insensitive) ? true
-                : (this._inner.falsySet.has(value, null, null, this._flags.insensitive) ? false : value));
-        }
-
-        result.errors = (typeof result.value === 'boolean') ? null : this.createError('boolean.base', null, state, options);
-        return result;
-    }
-
-    truthy() {
-
-        const obj = this.clone();
-        const values = Hoek.flatten(Array.prototype.slice.call(arguments));
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call truthy with undefined');
-            obj._inner.truthySet.add(value);
-        }
-        return obj;
-    }
-
-    falsy() {
-
-        const obj = this.clone();
-        const values = Hoek.flatten(Array.prototype.slice.call(arguments));
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call falsy with undefined');
-            obj._inner.falsySet.add(value);
-        }
-        return obj;
-    }
-
-    insensitive(enabled) {
-
-        const insensitive = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.insensitive === insensitive) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.insensitive = insensitive;
-        return obj;
-    }
-
-    describe() {
-
-        const description = Any.prototype.describe.call(this);
-        description.truthy = [true].concat(this._inner.truthySet.values());
-        description.falsy = [false].concat(this._inner.falsySet.values());
-        return description;
-    }
-};
-
-
-module.exports = new internals.Boolean();
-
-},{"../../set":145,"../any":147,"hoek":138}],151:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Any = require('../any');
-const Ref = require('../../ref');
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {};
-
-internals.isoDate = /^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/;
-internals.invalidDate = new Date('');
-internals.isIsoDate = (() => {
-
-    const isoString = internals.isoDate.toString();
-
-    return (date) => {
-
-        return date && (date.toString() === isoString);
-    };
-})();
-
-internals.Date = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'date';
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value: (options.convert && internals.Date.toDate(value, this._flags.format, this._flags.timestamp, this._flags.multiplier)) || value
-        };
-
-        if (result.value instanceof Date && !isNaN(result.value.getTime())) {
-            result.errors = null;
-        }
-        else if (!options.convert) {
-            result.errors = this.createError('date.strict', null, state, options);
-        }
-        else {
-            let type;
-            if (internals.isIsoDate(this._flags.format)) {
-                type = 'isoDate';
-            }
-            else if (this._flags.timestamp) {
-                type = `timestamp.${this._flags.timestamp}`;
-            }
-            else {
-                type = 'base';
-            }
-
-            result.errors = this.createError(`date.${type}`, null, state, options);
-        }
-
-        return result;
-    }
-
-    static toDate(value, format, timestamp, multiplier) {
-
-        if (value instanceof Date) {
-            return value;
-        }
-
-        if (typeof value === 'string' ||
-            (typeof value === 'number' && !isNaN(value) && isFinite(value))) {
-
-            if (typeof value === 'string' &&
-                /^[+-]?\d+(\.\d+)?$/.test(value)) {
-
-                value = parseFloat(value);
-            }
-
-            let date;
-            if (format && internals.isIsoDate(format)) {
-                date = format.test(value) ? new Date(value) : internals.invalidDate;
-            }
-            else if (timestamp && multiplier) {
-                date = /^\s*$/.test(value) ? internals.invalidDate : new Date(value * multiplier);
-            }
-            else {
-                date = new Date(value);
-            }
-
-            if (!isNaN(date.getTime())) {
-                return date;
-            }
-        }
-
-        return null;
-    }
-
-    iso() {
-
-        if (this._flags.format === internals.isoDate) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.format = internals.isoDate;
-        return obj;
-    }
-
-    timestamp(type) {
-
-        type = type || 'javascript';
-
-        const allowed = ['javascript', 'unix'];
-        Hoek.assert(allowed.indexOf(type) !== -1, '"type" must be one of "' + allowed.join('", "') + '"');
-
-        if (this._flags.timestamp === type) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.timestamp = type;
-        obj._flags.multiplier = type === 'unix' ? 1000 : 1;
-        return obj;
-    }
-
-    _isIsoDate(value) {
-
-        return internals.isoDate.test(value);
-    }
-
-};
-
-internals.compare = function (type, compare) {
-
-    return function (date) {
-
-        const isNow = date === 'now';
-        const isRef = Ref.isRef(date);
-
-        if (!isNow && !isRef) {
-            date = internals.Date.toDate(date);
-        }
-
-        Hoek.assert(date, 'Invalid date format');
-
-        return this._test(type, date, function (value, state, options) {
-
-            let compareTo;
-            if (isNow) {
-                compareTo = Date.now();
-            }
-            else if (isRef) {
-                compareTo = internals.Date.toDate(date(state.reference || state.parent, options));
-
-                if (!compareTo) {
-                    return this.createError('date.ref', { ref: date.key }, state, options);
-                }
-
-                compareTo = compareTo.getTime();
-            }
-            else {
-                compareTo = date.getTime();
-            }
-
-            if (compare(value.getTime(), compareTo)) {
-                return value;
-            }
-
-            return this.createError('date.' + type, { limit: new Date(compareTo) }, state, options);
-        });
-    };
-};
-internals.Date.prototype.min = internals.compare('min', (value, date) => value >= date);
-internals.Date.prototype.max = internals.compare('max', (value, date) => value <= date);
-
-
-module.exports = new internals.Date();
-
-},{"../../ref":143,"../any":147,"hoek":138}],152:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const ObjectType = require('../object');
-const Ref = require('../../ref');
-
-
-// Declare internals
-
-const internals = {};
-
-
-internals.Func = class extends ObjectType.constructor {
-
-    constructor() {
-
-        super();
-        this._flags.func = true;
-    }
-
-    arity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
-
-        return this._test('arity', n, function (value, state, options) {
-
-            if (value.length === n) {
-                return value;
-            }
-
-            return this.createError('function.arity', { n }, state, options);
-        });
-    }
-
-    minArity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n > 0, 'n must be a strict positive integer');
-
-        return this._test('minArity', n, function (value, state, options) {
-
-            if (value.length >= n) {
-                return value;
-            }
-
-            return this.createError('function.minArity', { n }, state, options);
-        });
-    }
-
-    maxArity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
-
-        return this._test('maxArity', n, function (value, state, options) {
-
-            if (value.length <= n) {
-                return value;
-            }
-
-            return this.createError('function.maxArity', { n }, state, options);
-        });
-    }
-
-    ref() {
-
-        return this._test('ref', null, function (value, state, options) {
-
-            if (Ref.isRef(value)) {
-                return value;
-            }
-
-            return this.createError('function.ref', null, state, options);
-        });
-    }
-
-    class() {
-
-        return this._test('class', null, function (value, state, options) {
-
-            if ((/^\s*class\s/).test(value.toString())) {
-                return value;
-            }
-
-            return this.createError('function.class', null, state, options);
-        });
-    }
-};
-
-module.exports = new internals.Func();
-
-},{"../../ref":143,"../object":155,"hoek":138}],153:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Any = require('../any');
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {};
-
-
-internals.Lazy = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'lazy';
-    }
-
-    _base(value, state, options) {
-
-        const result = { value };
-        const lazy = this._flags.lazy;
-
-        if (!lazy) {
-            result.errors = this.createError('lazy.base', null, state, options);
-            return result;
-        }
-
-        const schema = lazy();
-
-        if (!(schema instanceof Any)) {
-            result.errors = this.createError('lazy.schema', null, state, options);
-            return result;
-        }
-
-        return schema._validate(value, state, options);
-    }
-
-    set(fn) {
-
-        Hoek.assert(typeof fn === 'function', 'You must provide a function as first argument');
-
-        const obj = this.clone();
-        obj._flags.lazy = fn;
-        return obj;
-    }
-
-};
-
-module.exports = new internals.Lazy();
-
-},{"../any":147,"hoek":138}],154:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Any = require('../any');
-const Ref = require('../../ref');
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {
-    precisionRx: /(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/
-};
-
-
-internals.Number = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'number';
-        this._invalids.add(Infinity);
-        this._invalids.add(-Infinity);
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            errors: null,
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            const number = parseFloat(value);
-            result.value = (isNaN(number) || !isFinite(value)) ? NaN : number;
-        }
-
-        const isNumber = typeof result.value === 'number' && !isNaN(result.value);
-
-        if (options.convert && 'precision' in this._flags && isNumber) {
-
-            // This is conceptually equivalent to using toFixed but it should be much faster
-            const precision = Math.pow(10, this._flags.precision);
-            result.value = Math.round(result.value * precision) / precision;
-        }
-
-        result.errors = isNumber ? null : this.createError('number.base', null, state, options);
-        return result;
-    }
-
-    multiple(base) {
-
-        const isRef = Ref.isRef(base);
-
-        if (!isRef) {
-            Hoek.assert(typeof base === 'number' && isFinite(base), 'multiple must be a number');
-            Hoek.assert(base > 0, 'multiple must be greater than 0');
-        }
-
-        return this._test('multiple', base, function (value, state, options) {
-
-            const divisor = isRef ? base(state.reference || state.parent, options) : base;
-
-            if (isRef && (typeof divisor !== 'number' || !isFinite(divisor))) {
-                return this.createError('number.ref', { ref: base.key }, state, options);
-            }
-
-            if (value % divisor === 0) {
-                return value;
-            }
-
-            return this.createError('number.multiple', { multiple: base, value }, state, options);
-        });
-    }
-
-    integer() {
-
-        return this._test('integer', undefined, function (value, state, options) {
-
-            return Number.isSafeInteger(value) ? value : this.createError('number.integer', { value }, state, options);
-        });
-    }
-
-    negative() {
-
-        return this._test('negative', undefined, function (value, state, options) {
-
-            if (value < 0) {
-                return value;
-            }
-
-            return this.createError('number.negative', { value }, state, options);
-        });
-    }
-
-    positive() {
-
-        return this._test('positive', undefined, function (value, state, options) {
-
-            if (value > 0) {
-                return value;
-            }
-
-            return this.createError('number.positive', { value }, state, options);
-        });
-    }
-
-    precision(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit), 'limit must be an integer');
-        Hoek.assert(!('precision' in this._flags), 'precision already set');
-
-        const obj = this._test('precision', limit, function (value, state, options) {
-
-            const places = value.toString().match(internals.precisionRx);
-            const decimals = Math.max((places[1] ? places[1].length : 0) - (places[2] ? parseInt(places[2], 10) : 0), 0);
-            if (decimals <= limit) {
-                return value;
-            }
-
-            return this.createError('number.precision', { limit, value }, state, options);
-        });
-
-        obj._flags.precision = limit;
-        return obj;
-    }
-
-};
-
-
-internals.compare = function (type, compare) {
-
-    return function (limit) {
-
-        const isRef = Ref.isRef(limit);
-        const isNumber = typeof limit === 'number' && !isNaN(limit);
-
-        Hoek.assert(isNumber || isRef, 'limit must be a number or reference');
-
-        return this._test(type, limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(typeof compareTo === 'number' && !isNaN(compareTo))) {
-                    return this.createError('number.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (compare(value, compareTo)) {
-                return value;
-            }
-
-            return this.createError('number.' + type, { limit: compareTo, value }, state, options);
-        });
-    };
-};
-
-
-internals.Number.prototype.min = internals.compare('min', (value, limit) => value >= limit);
-internals.Number.prototype.max = internals.compare('max', (value, limit) => value <= limit);
-internals.Number.prototype.greater = internals.compare('greater', (value, limit) => value > limit);
-internals.Number.prototype.less = internals.compare('less', (value, limit) => value < limit);
-
-
-module.exports = new internals.Number();
-
-},{"../../ref":143,"../any":147,"hoek":138}],155:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-const Topo = require('topo');
-const Any = require('../any');
-const Errors = require('../../errors');
-const Cast = require('../../cast');
-
-
-// Declare internals
-
-const internals = {};
-
-
-internals.Object = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'object';
-        this._inner.children = null;
-        this._inner.renames = [];
-        this._inner.dependencies = [];
-        this._inner.patterns = [];
-    }
-
-    _base(value, state, options) {
-
-        let target = value;
-        const errors = [];
-        const finish = () => {
-
-            return {
-                value: target,
-                errors: errors.length ? errors : null
-            };
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            value = internals.safeParse(value);
-        }
-
-        const type = this._flags.func ? 'function' : 'object';
-        if (!value ||
-            typeof value !== type ||
-            Array.isArray(value)) {
-
-            errors.push(this.createError(type + '.base', null, state, options));
-            return finish();
-        }
-
-        // Skip if there are no other rules to test
-
-        if (!this._inner.renames.length &&
-            !this._inner.dependencies.length &&
-            !this._inner.children &&                    // null allows any keys
-            !this._inner.patterns.length) {
-
-            target = value;
-            return finish();
-        }
-
-        // Ensure target is a local copy (parsed) or shallow copy
-
-        if (target === value) {
-            if (type === 'object') {
-                target = Object.create(Object.getPrototypeOf(value));
-            }
-            else {
-                target = function () {
-
-                    return value.apply(this, arguments);
-                };
-
-                target.prototype = Hoek.clone(value.prototype);
-            }
-
-            const valueKeys = Object.keys(value);
-            for (let i = 0; i < valueKeys.length; ++i) {
-                target[valueKeys[i]] = value[valueKeys[i]];
-            }
-        }
-        else {
-            target = value;
-        }
-
-        // Rename keys
-
-        const renamed = {};
-        for (let i = 0; i < this._inner.renames.length; ++i) {
-            const rename = this._inner.renames[i];
-
-            if (rename.isRegExp) {
-                const targetKeys = Object.keys(target);
-                const matchedTargetKeys = [];
-
-                for (let j = 0; j < targetKeys.length; ++j) {
-                    if (rename.from.test(targetKeys[j])) {
-                        matchedTargetKeys.push(targetKeys[j]);
-                    }
-                }
-
-                const allUndefined = matchedTargetKeys.every((key) => target[key] === undefined);
-                if (rename.options.ignoreUndefined && allUndefined) {
-                    continue;
-                }
-
-                if (!rename.options.multiple &&
-                    renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.regex.multiple', { from: matchedTargetKeys, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
-                    !rename.options.override &&
-                    !renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.regex.override', { from: matchedTargetKeys, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (allUndefined) {
-                    delete target[rename.to];
-                }
-                else {
-                    target[rename.to] = target[matchedTargetKeys[matchedTargetKeys.length - 1]];
-                }
-
-                renamed[rename.to] = true;
-
-                if (!rename.options.alias) {
-                    for (let j = 0; j < matchedTargetKeys.length; ++j) {
-                        delete target[matchedTargetKeys[j]];
-                    }
-                }
-            }
-            else {
-                if (rename.options.ignoreUndefined && target[rename.from] === undefined) {
-                    continue;
-                }
-
-                if (!rename.options.multiple &&
-                    renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.multiple', { from: rename.from, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
-                    !rename.options.override &&
-                    !renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.override', { from: rename.from, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (target[rename.from] === undefined) {
-                    delete target[rename.to];
-                }
-                else {
-                    target[rename.to] = target[rename.from];
-                }
-
-                renamed[rename.to] = true;
-
-                if (!rename.options.alias) {
-                    delete target[rename.from];
-                }
-            }
-        }
-
-        // Validate schema
-
-        if (!this._inner.children &&            // null allows any keys
-            !this._inner.patterns.length &&
-            !this._inner.dependencies.length) {
-
-            return finish();
-        }
-
-        const unprocessed = Hoek.mapToObject(Object.keys(target));
-
-        if (this._inner.children) {
-            const stripProps = [];
-
-            for (let i = 0; i < this._inner.children.length; ++i) {
-                const child = this._inner.children[i];
-                const key = child.key;
-                const item = target[key];
-
-                delete unprocessed[key];
-
-                const localState = { key, path: state.path.concat(key), parent: target, reference: state.reference };
-                const result = child.schema._validate(item, localState, options);
-                if (result.errors) {
-                    errors.push(this.createError('object.child', { key, child: child.schema._getLabel(key), reason: result.errors }, localState, options));
-
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-                else {
-                    if (child.schema._flags.strip || (result.value === undefined && result.value !== item)) {
-                        stripProps.push(key);
-                        target[key] = result.finalValue;
-                    }
-                    else if (result.value !== undefined) {
-                        target[key] = result.value;
-                    }
-                }
-            }
-
-            for (let i = 0; i < stripProps.length; ++i) {
-                delete target[stripProps[i]];
-            }
-        }
-
-        // Unknown keys
-
-        let unprocessedKeys = Object.keys(unprocessed);
-        if (unprocessedKeys.length &&
-            this._inner.patterns.length) {
-
-            for (let i = 0; i < unprocessedKeys.length; ++i) {
-                const key = unprocessedKeys[i];
-                const localState = { key, path: state.path.concat(key), parent: target, reference: state.reference };
-                const item = target[key];
-
-                for (let j = 0; j < this._inner.patterns.length; ++j) {
-                    const pattern = this._inner.patterns[j];
-
-                    if (pattern.regex.test(key)) {
-                        delete unprocessed[key];
-
-                        const result = pattern.rule._validate(item, localState, options);
-                        if (result.errors) {
-                            errors.push(this.createError('object.child', { key, child: pattern.rule._getLabel(key), reason: result.errors }, localState, options));
-
-                            if (options.abortEarly) {
-                                return finish();
-                            }
-                        }
-
-                        if (result.value !== undefined) {
-                            target[key] = result.value;
-                        }
-                    }
-                }
-            }
-
-            unprocessedKeys = Object.keys(unprocessed);
-        }
-
-        if ((this._inner.children || this._inner.patterns.length) && unprocessedKeys.length) {
-            if ((options.stripUnknown && this._flags.allowUnknown !== true) ||
-                options.skipFunctions) {
-
-                const stripUnknown = options.stripUnknown
-                    ? (options.stripUnknown === true ? true : !!options.stripUnknown.objects)
-                    : false;
-
-
-                for (let i = 0; i < unprocessedKeys.length; ++i) {
-                    const key = unprocessedKeys[i];
-
-                    if (stripUnknown) {
-                        delete target[key];
-                        delete unprocessed[key];
-                    }
-                    else if (typeof target[key] === 'function') {
-                        delete unprocessed[key];
-                    }
-                }
-
-                unprocessedKeys = Object.keys(unprocessed);
-            }
-
-            if (unprocessedKeys.length &&
-                (this._flags.allowUnknown !== undefined ? !this._flags.allowUnknown : !options.allowUnknown)) {
-
-                for (let i = 0; i < unprocessedKeys.length; ++i) {
-                    const unprocessedKey = unprocessedKeys[i];
-                    errors.push(this.createError('object.allowUnknown', { child: unprocessedKey }, { key: unprocessedKey, path: state.path.concat(unprocessedKey) }, options, {}));
-                }
-            }
-        }
-
-        // Validate dependencies
-
-        for (let i = 0; i < this._inner.dependencies.length; ++i) {
-            const dep = this._inner.dependencies[i];
-            const err = internals[dep.type].call(this, dep.key !== null && target[dep.key], dep.peers, target, { key: dep.key, path: dep.key === null ? state.path : state.path.concat(dep.key) }, options);
-            if (err instanceof Errors.Err) {
-                errors.push(err);
-                if (options.abortEarly) {
-                    return finish();
-                }
-            }
-        }
-
-        return finish();
-    }
-
-    keys(schema) {
-
-        Hoek.assert(schema === null || schema === undefined || typeof schema === 'object', 'Object schema must be a valid object');
-        Hoek.assert(!schema || !(schema instanceof Any), 'Object schema cannot be a joi schema');
-
-        const obj = this.clone();
-
-        if (!schema) {
-            obj._inner.children = null;
-            return obj;
-        }
-
-        const children = Object.keys(schema);
-
-        if (!children.length) {
-            obj._inner.children = [];
-            return obj;
-        }
-
-        const topo = new Topo();
-        if (obj._inner.children) {
-            for (let i = 0; i < obj._inner.children.length; ++i) {
-                const child = obj._inner.children[i];
-
-                // Only add the key if we are not going to replace it later
-                if (children.indexOf(child.key) === -1) {
-                    topo.add(child, { after: child._refs, group: child.key });
-                }
-            }
-        }
-
-        for (let i = 0; i < children.length; ++i) {
-            const key = children[i];
-            const child = schema[key];
-            try {
-                const cast = Cast.schema(this._currentJoi, child);
-                topo.add({ key, schema: cast }, { after: cast._refs, group: key });
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = key + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = key;
-                }
-                throw castErr;
-            }
-        }
-
-        obj._inner.children = topo.nodes;
-
-        return obj;
-    }
-
-    unknown(allow) {
-
-        const value = allow !== false;
-
-        if (this._flags.allowUnknown === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.allowUnknown = value;
-        return obj;
-    }
-
-    length(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            if (Object.keys(value).length === limit) {
-                return value;
-            }
-
-            return this.createError('object.length', { limit }, state, options);
-        });
-    }
-
-    min(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            if (Object.keys(value).length >= limit) {
-                return value;
-            }
-
-            return this.createError('object.min', { limit }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            if (Object.keys(value).length <= limit) {
-                return value;
-            }
-
-            return this.createError('object.max', { limit }, state, options);
-        });
-    }
-
-    pattern(pattern, schema) {
-
-        Hoek.assert(pattern instanceof RegExp, 'Invalid regular expression');
-        Hoek.assert(schema !== undefined, 'Invalid rule');
-
-        pattern = new RegExp(pattern.source, pattern.ignoreCase ? 'i' : undefined);         // Future version should break this and forbid unsupported regex flags
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = castErr.message + '(' + castErr.path + ')';
-            }
-
-            throw castErr;
-        }
-
-
-        const obj = this.clone();
-        obj._inner.patterns.push({ regex: pattern, rule: schema });
-        return obj;
-    }
-
-    schema() {
-
-        return this._test('schema', null, function (value, state, options) {
-
-            if (value instanceof Any) {
-                return value;
-            }
-
-            return this.createError('object.schema', null, state, options);
-        });
-    }
-
-    with(key, peers) {
-
-        return this._dependency('with', key, peers);
-    }
-
-    without(key, peers) {
-
-        return this._dependency('without', key, peers);
-    }
-
-    xor() {
-
-        const peers = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this._dependency('xor', null, peers);
-    }
-
-    or() {
-
-        const peers = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this._dependency('or', null, peers);
-    }
-
-    and() {
-
-        const peers = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this._dependency('and', null, peers);
-    }
-
-    nand() {
-
-        const peers = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this._dependency('nand', null, peers);
-    }
-
-    requiredKeys(children) {
-
-        children = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this.applyFunctionToChildren(children, 'required');
-    }
-
-    optionalKeys(children) {
-
-        children = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this.applyFunctionToChildren(children, 'optional');
-    }
-
-    forbiddenKeys(children) {
-
-        children = Hoek.flatten(Array.prototype.slice.call(arguments));
-        return this.applyFunctionToChildren(children, 'forbidden');
-    }
-
-    rename(from, to, options) {
-
-        Hoek.assert(typeof from === 'string' || from instanceof RegExp, 'Rename missing the from argument');
-        Hoek.assert(typeof to === 'string', 'Rename missing the to argument');
-        Hoek.assert(to !== from, 'Cannot rename key to same name:', from);
-
-        for (let i = 0; i < this._inner.renames.length; ++i) {
-            Hoek.assert(this._inner.renames[i].from !== from, 'Cannot rename the same key multiple times');
-        }
-
-        const obj = this.clone();
-
-        obj._inner.renames.push({
-            from,
-            to,
-            options: Hoek.applyToDefaults(internals.renameDefaults, options || {}),
-            isRegExp: from instanceof RegExp
-        });
-
-        return obj;
-    }
-
-    applyFunctionToChildren(children, fn, args, root) {
-
-        children = [].concat(children);
-        Hoek.assert(children.length > 0, 'expected at least one children');
-
-        const groupedChildren = internals.groupChildren(children);
-        let obj;
-
-        if ('' in groupedChildren) {
-            obj = this[fn].apply(this, args);
-            delete groupedChildren[''];
-        }
-        else {
-            obj = this.clone();
-        }
-
-        if (obj._inner.children) {
-            root = root ? (root + '.') : '';
-
-            for (let i = 0; i < obj._inner.children.length; ++i) {
-                const child = obj._inner.children[i];
-                const group = groupedChildren[child.key];
-
-                if (group) {
-                    obj._inner.children[i] = {
-                        key: child.key,
-                        _refs: child._refs,
-                        schema: child.schema.applyFunctionToChildren(group, fn, args, root + child.key)
-                    };
-
-                    delete groupedChildren[child.key];
-                }
-            }
-        }
-
-        const remaining = Object.keys(groupedChildren);
-        Hoek.assert(remaining.length === 0, 'unknown key(s)', remaining.join(', '));
-
-        return obj;
-    }
-
-    _dependency(type, key, peers) {
-
-        peers = [].concat(peers);
-        for (let i = 0; i < peers.length; ++i) {
-            Hoek.assert(typeof peers[i] === 'string', type, 'peers must be a string or array of strings');
-        }
-
-        const obj = this.clone();
-        obj._inner.dependencies.push({ type, key, peers });
-        return obj;
-    }
-
-    describe(shallow) {
-
-        const description = Any.prototype.describe.call(this);
-
-        if (description.rules) {
-            for (let i = 0; i < description.rules.length; ++i) {
-                const rule = description.rules[i];
-                // Coverage off for future-proof descriptions, only object().assert() is use right now
-                if (/* $lab:coverage:off$ */rule.arg &&
-                    typeof rule.arg === 'object' &&
-                    rule.arg.schema &&
-                    rule.arg.ref /* $lab:coverage:on$ */) {
-                    rule.arg = {
-                        schema: rule.arg.schema.describe(),
-                        ref: rule.arg.ref.toString()
-                    };
-                }
-            }
-        }
-
-        if (this._inner.children &&
-            !shallow) {
-
-            description.children = {};
-            for (let i = 0; i < this._inner.children.length; ++i) {
-                const child = this._inner.children[i];
-                description.children[child.key] = child.schema.describe();
-            }
-        }
-
-        if (this._inner.dependencies.length) {
-            description.dependencies = Hoek.clone(this._inner.dependencies);
-        }
-
-        if (this._inner.patterns.length) {
-            description.patterns = [];
-
-            for (let i = 0; i < this._inner.patterns.length; ++i) {
-                const pattern = this._inner.patterns[i];
-                description.patterns.push({ regex: pattern.regex.toString(), rule: pattern.rule.describe() });
-            }
-        }
-
-        if (this._inner.renames.length > 0) {
-            description.renames = Hoek.clone(this._inner.renames);
-        }
-
-        return description;
-    }
-
-    assert(ref, schema, message) {
-
-        ref = Cast.ref(ref);
-        Hoek.assert(ref.isContext || ref.depth > 1, 'Cannot use assertions for root level references - use direct key rules instead');
-        message = message || 'pass the assertion test';
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = castErr.message + '(' + castErr.path + ')';
-            }
-
-            throw castErr;
-        }
-
-        const key = ref.path[ref.path.length - 1];
-        const path = ref.path.join('.');
-
-        return this._test('assert', { schema, ref }, function (value, state, options) {
-
-            const result = schema._validate(ref(value), null, options, value);
-            if (!result.errors) {
-                return value;
-            }
-
-            const localState = Hoek.merge({}, state);
-            localState.key = key;
-            localState.path = ref.path;
-            return this.createError('object.assert', { ref: path, message }, localState, options);
-        });
-    }
-
-    type(constructor, name) {
-
-        Hoek.assert(typeof constructor === 'function', 'type must be a constructor function');
-        const typeData = {
-            name: name || constructor.name,
-            ctor: constructor
-        };
-
-        return this._test('type', typeData, function (value, state, options) {
-
-            if (value instanceof constructor) {
-                return value;
-            }
-
-            return this.createError('object.type', { type: typeData.name }, state, options);
-        });
-    }
-};
-
-internals.safeParse = function (value) {
-
-    try {
-        return JSON.parse(value);
-    }
-    catch (parseErr) {}
-
-    return value;
-};
-
-
-internals.renameDefaults = {
-    alias: false,                   // Keep old value in place
-    multiple: false,                // Allow renaming multiple keys into the same target
-    override: false                 // Overrides an existing key
-};
-
-
-internals.groupChildren = function (children) {
-
-    children.sort();
-
-    const grouped = {};
-
-    for (let i = 0; i < children.length; ++i) {
-        const child = children[i];
-        Hoek.assert(typeof child === 'string', 'children must be strings');
-        const group = child.split('.')[0];
-        const childGroup = grouped[group] = (grouped[group] || []);
-        childGroup.push(child.substring(group.length + 1));
-    }
-
-    return grouped;
-};
-
-
-internals.keysToLabels = function (schema, keys) {
-
-    const children = schema._inner.children;
-
-    if (!children) {
-        return keys;
-    }
-
-    const findLabel = function (key) {
-
-        const matchingChild = children.find((child) => child.key === key);
-        return matchingChild ? matchingChild.schema._getLabel(key) : key;
-    };
-
-    if (Array.isArray(keys)) {
-        return keys.map(findLabel);
-    }
-
-    return findLabel(keys);
-};
-
-
-internals.with = function (value, peers, parent, state, options) {
-
-    if (value === undefined) {
-        return value;
-    }
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        if (!Object.prototype.hasOwnProperty.call(parent, peer) ||
-            parent[peer] === undefined) {
-
-            return this.createError('object.with', {
-                main: state.key,
-                mainWithLabel: internals.keysToLabels(this, state.key),
-                peer,
-                peerWithLabel: internals.keysToLabels(this, peer)
-            }, state, options);
-        }
-    }
-
-    return value;
-};
-
-
-internals.without = function (value, peers, parent, state, options) {
-
-    if (value === undefined) {
-        return value;
-    }
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        if (Object.prototype.hasOwnProperty.call(parent, peer) &&
-            parent[peer] !== undefined) {
-
-            return this.createError('object.without', {
-                main: state.key,
-                mainWithLabel: internals.keysToLabels(this, state.key),
-                peer,
-                peerWithLabel: internals.keysToLabels(this, peer)
-            }, state, options);
-        }
-    }
-
-    return value;
-};
-
-
-internals.xor = function (value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        if (Object.prototype.hasOwnProperty.call(parent, peer) &&
-            parent[peer] !== undefined) {
-
-            present.push(peer);
-        }
-    }
-
-    if (present.length === 1) {
-        return value;
-    }
-
-    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
-
-    if (present.length === 0) {
-        return this.createError('object.missing', context, state, options);
-    }
-
-    return this.createError('object.xor', context, state, options);
-};
-
-
-internals.or = function (value, peers, parent, state, options) {
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        if (Object.prototype.hasOwnProperty.call(parent, peer) &&
-            parent[peer] !== undefined) {
-            return value;
-        }
-    }
-
-    return this.createError('object.missing', {
-        peers,
-        peersWithLabels: internals.keysToLabels(this, peers)
-    }, state, options);
-};
-
-
-internals.and = function (value, peers, parent, state, options) {
-
-    const missing = [];
-    const present = [];
-    const count = peers.length;
-    for (let i = 0; i < count; ++i) {
-        const peer = peers[i];
-        if (!Object.prototype.hasOwnProperty.call(parent, peer) ||
-            parent[peer] === undefined) {
-
-            missing.push(peer);
-        }
-        else {
-            present.push(peer);
-        }
-    }
-
-    const aon = (missing.length === count || present.length === count);
-
-    if (!aon) {
-
-        return this.createError('object.and', {
-            present,
-            presentWithLabels: internals.keysToLabels(this, present),
-            missing,
-            missingWithLabels: internals.keysToLabels(this, missing)
-        }, state, options);
-    }
-};
-
-
-internals.nand = function (value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        if (Object.prototype.hasOwnProperty.call(parent, peer) &&
-            parent[peer] !== undefined) {
-
-            present.push(peer);
-        }
-    }
-
-    const values = Hoek.clone(peers);
-    const main = values.splice(0, 1)[0];
-    const allPresent = (present.length === peers.length);
-    return allPresent ? this.createError('object.nand', {
-        main,
-        mainWithLabel: internals.keysToLabels(this, main),
-        peers: values,
-        peersWithLabels: internals.keysToLabels(this, values)
-    }, state, options) : null;
-};
-
-
-module.exports = new internals.Object();
-
-},{"../../cast":139,"../../errors":140,"../any":147,"hoek":138,"topo":161}],156:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-// Load modules
-
-const Net = require('net');
-const Hoek = require('hoek');
-let Isemail;                            // Loaded on demand
-const Any = require('../any');
-const Ref = require('../../ref');
-const JoiDate = require('../date');
-const Uri = require('./uri');
-const Ip = require('./ip');
-
-// Declare internals
-
-const internals = {
-    uriRegex: Uri.createUriRegex(),
-    ipRegex: Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], 'optional'),
-    guidBrackets: {
-        '{': '}', '[': ']', '(': ')', '': ''
-    },
-    guidVersions: {
-        uuidv1: '1',
-        uuidv2: '2',
-        uuidv3: '3',
-        uuidv4: '4',
-        uuidv5: '5'
-    },
-    cidrPresences: ['required', 'optional', 'forbidden'],
-    normalizationForms: ['NFC', 'NFD', 'NFKC', 'NFKD']
-};
-
-internals.String = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'string';
-        this._invalids.add('');
-    }
-
-    _base(value, state, options) {
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (this._flags.normalize) {
-                value = value.normalize(this._flags.normalize);
-            }
-
-            if (this._flags.case) {
-                value = (this._flags.case === 'upper' ? value.toLocaleUpperCase() : value.toLocaleLowerCase());
-            }
-
-            if (this._flags.trim) {
-                value = value.trim();
-            }
-
-            if (this._inner.replacements) {
-
-                for (let i = 0; i < this._inner.replacements.length; ++i) {
-                    const replacement = this._inner.replacements[i];
-                    value = value.replace(replacement.pattern, replacement.replacement);
-                }
-            }
-
-            if (this._flags.truncate) {
-                for (let i = 0; i < this._tests.length; ++i) {
-                    const test = this._tests[i];
-                    if (test.name === 'max') {
-                        value = value.slice(0, test.arg);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return {
-            value,
-            errors: (typeof value === 'string') ? null : this.createError('string.base', { value }, state, options)
-        };
-    }
-
-    insensitive() {
-
-        if (this._flags.insensitive) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.insensitive = true;
-        return obj;
-    }
-
-    creditCard() {
-
-        return this._test('creditCard', undefined, function (value, state, options) {
-
-            let i = value.length;
-            let sum = 0;
-            let mul = 1;
-
-            while (i--) {
-                const char = value.charAt(i) * mul;
-                sum = sum + (char - (char > 9) * 9);
-                mul = mul ^ 3;
-            }
-
-            const check = (sum % 10 === 0) && (sum > 0);
-            return check ? value : this.createError('string.creditCard', { value }, state, options);
-        });
-    }
-
-    regex(pattern, patternOptions) {
-
-        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
-
-        const patternObject = {
-            pattern: new RegExp(pattern.source, pattern.ignoreCase ? 'i' : undefined)         // Future version should break this and forbid unsupported regex flags
-        };
-
-        if (typeof patternOptions === 'string') {
-            patternObject.name = patternOptions;
-        }
-        else if (typeof patternOptions === 'object') {
-            patternObject.invert = !!patternOptions.invert;
-
-            if (patternOptions.name) {
-                patternObject.name = patternOptions.name;
-            }
-        }
-
-        const errorCode = ['string.regex', patternObject.invert ? '.invert' : '', patternObject.name ? '.name' : '.base'].join('');
-
-        return this._test('regex', patternObject, function (value, state, options) {
-
-            const patternMatch = patternObject.pattern.test(value);
-
-            if (patternMatch ^ patternObject.invert) {
-                return value;
-            }
-
-            return this.createError(errorCode, { name: patternObject.name, pattern: patternObject.pattern, value }, state, options);
-        });
-    }
-
-    alphanum() {
-
-        return this._test('alphanum', undefined, function (value, state, options) {
-
-            if (/^[a-zA-Z0-9]+$/.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.alphanum', { value }, state, options);
-        });
-    }
-
-    token() {
-
-        return this._test('token', undefined, function (value, state, options) {
-
-            if (/^\w+$/.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.token', { value }, state, options);
-        });
-    }
-
-    email(isEmailOptions) {
-
-        if (isEmailOptions) {
-            Hoek.assert(typeof isEmailOptions === 'object', 'email options must be an object');
-            Hoek.assert(typeof isEmailOptions.checkDNS === 'undefined', 'checkDNS option is not supported');
-            Hoek.assert(typeof isEmailOptions.tldWhitelist === 'undefined' ||
-                typeof isEmailOptions.tldWhitelist === 'object', 'tldWhitelist must be an array or object');
-            Hoek.assert(
-                typeof isEmailOptions.minDomainAtoms === 'undefined' ||
-                Number.isSafeInteger(isEmailOptions.minDomainAtoms) &&
-                isEmailOptions.minDomainAtoms > 0,
-                'minDomainAtoms must be a positive integer'
-            );
-            Hoek.assert(
-                typeof isEmailOptions.errorLevel === 'undefined' ||
-                typeof isEmailOptions.errorLevel === 'boolean' ||
-                (
-                    Number.isSafeInteger(isEmailOptions.errorLevel) &&
-                    isEmailOptions.errorLevel >= 0
-                ),
-                'errorLevel must be a non-negative integer or boolean'
-            );
-        }
-
-        return this._test('email', isEmailOptions, function (value, state, options) {
-
-            Isemail = Isemail || require('isemail');
-
-            try {
-                const result = Isemail.validate(value, isEmailOptions);
-                if (result === true || result === 0) {
-                    return value;
-                }
-            }
-            catch (e) { }
-
-            return this.createError('string.email', { value }, state, options);
-        });
-    }
-
-    ip(ipOptions) {
-
-        let regex = internals.ipRegex;
-        ipOptions = ipOptions || {};
-        Hoek.assert(typeof ipOptions === 'object', 'options must be an object');
-
-        if (ipOptions.cidr) {
-            Hoek.assert(typeof ipOptions.cidr === 'string', 'cidr must be a string');
-            ipOptions.cidr = ipOptions.cidr.toLowerCase();
-
-            Hoek.assert(Hoek.contain(internals.cidrPresences, ipOptions.cidr), 'cidr must be one of ' + internals.cidrPresences.join(', '));
-
-            // If we only received a `cidr` setting, create a regex for it. But we don't need to create one if `cidr` is "optional" since that is the default
-            if (!ipOptions.version && ipOptions.cidr !== 'optional') {
-                regex = Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], ipOptions.cidr);
-            }
-        }
-        else {
-
-            // Set our default cidr strategy
-            ipOptions.cidr = 'optional';
-        }
-
-        let versions;
-        if (ipOptions.version) {
-            if (!Array.isArray(ipOptions.version)) {
-                ipOptions.version = [ipOptions.version];
-            }
-
-            Hoek.assert(ipOptions.version.length >= 1, 'version must have at least 1 version specified');
-
-            versions = [];
-            for (let i = 0; i < ipOptions.version.length; ++i) {
-                let version = ipOptions.version[i];
-                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
-                version = version.toLowerCase();
-                Hoek.assert(Ip.versions[version], 'version at position ' + i + ' must be one of ' + Object.keys(Ip.versions).join(', '));
-                versions.push(version);
-            }
-
-            // Make sure we have a set of versions
-            versions = Hoek.unique(versions);
-
-            regex = Ip.createIpRegex(versions, ipOptions.cidr);
-        }
-
-        return this._test('ip', ipOptions, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            if (versions) {
-                return this.createError('string.ipVersion', { value, cidr: ipOptions.cidr, version: versions }, state, options);
-            }
-
-            return this.createError('string.ip', { value, cidr: ipOptions.cidr }, state, options);
-        });
-    }
-
-    uri(uriOptions) {
-
-        let customScheme = '';
-        let allowRelative = false;
-        let relativeOnly = false;
-        let regex = internals.uriRegex;
-
-        if (uriOptions) {
-            Hoek.assert(typeof uriOptions === 'object', 'options must be an object');
-
-            if (uriOptions.scheme) {
-                Hoek.assert(uriOptions.scheme instanceof RegExp || typeof uriOptions.scheme === 'string' || Array.isArray(uriOptions.scheme), 'scheme must be a RegExp, String, or Array');
-
-                if (!Array.isArray(uriOptions.scheme)) {
-                    uriOptions.scheme = [uriOptions.scheme];
-                }
-
-                Hoek.assert(uriOptions.scheme.length >= 1, 'scheme must have at least 1 scheme specified');
-
-                // Flatten the array into a string to be used to match the schemes.
-                for (let i = 0; i < uriOptions.scheme.length; ++i) {
-                    const scheme = uriOptions.scheme[i];
-                    Hoek.assert(scheme instanceof RegExp || typeof scheme === 'string', 'scheme at position ' + i + ' must be a RegExp or String');
-
-                    // Add OR separators if a value already exists
-                    customScheme = customScheme + (customScheme ? '|' : '');
-
-                    // If someone wants to match HTTP or HTTPS for example then we need to support both RegExp and String so we don't escape their pattern unknowingly.
-                    if (scheme instanceof RegExp) {
-                        customScheme = customScheme + scheme.source;
-                    }
-                    else {
-                        Hoek.assert(/[a-zA-Z][a-zA-Z0-9+-\.]*/.test(scheme), 'scheme at position ' + i + ' must be a valid scheme');
-                        customScheme = customScheme + Hoek.escapeRegex(scheme);
-                    }
-                }
-            }
-
-            if (uriOptions.allowRelative) {
-                allowRelative = true;
-            }
-
-            if (uriOptions.relativeOnly) {
-                relativeOnly = true;
-            }
-        }
-
-        if (customScheme || allowRelative || relativeOnly) {
-            regex = Uri.createUriRegex(customScheme, allowRelative, relativeOnly);
-        }
-
-        return this._test('uri', uriOptions, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            if (relativeOnly) {
-                return this.createError('string.uriRelativeOnly', { value }, state, options);
-            }
-
-            if (customScheme) {
-                return this.createError('string.uriCustomScheme', { scheme: customScheme, value }, state, options);
-            }
-
-            return this.createError('string.uri', { value }, state, options);
-        });
-    }
-
-    isoDate() {
-
-        return this._test('isoDate', undefined, function (value, state, options) {
-
-            if (JoiDate._isIsoDate(value)) {
-                if (!options.convert) {
-                    return value;
-                }
-
-                const d = new Date(value);
-                if (!isNaN(d.getTime())) {
-                    return d.toISOString();
-                }
-            }
-
-            return this.createError('string.isoDate', { value }, state, options);
-        });
-    }
-
-    guid(guidOptions) {
-
-        let versionNumbers = '';
-
-        if (guidOptions && guidOptions.version) {
-            if (!Array.isArray(guidOptions.version)) {
-                guidOptions.version = [guidOptions.version];
-            }
-
-            Hoek.assert(guidOptions.version.length >= 1, 'version must have at least 1 valid version specified');
-            const versions = new Set();
-
-            for (let i = 0; i < guidOptions.version.length; ++i) {
-                let version = guidOptions.version[i];
-                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
-                version = version.toLowerCase();
-                const versionNumber = internals.guidVersions[version];
-                Hoek.assert(versionNumber, 'version at position ' + i + ' must be one of ' + Object.keys(internals.guidVersions).join(', '));
-                Hoek.assert(!(versions.has(versionNumber)), 'version at position ' + i + ' must not be a duplicate.');
-
-                versionNumbers += versionNumber;
-                versions.add(versionNumber);
-            }
-        }
-
-        const guidRegex = new RegExp(`^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[${versionNumbers || '0-9A-F'}][0-9A-F]{3}\\2?[${versionNumbers ? '89AB' : '0-9A-F'}][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$`, 'i');
-
-        return this._test('guid', guidOptions, function (value, state, options) {
-
-            const results = guidRegex.exec(value);
-
-            if (!results) {
-                return this.createError('string.guid', { value }, state, options);
-            }
-
-            // Matching braces
-            if (internals.guidBrackets[results[1]] !== results[results.length - 1]) {
-                return this.createError('string.guid', { value }, state, options);
-            }
-
-            return value;
-        });
-    }
-
-    hex() {
-
-        const regex = /^[a-f0-9]+$/i;
-
-        return this._test('hex', regex, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.hex', { value }, state, options);
-        });
-    }
-
-    base64(base64Options) {
-
-        base64Options = base64Options || {};
-
-        // Validation.
-        Hoek.assert(typeof base64Options === 'object', 'base64 options must be an object');
-        Hoek.assert(typeof base64Options.paddingRequired === 'undefined' || typeof base64Options.paddingRequired === 'boolean',
-            'paddingRequired must be boolean');
-
-        // Determine if padding is required.
-        const paddingRequired = base64Options.paddingRequired === false ?
-            base64Options.paddingRequired
-            : base64Options.paddingRequired || true;
-
-        // Set validation based on preference.
-        const regex = paddingRequired ?
-            // Padding is required.
-            /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
-            // Padding is optional.
-            : /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
-
-        return this._test('base64', regex, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.base64', { value }, state, options);
-        });
-    }
-
-    hostname() {
-
-        const regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
-
-        return this._test('hostname', undefined, function (value, state, options) {
-
-            if ((value.length <= 255 && regex.test(value)) ||
-                Net.isIPv6(value)) {
-
-                return value;
-            }
-
-            return this.createError('string.hostname', { value }, state, options);
-        });
-    }
-
-    normalize(form) {
-
-        form = form || 'NFC';
-        Hoek.assert(Hoek.contain(internals.normalizationForms, form), 'normalization form must be one of ' + internals.normalizationForms.join(', '));
-
-        const obj = this._test('normalize', form, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.normalize(form)) {
-
-                return value;
-            }
-
-            return this.createError('string.normalize', { value, form }, state, options);
-        });
-
-        obj._flags.normalize = form;
-        return obj;
-    }
-
-    lowercase() {
-
-        const obj = this._test('lowercase', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.toLocaleLowerCase()) {
-
-                return value;
-            }
-
-            return this.createError('string.lowercase', { value }, state, options);
-        });
-
-        obj._flags.case = 'lower';
-        return obj;
-    }
-
-    uppercase() {
-
-        const obj = this._test('uppercase', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.toLocaleUpperCase()) {
-
-                return value;
-            }
-
-            return this.createError('string.uppercase', { value }, state, options);
-        });
-
-        obj._flags.case = 'upper';
-        return obj;
-    }
-
-    trim() {
-
-        const obj = this._test('trim', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.trim()) {
-
-                return value;
-            }
-
-            return this.createError('string.trim', { value }, state, options);
-        });
-
-        obj._flags.trim = true;
-        return obj;
-    }
-
-    replace(pattern, replacement) {
-
-        if (typeof pattern === 'string') {
-            pattern = new RegExp(Hoek.escapeRegex(pattern), 'g');
-        }
-
-        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
-        Hoek.assert(typeof replacement === 'string', 'replacement must be a String');
-
-        // This can not be considere a test like trim, we can't "reject"
-        // anything from this rule, so just clone the current object
-        const obj = this.clone();
-
-        if (!obj._inner.replacements) {
-            obj._inner.replacements = [];
-        }
-
-        obj._inner.replacements.push({
-            pattern,
-            replacement
-        });
-
-        return obj;
-    }
-
-    truncate(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.truncate === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.truncate = value;
-        return obj;
-    }
-
-};
-
-internals.compare = function (type, compare) {
-
-    return function (limit, encoding) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-        Hoek.assert(!encoding || Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
-
-        return this._test(type, limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!Number.isSafeInteger(compareTo)) {
-                    return this.createError('string.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (compare(value, compareTo, encoding)) {
-                return value;
-            }
-
-            return this.createError('string.' + type, { limit: compareTo, value, encoding }, state, options);
-        });
-    };
-};
-
-
-internals.String.prototype.min = internals.compare('min', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length >= limit;
-});
-
-
-internals.String.prototype.max = internals.compare('max', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length <= limit;
-});
-
-
-internals.String.prototype.length = internals.compare('length', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length === limit;
-});
-
-// Aliases
-
-internals.String.prototype.uuid = internals.String.prototype.guid;
-
-module.exports = new internals.String();
-
-}).call(this,require("buffer").Buffer)
-},{"../../ref":143,"../any":147,"../date":151,"./ip":157,"./uri":159,"buffer":61,"hoek":138,"isemail":121,"net":59}],157:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const RFC3986 = require('./rfc3986');
-
-
-// Declare internals
-
-const internals = {
-    Ip: {
-        cidrs: {
-            ipv4: {
-                required: '\\/(?:' + RFC3986.ipv4Cidr + ')',
-                optional: '(?:\\/(?:' + RFC3986.ipv4Cidr + '))?',
-                forbidden: ''
-            },
-            ipv6: {
-                required: '\\/' + RFC3986.ipv6Cidr,
-                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
-                forbidden: ''
-            },
-            ipvfuture: {
-                required: '\\/' + RFC3986.ipv6Cidr,
-                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
-                forbidden: ''
-            }
-        },
-        versions: {
-            ipv4: RFC3986.IPv4address,
-            ipv6: RFC3986.IPv6address,
-            ipvfuture: RFC3986.IPvFuture
-        }
-    }
-};
-
-
-internals.Ip.createIpRegex = function (versions, cidr) {
-
-    let regex;
-    for (let i = 0; i < versions.length; ++i) {
-        const version = versions[i];
-        if (!regex) {
-            regex = '^(?:' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
-        }
-        else {
-            regex += '|' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
-        }
-    }
-
-    return new RegExp(regex + ')$');
-};
-
-module.exports = internals.Ip;
-
-},{"./rfc3986":158}],158:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-
-// Delcare internals
-
-const internals = {
-    rfc3986: {}
-};
-
-
-internals.generate = function () {
-
-    /**
-     * elements separated by forward slash ("/") are alternatives.
-     */
-    const or = '|';
-
-    /**
-     * Rule to support zero-padded addresses.
-     */
-    const zeroPad = '0?';
-
-    /**
-     * DIGIT = %x30-39 ; 0-9
-     */
-    const digit = '0-9';
-    const digitOnly = '[' + digit + ']';
-
-    /**
-     * ALPHA = %x41-5A / %x61-7A   ; A-Z / a-z
-     */
-    const alpha = 'a-zA-Z';
-    const alphaOnly = '[' + alpha + ']';
-
-    /**
-     * IPv4
-     * cidr       = DIGIT                ; 0-9
-     *            / %x31-32 DIGIT         ; 10-29
-     *            / "3" %x30-32           ; 30-32
-     */
-    internals.rfc3986.ipv4Cidr = digitOnly + or + '[1-2]' + digitOnly + or + '3' + '[0-2]';
-
-    /**
-     * IPv6
-     * cidr       = DIGIT                 ; 0-9
-     *            / %x31-39 DIGIT         ; 10-99
-     *            / "1" %x0-1 DIGIT       ; 100-119
-     *            / "12" %x0-8            ; 120-128
-     */
-    internals.rfc3986.ipv6Cidr = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + '[01]' + digitOnly + or + '12[0-8])';
-
-    /**
-     * HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
-     */
-    const hexDigit = digit + 'A-Fa-f';
-    const hexDigitOnly = '[' + hexDigit + ']';
-
-    /**
-     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-     */
-    const unreserved = alpha + digit + '-\\._~';
-
-    /**
-     * sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
-     */
-    const subDelims = '!\\$&\'\\(\\)\\*\\+,;=';
-
-    /**
-     * pct-encoded = "%" HEXDIG HEXDIG
-     */
-    const pctEncoded = '%' + hexDigit;
-
-    /**
-     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
-     */
-    const pchar = unreserved + pctEncoded + subDelims + ':@';
-    const pcharOnly = '[' + pchar + ']';
-
-    /**
-     * dec-octet   = DIGIT                 ; 0-9
-     *            / %x31-39 DIGIT         ; 10-99
-     *            / "1" 2DIGIT            ; 100-199
-     *            / "2" %x30-34 DIGIT     ; 200-249
-     *            / "25" %x30-35          ; 250-255
-     */
-    const decOctect = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + digitOnly + digitOnly + or + '2' + '[0-4]' + digitOnly + or + '25' + '[0-5])';
-
-    /**
-     * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
-     */
-    internals.rfc3986.IPv4address = '(?:' + decOctect + '\\.){3}' + decOctect;
-
-    /**
-     * h16 = 1*4HEXDIG ; 16 bits of address represented in hexadecimal
-     * ls32 = ( h16 ":" h16 ) / IPv4address ; least-significant 32 bits of address
-     * IPv6address =                            6( h16 ":" ) ls32
-     *             /                       "::" 5( h16 ":" ) ls32
-     *             / [               h16 ] "::" 4( h16 ":" ) ls32
-     *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-     *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-     *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
-     *             / [ *4( h16 ":" ) h16 ] "::"              ls32
-     *             / [ *5( h16 ":" ) h16 ] "::"              h16
-     *             / [ *6( h16 ":" ) h16 ] "::"
-     */
-    const h16 = hexDigitOnly + '{1,4}';
-    const ls32 = '(?:' + h16 + ':' + h16 + '|' + internals.rfc3986.IPv4address + ')';
-    const IPv6SixHex = '(?:' + h16 + ':){6}' + ls32;
-    const IPv6FiveHex = '::(?:' + h16 + ':){5}' + ls32;
-    const IPv6FourHex = '(?:' + h16 + ')?::(?:' + h16 + ':){4}' + ls32;
-    const IPv6ThreeHex = '(?:(?:' + h16 + ':){0,1}' + h16 + ')?::(?:' + h16 + ':){3}' + ls32;
-    const IPv6TwoHex = '(?:(?:' + h16 + ':){0,2}' + h16 + ')?::(?:' + h16 + ':){2}' + ls32;
-    const IPv6OneHex = '(?:(?:' + h16 + ':){0,3}' + h16 + ')?::' + h16 + ':' + ls32;
-    const IPv6NoneHex = '(?:(?:' + h16 + ':){0,4}' + h16 + ')?::' + ls32;
-    const IPv6NoneHex2 = '(?:(?:' + h16 + ':){0,5}' + h16 + ')?::' + h16;
-    const IPv6NoneHex3 = '(?:(?:' + h16 + ':){0,6}' + h16 + ')?::';
-    internals.rfc3986.IPv6address = '(?:' + IPv6SixHex + or + IPv6FiveHex + or + IPv6FourHex + or + IPv6ThreeHex + or + IPv6TwoHex + or + IPv6OneHex + or + IPv6NoneHex + or + IPv6NoneHex2 + or + IPv6NoneHex3 + ')';
-
-    /**
-     * IPvFuture = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
-     */
-    internals.rfc3986.IPvFuture = 'v' + hexDigitOnly + '+\\.[' + unreserved + subDelims + ':]+';
-
-    /**
-     * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-     */
-    internals.rfc3986.scheme = alphaOnly + '[' + alpha + digit + '+-\\.]*';
-
-    /**
-     * userinfo = *( unreserved / pct-encoded / sub-delims / ":" )
-     */
-    const userinfo = '[' + unreserved + pctEncoded + subDelims + ':]*';
-
-    /**
-     * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
-     */
-    const IPLiteral = '\\[(?:' + internals.rfc3986.IPv6address + or + internals.rfc3986.IPvFuture + ')\\]';
-
-    /**
-     * reg-name = *( unreserved / pct-encoded / sub-delims )
-     */
-    const regName = '[' + unreserved + pctEncoded + subDelims + ']{0,255}';
-
-    /**
-     * host = IP-literal / IPv4address / reg-name
-     */
-    const host = '(?:' + IPLiteral + or + internals.rfc3986.IPv4address + or + regName + ')';
-
-    /**
-     * port = *DIGIT
-     */
-    const port = digitOnly + '*';
-
-    /**
-     * authority   = [ userinfo "@" ] host [ ":" port ]
-     */
-    const authority = '(?:' + userinfo + '@)?' + host + '(?::' + port + ')?';
-
-    /**
-     * segment       = *pchar
-     * segment-nz    = 1*pchar
-     * path          = path-abempty    ; begins with "/" or is empty
-     *               / path-absolute   ; begins with "/" but not "//"
-     *               / path-noscheme   ; begins with a non-colon segment
-     *               / path-rootless   ; begins with a segment
-     *               / path-empty      ; zero characters
-     * path-abempty  = *( "/" segment )
-     * path-absolute = "/" [ segment-nz *( "/" segment ) ]
-     * path-rootless = segment-nz *( "/" segment )
-     */
-    const segment = pcharOnly + '*';
-    const segmentNz = pcharOnly + '+';
-    const segmentNzNc = '[' + unreserved + pctEncoded + subDelims + '@' + ']+';
-    const pathEmpty = '';
-    const pathAbEmpty = '(?:\\/' + segment + ')*';
-    const pathAbsolute = '\\/(?:' + segmentNz + pathAbEmpty + ')?';
-    const pathRootless = segmentNz + pathAbEmpty;
-    const pathNoScheme = segmentNzNc + pathAbEmpty;
-
-    /**
-     * hier-part = "//" authority path
-     */
-    internals.rfc3986.hierPart = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty + ')' + or + pathAbsolute + or + pathRootless + ')';
-
-    /**
-     * relative-part = "//" authority path-abempty
-     *                 / path-absolute
-     *                 / path-noscheme
-     *                 / path-empty
-     */
-    internals.rfc3986.relativeRef = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty  + ')' + or + pathAbsolute + or + pathNoScheme + or + pathEmpty + ')';
-
-    /**
-     * query = *( pchar / "/" / "?" )
-     */
-    internals.rfc3986.query = '[' + pchar + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
-
-    /**
-     * fragment = *( pchar / "/" / "?" )
-     */
-    internals.rfc3986.fragment = '[' + pchar + '\\/\\?]*';
-};
-
-
-internals.generate();
-
-module.exports = internals.rfc3986;
-
-},{}],159:[function(require,module,exports){
-'use strict';
-
-// Load Modules
-
-const RFC3986 = require('./rfc3986');
-
-
-// Declare internals
-
-const internals = {
-    Uri: {
-        createUriRegex: function (optionalScheme, allowRelative, relativeOnly) {
-
-            let scheme = RFC3986.scheme;
-            let prefix;
-
-            if (relativeOnly) {
-                prefix = '(?:' + RFC3986.relativeRef + ')';
-            }
-            else {
-                // If we were passed a scheme, use it instead of the generic one
-                if (optionalScheme) {
-
-                    // Have to put this in a non-capturing group to handle the OR statements
-                    scheme = '(?:' + optionalScheme + ')';
-                }
-
-                const withScheme = '(?:' + scheme + ':' + RFC3986.hierPart + ')';
-
-                prefix = allowRelative ? '(?:' + withScheme + '|' + RFC3986.relativeRef + ')' : withScheme;
-            }
-
-            /**
-             * URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-             *
-             * OR
-             *
-             * relative-ref = relative-part [ "?" query ] [ "#" fragment ]
-             */
-            return new RegExp('^' + prefix + '(?:\\?' + RFC3986.query + ')?' + '(?:#' + RFC3986.fragment + ')?$');
-        }
-    }
-};
-
-
-module.exports = internals.Uri;
-
-},{"./rfc3986":158}],160:[function(require,module,exports){
-module.exports={
-  "_from": "joi@12.0",
-  "_id": "joi@12.0.0",
-  "_inBundle": false,
-  "_integrity": "sha512-z0FNlV4NGgjQN1fdtHYXf5kmgludM65fG/JlXzU6+rwkt9U5UWuXVYnXa2FpK0u6+qBuCmrm5byPNuiiddAHvQ==",
-  "_location": "/optioner/joi",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "range",
-    "registry": true,
-    "raw": "joi@12.0",
-    "name": "joi",
-    "escapedName": "joi",
-    "rawSpec": "12.0",
-    "saveSpec": null,
-    "fetchSpec": "12.0"
-  },
-  "_requiredBy": [
-    "/optioner"
-  ],
-  "_resolved": "https://registry.npmjs.org/joi/-/joi-12.0.0.tgz",
-  "_shasum": "46f55e68f4d9628f01bbb695902c8b307ad8d33a",
-  "_spec": "joi@12.0",
-  "_where": "/Users/richard/Projects/seneca/browser/node_modules/optioner",
-  "bugs": {
-    "url": "https://github.com/hapijs/joi/issues"
-  },
-  "bundleDependencies": false,
-  "dependencies": {
-    "hoek": "4.x.x",
-    "isemail": "3.x.x",
-    "topo": "2.x.x"
-  },
-  "deprecated": false,
-  "description": "Object schema validation",
-  "devDependencies": {
-    "hapitoc": "1.x.x",
-    "lab": "14.x.x"
-  },
-  "engines": {
-    "node": ">=4.0.0"
-  },
-  "homepage": "https://github.com/hapijs/joi",
-  "keywords": [
-    "hapi",
-    "schema",
-    "validation"
-  ],
-  "license": "BSD-3-Clause",
-  "main": "lib/index.js",
-  "name": "joi",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/hapijs/joi.git"
-  },
-  "scripts": {
-    "test": "lab -t 100 -a code -L",
-    "test-cov-html": "lab -r html -o coverage.html -a code",
-    "test-debug": "lab -a code",
-    "toc": "hapitoc",
-    "version": "npm run toc && git add API.md README.md"
-  },
-  "version": "12.0.0"
-}
-
-},{}],161:[function(require,module,exports){
-'use strict';
-
-// Load modules
-
-const Hoek = require('hoek');
-
-
-// Declare internals
-
-const internals = {};
-
-
-exports = module.exports = internals.Topo = function () {
-
-    this._items = [];
-    this.nodes = [];
-};
-
-
-internals.Topo.prototype.add = function (nodes, options) {
-
-    options = options || {};
-
-    // Validate rules
-
-    const before = [].concat(options.before || []);
-    const after = [].concat(options.after || []);
-    const group = options.group || '?';
-    const sort = options.sort || 0;                   // Used for merging only
-
-    Hoek.assert(before.indexOf(group) === -1, 'Item cannot come before itself:', group);
-    Hoek.assert(before.indexOf('?') === -1, 'Item cannot come before unassociated items');
-    Hoek.assert(after.indexOf(group) === -1, 'Item cannot come after itself:', group);
-    Hoek.assert(after.indexOf('?') === -1, 'Item cannot come after unassociated items');
-
-    ([].concat(nodes)).forEach((node, i) => {
-
-        const item = {
-            seq: this._items.length,
-            sort: sort,
-            before: before,
-            after: after,
-            group: group,
-            node: node
-        };
-
-        this._items.push(item);
-    });
-
-    // Insert event
-
-    const error = this._sort();
-    Hoek.assert(!error, 'item', (group !== '?' ? 'added into group ' + group : ''), 'created a dependencies error');
-
-    return this.nodes;
-};
-
-
-internals.Topo.prototype.merge = function (others) {
-
-    others = [].concat(others);
-    for (let i = 0; i < others.length; ++i) {
-        const other = others[i];
-        if (other) {
-            for (let j = 0; j < other._items.length; ++j) {
-                const item = Hoek.shallow(other._items[j]);
-                this._items.push(item);
-            }
-        }
-    }
-
-    // Sort items
-
-    this._items.sort(internals.mergeSort);
-    for (let i = 0; i < this._items.length; ++i) {
-        this._items[i].seq = i;
-    }
-
-    const error = this._sort();
-    Hoek.assert(!error, 'merge created a dependencies error');
-
-    return this.nodes;
-};
-
-
-internals.mergeSort = function (a, b) {
-
-    return a.sort === b.sort ? 0 : (a.sort < b.sort ? -1 : 1);
-};
-
-
-internals.Topo.prototype._sort = function () {
-
-    // Construct graph
-
-    const graph = {};
-    const graphAfters = Object.create(null); // A prototype can bungle lookups w/ false positives
-    const groups = Object.create(null);
-
-    for (let i = 0; i < this._items.length; ++i) {
-        const item = this._items[i];
-        const seq = item.seq;                         // Unique across all items
-        const group = item.group;
-
-        // Determine Groups
-
-        groups[group] = groups[group] || [];
-        groups[group].push(seq);
-
-        // Build intermediary graph using 'before'
-
-        graph[seq] = item.before;
-
-        // Build second intermediary graph with 'after'
-
-        const after = item.after;
-        for (let j = 0; j < after.length; ++j) {
-            graphAfters[after[j]] = (graphAfters[after[j]] || []).concat(seq);
-        }
-    }
-
-    // Expand intermediary graph
-
-    let graphNodes = Object.keys(graph);
-    for (let i = 0; i < graphNodes.length; ++i) {
-        const node = graphNodes[i];
-        const expandedGroups = [];
-
-        const graphNodeItems = Object.keys(graph[node]);
-        for (let j = 0; j < graphNodeItems.length; ++j) {
-            const group = graph[node][graphNodeItems[j]];
-            groups[group] = groups[group] || [];
-
-            for (let k = 0; k < groups[group].length; ++k) {
-                expandedGroups.push(groups[group][k]);
-            }
-        }
-        graph[node] = expandedGroups;
-    }
-
-    // Merge intermediary graph using graphAfters into final graph
-
-    const afterNodes = Object.keys(graphAfters);
-    for (let i = 0; i < afterNodes.length; ++i) {
-        const group = afterNodes[i];
-
-        if (groups[group]) {
-            for (let j = 0; j < groups[group].length; ++j) {
-                const node = groups[group][j];
-                graph[node] = graph[node].concat(graphAfters[group]);
-            }
-        }
-    }
-
-    // Compile ancestors
-
-    let children;
-    const ancestors = {};
-    graphNodes = Object.keys(graph);
-    for (let i = 0; i < graphNodes.length; ++i) {
-        const node = graphNodes[i];
-        children = graph[node];
-
-        for (let j = 0; j < children.length; ++j) {
-            ancestors[children[j]] = (ancestors[children[j]] || []).concat(node);
-        }
-    }
-
-    // Topo sort
-
-    const visited = {};
-    const sorted = [];
-
-    for (let i = 0; i < this._items.length; ++i) {
-        let next = i;
-
-        if (ancestors[i]) {
-            next = null;
-            for (let j = 0; j < this._items.length; ++j) {
-                if (visited[j] === true) {
-                    continue;
-                }
-
-                if (!ancestors[j]) {
-                    ancestors[j] = [];
-                }
-
-                const shouldSeeCount = ancestors[j].length;
-                let seenCount = 0;
-                for (let k = 0; k < shouldSeeCount; ++k) {
-                    if (sorted.indexOf(ancestors[j][k]) >= 0) {
-                        ++seenCount;
-                    }
-                }
-
-                if (seenCount === shouldSeeCount) {
-                    next = j;
-                    break;
-                }
-            }
-        }
-
-        if (next !== null) {
-            next = next.toString();         // Normalize to string TODO: replace with seq
-            visited[next] = true;
-            sorted.push(next);
-        }
-    }
-
-    if (sorted.length !== this._items.length) {
-        return new Error('Invalid dependencies');
-    }
-
-    const seqIndex = {};
-    for (let i = 0; i < this._items.length; ++i) {
-        const item = this._items[i];
-        seqIndex[item.seq] = item;
-    }
-
-    const sortedNodes = [];
-    this._items = sorted.map((value) => {
-
-        const sortedItem = seqIndex[value];
-        sortedNodes.push(sortedItem.node);
-        return sortedItem;
-    });
-
-    this.nodes = sortedNodes;
-};
-
-},{"hoek":138}],162:[function(require,module,exports){
-/*
-  MIT License,
-  Copyright (c) 2016-2018, Richard Rodger and other contributors.
-*/
-
+},{}],169:[function(require,module,exports){
+/* Copyright (c) 2017-2019 Richard Rodger and other contributors, MIT License */
 'use strict'
 
 var Util = require('util')
 
-var Joi = require('joi')
-var Hoek = require('hoek')
+var Joi = require('@hapi/joi')
+var Hoek = require('@hapi/hoek')
 
 module.exports = function(spec, options) {
   return make_optioner(spec, options)
@@ -51165,9 +52156,9 @@ module.exports.obj2arr = obj2arr
 function make_optioner(spec, options) {
   var opts = options || {}
   opts.allow_unknown = null == opts.allow_unknown ? true : !!opts.allow_unknown
-  
+
   var ctxt = { arrpaths: [] }
-  var joispec = prepare_spec(spec, opts, ctxt)  
+  var joispec = prepare_spec(spec, opts, ctxt)
   var schema = Joi.compile(joispec)
 
   function validate(input, done) {
@@ -51200,31 +52191,29 @@ function make_optioner(spec, options) {
 function prepare_spec(spec, opts, ctxt) {
   var joiobj = Joi.object()
 
-  if (opts.allow_unknown) {	
-    joiobj = joiobj.unknown()	
+  if (opts.allow_unknown) {
+    joiobj = joiobj.unknown()
   }
 
   var joi = walk(joiobj, spec, '', opts, ctxt, function(valspec) {
     if (valspec && valspec.isJoi) {
       return valspec
-    }
-    else {
+    } else {
       var typecheck = typeof valspec
       typecheck = 'function' === typecheck ? 'func' : typecheck
 
-      if(opts.must_match_literals) {
-        return Joi.any().required().valid(valspec)
-      }
-      else {
+      if (opts.must_match_literals) {
+        return Joi.any()
+          .required()
+          .valid(valspec)
+      } else {
         if (null == valspec) {
           return Joi.default(valspec)
-        }
-        else if ('number' === typecheck && Hoek.isInteger(valspec)) {
+        } else if ('number' === typecheck && Number.isInteger(valspec)) {
           return Joi.number()
             .integer()
             .default(valspec)
-        }
-        else {
+        } else {
           return Joi[typecheck]().default(valspec)
         }
       }
@@ -51250,8 +52239,8 @@ function walk(joi, obj, path, opts, ctxt, mod) {
 
       var joiobj = Joi.object().default()
 
-      if (opts.allow_unknown) {	
-        joiobj = joiobj.unknown()	
+      if (opts.allow_unknown) {
+        joiobj = joiobj.unknown()
       }
 
       kv[p] = walk(joiobj, v, np, opts, ctxt, mod)
@@ -51334,7 +52323,7 @@ function obj2arr(work, ctxt) {
   return work
 }
 
-},{"hoek":138,"joi":141,"util":271}],163:[function(require,module,exports){
+},{"@hapi/hoek":6,"@hapi/joi":9,"util":278}],170:[function(require,module,exports){
 /* Copyright (c) 2016 Richard Rodger and other contributors, MIT License */
 'use strict'
 
@@ -51467,7 +52456,7 @@ function contains (all, some) {
   return true
 }
 
-},{"assert":16}],164:[function(require,module,exports){
+},{"assert":49}],171:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -51518,7 +52507,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],165:[function(require,module,exports){
+},{}],172:[function(require,module,exports){
 'use strict';
 
 
@@ -51625,7 +52614,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],166:[function(require,module,exports){
+},{}],173:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -51678,7 +52667,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],167:[function(require,module,exports){
+},{}],174:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -51748,7 +52737,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],168:[function(require,module,exports){
+},{}],175:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -51809,7 +52798,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],169:[function(require,module,exports){
+},{}],176:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -53685,7 +54674,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":165,"./adler32":166,"./crc32":168,"./messages":173,"./trees":174}],170:[function(require,module,exports){
+},{"../utils/common":172,"./adler32":173,"./crc32":175,"./messages":180,"./trees":181}],177:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -54032,7 +55021,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],171:[function(require,module,exports){
+},{}],178:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55590,7 +56579,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":165,"./adler32":166,"./crc32":168,"./inffast":170,"./inftrees":172}],172:[function(require,module,exports){
+},{"../utils/common":172,"./adler32":173,"./crc32":175,"./inffast":177,"./inftrees":179}],179:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55935,7 +56924,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":165}],173:[function(require,module,exports){
+},{"../utils/common":172}],180:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55969,7 +56958,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],174:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -57193,7 +58182,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":165}],175:[function(require,module,exports){
+},{"../utils/common":172}],182:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -57242,7 +58231,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],176:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -57256,7 +58245,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],177:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -57380,7 +58369,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":178,"asn1.js":2}],178:[function(require,module,exports){
+},{"./certificate":185,"asn1.js":35}],185:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -57471,7 +58460,7 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":2}],179:[function(require,module,exports){
+},{"asn1.js":35}],186:[function(require,module,exports){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r\+\/\=]+)[\n\r]+/m
 var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
@@ -57504,7 +58493,7 @@ module.exports = function (okey, password) {
   }
 }
 
-},{"browserify-aes":32,"evp_bytestokey":99,"safe-buffer":229}],180:[function(require,module,exports){
+},{"browserify-aes":65,"evp_bytestokey":132,"safe-buffer":236}],187:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
@@ -57613,7 +58602,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-},{"./aesid.json":176,"./asn1":177,"./fixProc":179,"browserify-aes":32,"pbkdf2":183,"safe-buffer":229}],181:[function(require,module,exports){
+},{"./aesid.json":183,"./asn1":184,"./fixProc":186,"browserify-aes":65,"pbkdf2":190,"safe-buffer":236}],188:[function(require,module,exports){
 (function (process){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -57919,7 +58908,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":192}],182:[function(require,module,exports){
+},{"_process":199}],189:[function(require,module,exports){
 /* Copyright (c) 2013-2016 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
 
 ;(function() {
@@ -58313,11 +59302,11 @@ var substr = 'ab'.substr(-1) === 'b'
   }
 }.call(this))
 
-},{"gex":101,"lodash":124}],183:[function(require,module,exports){
+},{"gex":134,"lodash":156}],190:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":184,"./lib/sync":187}],184:[function(require,module,exports){
+},{"./lib/async":191,"./lib/sync":194}],191:[function(require,module,exports){
 (function (process,global){
 var checkParameters = require('./precondition')
 var defaultEncoding = require('./default-encoding')
@@ -58421,7 +59410,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":185,"./precondition":186,"./sync":187,"_process":192,"safe-buffer":229}],185:[function(require,module,exports){
+},{"./default-encoding":192,"./precondition":193,"./sync":194,"_process":199,"safe-buffer":236}],192:[function(require,module,exports){
 (function (process){
 var defaultEncoding
 /* istanbul ignore next */
@@ -58435,7 +59424,7 @@ if (process.browser) {
 module.exports = defaultEncoding
 
 }).call(this,require('_process'))
-},{"_process":192}],186:[function(require,module,exports){
+},{"_process":199}],193:[function(require,module,exports){
 (function (Buffer){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
@@ -58467,7 +59456,7 @@ module.exports = function (password, salt, iterations, keylen) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":119}],187:[function(require,module,exports){
+},{"../../is-buffer/index.js":152}],194:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var RIPEMD160 = require('ripemd160')
 var sha = require('sha.js')
@@ -58573,14 +59562,14 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":185,"./precondition":186,"create-hash/md5":67,"ripemd160":227,"safe-buffer":229,"sha.js":249}],188:[function(require,module,exports){
+},{"./default-encoding":192,"./precondition":193,"create-hash/md5":100,"ripemd160":234,"safe-buffer":236,"sha.js":256}],195:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
 module.exports = require('./lib/checks');
-},{"./lib/checks":189}],189:[function(require,module,exports){
+},{"./lib/checks":196}],196:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -58676,7 +59665,7 @@ module.exports.checkIsBoolean = typeCheck('boolean');
 module.exports.checkIsFunction = typeCheck('function');
 module.exports.checkIsObject = typeCheck('object');
 
-},{"./errors":190,"util":271}],190:[function(require,module,exports){
+},{"./errors":197,"util":278}],197:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -58702,7 +59691,7 @@ IllegalStateError.prototype.name = 'IllegalStateError';
 
 module.exports.IllegalStateError = IllegalStateError;
 module.exports.IllegalArgumentError = IllegalArgumentError;
-},{"util":271}],191:[function(require,module,exports){
+},{"util":278}],198:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -58750,7 +59739,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this,require('_process'))
-},{"_process":192}],192:[function(require,module,exports){
+},{"_process":199}],199:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -58936,7 +59925,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],193:[function(require,module,exports){
+},{}],200:[function(require,module,exports){
 (function (process){
 if (process.env.npm_package_name === 'pseudomap' &&
     process.env.npm_lifecycle_script === 'test')
@@ -58949,7 +59938,7 @@ if (typeof Map === 'function' && !process.env.TEST_PSEUDOMAP) {
 }
 
 }).call(this,require('_process'))
-},{"./pseudomap":194,"_process":192}],194:[function(require,module,exports){
+},{"./pseudomap":201,"_process":199}],201:[function(require,module,exports){
 var hasOwnProperty = Object.prototype.hasOwnProperty
 
 module.exports = PseudoMap
@@ -59064,7 +60053,7 @@ function set (data, k, v) {
   data[key] = new Entry(k, v, key)
 }
 
-},{}],195:[function(require,module,exports){
+},{}],202:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt')
 exports.privateDecrypt = require('./privateDecrypt')
 
@@ -59076,7 +60065,7 @@ exports.publicDecrypt = function publicDecrypt (key, buf) {
   return exports.privateDecrypt(key, buf, true)
 }
 
-},{"./privateDecrypt":197,"./publicEncrypt":198}],196:[function(require,module,exports){
+},{"./privateDecrypt":204,"./publicEncrypt":205}],203:[function(require,module,exports){
 var createHash = require('create-hash')
 var Buffer = require('safe-buffer').Buffer
 
@@ -59097,7 +60086,7 @@ function i2ops (c) {
   return out
 }
 
-},{"create-hash":66,"safe-buffer":229}],197:[function(require,module,exports){
+},{"create-hash":99,"safe-buffer":236}],204:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var mgf = require('./mgf')
 var xor = require('./xor')
@@ -59204,7 +60193,7 @@ function compare (a, b) {
   return dif
 }
 
-},{"./mgf":196,"./withPublic":199,"./xor":200,"bn.js":27,"browserify-rsa":50,"create-hash":66,"parse-asn1":180,"safe-buffer":229}],198:[function(require,module,exports){
+},{"./mgf":203,"./withPublic":206,"./xor":207,"bn.js":60,"browserify-rsa":83,"create-hash":99,"parse-asn1":187,"safe-buffer":236}],205:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var randomBytes = require('randombytes')
 var createHash = require('create-hash')
@@ -59294,7 +60283,7 @@ function nonZero (len) {
   return out
 }
 
-},{"./mgf":196,"./withPublic":199,"./xor":200,"bn.js":27,"browserify-rsa":50,"create-hash":66,"parse-asn1":180,"randombytes":210,"safe-buffer":229}],199:[function(require,module,exports){
+},{"./mgf":203,"./withPublic":206,"./xor":207,"bn.js":60,"browserify-rsa":83,"create-hash":99,"parse-asn1":187,"randombytes":217,"safe-buffer":236}],206:[function(require,module,exports){
 var BN = require('bn.js')
 var Buffer = require('safe-buffer').Buffer
 
@@ -59308,7 +60297,7 @@ function withPublic (paddedMsg, key) {
 
 module.exports = withPublic
 
-},{"bn.js":27,"safe-buffer":229}],200:[function(require,module,exports){
+},{"bn.js":60,"safe-buffer":236}],207:[function(require,module,exports){
 module.exports = function xor (a, b) {
   var len = a.length
   var i = -1
@@ -59318,7 +60307,7 @@ module.exports = function xor (a, b) {
   return a
 }
 
-},{}],201:[function(require,module,exports){
+},{}],208:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -59855,7 +60844,7 @@ module.exports = function xor (a, b) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],202:[function(require,module,exports){
+},{}],209:[function(require,module,exports){
 'use strict';
 
 var replace = String.prototype.replace;
@@ -59875,7 +60864,7 @@ module.exports = {
     RFC3986: 'RFC3986'
 };
 
-},{}],203:[function(require,module,exports){
+},{}],210:[function(require,module,exports){
 'use strict';
 
 var stringify = require('./stringify');
@@ -59888,7 +60877,7 @@ module.exports = {
     stringify: stringify
 };
 
-},{"./formats":202,"./parse":204,"./stringify":205}],204:[function(require,module,exports){
+},{"./formats":209,"./parse":211,"./stringify":212}],211:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -60132,7 +61121,7 @@ module.exports = function (str, opts) {
     return utils.compact(obj);
 };
 
-},{"./utils":206}],205:[function(require,module,exports){
+},{"./utils":213}],212:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -60403,7 +61392,7 @@ module.exports = function (object, opts) {
     return joined.length > 0 ? prefix + joined : '';
 };
 
-},{"./formats":202,"./utils":206}],206:[function(require,module,exports){
+},{"./formats":209,"./utils":213}],213:[function(require,module,exports){
 'use strict';
 
 var has = Object.prototype.hasOwnProperty;
@@ -60635,7 +61624,7 @@ module.exports = {
     merge: merge
 };
 
-},{}],207:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60721,7 +61710,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],208:[function(require,module,exports){
+},{}],215:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60808,13 +61797,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],209:[function(require,module,exports){
+},{}],216:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":207,"./encode":208}],210:[function(require,module,exports){
+},{"./decode":214,"./encode":215}],217:[function(require,module,exports){
 (function (process,global){
 'use strict'
 
@@ -60868,7 +61857,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":192,"safe-buffer":229}],211:[function(require,module,exports){
+},{"_process":199,"safe-buffer":236}],218:[function(require,module,exports){
 (function (process,global){
 'use strict'
 
@@ -60980,10 +61969,10 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":192,"randombytes":210,"safe-buffer":229}],212:[function(require,module,exports){
+},{"_process":199,"randombytes":217,"safe-buffer":236}],219:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":213}],213:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":220}],220:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -61115,7 +62104,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":215,"./_stream_writable":217,"core-util-is":64,"inherits":118,"process-nextick-args":191}],214:[function(require,module,exports){
+},{"./_stream_readable":222,"./_stream_writable":224,"core-util-is":97,"inherits":151,"process-nextick-args":198}],221:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -61163,7 +62152,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":216,"core-util-is":64,"inherits":118}],215:[function(require,module,exports){
+},{"./_stream_transform":223,"core-util-is":97,"inherits":151}],222:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -62185,7 +63174,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":213,"./internal/streams/BufferList":218,"./internal/streams/destroy":219,"./internal/streams/stream":220,"_process":192,"core-util-is":64,"events":98,"inherits":118,"isarray":120,"process-nextick-args":191,"safe-buffer":229,"string_decoder/":221,"util":29}],216:[function(require,module,exports){
+},{"./_stream_duplex":220,"./internal/streams/BufferList":225,"./internal/streams/destroy":226,"./internal/streams/stream":227,"_process":199,"core-util-is":97,"events":131,"inherits":151,"isarray":153,"process-nextick-args":198,"safe-buffer":236,"string_decoder/":228,"util":62}],223:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -62400,7 +63389,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":213,"core-util-is":64,"inherits":118}],217:[function(require,module,exports){
+},{"./_stream_duplex":220,"core-util-is":97,"inherits":151}],224:[function(require,module,exports){
 (function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -63090,7 +64079,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":213,"./internal/streams/destroy":219,"./internal/streams/stream":220,"_process":192,"core-util-is":64,"inherits":118,"process-nextick-args":191,"safe-buffer":229,"timers":264,"util-deprecate":269}],218:[function(require,module,exports){
+},{"./_stream_duplex":220,"./internal/streams/destroy":226,"./internal/streams/stream":227,"_process":199,"core-util-is":97,"inherits":151,"process-nextick-args":198,"safe-buffer":236,"timers":271,"util-deprecate":276}],225:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -63170,7 +64159,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":229,"util":29}],219:[function(require,module,exports){
+},{"safe-buffer":236,"util":62}],226:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -63245,10 +64234,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":191}],220:[function(require,module,exports){
+},{"process-nextick-args":198}],227:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":98}],221:[function(require,module,exports){
+},{"events":131}],228:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -63545,10 +64534,10 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":229}],222:[function(require,module,exports){
+},{"safe-buffer":236}],229:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":223}],223:[function(require,module,exports){
+},{"./readable":230}],230:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -63557,13 +64546,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":213,"./lib/_stream_passthrough.js":214,"./lib/_stream_readable.js":215,"./lib/_stream_transform.js":216,"./lib/_stream_writable.js":217}],224:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":220,"./lib/_stream_passthrough.js":221,"./lib/_stream_readable.js":222,"./lib/_stream_transform.js":223,"./lib/_stream_writable.js":224}],231:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":223}],225:[function(require,module,exports){
+},{"./readable":230}],232:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":217}],226:[function(require,module,exports){
+},{"./lib/_stream_writable.js":224}],233:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -63698,7 +64687,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":20,"events":98}],227:[function(require,module,exports){
+},{"backoff":53,"events":131}],234:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -63863,7 +64852,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":61,"hash-base":102,"inherits":118}],228:[function(require,module,exports){
+},{"buffer":94,"hash-base":135,"inherits":151}],235:[function(require,module,exports){
 /* Copyright (c) 2013-2014 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 "use strict";
@@ -64034,7 +65023,7 @@ module.exports = function( size, duration, clock ) {
 module.exports.Stats      = Stats
 module.exports.NamedStats = NamedStats
 
-},{}],229:[function(require,module,exports){
+},{}],236:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -64098,7 +65087,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":61}],230:[function(require,module,exports){
+},{"buffer":94}],237:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -64451,7 +65440,7 @@ internals.timeout = function(listenOptions, req, res) {
   res.socket.once('data', clearTimeoutId)
 }
 
-},{"buffer":61,"http":258,"https":116,"jsonic":123,"lodash":124,"qs":203,"url":266,"wreck":273}],231:[function(require,module,exports){
+},{"buffer":94,"http":265,"https":149,"jsonic":155,"lodash":156,"qs":210,"url":273,"wreck":280}],238:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -64720,7 +65709,7 @@ internals.reconnect = Reconnect(function() {
   return Net.connect.apply(null, args)
 })
 
-},{"ndjson":131,"net":59,"reconnect-core":226,"stream":257}],232:[function(require,module,exports){
+},{"ndjson":163,"net":92,"reconnect-core":233,"stream":264}],239:[function(require,module,exports){
 /* Copyright (c) 2015-2017 Richard Rodger, MIT License */
 'use strict'
 
@@ -65365,7 +66354,7 @@ internals.Utils.prototype.resolveDynamicValue = function(value, options) {
   return value
 }
 
-},{"eraro":97,"jsonic":123,"lodash":124,"nid":132,"patrun":182,"util":271}],233:[function(require,module,exports){
+},{"eraro":130,"jsonic":155,"lodash":156,"nid":164,"patrun":189,"util":278}],240:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger & other contributors, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -65546,7 +66535,7 @@ internals.legacyError = function(seneca, type) {
   }
 }
 
-},{"./lib/http":230,"./lib/tcp":231,"./lib/transport-utils.js":232,"lodash":124,"lru-cache":125}],234:[function(require,module,exports){
+},{"./lib/http":237,"./lib/tcp":238,"./lib/transport-utils.js":239,"lodash":156,"lru-cache":157}],241:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -65638,7 +66627,7 @@ function action_options_get(msg, reply) {
   reply(Common.copydata(val))
 }
 
-},{"./common":236,"lodash":124}],235:[function(require,module,exports){
+},{"./common":243,"lodash":156}],242:[function(require,module,exports){
 (function (process){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -65978,6 +66967,7 @@ exports.ungate = function() {
   return this
 }
 
+// TODO this needs a better name
 exports.list_plugins = function() {
   return _.clone(this.private$.plugins)
 }
@@ -66061,32 +67051,16 @@ exports.status = function(flags) {
 // Used by transports to decouple sending messages from receiving responses.
 exports.reply = function(spec) {
   var instance = this
-
-  var item = null
+  var actctxt = null
 
   if (spec && spec.meta) {
-    item = instance.private$.history.get(spec.meta.id)
-    if (item) {
-      // Add any additional explain items from responder
-      if (
-        item.meta.explain &&
-        spec.meta.explain &&
-        item.meta.explain.length < spec.meta.explain.length
-      ) {
-        for (
-          var i = item.meta.explain.length;
-          i < spec.meta.explain.length;
-          i++
-        ) {
-          item.meta.explain.push(spec.meta.explain[i])
-        }
-      }
-
-      item.reply(spec.err, spec.out, spec.meta)
+    actctxt = instance.private$.history.get(spec.meta.id)
+    if (actctxt) {
+      actctxt.reply(spec.err, spec.out, spec.meta)
     }
   }
 
-  return !!item
+  return !!actctxt
 }
 
 // Listen for inbound messages.
@@ -66376,12 +67350,13 @@ intern.resolve_config = function(config, options) {
 }
 
 }).call(this,require('_process'))
-},{"./common":236,"./logging":240,"./plugins":243,"_process":192,"jsonic":123,"lodash":124,"norma":135}],236:[function(require,module,exports){
+},{"./common":243,"./logging":247,"./plugins":250,"_process":199,"jsonic":155,"lodash":156,"norma":167}],243:[function(require,module,exports){
 (function (process){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+/* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
 var Util = require('util')
+var Assert = require('assert')
 
 var _ = require('lodash')
 var Eraro = require('eraro')
@@ -66583,6 +67558,8 @@ exports.pincanon = function pincanon(inpin) {
   }
 }
 
+exports.noop = function noop() {}
+
 // noop for callbacks
 exports.nil = function nil() {
   _.each(arguments, function(arg) {
@@ -66660,6 +67637,21 @@ exports.recurse = function recurse(list, work, done) {
 
 // Print action result
 exports.print = Print.print
+
+// Iterate over arrays or objects
+exports.each = function each(collect, func) {
+  if (null == collect || null == func) {
+    return null
+  }
+
+  Assert('function' === typeof func)
+
+  if (Array.isArray(collect)) {
+    return collect.forEach(func)
+  } else {
+    Object.keys(collect).forEach(k => func(collect[k], k))
+  }
+}
 
 exports.makedie = function(instance, ctxt) {
   ctxt = _.extend(ctxt, instance.die ? instance.die.context : {})
@@ -67057,7 +68049,7 @@ History.prototype.toString = function toString() {
 History.prototype.inspect = History.prototype.toString
 
 }).call(this,require('_process'))
-},{"./errors":237,"./print":244,"_process":192,"eraro":97,"jsonic":123,"lodash":124,"nid":132,"norma":135,"util":271}],237:[function(require,module,exports){
+},{"./errors":244,"./print":251,"_process":199,"assert":49,"eraro":130,"jsonic":155,"lodash":156,"nid":164,"norma":167,"util":278}],244:[function(require,module,exports){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -67205,7 +68197,7 @@ module.exports.deprecation = {
   seneca_next_act: 'Seneca.next_act will be removed in Seneca 3.x'
 }
 
-},{}],238:[function(require,module,exports){
+},{}],245:[function(require,module,exports){
 /* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -67460,8 +68452,6 @@ function inward_warnings(ctxt, data) {
 function inward_msg_meta(ctxt, data) {
   var meta = data.meta
 
-  // console.log('MSG', data.msg)
-
   meta.pattern = ctxt.actdef.pattern
   meta.action = ctxt.actdef.id
   meta.plugin = _.extend(meta.plugin, ctxt.actdef.plugin)
@@ -67587,7 +68577,7 @@ intern.explain = function(meta, entry) {
   return explain && this.explain
 }
 
-},{"./common":236,"lodash":124,"util":271}],239:[function(require,module,exports){
+},{"./common":243,"lodash":156,"util":278}],246:[function(require,module,exports){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -67730,7 +68720,7 @@ exports.make_legacy_fail = function make_legacy_fail(so) {
   }
 }
 
-},{"./common":236,"./errors":237,"eraro":97,"jsonic":123,"lodash":124,"norma":135}],240:[function(require,module,exports){
+},{"./common":243,"./errors":244,"eraro":130,"jsonic":155,"lodash":156,"norma":167}],247:[function(require,module,exports){
 /* Copyright © 2016-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -67993,7 +68983,7 @@ function level_exists(level) {
 module.exports.log_level_plus = log_level_plus
 module.exports.level_exists = level_exists
 
-},{"./print":244,"json-stringify-safe":122,"lodash":124,"util":271}],241:[function(require,module,exports){
+},{"./print":251,"json-stringify-safe":154,"lodash":156,"util":278}],248:[function(require,module,exports){
 (function (process){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -68244,7 +69234,7 @@ function ERRMSGMAP() {
 }
 
 }).call(this,require('_process'))
-},{"./common":236,"_process":192,"eraro":97,"fs":59,"jsonic":123,"lodash":124,"minimist":130}],242:[function(require,module,exports){
+},{"./common":243,"_process":199,"eraro":130,"fs":92,"jsonic":155,"lodash":156,"minimist":162}],249:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -68553,7 +69543,7 @@ intern.act_error = function(instance, ctxt, data) {
   }
 }
 
-},{"./common":236,"assert":16,"lodash":124,"util":271}],243:[function(require,module,exports){
+},{"./common":243,"assert":49,"lodash":156,"util":278}],250:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -68989,7 +69979,7 @@ function resolve_plugin_exports(seneca, fullname, meta) {
   return exports
 }
 
-},{"./common":236,"./print":244,"eraro":97,"lodash":124}],244:[function(require,module,exports){
+},{"./common":243,"./print":251,"eraro":130,"lodash":156}],251:[function(require,module,exports){
 /* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -69142,7 +70132,7 @@ module.exports.plugin_options = function plugin_options(
   console.log('')
 }
 
-},{"archy":1,"lodash":124,"minimist":130,"util":271}],245:[function(require,module,exports){
+},{"archy":34,"lodash":156,"minimist":162,"util":278}],252:[function(require,module,exports){
 (function (Buffer){
 /* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -69478,10 +70468,16 @@ function hook_listen_web(msg, reply) {
 }
 
 function web_modify_response(seneca, spec) {
+  // JSON cannot handle arbitrary array properties
+  if (Array.isArray(spec.out)) {
+    spec.out = { array$: spec.out, meta$: spec.out.meta$ }
+  }
+
   spec.body = stringifyJSON(
     externalize_reply(seneca, spec.err, spec.out, spec.meta)
   )
   spec.headers['Content-Length'] = Buffer.byteLength(spec.body)
+
   return spec
 }
 
@@ -69546,6 +70542,13 @@ function hook_client_web(msg, hook_reply) {
           // TODO: how is this error handled?
           var data = err || parseJSON(body)
 
+          // JSON cannot handle arbitrary array properties
+          if (Array.isArray(data.array$)) {
+            var array_data = data.array$
+            array_data.meta$ = data.meta$
+            data = array_data
+          }
+
           // backwards compatibility with seneca-transport
           if (!data.meta$) {
             data.meta$ = {
@@ -69575,30 +70578,30 @@ function web_modify_request(seneca, spec) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./common":236,"buffer":61,"http":258,"https":116,"json-stringify-safe":122,"jsonic":123,"lodash":124,"qs":203,"url":266,"wreck":273}],246:[function(require,module,exports){
+},{"./common":243,"buffer":94,"http":265,"https":149,"json-stringify-safe":154,"jsonic":155,"lodash":156,"qs":210,"url":273,"wreck":280}],253:[function(require,module,exports){
 module.exports={
-  "_from": "seneca@^3.10.0",
-  "_id": "seneca@3.10.0",
+  "_from": "seneca@plugin",
+  "_id": "seneca@3.11.0",
   "_inBundle": false,
-  "_integrity": "sha512-9BKVztqYe1zD0mIFJmSlyuV7ZxoAv1c6nzohe7XxpgJZ6QtOhqNtq1SGPUc4bBEKPoQFyx+bvsZyiHHYmx4h5w==",
+  "_integrity": "sha512-wya8QqTupS/KxGtA/FIsUfmpJoOqK//ZRDycbglqm969j0LdEU92QJ0ND5DkWiCaMbd9T1030wTljla2LXRVBw==",
   "_location": "/seneca",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "tag",
     "registry": true,
-    "raw": "seneca@^3.10.0",
+    "raw": "seneca@plugin",
     "name": "seneca",
     "escapedName": "seneca",
-    "rawSpec": "^3.10.0",
+    "rawSpec": "plugin",
     "saveSpec": null,
-    "fetchSpec": "^3.10.0"
+    "fetchSpec": "plugin"
   },
   "_requiredBy": [
     "#DEV:/"
   ],
-  "_resolved": "https://registry.npmjs.org/seneca/-/seneca-3.10.0.tgz",
-  "_shasum": "b93f13c147f7f2298fda0d0a585dadac13d5cbcd",
-  "_spec": "seneca@^3.10.0",
+  "_resolved": "https://registry.npmjs.org/seneca/-/seneca-3.11.0.tgz",
+  "_shasum": "0822e73c65dfe38a1eedbaece6068927a252ef59",
+  "_spec": "seneca@plugin",
   "_where": "/Users/richard/Projects/seneca/browser",
   "author": {
     "name": "Richard Rodger",
@@ -69727,6 +70730,7 @@ module.exports={
     }
   ],
   "dependencies": {
+    "@hapi/joi": "^15.0.3",
     "archy": "^1.0.0",
     "eraro": "^1.1.0",
     "gate-executor": "^1.1.1",
@@ -69737,17 +70741,19 @@ module.exports={
     "minimist": "^1.2.0",
     "nid": "^0.3.2",
     "norma": "^0.4.1",
+    "optioner": "^4.0.0",
     "ordu": "^0.1.1",
     "patrun": "^1.0.0",
     "qs": "^6.7.0",
     "rolling-stats": "^0.1.1",
     "seneca-transport": "^3.0.0",
-    "use-plugin": "^4.0.0",
+    "use-plugin": "^5.0.0",
     "wreck": "^12"
   },
   "deprecated": false,
   "description": "A Microservices Framework for Node.js",
   "devDependencies": {
+    "@hapi/lab": "^18.1.2",
     "@seneca/test-plugin": "0.0.1",
     "async": "^2.6.2",
     "bench": "^0.3.6",
@@ -69755,15 +70761,14 @@ module.exports={
     "coveralls": "^3.0.2",
     "handlebars": "^4.1.2",
     "hoek": "^5",
-    "lab": "^18.0.2",
-    "prettier": "^1.17.0",
-    "seneca-entity": "^3.3.0",
+    "prettier": "^1.17.1",
+    "seneca-entity": "^4.0.0",
     "seneca-error-test": "^0.2.2",
-    "seneca-joi": "^3.1.0",
-    "seneca-promisify": "^0.7.1"
+    "seneca-joi": "^4.0.0",
+    "seneca-promisify": "^0.8.0"
   },
   "engines": {
-    "node": ">=4.0.0"
+    "node": ">=8.0.0"
   },
   "files": [
     "LICENSE",
@@ -69807,52 +70812,53 @@ module.exports={
     "smoke": "node test/stubs/launch.js",
     "test": "lab -v -P test -L -t 85 "
   },
-  "version": "3.10.0"
+  "version": "3.11.0"
 }
 
-},{}],247:[function(require,module,exports){
+},{}],254:[function(require,module,exports){
 (function (process,setImmediate){
-/* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
+/* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
 // Node API modules.
-var Assert = require('assert')
-var Events = require('events')
-var Util = require('util')
+const Assert = require('assert')
+const Events = require('events')
+const Util = require('util')
 
 // External modules.
-var _ = require('lodash')
-var GateExecutor = require('gate-executor')
-var Jsonic = require('jsonic')
-var UsePlugin = require('use-plugin')
-var Nid = require('nid')
-var Norma = require('norma')
-var Patrun = require('patrun')
-var Stats = require('rolling-stats')
-var Ordu = require('ordu')
-var Eraro = require('eraro')
+const GateExecutor = require('gate-executor')
+const Jsonic = require('jsonic')
+const UsePlugin = require('use-plugin')
+const Nid = require('nid')
+const Norma = require('norma')
+const Patrun = require('patrun')
+const Stats = require('rolling-stats')
+const Ordu = require('ordu')
+const Eraro = require('eraro')
+const Optioner = require('optioner')
+const Joi = require('@hapi/joi')
 
 // Internal modules.
-var API = require('./lib/api')
-var Inward = require('./lib/inward')
-var Outward = require('./lib/outward')
-var Common = require('./lib/common')
-var Legacy = require('./lib/legacy')
-var Optioner = require('./lib/optioner')
-var Package = require('./package.json')
-var Plugins = require('./lib/plugins')
-var Print = require('./lib/print')
-var Actions = require('./lib/actions')
-var Transport = require('./lib/transport')
+const API = require('./lib/api')
+const Inward = require('./lib/inward')
+const Outward = require('./lib/outward')
+const Common = require('./lib/common')
+const Legacy = require('./lib/legacy')
+const Options = require('./lib/options')
+const Package = require('./package.json')
+const Plugins = require('./lib/plugins')
+const Print = require('./lib/print')
+const Actions = require('./lib/actions')
+const Transport = require('./lib/transport')
 
 // Shortcuts.
-var errlog = Common.make_standard_err_log_entry
-var actlog = Common.make_standard_act_log_entry
+const errlog = Common.make_standard_err_log_entry
+const actlog = Common.make_standard_act_log_entry
 
 // Internal data and utilities.
-var error = Common.error
+const error = Common.error
 
-var option_defaults = {
+const option_defaults = {
   // Tag this Seneca instance, will be appended to instance identifier.
   tag: '-',
 
@@ -70047,13 +71053,13 @@ var option_defaults = {
 }
 
 // Utility functions exposed by Seneca via `seneca.util`.
-var seneca_util = {
+const seneca_util = {
   Eraro: Eraro,
   Jsonic: Jsonic,
   Nid: Nid,
   Patrun: Patrun,
-  Joi: UsePlugin.Joi,
-  Optioner: UsePlugin.Optioner,
+  Joi: Joi,
+  Optioner: Optioner,
 
   clean: Common.clean,
   pattern: Common.pattern,
@@ -70076,7 +71082,7 @@ var seneca_util = {
 }
 
 // Internal implementations.
-var intern = {
+const intern = {
   util: seneca_util
 }
 
@@ -70087,11 +71093,31 @@ function Seneca() {
 }
 Util.inherits(Seneca, Events.EventEmitter)
 
+// Mark the Seneca object
+Seneca.prototype.isSeneca = true
+
+// Provide useful description when convered to JSON.
+// Cannot be instantiated from JSON.
+Seneca.prototype.toJSON = function toJSON() {
+  return {
+    isSeneca: true,
+    id: this.id,
+    did: this.did,
+    fixedargs: this.fixedargs,
+    fixedmeta: this.fixedmeta,
+    start_time: this.start_time,
+    version: this.version
+  }
+}
+
+Seneca.prototype[Util.inspect.custom] = Seneca.prototype.toJSON
+
 // Create a Seneca instance.
 module.exports = function init(seneca_options, more_options) {
-  var initial_options = _.isString(seneca_options)
-    ? _.extend({}, { from: seneca_options }, more_options)
-    : _.extend({}, seneca_options, more_options)
+  var initial_options =
+    'string' === typeof seneca_options
+      ? Common.deepextend({}, { from: seneca_options }, more_options)
+      : Common.deepextend({}, seneca_options, more_options)
 
   // Legacy options, remove in 4.x
   initial_options.deathdelay = initial_options.death_delay
@@ -70101,7 +71127,7 @@ module.exports = function init(seneca_options, more_options) {
 
   // The 'internal' key of options is reserved for objects and functions
   // that provide functionality, and are thus not really printable
-  seneca.log.debug({ kind: 'notice', options: _.omit(options, ['internal']) })
+  seneca.log.debug({ kind: 'notice', options: { ...options, internal: null } })
 
   Print.print_options(seneca, options)
 
@@ -70159,8 +71185,6 @@ module.exports.test$ = { intern: intern }
 // Create a new Seneca instance.
 // * _initial_options_ `o` &rarr; instance options
 function make_seneca(initial_options) {
-  initial_options = initial_options || {}
-
   // Create a private context.
   var private$ = make_private()
   private$.error = error
@@ -70172,7 +71196,7 @@ function make_seneca(initial_options) {
   root$.private$ = private$
 
   // Resolve initial options.
-  private$.optioner = Optioner(module, option_defaults, initial_options)
+  private$.optioner = Options(module, option_defaults, initial_options)
   var opts = { $: private$.optioner.get() }
 
   // Setup event handlers, if defined
@@ -70371,7 +71395,7 @@ function make_seneca(initial_options) {
     function add_rules_from_validate_annotation(actdef) {
       actdef.rules = Object.assign(
         actdef.rules,
-        _.clone(actdef.func.validate || {})
+        Common.deepextend({}, actdef.func.validate || {})
       )
     }
   ]
@@ -70425,7 +71449,7 @@ function make_seneca(initial_options) {
 
     var actdef = args.actdef || {}
 
-    actdef.raw = _.cloneDeep(raw_pattern)
+    actdef.raw = Common.deepextend({}, raw_pattern)
     actdef.plugin_name = actdef.plugin_name || 'root$'
     actdef.plugin_fullname =
       actdef.plugin_fullname ||
@@ -70464,7 +71488,7 @@ function make_seneca(initial_options) {
     var addroute = true
 
     if (opts.$.legacy.actdef) {
-      actdef.args = _.clone(pattern)
+      actdef.args = Common.deepextend(pattern)
     }
 
     actdef.id = action.name + '_' + next_action_id()
@@ -70489,7 +71513,7 @@ function make_seneca(initial_options) {
       // Clients needs special handling so that the catchall
       // pattern does not submit all patterns into the handle
       if (
-        _.isFunction(priordef.handle) &&
+        'function' === typeof priordef.handle &&
         ((priordef.client && actdef.client) ||
           (!priordef.client && !actdef.client))
       ) {
@@ -70503,7 +71527,7 @@ function make_seneca(initial_options) {
       actdef.priorpath = ''
     }
 
-    if (action && actdef && _.isFunction(action.handle)) {
+    if (action && actdef && 'function' === typeof action.handle) {
       actdef.handle = action.handle
     }
 
@@ -70511,9 +71535,9 @@ function make_seneca(initial_options) {
       private$.stats.actmap[actdef.pattern] || make_action_stats(actdef)
 
     var pattern_rules = {}
-    _.each(pattern, function(v, k) {
-      if (_.isObject(v)) {
-        pattern_rules[k] = _.clone(v)
+    Common.each(pattern, function(v, k) {
+      if ('object' === typeof v) {
+        pattern_rules[k] = v && v.isJoi ? v : Common.deepextend({}, v)
         delete pattern[k]
       }
     })
@@ -70559,7 +71583,7 @@ function make_seneca(initial_options) {
   // can be defined after call to seneca.add (for nicer plugin code order).
   function deferred_modify_action(seneca, actdef) {
     setImmediate(function() {
-      _.each(seneca.private$.action_modifiers, function(actmod) {
+      Common.each(seneca.private$.action_modifiers, function(actmod) {
         actmod.call(seneca, actdef)
       })
     })
@@ -70595,12 +71619,12 @@ function make_seneca(initial_options) {
   function api_wrap(pin, meta, wrapper) {
     var pinthis = this
 
-    wrapper = _.isFunction(meta) ? meta : wrapper
-    meta = _.isFunction(meta) ? {} : meta
+    wrapper = 'function' === typeof meta ? meta : wrapper
+    meta = 'function' === typeof meta ? {} : meta
 
-    pin = _.isArray(pin) ? pin : [pin]
-    _.each(pin, function(p) {
-      _.each(pinthis.list(p), function(actpattern) {
+    pin = Array.isArray(pin) ? pin : [pin]
+    Common.each(pin, function(p) {
+      Common.each(pinthis.list(p), function(actpattern) {
         pinthis.add(actpattern, meta, wrapper)
       })
     })
@@ -70623,11 +71647,13 @@ function make_seneca(initial_options) {
   function api_close(done) {
     var seneca = this
 
-    var safe_done = _.once(function(err) {
-      if (_.isFunction(done)) {
+    var done_called = false
+    var safe_done = function safe_done(err) {
+      if (!done_called && 'function' === typeof done) {
+        done_called = true
         return done.call(seneca, err)
       }
-    })
+    }
 
     // don't try to close twice
     if (seneca.flags.closed) {
@@ -70650,7 +71676,7 @@ function make_seneca(initial_options) {
       seneca.flags.closed = true
 
       // cleanup process event listeners
-      _.each(opts.$.system.close_signals, function(active, signal) {
+      Common.each(opts.$.system.close_signals, function(active, signal) {
         if (active) {
           process.removeListener(signal, private$.handle_close)
         }
@@ -70727,7 +71753,7 @@ function make_seneca(initial_options) {
     var actctxt = {
       seneca: instance,
       origmsg: origmsg,
-      reply: origreply || _.noop,
+      reply: origreply || Common.noop,
       options: instance.options(),
       callpoint: callpoint()
     }
@@ -70757,6 +71783,8 @@ function make_seneca(initial_options) {
       },
       ontm: function act_tm() {
         timedout = true
+
+        // TODO: this should be a seneca error with useful details
         intern.handle_reply(meta, actctxt, actmsg, new Error('[TIMEOUT]'))
       },
       tm: meta.timeout
@@ -70803,7 +71831,7 @@ function make_seneca(initial_options) {
       options == null ? private$.optioner.get() : private$.optioner.set(options)
 
     if (opts.$.legacy.logging) {
-      if (options && options.log && _.isArray(options.log.map)) {
+      if (options && options.log && Array.isArray(options.log.map)) {
         for (var i = 0; i < options.log.map.length; ++i) {
           self.logroute(options.log.map[i])
         }
@@ -70856,7 +71884,7 @@ function make_seneca(initial_options) {
 
   Print(root$, opts.$.debug.argv || process.argv)
 
-  _.each(opts.$.system.close_signals, function(active, signal) {
+  Common.each(opts.$.system.close_signals, function(active, signal) {
     if (active) {
       process.once(signal, private$.handle_close)
     }
@@ -70936,7 +71964,7 @@ function make_callpoint(active) {
     }
   }
 
-  return _.noop
+  return Common.noop
 }
 
 function make_log(instance, modifier) {
@@ -70961,7 +71989,7 @@ function prepare_log(instance, log) {
     }
 
     var a0 = argsarr[0]
-    var data = _.isArray(a0) ? a0 : _.isObject(a0) ? a0 : argsarr
+    var data = Array.isArray(a0) ? a0 : 'object' === typeof a0 ? a0 : argsarr
     log.call(instance, data)
   }
 }
@@ -71112,7 +72140,18 @@ intern.handle_reply = function(meta, actctxt, actmsg, err, out, reply_meta) {
 
   meta.error = Util.isError(data.res)
 
-  intern.process_outward(actctxt, data)
+  // Add any additional explain items from responder
+  if (
+    meta.explain &&
+    (reply_meta && reply_meta.explain) &&
+    meta.explain.length < reply_meta.explain.length
+  ) {
+    for (var i = meta.explain.length; i < reply_meta.explain.length; i++) {
+      meta.explain.push(reply_meta.explain[i])
+    }
+  }
+
+  intern.process_outward(actctxt, data, delegate)
 
   if (data.has_callback) {
     try {
@@ -71262,7 +72301,7 @@ intern.Meta = function(instance, opts, origmsg, origreply) {
       ? !!origmsg.sync$
       : origmeta && null != origmeta.sync
       ? !!origmeta.sync
-      : _.isFunction(origreply)
+      : 'function' === typeof origreply
 
   this.trace = null
   this.sub = null
@@ -71308,7 +72347,7 @@ intern.callback_error = function(instance, thrown_obj, ctxt, data) {
     err = error(
       err,
       'act_callback',
-      _.extend({}, err.details, {
+      Common.deepextend({}, err.details, {
         message: err.message,
         pattern: actdef.pattern,
         fn: actdef.func,
@@ -71340,7 +72379,7 @@ intern.callback_error = function(instance, thrown_obj, ctxt, data) {
 }
 
 }).call(this,require('_process'),require("timers").setImmediate)
-},{"./lib/actions":234,"./lib/api":235,"./lib/common":236,"./lib/inward":238,"./lib/legacy":239,"./lib/logging":240,"./lib/optioner":241,"./lib/outward":242,"./lib/plugins":243,"./lib/print":244,"./lib/transport":245,"./package.json":246,"_process":192,"assert":16,"eraro":97,"events":98,"gate-executor":100,"jsonic":123,"lodash":124,"nid":132,"norma":135,"ordu":163,"patrun":182,"rolling-stats":228,"seneca-transport":233,"timers":264,"use-plugin":268,"util":271}],248:[function(require,module,exports){
+},{"./lib/actions":241,"./lib/api":242,"./lib/common":243,"./lib/inward":245,"./lib/legacy":246,"./lib/logging":247,"./lib/options":248,"./lib/outward":249,"./lib/plugins":250,"./lib/print":251,"./lib/transport":252,"./package.json":253,"@hapi/joi":9,"_process":199,"assert":49,"eraro":130,"events":131,"gate-executor":133,"jsonic":155,"nid":164,"norma":167,"optioner":169,"ordu":170,"patrun":189,"rolling-stats":235,"seneca-transport":240,"timers":271,"use-plugin":275,"util":278}],255:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -71423,7 +72462,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":229}],249:[function(require,module,exports){
+},{"safe-buffer":236}],256:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -71440,7 +72479,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":250,"./sha1":251,"./sha224":252,"./sha256":253,"./sha384":254,"./sha512":255}],250:[function(require,module,exports){
+},{"./sha":257,"./sha1":258,"./sha224":259,"./sha256":260,"./sha384":261,"./sha512":262}],257:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -71536,7 +72575,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":248,"inherits":118,"safe-buffer":229}],251:[function(require,module,exports){
+},{"./hash":255,"inherits":151,"safe-buffer":236}],258:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -71637,7 +72676,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":248,"inherits":118,"safe-buffer":229}],252:[function(require,module,exports){
+},{"./hash":255,"inherits":151,"safe-buffer":236}],259:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -71692,7 +72731,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":248,"./sha256":253,"inherits":118,"safe-buffer":229}],253:[function(require,module,exports){
+},{"./hash":255,"./sha256":260,"inherits":151,"safe-buffer":236}],260:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -71829,7 +72868,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":248,"inherits":118,"safe-buffer":229}],254:[function(require,module,exports){
+},{"./hash":255,"inherits":151,"safe-buffer":236}],261:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -71888,7 +72927,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":248,"./sha512":255,"inherits":118,"safe-buffer":229}],255:[function(require,module,exports){
+},{"./hash":255,"./sha512":262,"inherits":151,"safe-buffer":236}],262:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -72150,7 +73189,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":248,"inherits":118,"safe-buffer":229}],256:[function(require,module,exports){
+},{"./hash":255,"inherits":151,"safe-buffer":236}],263:[function(require,module,exports){
 /*
 Copyright (c) 2014-2016, Matteo Collina <hello@matteocollina.com>
 
@@ -72264,7 +73303,7 @@ function split (matcher, mapper, options) {
 
 module.exports = split
 
-},{"string_decoder":262,"through2":263}],257:[function(require,module,exports){
+},{"string_decoder":269,"through2":270}],264:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -72393,7 +73432,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":98,"inherits":118,"readable-stream/duplex.js":212,"readable-stream/passthrough.js":222,"readable-stream/readable.js":223,"readable-stream/transform.js":224,"readable-stream/writable.js":225}],258:[function(require,module,exports){
+},{"events":131,"inherits":151,"readable-stream/duplex.js":219,"readable-stream/passthrough.js":229,"readable-stream/readable.js":230,"readable-stream/transform.js":231,"readable-stream/writable.js":232}],265:[function(require,module,exports){
 (function (global){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -72481,7 +73520,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":260,"./lib/response":261,"builtin-status-codes":62,"url":266,"xtend":280}],259:[function(require,module,exports){
+},{"./lib/request":267,"./lib/response":268,"builtin-status-codes":95,"url":273,"xtend":287}],266:[function(require,module,exports){
 (function (global){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -72558,7 +73597,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],260:[function(require,module,exports){
+},{}],267:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -72889,7 +73928,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":259,"./response":261,"_process":192,"buffer":61,"inherits":118,"readable-stream":223,"to-arraybuffer":265}],261:[function(require,module,exports){
+},{"./capability":266,"./response":268,"_process":199,"buffer":94,"inherits":151,"readable-stream":230,"to-arraybuffer":272}],268:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -73117,9 +74156,9 @@ IncomingMessage.prototype._onXHRProgress = function () {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":259,"_process":192,"buffer":61,"inherits":118,"readable-stream":223}],262:[function(require,module,exports){
-arguments[4][221][0].apply(exports,arguments)
-},{"dup":221,"safe-buffer":229}],263:[function(require,module,exports){
+},{"./capability":266,"_process":199,"buffer":94,"inherits":151,"readable-stream":230}],269:[function(require,module,exports){
+arguments[4][228][0].apply(exports,arguments)
+},{"dup":228,"safe-buffer":236}],270:[function(require,module,exports){
 (function (process){
 var Transform = require('readable-stream').Transform
   , inherits  = require('util').inherits
@@ -73219,7 +74258,7 @@ module.exports.obj = through2(function (options, transform, flush) {
 })
 
 }).call(this,require('_process'))
-},{"_process":192,"readable-stream":223,"util":271,"xtend":280}],264:[function(require,module,exports){
+},{"_process":199,"readable-stream":230,"util":278,"xtend":287}],271:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -73298,7 +74337,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":192,"timers":264}],265:[function(require,module,exports){
+},{"process/browser.js":199,"timers":271}],272:[function(require,module,exports){
 var Buffer = require('buffer').Buffer
 
 module.exports = function (buf) {
@@ -73327,7 +74366,7 @@ module.exports = function (buf) {
 	}
 }
 
-},{"buffer":61}],266:[function(require,module,exports){
+},{"buffer":94}],273:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -74061,7 +75100,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":267,"punycode":201,"querystring":209}],267:[function(require,module,exports){
+},{"./util":274,"punycode":208,"querystring":216}],274:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -74079,7 +75118,7 @@ module.exports = {
   }
 };
 
-},{}],268:[function(require,module,exports){
+},{}],275:[function(require,module,exports){
 /* Copyright © 2014-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -74633,7 +75672,7 @@ const intern = (module.exports.intern = {
   }
 })
 
-},{"eraro":97,"module":59,"nid":132,"norma":135,"optioner":162,"path":181,"util":271}],269:[function(require,module,exports){
+},{"eraro":130,"module":92,"nid":164,"norma":167,"optioner":169,"path":188,"util":278}],276:[function(require,module,exports){
 (function (global){
 
 /**
@@ -74704,11 +75743,11 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],270:[function(require,module,exports){
-arguments[4][18][0].apply(exports,arguments)
-},{"dup":18}],271:[function(require,module,exports){
-arguments[4][19][0].apply(exports,arguments)
-},{"./support/isBuffer":270,"_process":192,"dup":19,"inherits":118}],272:[function(require,module,exports){
+},{}],277:[function(require,module,exports){
+arguments[4][51][0].apply(exports,arguments)
+},{"dup":51}],278:[function(require,module,exports){
+arguments[4][52][0].apply(exports,arguments)
+},{"./support/isBuffer":277,"_process":199,"dup":52,"inherits":151}],279:[function(require,module,exports){
 var indexOf = function (xs, item) {
     if (xs.indexOf) return xs.indexOf(item);
     else for (var i = 0; i < xs.length; i++) {
@@ -74859,7 +75898,7 @@ exports.createContext = Script.createContext = function (context) {
     return copy;
 };
 
-},{}],273:[function(require,module,exports){
+},{}],280:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 
@@ -75495,7 +76534,7 @@ internals.findHeader = function (headerName, headers) {
 module.exports = new internals.Client();
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./payload":274,"./recorder":275,"./tap":276,"_process":192,"boom":277,"buffer":61,"events":98,"hoek":279,"http":258,"https":116,"stream":257,"url":266,"zlib":58}],274:[function(require,module,exports){
+},{"./payload":281,"./recorder":282,"./tap":283,"_process":199,"boom":284,"buffer":94,"events":131,"hoek":286,"http":265,"https":149,"stream":264,"url":273,"zlib":91}],281:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -75542,7 +76581,7 @@ internals.Payload.prototype._read = function (size) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":61,"hoek":279,"stream":257}],275:[function(require,module,exports){
+},{"buffer":94,"hoek":286,"stream":264}],282:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -75591,7 +76630,7 @@ internals.Recorder.prototype.collect = function () {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"boom":277,"buffer":61,"hoek":279,"stream":257}],276:[function(require,module,exports){
+},{"boom":284,"buffer":94,"hoek":286,"stream":264}],283:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -75627,7 +76666,7 @@ internals.Tap.prototype.collect = function () {
     return new Payload(this.buffers);
 };
 
-},{"./payload":274,"hoek":279,"stream":257}],277:[function(require,module,exports){
+},{"./payload":281,"hoek":286,"stream":264}],284:[function(require,module,exports){
 'use strict';
 
 // Load modules
@@ -76086,11 +77125,1161 @@ exports.badImplementation = function (message, data) {
     return err;
 };
 
-},{"hoek":279}],278:[function(require,module,exports){
-arguments[4][137][0].apply(exports,arguments)
-},{"buffer":61,"dup":137}],279:[function(require,module,exports){
-arguments[4][138][0].apply(exports,arguments)
-},{"./escape":278,"_process":192,"buffer":61,"crypto":70,"dup":138,"path":181,"util":271}],280:[function(require,module,exports){
+},{"hoek":286}],285:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+// Declare internals
+
+const internals = {};
+
+
+exports.escapeJavaScript = function (input) {
+
+    if (!input) {
+        return '';
+    }
+
+    let escaped = '';
+
+    for (let i = 0; i < input.length; ++i) {
+
+        const charCode = input.charCodeAt(i);
+
+        if (internals.isSafe(charCode)) {
+            escaped += input[i];
+        }
+        else {
+            escaped += internals.escapeJavaScriptChar(charCode);
+        }
+    }
+
+    return escaped;
+};
+
+
+exports.escapeHtml = function (input) {
+
+    if (!input) {
+        return '';
+    }
+
+    let escaped = '';
+
+    for (let i = 0; i < input.length; ++i) {
+
+        const charCode = input.charCodeAt(i);
+
+        if (internals.isSafe(charCode)) {
+            escaped += input[i];
+        }
+        else {
+            escaped += internals.escapeHtmlChar(charCode);
+        }
+    }
+
+    return escaped;
+};
+
+
+exports.escapeJson = function (input) {
+
+    if (!input) {
+        return '';
+    }
+
+    const lessThan = 0x3C;
+    const greaterThan = 0x3E;
+    const andSymbol = 0x26;
+    const lineSeperator = 0x2028;
+
+    // replace method
+    let charCode;
+    return input.replace(/[<>&\u2028\u2029]/g, (match) => {
+
+        charCode = match.charCodeAt(0);
+
+        if (charCode === lessThan) {
+            return '\\u003c';
+        }
+        else if (charCode === greaterThan) {
+            return '\\u003e';
+        }
+        else if (charCode === andSymbol) {
+            return '\\u0026';
+        }
+        else if (charCode === lineSeperator) {
+            return '\\u2028';
+        }
+        return '\\u2029';
+    });
+};
+
+
+internals.escapeJavaScriptChar = function (charCode) {
+
+    if (charCode >= 256) {
+        return '\\u' + internals.padLeft('' + charCode, 4);
+    }
+
+    const hexValue = new Buffer(String.fromCharCode(charCode), 'ascii').toString('hex');
+    return '\\x' + internals.padLeft(hexValue, 2);
+};
+
+
+internals.escapeHtmlChar = function (charCode) {
+
+    const namedEscape = internals.namedHtml[charCode];
+    if (typeof namedEscape !== 'undefined') {
+        return namedEscape;
+    }
+
+    if (charCode >= 256) {
+        return '&#' + charCode + ';';
+    }
+
+    const hexValue = new Buffer(String.fromCharCode(charCode), 'ascii').toString('hex');
+    return '&#x' + internals.padLeft(hexValue, 2) + ';';
+};
+
+
+internals.padLeft = function (str, len) {
+
+    while (str.length < len) {
+        str = '0' + str;
+    }
+
+    return str;
+};
+
+
+internals.isSafe = function (charCode) {
+
+    return (typeof internals.safeCharCodes[charCode] !== 'undefined');
+};
+
+
+internals.namedHtml = {
+    '38': '&amp;',
+    '60': '&lt;',
+    '62': '&gt;',
+    '34': '&quot;',
+    '160': '&nbsp;',
+    '162': '&cent;',
+    '163': '&pound;',
+    '164': '&curren;',
+    '169': '&copy;',
+    '174': '&reg;'
+};
+
+
+internals.safeCharCodes = (function () {
+
+    const safe = {};
+
+    for (let i = 32; i < 123; ++i) {
+
+        if ((i >= 97) ||                    // a-z
+            (i >= 65 && i <= 90) ||         // A-Z
+            (i >= 48 && i <= 57) ||         // 0-9
+            i === 32 ||                     // space
+            i === 46 ||                     // .
+            i === 44 ||                     // ,
+            i === 45 ||                     // -
+            i === 58 ||                     // :
+            i === 95) {                     // _
+
+            safe[i] = null;
+        }
+    }
+
+    return safe;
+}());
+
+}).call(this,require("buffer").Buffer)
+},{"buffer":94}],286:[function(require,module,exports){
+(function (process,Buffer){
+'use strict';
+
+// Load modules
+
+const Crypto = require('crypto');
+const Path = require('path');
+const Util = require('util');
+const Escape = require('./escape');
+
+
+// Declare internals
+
+const internals = {};
+
+
+// Clone object or array
+
+exports.clone = function (obj, seen) {
+
+    if (typeof obj !== 'object' ||
+        obj === null) {
+
+        return obj;
+    }
+
+    seen = seen || new Map();
+
+    const lookup = seen.get(obj);
+    if (lookup) {
+        return lookup;
+    }
+
+    let newObj;
+    let cloneDeep = false;
+
+    if (!Array.isArray(obj)) {
+        if (Buffer.isBuffer(obj)) {
+            newObj = new Buffer(obj);
+        }
+        else if (obj instanceof Date) {
+            newObj = new Date(obj.getTime());
+        }
+        else if (obj instanceof RegExp) {
+            newObj = new RegExp(obj);
+        }
+        else {
+            const proto = Object.getPrototypeOf(obj);
+            if (proto &&
+                proto.isImmutable) {
+
+                newObj = obj;
+            }
+            else {
+                newObj = Object.create(proto);
+                cloneDeep = true;
+            }
+        }
+    }
+    else {
+        newObj = [];
+        cloneDeep = true;
+    }
+
+    seen.set(obj, newObj);
+
+    if (cloneDeep) {
+        const keys = Object.getOwnPropertyNames(obj);
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+            const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+            if (descriptor &&
+                (descriptor.get ||
+                 descriptor.set)) {
+
+                Object.defineProperty(newObj, key, descriptor);
+            }
+            else {
+                newObj[key] = exports.clone(obj[key], seen);
+            }
+        }
+    }
+
+    return newObj;
+};
+
+
+// Merge all the properties of source into target, source wins in conflict, and by default null and undefined from source are applied
+
+/*eslint-disable */
+exports.merge = function (target, source, isNullOverride /* = true */, isMergeArrays /* = true */) {
+/*eslint-enable */
+
+    exports.assert(target && typeof target === 'object', 'Invalid target value: must be an object');
+    exports.assert(source === null || source === undefined || typeof source === 'object', 'Invalid source value: must be null, undefined, or an object');
+
+    if (!source) {
+        return target;
+    }
+
+    if (Array.isArray(source)) {
+        exports.assert(Array.isArray(target), 'Cannot merge array onto an object');
+        if (isMergeArrays === false) {                                                  // isMergeArrays defaults to true
+            target.length = 0;                                                          // Must not change target assignment
+        }
+
+        for (let i = 0; i < source.length; ++i) {
+            target.push(exports.clone(source[i]));
+        }
+
+        return target;
+    }
+
+    const keys = Object.keys(source);
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        if (key === '__proto__') {
+            continue;
+        }
+
+        const value = source[key];
+        if (value &&
+            typeof value === 'object') {
+
+            if (!target[key] ||
+                typeof target[key] !== 'object' ||
+                (Array.isArray(target[key]) !== Array.isArray(value)) ||
+                value instanceof Date ||
+                Buffer.isBuffer(value) ||
+                value instanceof RegExp) {
+
+                target[key] = exports.clone(value);
+            }
+            else {
+                exports.merge(target[key], value, isNullOverride, isMergeArrays);
+            }
+        }
+        else {
+            if (value !== null &&
+                value !== undefined) {                              // Explicit to preserve empty strings
+
+                target[key] = value;
+            }
+            else if (isNullOverride !== false) {                    // Defaults to true
+                target[key] = value;
+            }
+        }
+    }
+
+    return target;
+};
+
+
+// Apply options to a copy of the defaults
+
+exports.applyToDefaults = function (defaults, options, isNullOverride) {
+
+    exports.assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
+    exports.assert(!options || options === true || typeof options === 'object', 'Invalid options value: must be true, falsy or an object');
+
+    if (!options) {                                                 // If no options, return null
+        return null;
+    }
+
+    const copy = exports.clone(defaults);
+
+    if (options === true) {                                         // If options is set to true, use defaults
+        return copy;
+    }
+
+    return exports.merge(copy, options, isNullOverride === true, false);
+};
+
+
+// Clone an object except for the listed keys which are shallow copied
+
+exports.cloneWithShallow = function (source, keys) {
+
+    if (!source ||
+        typeof source !== 'object') {
+
+        return source;
+    }
+
+    const storage = internals.store(source, keys);    // Move shallow copy items to storage
+    const copy = exports.clone(source);               // Deep copy the rest
+    internals.restore(copy, source, storage);       // Shallow copy the stored items and restore
+    return copy;
+};
+
+
+internals.store = function (source, keys) {
+
+    const storage = {};
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        const value = exports.reach(source, key);
+        if (value !== undefined) {
+            storage[key] = value;
+            internals.reachSet(source, key, undefined);
+        }
+    }
+
+    return storage;
+};
+
+
+internals.restore = function (copy, source, storage) {
+
+    const keys = Object.keys(storage);
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        internals.reachSet(copy, key, storage[key]);
+        internals.reachSet(source, key, storage[key]);
+    }
+};
+
+
+internals.reachSet = function (obj, key, value) {
+
+    const path = key.split('.');
+    let ref = obj;
+    for (let i = 0; i < path.length; ++i) {
+        const segment = path[i];
+        if (i + 1 === path.length) {
+            ref[segment] = value;
+        }
+
+        ref = ref[segment];
+    }
+};
+
+
+// Apply options to defaults except for the listed keys which are shallow copied from option without merging
+
+exports.applyToDefaultsWithShallow = function (defaults, options, keys) {
+
+    exports.assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
+    exports.assert(!options || options === true || typeof options === 'object', 'Invalid options value: must be true, falsy or an object');
+    exports.assert(keys && Array.isArray(keys), 'Invalid keys');
+
+    if (!options) {                                                 // If no options, return null
+        return null;
+    }
+
+    const copy = exports.cloneWithShallow(defaults, keys);
+
+    if (options === true) {                                         // If options is set to true, use defaults
+        return copy;
+    }
+
+    const storage = internals.store(options, keys);   // Move shallow copy items to storage
+    exports.merge(copy, options, false, false);     // Deep copy the rest
+    internals.restore(copy, options, storage);      // Shallow copy the stored items and restore
+    return copy;
+};
+
+
+// Deep object or array comparison
+
+exports.deepEqual = function (obj, ref, options, seen) {
+
+    options = options || { prototype: true };
+
+    const type = typeof obj;
+
+    if (type !== typeof ref) {
+        return false;
+    }
+
+    if (type !== 'object' ||
+        obj === null ||
+        ref === null) {
+
+        if (obj === ref) {                                                      // Copied from Deep-eql, copyright(c) 2013 Jake Luer, jake@alogicalparadox.com, MIT Licensed, https://github.com/chaijs/deep-eql
+            return obj !== 0 || 1 / obj === 1 / ref;        // -0 / +0
+        }
+
+        return obj !== obj && ref !== ref;                  // NaN
+    }
+
+    seen = seen || [];
+    if (seen.indexOf(obj) !== -1) {
+        return true;                            // If previous comparison failed, it would have stopped execution
+    }
+
+    seen.push(obj);
+
+    if (Array.isArray(obj)) {
+        if (!Array.isArray(ref)) {
+            return false;
+        }
+
+        if (!options.part && obj.length !== ref.length) {
+            return false;
+        }
+
+        for (let i = 0; i < obj.length; ++i) {
+            if (options.part) {
+                let found = false;
+                for (let j = 0; j < ref.length; ++j) {
+                    if (exports.deepEqual(obj[i], ref[j], options)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                return found;
+            }
+
+            if (!exports.deepEqual(obj[i], ref[i], options)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    if (Buffer.isBuffer(obj)) {
+        if (!Buffer.isBuffer(ref)) {
+            return false;
+        }
+
+        if (obj.length !== ref.length) {
+            return false;
+        }
+
+        for (let i = 0; i < obj.length; ++i) {
+            if (obj[i] !== ref[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    if (obj instanceof Date) {
+        return (ref instanceof Date && obj.getTime() === ref.getTime());
+    }
+
+    if (obj instanceof RegExp) {
+        return (ref instanceof RegExp && obj.toString() === ref.toString());
+    }
+
+    if (options.prototype) {
+        if (Object.getPrototypeOf(obj) !== Object.getPrototypeOf(ref)) {
+            return false;
+        }
+    }
+
+    const keys = Object.getOwnPropertyNames(obj);
+
+    if (!options.part && keys.length !== Object.getOwnPropertyNames(ref).length) {
+        return false;
+    }
+
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+        if (descriptor.get) {
+            if (!exports.deepEqual(descriptor, Object.getOwnPropertyDescriptor(ref, key), options, seen)) {
+                return false;
+            }
+        }
+        else if (!exports.deepEqual(obj[key], ref[key], options, seen)) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
+
+// Remove duplicate items from array
+
+exports.unique = (array, key) => {
+
+    let result;
+    if (key) {
+        result = [];
+        const index = new Set();
+        array.forEach((item) => {
+
+            const identifier = item[key];
+            if (!index.has(identifier)) {
+                index.add(identifier);
+                result.push(item);
+            }
+        });
+    }
+    else {
+        result = Array.from(new Set(array));
+    }
+
+    return result;
+};
+
+
+// Convert array into object
+
+exports.mapToObject = function (array, key) {
+
+    if (!array) {
+        return null;
+    }
+
+    const obj = {};
+    for (let i = 0; i < array.length; ++i) {
+        if (key) {
+            if (array[i][key]) {
+                obj[array[i][key]] = true;
+            }
+        }
+        else {
+            obj[array[i]] = true;
+        }
+    }
+
+    return obj;
+};
+
+
+// Find the common unique items in two arrays
+
+exports.intersect = function (array1, array2, justFirst) {
+
+    if (!array1 || !array2) {
+        return [];
+    }
+
+    const common = [];
+    const hash = (Array.isArray(array1) ? exports.mapToObject(array1) : array1);
+    const found = {};
+    for (let i = 0; i < array2.length; ++i) {
+        if (hash[array2[i]] && !found[array2[i]]) {
+            if (justFirst) {
+                return array2[i];
+            }
+
+            common.push(array2[i]);
+            found[array2[i]] = true;
+        }
+    }
+
+    return (justFirst ? null : common);
+};
+
+
+// Test if the reference contains the values
+
+exports.contain = function (ref, values, options) {
+
+    /*
+        string -> string(s)
+        array -> item(s)
+        object -> key(s)
+        object -> object (key:value)
+    */
+
+    let valuePairs = null;
+    if (typeof ref === 'object' &&
+        typeof values === 'object' &&
+        !Array.isArray(ref) &&
+        !Array.isArray(values)) {
+
+        valuePairs = values;
+        values = Object.keys(values);
+    }
+    else {
+        values = [].concat(values);
+    }
+
+    options = options || {};            // deep, once, only, part
+
+    exports.assert(arguments.length >= 2, 'Insufficient arguments');
+    exports.assert(typeof ref === 'string' || typeof ref === 'object', 'Reference must be string or an object');
+    exports.assert(values.length, 'Values array cannot be empty');
+
+    let compare;
+    let compareFlags;
+    if (options.deep) {
+        compare = exports.deepEqual;
+
+        const hasOnly = options.hasOwnProperty('only');
+        const hasPart = options.hasOwnProperty('part');
+
+        compareFlags = {
+            prototype: hasOnly ? options.only : hasPart ? !options.part : false,
+            part: hasOnly ? !options.only : hasPart ? options.part : true
+        };
+    }
+    else {
+        compare = (a, b) => a === b;
+    }
+
+    let misses = false;
+    const matches = new Array(values.length);
+    for (let i = 0; i < matches.length; ++i) {
+        matches[i] = 0;
+    }
+
+    if (typeof ref === 'string') {
+        let pattern = '(';
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+            exports.assert(typeof value === 'string', 'Cannot compare string reference to non-string value');
+            pattern += (i ? '|' : '') + exports.escapeRegex(value);
+        }
+
+        const regex = new RegExp(pattern + ')', 'g');
+        const leftovers = ref.replace(regex, ($0, $1) => {
+
+            const index = values.indexOf($1);
+            ++matches[index];
+            return '';          // Remove from string
+        });
+
+        misses = !!leftovers;
+    }
+    else if (Array.isArray(ref)) {
+        for (let i = 0; i < ref.length; ++i) {
+            let matched = false;
+            for (let j = 0; j < values.length && matched === false; ++j) {
+                matched = compare(values[j], ref[i], compareFlags) && j;
+            }
+
+            if (matched !== false) {
+                ++matches[matched];
+            }
+            else {
+                misses = true;
+            }
+        }
+    }
+    else {
+        const keys = Object.getOwnPropertyNames(ref);
+        for (let i = 0; i < keys.length; ++i) {
+            const key = keys[i];
+            const pos = values.indexOf(key);
+            if (pos !== -1) {
+                if (valuePairs &&
+                    !compare(valuePairs[key], ref[key], compareFlags)) {
+
+                    return false;
+                }
+
+                ++matches[pos];
+            }
+            else {
+                misses = true;
+            }
+        }
+    }
+
+    let result = false;
+    for (let i = 0; i < matches.length; ++i) {
+        result = result || !!matches[i];
+        if ((options.once && matches[i] > 1) ||
+            (!options.part && !matches[i])) {
+
+            return false;
+        }
+    }
+
+    if (options.only &&
+        misses) {
+
+        return false;
+    }
+
+    return result;
+};
+
+
+// Flatten array
+
+exports.flatten = function (array, target) {
+
+    const result = target || [];
+
+    for (let i = 0; i < array.length; ++i) {
+        if (Array.isArray(array[i])) {
+            exports.flatten(array[i], result);
+        }
+        else {
+            result.push(array[i]);
+        }
+    }
+
+    return result;
+};
+
+
+// Convert an object key chain string ('a.b.c') to reference (object[a][b][c])
+
+exports.reach = function (obj, chain, options) {
+
+    if (chain === false ||
+        chain === null ||
+        typeof chain === 'undefined') {
+
+        return obj;
+    }
+
+    options = options || {};
+    if (typeof options === 'string') {
+        options = { separator: options };
+    }
+
+    const path = chain.split(options.separator || '.');
+    let ref = obj;
+    for (let i = 0; i < path.length; ++i) {
+        let key = path[i];
+        if (key[0] === '-' && Array.isArray(ref)) {
+            key = key.slice(1, key.length);
+            key = ref.length - key;
+        }
+
+        if (!ref ||
+            !((typeof ref === 'object' || typeof ref === 'function') && key in ref) ||
+            (typeof ref !== 'object' && options.functions === false)) {         // Only object and function can have properties
+
+            exports.assert(!options.strict || i + 1 === path.length, 'Missing segment', key, 'in reach path ', chain);
+            exports.assert(typeof ref === 'object' || options.functions === true || typeof ref !== 'function', 'Invalid segment', key, 'in reach path ', chain);
+            ref = options.default;
+            break;
+        }
+
+        ref = ref[key];
+    }
+
+    return ref;
+};
+
+
+exports.reachTemplate = function (obj, template, options) {
+
+    return template.replace(/{([^}]+)}/g, ($0, chain) => {
+
+        const value = exports.reach(obj, chain, options);
+        return (value === undefined || value === null ? '' : value);
+    });
+};
+
+
+exports.formatStack = function (stack) {
+
+    const trace = [];
+    for (let i = 0; i < stack.length; ++i) {
+        const item = stack[i];
+        trace.push([item.getFileName(), item.getLineNumber(), item.getColumnNumber(), item.getFunctionName(), item.isConstructor()]);
+    }
+
+    return trace;
+};
+
+
+exports.formatTrace = function (trace) {
+
+    const display = [];
+
+    for (let i = 0; i < trace.length; ++i) {
+        const row = trace[i];
+        display.push((row[4] ? 'new ' : '') + row[3] + ' (' + row[0] + ':' + row[1] + ':' + row[2] + ')');
+    }
+
+    return display;
+};
+
+
+exports.callStack = function (slice) {
+
+    // http://code.google.com/p/v8/wiki/JavaScriptStackTraceApi
+
+    const v8 = Error.prepareStackTrace;
+    Error.prepareStackTrace = function (_, stack) {
+
+        return stack;
+    };
+
+    const capture = {};
+    Error.captureStackTrace(capture, this);     // arguments.callee is not supported in strict mode so we use this and slice the trace of this off the result
+    const stack = capture.stack;
+
+    Error.prepareStackTrace = v8;
+
+    const trace = exports.formatStack(stack);
+
+    return trace.slice(1 + slice);
+};
+
+
+exports.displayStack = function (slice) {
+
+    const trace = exports.callStack(slice === undefined ? 1 : slice + 1);
+
+    return exports.formatTrace(trace);
+};
+
+
+exports.abortThrow = false;
+
+
+exports.abort = function (message, hideStack) {
+
+    if (process.env.NODE_ENV === 'test' || exports.abortThrow === true) {
+        throw new Error(message || 'Unknown error');
+    }
+
+    let stack = '';
+    if (!hideStack) {
+        stack = exports.displayStack(1).join('\n\t');
+    }
+    console.log('ABORT: ' + message + '\n\t' + stack);
+    process.exit(1);
+};
+
+
+exports.assert = function (condition /*, msg1, msg2, msg3 */) {
+
+    if (condition) {
+        return;
+    }
+
+    if (arguments.length === 2 && arguments[1] instanceof Error) {
+        throw arguments[1];
+    }
+
+    let msgs = [];
+    for (let i = 1; i < arguments.length; ++i) {
+        if (arguments[i] !== '') {
+            msgs.push(arguments[i]);            // Avoids Array.slice arguments leak, allowing for V8 optimizations
+        }
+    }
+
+    msgs = msgs.map((msg) => {
+
+        return typeof msg === 'string' ? msg : msg instanceof Error ? msg.message : exports.stringify(msg);
+    });
+
+    throw new Error(msgs.join(' ') || 'Unknown error');
+};
+
+
+exports.Timer = function () {
+
+    this.ts = 0;
+    this.reset();
+};
+
+
+exports.Timer.prototype.reset = function () {
+
+    this.ts = Date.now();
+};
+
+
+exports.Timer.prototype.elapsed = function () {
+
+    return Date.now() - this.ts;
+};
+
+
+exports.Bench = function () {
+
+    this.ts = 0;
+    this.reset();
+};
+
+
+exports.Bench.prototype.reset = function () {
+
+    this.ts = exports.Bench.now();
+};
+
+
+exports.Bench.prototype.elapsed = function () {
+
+    return exports.Bench.now() - this.ts;
+};
+
+
+exports.Bench.now = function () {
+
+    const ts = process.hrtime();
+    return (ts[0] * 1e3) + (ts[1] / 1e6);
+};
+
+
+// Escape string for Regex construction
+
+exports.escapeRegex = function (string) {
+
+    // Escape ^$.*+-?=!:|\/()[]{},
+    return string.replace(/[\^\$\.\*\+\-\?\=\!\:\|\\\/\(\)\[\]\{\}\,]/g, '\\$&');
+};
+
+
+// Base64url (RFC 4648) encode
+
+exports.base64urlEncode = function (value, encoding) {
+
+    exports.assert(typeof value === 'string' || Buffer.isBuffer(value), 'value must be string or buffer');
+    const buf = (Buffer.isBuffer(value) ? value : new Buffer(value, encoding || 'binary'));
+    return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/\=/g, '');
+};
+
+
+// Base64url (RFC 4648) decode
+
+exports.base64urlDecode = function (value, encoding) {
+
+    if (typeof value !== 'string') {
+
+        return new Error('Value not a string');
+    }
+
+    if (!/^[\w\-]*$/.test(value)) {
+
+        return new Error('Invalid character');
+    }
+
+    const buf = new Buffer(value, 'base64');
+    return (encoding === 'buffer' ? buf : buf.toString(encoding || 'binary'));
+};
+
+
+// Escape attribute value for use in HTTP header
+
+exports.escapeHeaderAttribute = function (attribute) {
+
+    // Allowed value characters: !#$%&'()*+,-./:;<=>?@[]^_`{|}~ and space, a-z, A-Z, 0-9, \, "
+
+    exports.assert(/^[ \w\!#\$%&'\(\)\*\+,\-\.\/\:;<\=>\?@\[\]\^`\{\|\}~\"\\]*$/.test(attribute), 'Bad attribute value (' + attribute + ')');
+
+    return attribute.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');                             // Escape quotes and slash
+};
+
+
+exports.escapeHtml = function (string) {
+
+    return Escape.escapeHtml(string);
+};
+
+
+exports.escapeJavaScript = function (string) {
+
+    return Escape.escapeJavaScript(string);
+};
+
+exports.escapeJson = function (string) {
+
+    return Escape.escapeJson(string);
+};
+
+exports.nextTick = function (callback) {
+
+    return function () {
+
+        const args = arguments;
+        process.nextTick(() => {
+
+            callback.apply(null, args);
+        });
+    };
+};
+
+
+exports.once = function (method) {
+
+    if (method._hoekOnce) {
+        return method;
+    }
+
+    let once = false;
+    const wrapped = function () {
+
+        if (!once) {
+            once = true;
+            method.apply(null, arguments);
+        }
+    };
+
+    wrapped._hoekOnce = true;
+
+    return wrapped;
+};
+
+
+exports.isInteger = Number.isSafeInteger;
+
+
+exports.ignore = function () { };
+
+
+exports.inherits = Util.inherits;
+
+
+exports.format = Util.format;
+
+
+exports.transform = function (source, transform, options) {
+
+    exports.assert(source === null || source === undefined || typeof source === 'object' || Array.isArray(source), 'Invalid source object: must be null, undefined, an object, or an array');
+    const separator = (typeof options === 'object' && options !== null) ? (options.separator || '.') : '.';
+
+    if (Array.isArray(source)) {
+        const results = [];
+        for (let i = 0; i < source.length; ++i) {
+            results.push(exports.transform(source[i], transform, options));
+        }
+        return results;
+    }
+
+    const result = {};
+    const keys = Object.keys(transform);
+
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        const path = key.split(separator);
+        const sourcePath = transform[key];
+
+        exports.assert(typeof sourcePath === 'string', 'All mappings must be "." delineated strings');
+
+        let segment;
+        let res = result;
+
+        while (path.length > 1) {
+            segment = path.shift();
+            if (!res[segment]) {
+                res[segment] = {};
+            }
+            res = res[segment];
+        }
+        segment = path.shift();
+        res[segment] = exports.reach(source, sourcePath, options);
+    }
+
+    return result;
+};
+
+
+exports.uniqueFilename = function (path, extension) {
+
+    if (extension) {
+        extension = extension[0] !== '.' ? '.' + extension : extension;
+    }
+    else {
+        extension = '';
+    }
+
+    path = Path.resolve(path);
+    const name = [Date.now(), process.pid, Crypto.randomBytes(8).toString('hex')].join('-') + extension;
+    return Path.join(path, name);
+};
+
+
+exports.stringify = function () {
+
+    try {
+        return JSON.stringify.apply(null, arguments);
+    }
+    catch (err) {
+        return '[Cannot display object: ' + err.message + ']';
+    }
+};
+
+
+exports.shallow = function (source) {
+
+    const target = {};
+    const keys = Object.keys(source);
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        target[key] = source[key];
+    }
+
+    return target;
+};
+
+}).call(this,require('_process'),require("buffer").Buffer)
+},{"./escape":285,"_process":199,"buffer":94,"crypto":103,"path":188,"util":278}],287:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -76111,7 +78300,7 @@ function extend() {
     return target
 }
 
-},{}],281:[function(require,module,exports){
+},{}],288:[function(require,module,exports){
 module.exports = Yallist
 
 Yallist.Node = Node
@@ -76483,7 +78672,7 @@ function Node (value, prev, next, list) {
   }
 }
 
-},{}],282:[function(require,module,exports){
+},{}],289:[function(require,module,exports){
 (function (global){
 var Timers = require('timers')
 var SenecaModule = require('seneca')
@@ -76524,7 +78713,7 @@ var SenecaExport = function(options, more_options) {
             .then(function(json) {
               // FIX: seneca.reply broken in browser
               var rep = tu.internalize_reply(seneca, json)
-              reply(rep.err, rep.out)
+              reply(rep.err, rep.out, rep.meta)
             })
         }
       })
@@ -76539,5 +78728,5 @@ SenecaExport.prototype = SenecaModule.prototype
 module.exports = SenecaExport
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"seneca":247,"timers":264}]},{},[282])(282)
+},{"seneca":254,"timers":271}]},{},[289])(289)
 });

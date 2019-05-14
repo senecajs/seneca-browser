@@ -37,7 +37,7 @@ var SenecaExport = function(options, more_options) {
             .then(function(json) {
               // FIX: seneca.reply broken in browser
               var rep = tu.internalize_reply(seneca, json)
-              reply(rep.err, rep.out)
+              reply(rep.err, rep.out, rep.meta)
             })
         }
       })

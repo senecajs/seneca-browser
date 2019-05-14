@@ -35,8 +35,8 @@
     "inert": "^5.1.3",
     "lab": "^18.0.2",
     "prettier": "^1.17.0",
-    "seneca": "^3.10.0",
-    "seneca-promisify": "^0.7.1",
+    "seneca": "plugin",
+    "seneca-promisify": "^0.8.0",
     "timers": "^0.1.1"
   },
   "files": [

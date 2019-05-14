@@ -1,3 +1,5 @@
+var PORT = parseInt(process.argv[2],10) || 8080
+
 var Seneca = require('seneca')
 var Hapi = require('hapi')
 var Inert = require('inert')
@@ -9,6 +11,10 @@ var seneca = Seneca({ legacy: { transport: false } })
     .use('@seneca/external',{pins:['a:*', 'c:*']})
 
 seneca.add('a:1', function(msg, reply) {
+  var exp = this.explain()
+  console.log('EXPLAIN', exp)
+
+  exp && exp('an explanation')
   reply({ x: 1 + msg.x })
 })
 
@@ -23,8 +29,7 @@ seneca.add('c:1', function(msg, reply) {
 seneca.ready(async function() {
   var handler = seneca.export('hapi/action_handler')
 
-  var server = new Hapi.Server({ port: 8080 })
-  //server.connection({ port: 8080 })
+  var server = new Hapi.Server({ port: PORT })
 
   await server.register(Inert)
 
@@ -50,22 +55,12 @@ seneca.ready(async function() {
     method: 'POST',
     path: '/seneca',
     handler: handler
-    /*
-    handler: function(request, reply) {
-      handler(request.payload, reply)
-    }
-*/
   })
 
   server.route({
     method: 'POST',
     path: '/api/seneca',
     handler: handler
-/*
-    handler: function(request, reply) {
-      handler(request.payload, reply)
-    }
-*/
   })
 
   server.start(console.log)
