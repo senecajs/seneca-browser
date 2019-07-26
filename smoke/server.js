@@ -4,11 +4,14 @@ var Seneca = require('seneca')
 var Hapi = require('hapi')
 var Inert = require('inert')
 
-var seneca = Seneca({ legacy: { transport: false } })
+var seneca = Seneca({
+  timeout: 500,
+  legacy: { transport: false }
+})
     .test('print')
     .use('seneca-promisify')
     .use('@seneca/hapi')
-    .use('@seneca/external',{pins:['a:*', 'c:*']})
+    .use('@seneca/external',{pins:['a:*', 'c:*', 'd:*']})
 
 seneca.add('a:1', function(msg, reply) {
   var exp = this.explain()
@@ -26,7 +29,17 @@ seneca.add('c:1', function(msg, reply) {
   reply(new Error('foo'))
 })
 
-seneca.ready(async function() {
+seneca.add('d:1', function(msg, reply) {
+  // timeout exceeds global timeout (set above)
+  // so needs act timeout$
+  setTimeout(function(){
+    reply({ x: 3 + msg.x })
+  },1000)
+})
+
+
+seneca.ready(async function hapi() {
+  var seneca = this
   var handler = seneca.export('hapi/action_handler')
 
   var server = new Hapi.Server({ port: PORT })
@@ -63,5 +76,11 @@ seneca.ready(async function() {
     handler: handler
   })
 
-  server.start(console.log)
+  await server.start()
+
+  seneca.ready(function server_info() {
+    console.log('\n\n+++++++++++++++++++++++\n')
+    console.log(server.info)
+    console.log('\n+++++++++++++++++++++++\n\n')
+  })
 })

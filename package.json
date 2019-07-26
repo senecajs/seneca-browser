@@ -4,9 +4,9 @@
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
-    "test": "lab -P test -I fetch,BigUint64Array,BigInt64Array,BigInt,URL,URLSearchParams",
+    "test": "lab -P test -I jsonic,patrun,fetch",
     "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
-    "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
+    "browserify": "browserify -p tinyify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify",
     "smoke": "node smoke/server.js",
     "clean-yarn": "rm -rf node_modules yarn.lock",
@@ -16,28 +16,30 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rjrodger/seneca-browser.git"
+    "url": "git+https://github.com/voxgig/seneca-browser.git"
   },
   "author": "Richard Rodger",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rjrodger/seneca-browser/issues"
+    "url": "https://github.com/voxgig/seneca-browser/issues"
   },
-  "homepage": "https://github.com/rjrodger/seneca-browser#readme",
+  "homepage": "https://github.com/voxgig/seneca-browser#readme",
   "dependencies": {},
   "devDependencies": {
     "@seneca/external": "^0.1.0",
     "@seneca/hapi": "^0.3.0",
     "browserify": "^16.2.3",
     "browserify-fs": "^1.0.0",
+    "browserify-header": "^1.0.1",
     "code": "^5.2.4",
     "hapi": "^18.1.0",
     "inert": "^5.1.3",
     "lab": "^18.0.2",
     "prettier": "^1.17.0",
-    "seneca": "plugin",
+    "seneca": "^3.12.1",
     "seneca-promisify": "^0.8.0",
-    "timers": "^0.1.1"
+    "timers": "^0.1.1",
+    "tinyify": "^2.5.1"
   },
   "files": [
     "README.md",

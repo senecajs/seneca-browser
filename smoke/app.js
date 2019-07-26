@@ -1,15 +1,46 @@
+function show_res(code,pass) {
+  document.getElementById('res_'+code).innerHTML = pass ? 'PASS' : 'FAIL'
+}
+
 Seneca()
   .test('print')
-  .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*'] })
+  .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*', 'd:*'] })
 
   // ok
-  .act('a:1,x:1', console.log)
+  .act('a:1,x:1', function(err, out) {
+    // console.log('000', err, out)
+    show_res('000',out.x===2)
+  })
 
-  // unsafe
-  .act('b:1,x:2', console.log)
+
+  // ok - extended timeout
+  .act('d:1,x:2', {timeout$:1500}, function(err, out) {
+    // console.log('001', err, out)
+    show_res('001',out && out.x===5)
+  })
+
+  // fail - no extended timeout
+  .act('d:1,x:3', function(err, out) {
+    // console.log('002', err, err && err.code, out)
+    show_res('002', err && err.code === 'action_timeout')
+  })
+
+
+
+
+// unsafe
+  .act('b:1,x:2', function(err, out) {
+    // console.log('003', err, err && err.code, err && err.message, out)
+    show_res('003', err && err.code === 'external-not-allowed')
+  })
+
 
   // error
-  .act('c:1,x:3', console.log)
+  .act('c:1,x:3', function(err, out) {
+    //console.log('004', err, err && err.code, err && err.message, out)
+    show_res('004', err && err.message === 'foo')
+  })
+
 
 var exp = []
 
@@ -17,19 +48,10 @@ var si = Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
   .test('print')
   .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*'] })
 
-  // ok
-  .act('a:1,x:1', console.log)
-
-  // unsafe
-  .act('b:1,x:2', console.log)
-
-  // error
-  .act('c:1,x:3', console.log)
-
   // ok, explain
-  .act('a:1,x:1', {explain$:exp}, function() {
-    console.log(arguments)
+    .act('a:1,x:1', {explain$:exp}, function(err, out) {
     console.log('EXPLAIN', exp)
+    show_res('005', !err && 2 === out.x && exp[2].content === 'an explanation')
   })
 
 
