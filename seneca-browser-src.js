@@ -1,4 +1,4 @@
-/* Copyright (c) Richard Rodger 2019, MIT license */
+/* Copyright (c) Richard Rodger 2019, MIT license. */
 
 var Timers = require('timers')
 var SenecaModule = require('seneca')
