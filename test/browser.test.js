@@ -1,10 +1,11 @@
 'use strict'
 
-const Lab = require('lab')
-const Code = require('code')
+const Lab = require('@hapi/lab')
+const Code = require('@hapi/code')
 const lab = (exports.lab = Lab.script())
 const expect = Code.expect
 
+/*
 const SenecaBrowser = require('../seneca-browser.js')
 
 global.fetch = function(url, spec) {
@@ -33,3 +34,4 @@ lab.test('happy', async () => {
       })
   })
 })
+*/

@@ -1,18 +1,18 @@
 {
   "name": "seneca-browser",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
     "test": "lab -P test -I jsonic,patrun,fetch",
     "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
-    "browserify": "browserify -p tinyify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
+    "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify",
     "smoke": "node smoke/server.js",
     "clean-yarn": "rm -rf node_modules yarn.lock",
     "clean-npm": "rm -rf node_modules package-lock.json",
     "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && echo TAG: v$REPO_VERSION && git commit -a -m v$REPO_VERSION && git push && git tag v$REPO_VERSION && git push --tags",
-    "repo-publish": "npm test && npm run repo-tag && npm publish --access public"
+    "repo-publish": "npm test && npm run repo-tag && npm publish --access public --registry http://registry.npmjs.org"
   },
   "repository": {
     "type": "git",
@@ -26,20 +26,19 @@
   "homepage": "https://github.com/voxgig/seneca-browser#readme",
   "dependencies": {},
   "devDependencies": {
+    "@hapi/code": "^6.0.0",
+    "@hapi/hapi": "^18.4.0",
+    "@hapi/inert": "^5.2.2",
+    "@hapi/lab": "^20.2.2",
     "@seneca/external": "^0.1.0",
-    "@seneca/hapi": "^0.3.0",
-    "browserify": "^16.2.3",
+    "@seneca/hapi": "^1.0.0",
+    "browserify": "^16.5.0",
     "browserify-fs": "^1.0.0",
     "browserify-header": "^1.0.1",
-    "code": "^5.2.4",
-    "hapi": "^18.1.0",
-    "inert": "^5.1.3",
-    "lab": "^18.0.2",
-    "prettier": "^1.17.0",
-    "seneca": "^3.12.1",
-    "seneca-promisify": "^0.8.0",
-    "timers": "^0.1.1",
-    "tinyify": "^2.5.1"
+    "prettier": "^1.18.2",
+    "seneca": "^3.15.2",
+    "seneca-promisify": "^1.1.0",
+    "timers": "^0.1.1"
   },
   "files": [
     "README.md",

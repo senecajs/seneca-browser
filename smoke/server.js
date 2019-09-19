@@ -1,8 +1,8 @@
 var PORT = parseInt(process.argv[2],10) || 8080
 
 var Seneca = require('seneca')
-var Hapi = require('hapi')
-var Inert = require('inert')
+var Hapi = require('@hapi/hapi')
+var Inert = require('@hapi/inert')
 
 var seneca = Seneca({
   timeout: 500,
