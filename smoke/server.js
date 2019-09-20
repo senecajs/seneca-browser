@@ -1,4 +1,4 @@
-var PORT = parseInt(process.argv[2],10) || 8080
+var PORT = parseInt(process.argv[2],10) || 8181
 
 var Seneca = require('seneca')
 var Hapi = require('@hapi/hapi')

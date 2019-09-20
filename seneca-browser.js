@@ -53796,9 +53796,9 @@ exports.api_add = function() {
     private$.stats.actmap[actdef.pattern] || intern.make_action_stats(actdef)
 
   var pattern_rules = {}
-  Common.each(pattern, function(v, k) {
-    if ('object' === typeof v) {
-      pattern_rules[k] = v && v.isJoi ? v : Common.deepextend({}, v)
+  Common.each(raw_pattern, function(v, k) {
+    if ('object' === typeof v && !~k.indexOf('$')) {
+      pattern_rules[k] = v
       delete pattern[k]
     }
   })
@@ -58560,10 +58560,10 @@ function isNumber (x) {
 
 },{}],173:[function(require,module,exports){
 module.exports={
-  "_from": "seneca@^3.15.2",
-  "_id": "seneca@3.15.2",
+  "_from": "seneca@^3.15.3",
+  "_id": "seneca@3.15.3",
   "_inBundle": false,
-  "_integrity": "sha512-tYZzxD9UpL/ZHzlr7qbd1zx17dsO0ayTztKF+vzojgeiarhuroj1T5N4xNlOklGsdBeVX+6uJ6NfA0ZKlOOQ6w==",
+  "_integrity": "sha512-LhtV2LWPVrHKBhY/6SbP7do1fWLzoS0r8nFBXw/9LH2Fv3uPF9SAQ8r/mWiZj5AmONbCXf+nqN9vJnIhQTw7vw==",
   "_location": "/seneca",
   "_phantomChildren": {
     "@hapi/address": "2.1.1",
@@ -58575,19 +58575,19 @@ module.exports={
   "_requested": {
     "type": "range",
     "registry": true,
-    "raw": "seneca@^3.15.2",
+    "raw": "seneca@^3.15.3",
     "name": "seneca",
     "escapedName": "seneca",
-    "rawSpec": "^3.15.2",
+    "rawSpec": "^3.15.3",
     "saveSpec": null,
-    "fetchSpec": "^3.15.2"
+    "fetchSpec": "^3.15.3"
   },
   "_requiredBy": [
     "#DEV:/"
   ],
-  "_resolved": "http://localhost:4873/seneca/-/seneca-3.15.2.tgz",
-  "_shasum": "34d29891f0ec9f6e1a59fc18e1e3d984f362c2c4",
-  "_spec": "seneca@^3.15.2",
+  "_resolved": "http://localhost:4873/seneca/-/seneca-3.15.3.tgz",
+  "_shasum": "a49807049017ca977f9da4f4e5ab64405f5e3888",
+  "_spec": "seneca@^3.15.3",
   "_where": "/Users/richard/Projects/seneca/browser",
   "author": {
     "name": "Richard Rodger",
@@ -58799,7 +58799,7 @@ module.exports={
     "smoke": "node test/stubs/launch.js",
     "test": "lab -v -P test -L -t 90"
   },
-  "version": "3.15.2"
+  "version": "3.15.3"
 }
 
 },{}],174:[function(require,module,exports){
