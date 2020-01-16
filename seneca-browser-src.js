@@ -26,6 +26,7 @@ var SenecaExport = function(options, more_options) {
         reply({
           send: function(msg, reply, meta) {
             fetch(options.endpoint, {
+              // TODO: set content-type header to json
               credentials: 'same-origin',
               method: 'post',
               body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta))

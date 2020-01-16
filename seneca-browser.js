@@ -1,1912 +1,6 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Seneca = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
 
-const Url = require('url');
-
-
-const internals = {
-    minDomainSegments: 2,
-    nonAsciiRx: /[^\x00-\x7f]/,
-    domainControlRx: /[\x00-\x20]/,                                                     // Control + space
-    tldSegmentRx: /^[a-zA-Z](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
-    domainSegmentRx: /^[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
-    URL: Url.URL || URL                                                                 // $lab:coverage:ignore$
-};
-
-
-exports.analyze = function (domain, options = {}) {
-
-    if (typeof domain !== 'string') {
-        throw new Error('Invalid input: domain must be a string');
-    }
-
-    if (!domain) {
-        return { error: 'Domain must be a non-empty string' };
-    }
-
-    if (domain.length > 256) {
-        return { error: 'Domain too long' };
-    }
-
-    const ascii = !internals.nonAsciiRx.test(domain);
-    if (!ascii) {
-        if (options.allowUnicode === false) {                                           // Defaults to true
-            return { error: 'Domain contains forbidden Unicode characters' };
-        }
-
-        domain = domain.normalize('NFC');
-    }
-
-    if (internals.domainControlRx.test(domain)) {
-        return { error: 'Domain contains invalid character' };
-    }
-
-    domain = internals.punycode(domain);
-
-    // https://tools.ietf.org/html/rfc1035 section 2.3.1
-
-    const minDomainSegments = options.minDomainSegments || internals.minDomainSegments;
-
-    const segments = domain.split('.');
-    if (segments.length < minDomainSegments) {
-        return { error: 'Domain lacks the minimum required number of segments' };
-    }
-
-    const tlds = options.tlds;
-    if (tlds) {
-        const tld = segments[segments.length - 1].toLowerCase();
-        if (tlds.deny && tlds.deny.has(tld) ||
-            tlds.allow && !tlds.allow.has(tld)) {
-
-            return { error: 'Domain uses forbidden TLD' };
-        }
-    }
-
-    for (let i = 0; i < segments.length; ++i) {
-        const segment = segments[i];
-
-        if (!segment.length) {
-            return { error: 'Domain contains empty dot-separated segment' };
-        }
-
-        if (segment.length > 63) {
-            return { error: 'Domain contains dot-separated segment that is too long' };
-        }
-
-        if (i < segments.length - 1) {
-            if (!internals.domainSegmentRx.test(segment)) {
-                return { error: 'Domain contains invalid character' };
-            }
-        }
-        else {
-            if (!internals.tldSegmentRx.test(segment)) {
-                return { error: 'Domain contains invalid tld character' };
-            }
-        }
-    }
-};
-
-
-exports.isValid = function (domain, options) {
-
-    return !exports.analyze(domain, options);
-};
-
-
-internals.punycode = function (domain) {
-
-    try {
-        return new internals.URL(`http://${domain}`).host;
-    }
-    catch (err) {
-        return domain;
-    }
-};
-
-},{"url":196}],2:[function(require,module,exports){
-'use strict';
-
-const Util = require('util');
-
-const Domain = require('./domain');
-
-
-const internals = {
-    nonAsciiRx: /[^\x00-\x7f]/,
-    encoder: new (Util.TextEncoder || TextEncoder)()                                            // $lab:coverage:ignore$
-};
-
-
-exports.analyze = function (email, options) {
-
-    return internals.email(email, options);
-};
-
-
-exports.isValid = function (email, options) {
-
-    return !internals.email(email, options);
-};
-
-
-internals.email = function (email, options = {}) {
-
-    if (typeof email !== 'string') {
-        throw new Error('Invalid input: email must be a string');
-    }
-
-    if (!email) {
-        return { error: 'Address must be a non-empty string' };
-    }
-
-    // Unicode
-
-    const ascii = !internals.nonAsciiRx.test(email);
-    if (!ascii) {
-        if (options.allowUnicode === false) {                                                   // Defaults to true
-            return { error: 'Address contains forbidden Unicode characters' };
-        }
-
-        email = email.normalize('NFC');
-    }
-
-    // Basic structure
-
-    const parts = email.split('@');
-    if (parts.length !== 2) {
-        return { error: parts.length > 2 ? 'Address cannot contain more than one @ character' : 'Address must contain one @ character' };
-    }
-
-    const [local, domain] = parts;
-
-    if (!local) {
-        return { error: 'Address local part cannot be empty' };
-    }
-
-    if (!options.ignoreLength) {
-        if (email.length > 254) {                                           // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.3
-            return { error: 'Address too long' };
-        }
-
-        if (internals.encoder.encode(local).length > 64) {                  // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.1
-            return { error: 'Address local part too long' };
-        }
-    }
-
-    // Validate parts
-
-    return internals.local(local, ascii) || Domain.analyze(domain, options);
-};
-
-
-internals.local = function (local, ascii) {
-
-    const segments = local.split('.');
-    for (const segment of segments) {
-        if (!segment.length) {
-            return { error: 'Address local part contains empty dot-separated segment' };
-        }
-
-        if (ascii) {
-            if (!internals.atextRx.test(segment)) {
-                return { error: 'Address local part contains invalid character' };
-            }
-
-            continue;
-        }
-
-        for (const char of segment) {
-            if (internals.atextRx.test(char)) {
-                continue;
-            }
-
-            const binary = internals.binary(char);
-            if (!internals.atomRx.test(binary)) {
-                return { error: 'Address local part contains invalid character' };
-            }
-        }
-    }
-};
-
-
-internals.binary = function (char) {
-
-    return Array.from(internals.encoder.encode(char)).map((v) => String.fromCharCode(v)).join('');
-};
-
-
-/*
-    From RFC 5321:
-
-        Mailbox         =   Local-part "@" ( Domain / address-literal )
-
-        Local-part      =   Dot-string / Quoted-string
-        Dot-string      =   Atom *("."  Atom)
-        Atom            =   1*atext
-        atext           =   ALPHA / DIGIT / "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
-
-        Domain          =   sub-domain *("." sub-domain)
-        sub-domain      =   Let-dig [Ldh-str]
-        Let-dig         =   ALPHA / DIGIT
-        Ldh-str         =   *( ALPHA / DIGIT / "-" ) Let-dig
-
-        ALPHA           =   %x41-5A / %x61-7A        ; a-z, A-Z
-        DIGIT           =   %x30-39                  ; 0-9
-
-    From RFC 6531:
-
-        sub-domain      =/  U-label
-        atext           =/  UTF8-non-ascii
-
-        UTF8-non-ascii  =   UTF8-2 / UTF8-3 / UTF8-4
-
-        UTF8-2          =   %xC2-DF UTF8-tail
-        UTF8-3          =   %xE0 %xA0-BF UTF8-tail /
-                            %xE1-EC 2( UTF8-tail ) /
-                            %xED %x80-9F UTF8-tail /
-                            %xEE-EF 2( UTF8-tail )
-        UTF8-4          =   %xF0 %x90-BF 2( UTF8-tail ) /
-                            %xF1-F3 3( UTF8-tail ) /
-                            %xF4 %x80-8F 2( UTF8-tail )
-
-        UTF8-tail       =   %x80-BF
-
-    Note: The following are not supported:
-
-        RFC 5321: address-literal, Quoted-string
-        RFC 5322: obs-*, CFWS
-*/
-
-
-internals.atextRx = /^[\w!#\$%&'\*\+\-/=\?\^`\{\|\}~]+$/;               // _ included in \w
-
-
-internals.atomRx = new RegExp([
-
-    //  %xC2-DF UTF8-tail
-    '(?:[\\xc2-\\xdf][\\x80-\\xbf])',
-
-    //  %xE0 %xA0-BF UTF8-tail              %xE1-EC 2( UTF8-tail )            %xED %x80-9F UTF8-tail              %xEE-EF 2( UTF8-tail )
-    '(?:\\xe0[\\xa0-\\xbf][\\x80-\\xbf])|(?:[\\xe1-\\xec][\\x80-\\xbf]{2})|(?:\\xed[\\x80-\\x9f][\\x80-\\xbf])|(?:[\\xee-\\xef][\\x80-\\xbf]{2})',
-
-    //  %xF0 %x90-BF 2( UTF8-tail )            %xF1-F3 3( UTF8-tail )            %xF4 %x80-8F 2( UTF8-tail )
-    '(?:\\xf0[\\x90-\\xbf][\\x80-\\xbf]{2})|(?:[\\xf1-\\xf3][\\x80-\\xbf]{3})|(?:\\xf4[\\x80-\\x8f][\\x80-\\xbf]{2})'
-
-].join('|'));
-
-},{"./domain":1,"util":202}],3:[function(require,module,exports){
-'use strict';
-
-const Domain = require('./domain');
-const Email = require('./email');
-const Tlds = require('./tlds');
-
-
-const internals = {
-    defaultTlds: { allow: Tlds, deny: null }
-};
-
-
-module.exports = {
-    domain: {
-        analyze(domain, options) {
-
-            options = internals.options(options);
-            return Domain.analyze(domain, options);
-        },
-
-        isValid(domain, options) {
-
-            options = internals.options(options);
-            return Domain.isValid(domain, options);
-        }
-    },
-    email: {
-        analyze(email, options) {
-
-            options = internals.options(options);
-            return Email.analyze(email, options);
-        },
-
-        isValid(email, options) {
-
-            options = internals.options(options);
-            return Email.isValid(email, options);
-        }
-    }
-};
-
-
-internals.options = function (options) {
-
-    if (!options) {
-        return { tlds: internals.defaultTlds };
-    }
-
-    if (options.tlds === false) {                // Defaults to true
-        return options;
-    }
-
-    if (!options.tlds ||
-        options.tlds === true) {
-
-        return Object.assign({}, options, { tlds: internals.defaultTlds });
-    }
-
-    if (typeof options.tlds !== 'object') {
-        throw new Error('Invalid options: tlds must be a boolean or an object');
-    }
-
-    if (options.tlds.deny) {
-        if (options.tlds.deny instanceof Set === false) {
-            throw new Error('Invalid options: tlds.deny must be a Set object');
-        }
-
-        if (options.tlds.allow) {
-            throw new Error('Invalid options: cannot specify both tlds.allow and tlds.deny lists');
-        }
-
-        return options;
-    }
-
-    if (options.tlds.allow === true) {
-        return Object.assign({}, options, { tlds: internals.defaultTlds });
-    }
-
-    if (options.tlds.allow instanceof Set === false) {
-        throw new Error('Invalid options: tlds.allow must be a Set object or true');
-    }
-
-    return options;
-};
-
-},{"./domain":1,"./email":2,"./tlds":4}],4:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-// http://data.iana.org/TLD/tlds-alpha-by-domain.txt
-// # Version 2019091902, Last Updated Fri Sep 20 07: 07: 02 2019 UTC
-
-
-internals.tlds = [
-    'AAA',
-    'AARP',
-    'ABARTH',
-    'ABB',
-    'ABBOTT',
-    'ABBVIE',
-    'ABC',
-    'ABLE',
-    'ABOGADO',
-    'ABUDHABI',
-    'AC',
-    'ACADEMY',
-    'ACCENTURE',
-    'ACCOUNTANT',
-    'ACCOUNTANTS',
-    'ACO',
-    'ACTOR',
-    'AD',
-    'ADAC',
-    'ADS',
-    'ADULT',
-    'AE',
-    'AEG',
-    'AERO',
-    'AETNA',
-    'AF',
-    'AFAMILYCOMPANY',
-    'AFL',
-    'AFRICA',
-    'AG',
-    'AGAKHAN',
-    'AGENCY',
-    'AI',
-    'AIG',
-    'AIGO',
-    'AIRBUS',
-    'AIRFORCE',
-    'AIRTEL',
-    'AKDN',
-    'AL',
-    'ALFAROMEO',
-    'ALIBABA',
-    'ALIPAY',
-    'ALLFINANZ',
-    'ALLSTATE',
-    'ALLY',
-    'ALSACE',
-    'ALSTOM',
-    'AM',
-    'AMERICANEXPRESS',
-    'AMERICANFAMILY',
-    'AMEX',
-    'AMFAM',
-    'AMICA',
-    'AMSTERDAM',
-    'ANALYTICS',
-    'ANDROID',
-    'ANQUAN',
-    'ANZ',
-    'AO',
-    'AOL',
-    'APARTMENTS',
-    'APP',
-    'APPLE',
-    'AQ',
-    'AQUARELLE',
-    'AR',
-    'ARAB',
-    'ARAMCO',
-    'ARCHI',
-    'ARMY',
-    'ARPA',
-    'ART',
-    'ARTE',
-    'AS',
-    'ASDA',
-    'ASIA',
-    'ASSOCIATES',
-    'AT',
-    'ATHLETA',
-    'ATTORNEY',
-    'AU',
-    'AUCTION',
-    'AUDI',
-    'AUDIBLE',
-    'AUDIO',
-    'AUSPOST',
-    'AUTHOR',
-    'AUTO',
-    'AUTOS',
-    'AVIANCA',
-    'AW',
-    'AWS',
-    'AX',
-    'AXA',
-    'AZ',
-    'AZURE',
-    'BA',
-    'BABY',
-    'BAIDU',
-    'BANAMEX',
-    'BANANAREPUBLIC',
-    'BAND',
-    'BANK',
-    'BAR',
-    'BARCELONA',
-    'BARCLAYCARD',
-    'BARCLAYS',
-    'BAREFOOT',
-    'BARGAINS',
-    'BASEBALL',
-    'BASKETBALL',
-    'BAUHAUS',
-    'BAYERN',
-    'BB',
-    'BBC',
-    'BBT',
-    'BBVA',
-    'BCG',
-    'BCN',
-    'BD',
-    'BE',
-    'BEATS',
-    'BEAUTY',
-    'BEER',
-    'BENTLEY',
-    'BERLIN',
-    'BEST',
-    'BESTBUY',
-    'BET',
-    'BF',
-    'BG',
-    'BH',
-    'BHARTI',
-    'BI',
-    'BIBLE',
-    'BID',
-    'BIKE',
-    'BING',
-    'BINGO',
-    'BIO',
-    'BIZ',
-    'BJ',
-    'BLACK',
-    'BLACKFRIDAY',
-    'BLOCKBUSTER',
-    'BLOG',
-    'BLOOMBERG',
-    'BLUE',
-    'BM',
-    'BMS',
-    'BMW',
-    'BN',
-    'BNPPARIBAS',
-    'BO',
-    'BOATS',
-    'BOEHRINGER',
-    'BOFA',
-    'BOM',
-    'BOND',
-    'BOO',
-    'BOOK',
-    'BOOKING',
-    'BOSCH',
-    'BOSTIK',
-    'BOSTON',
-    'BOT',
-    'BOUTIQUE',
-    'BOX',
-    'BR',
-    'BRADESCO',
-    'BRIDGESTONE',
-    'BROADWAY',
-    'BROKER',
-    'BROTHER',
-    'BRUSSELS',
-    'BS',
-    'BT',
-    'BUDAPEST',
-    'BUGATTI',
-    'BUILD',
-    'BUILDERS',
-    'BUSINESS',
-    'BUY',
-    'BUZZ',
-    'BV',
-    'BW',
-    'BY',
-    'BZ',
-    'BZH',
-    'CA',
-    'CAB',
-    'CAFE',
-    'CAL',
-    'CALL',
-    'CALVINKLEIN',
-    'CAM',
-    'CAMERA',
-    'CAMP',
-    'CANCERRESEARCH',
-    'CANON',
-    'CAPETOWN',
-    'CAPITAL',
-    'CAPITALONE',
-    'CAR',
-    'CARAVAN',
-    'CARDS',
-    'CARE',
-    'CAREER',
-    'CAREERS',
-    'CARS',
-    'CARTIER',
-    'CASA',
-    'CASE',
-    'CASEIH',
-    'CASH',
-    'CASINO',
-    'CAT',
-    'CATERING',
-    'CATHOLIC',
-    'CBA',
-    'CBN',
-    'CBRE',
-    'CBS',
-    'CC',
-    'CD',
-    'CEB',
-    'CENTER',
-    'CEO',
-    'CERN',
-    'CF',
-    'CFA',
-    'CFD',
-    'CG',
-    'CH',
-    'CHANEL',
-    'CHANNEL',
-    'CHARITY',
-    'CHASE',
-    'CHAT',
-    'CHEAP',
-    'CHINTAI',
-    'CHRISTMAS',
-    'CHROME',
-    'CHRYSLER',
-    'CHURCH',
-    'CI',
-    'CIPRIANI',
-    'CIRCLE',
-    'CISCO',
-    'CITADEL',
-    'CITI',
-    'CITIC',
-    'CITY',
-    'CITYEATS',
-    'CK',
-    'CL',
-    'CLAIMS',
-    'CLEANING',
-    'CLICK',
-    'CLINIC',
-    'CLINIQUE',
-    'CLOTHING',
-    'CLOUD',
-    'CLUB',
-    'CLUBMED',
-    'CM',
-    'CN',
-    'CO',
-    'COACH',
-    'CODES',
-    'COFFEE',
-    'COLLEGE',
-    'COLOGNE',
-    'COM',
-    'COMCAST',
-    'COMMBANK',
-    'COMMUNITY',
-    'COMPANY',
-    'COMPARE',
-    'COMPUTER',
-    'COMSEC',
-    'CONDOS',
-    'CONSTRUCTION',
-    'CONSULTING',
-    'CONTACT',
-    'CONTRACTORS',
-    'COOKING',
-    'COOKINGCHANNEL',
-    'COOL',
-    'COOP',
-    'CORSICA',
-    'COUNTRY',
-    'COUPON',
-    'COUPONS',
-    'COURSES',
-    'CR',
-    'CREDIT',
-    'CREDITCARD',
-    'CREDITUNION',
-    'CRICKET',
-    'CROWN',
-    'CRS',
-    'CRUISE',
-    'CRUISES',
-    'CSC',
-    'CU',
-    'CUISINELLA',
-    'CV',
-    'CW',
-    'CX',
-    'CY',
-    'CYMRU',
-    'CYOU',
-    'CZ',
-    'DABUR',
-    'DAD',
-    'DANCE',
-    'DATA',
-    'DATE',
-    'DATING',
-    'DATSUN',
-    'DAY',
-    'DCLK',
-    'DDS',
-    'DE',
-    'DEAL',
-    'DEALER',
-    'DEALS',
-    'DEGREE',
-    'DELIVERY',
-    'DELL',
-    'DELOITTE',
-    'DELTA',
-    'DEMOCRAT',
-    'DENTAL',
-    'DENTIST',
-    'DESI',
-    'DESIGN',
-    'DEV',
-    'DHL',
-    'DIAMONDS',
-    'DIET',
-    'DIGITAL',
-    'DIRECT',
-    'DIRECTORY',
-    'DISCOUNT',
-    'DISCOVER',
-    'DISH',
-    'DIY',
-    'DJ',
-    'DK',
-    'DM',
-    'DNP',
-    'DO',
-    'DOCS',
-    'DOCTOR',
-    'DODGE',
-    'DOG',
-    'DOMAINS',
-    'DOT',
-    'DOWNLOAD',
-    'DRIVE',
-    'DTV',
-    'DUBAI',
-    'DUCK',
-    'DUNLOP',
-    'DUPONT',
-    'DURBAN',
-    'DVAG',
-    'DVR',
-    'DZ',
-    'EARTH',
-    'EAT',
-    'EC',
-    'ECO',
-    'EDEKA',
-    'EDU',
-    'EDUCATION',
-    'EE',
-    'EG',
-    'EMAIL',
-    'EMERCK',
-    'ENERGY',
-    'ENGINEER',
-    'ENGINEERING',
-    'ENTERPRISES',
-    'EPSON',
-    'EQUIPMENT',
-    'ER',
-    'ERICSSON',
-    'ERNI',
-    'ES',
-    'ESQ',
-    'ESTATE',
-    'ESURANCE',
-    'ET',
-    'ETISALAT',
-    'EU',
-    'EUROVISION',
-    'EUS',
-    'EVENTS',
-    'EVERBANK',
-    'EXCHANGE',
-    'EXPERT',
-    'EXPOSED',
-    'EXPRESS',
-    'EXTRASPACE',
-    'FAGE',
-    'FAIL',
-    'FAIRWINDS',
-    'FAITH',
-    'FAMILY',
-    'FAN',
-    'FANS',
-    'FARM',
-    'FARMERS',
-    'FASHION',
-    'FAST',
-    'FEDEX',
-    'FEEDBACK',
-    'FERRARI',
-    'FERRERO',
-    'FI',
-    'FIAT',
-    'FIDELITY',
-    'FIDO',
-    'FILM',
-    'FINAL',
-    'FINANCE',
-    'FINANCIAL',
-    'FIRE',
-    'FIRESTONE',
-    'FIRMDALE',
-    'FISH',
-    'FISHING',
-    'FIT',
-    'FITNESS',
-    'FJ',
-    'FK',
-    'FLICKR',
-    'FLIGHTS',
-    'FLIR',
-    'FLORIST',
-    'FLOWERS',
-    'FLY',
-    'FM',
-    'FO',
-    'FOO',
-    'FOOD',
-    'FOODNETWORK',
-    'FOOTBALL',
-    'FORD',
-    'FOREX',
-    'FORSALE',
-    'FORUM',
-    'FOUNDATION',
-    'FOX',
-    'FR',
-    'FREE',
-    'FRESENIUS',
-    'FRL',
-    'FROGANS',
-    'FRONTDOOR',
-    'FRONTIER',
-    'FTR',
-    'FUJITSU',
-    'FUJIXEROX',
-    'FUN',
-    'FUND',
-    'FURNITURE',
-    'FUTBOL',
-    'FYI',
-    'GA',
-    'GAL',
-    'GALLERY',
-    'GALLO',
-    'GALLUP',
-    'GAME',
-    'GAMES',
-    'GAP',
-    'GARDEN',
-    'GAY',
-    'GB',
-    'GBIZ',
-    'GD',
-    'GDN',
-    'GE',
-    'GEA',
-    'GENT',
-    'GENTING',
-    'GEORGE',
-    'GF',
-    'GG',
-    'GGEE',
-    'GH',
-    'GI',
-    'GIFT',
-    'GIFTS',
-    'GIVES',
-    'GIVING',
-    'GL',
-    'GLADE',
-    'GLASS',
-    'GLE',
-    'GLOBAL',
-    'GLOBO',
-    'GM',
-    'GMAIL',
-    'GMBH',
-    'GMO',
-    'GMX',
-    'GN',
-    'GODADDY',
-    'GOLD',
-    'GOLDPOINT',
-    'GOLF',
-    'GOO',
-    'GOODYEAR',
-    'GOOG',
-    'GOOGLE',
-    'GOP',
-    'GOT',
-    'GOV',
-    'GP',
-    'GQ',
-    'GR',
-    'GRAINGER',
-    'GRAPHICS',
-    'GRATIS',
-    'GREEN',
-    'GRIPE',
-    'GROCERY',
-    'GROUP',
-    'GS',
-    'GT',
-    'GU',
-    'GUARDIAN',
-    'GUCCI',
-    'GUGE',
-    'GUIDE',
-    'GUITARS',
-    'GURU',
-    'GW',
-    'GY',
-    'HAIR',
-    'HAMBURG',
-    'HANGOUT',
-    'HAUS',
-    'HBO',
-    'HDFC',
-    'HDFCBANK',
-    'HEALTH',
-    'HEALTHCARE',
-    'HELP',
-    'HELSINKI',
-    'HERE',
-    'HERMES',
-    'HGTV',
-    'HIPHOP',
-    'HISAMITSU',
-    'HITACHI',
-    'HIV',
-    'HK',
-    'HKT',
-    'HM',
-    'HN',
-    'HOCKEY',
-    'HOLDINGS',
-    'HOLIDAY',
-    'HOMEDEPOT',
-    'HOMEGOODS',
-    'HOMES',
-    'HOMESENSE',
-    'HONDA',
-    'HORSE',
-    'HOSPITAL',
-    'HOST',
-    'HOSTING',
-    'HOT',
-    'HOTELES',
-    'HOTELS',
-    'HOTMAIL',
-    'HOUSE',
-    'HOW',
-    'HR',
-    'HSBC',
-    'HT',
-    'HU',
-    'HUGHES',
-    'HYATT',
-    'HYUNDAI',
-    'IBM',
-    'ICBC',
-    'ICE',
-    'ICU',
-    'ID',
-    'IE',
-    'IEEE',
-    'IFM',
-    'IKANO',
-    'IL',
-    'IM',
-    'IMAMAT',
-    'IMDB',
-    'IMMO',
-    'IMMOBILIEN',
-    'IN',
-    'INC',
-    'INDUSTRIES',
-    'INFINITI',
-    'INFO',
-    'ING',
-    'INK',
-    'INSTITUTE',
-    'INSURANCE',
-    'INSURE',
-    'INT',
-    'INTEL',
-    'INTERNATIONAL',
-    'INTUIT',
-    'INVESTMENTS',
-    'IO',
-    'IPIRANGA',
-    'IQ',
-    'IR',
-    'IRISH',
-    'IS',
-    'ISMAILI',
-    'IST',
-    'ISTANBUL',
-    'IT',
-    'ITAU',
-    'ITV',
-    'IVECO',
-    'JAGUAR',
-    'JAVA',
-    'JCB',
-    'JCP',
-    'JE',
-    'JEEP',
-    'JETZT',
-    'JEWELRY',
-    'JIO',
-    'JLL',
-    'JM',
-    'JMP',
-    'JNJ',
-    'JO',
-    'JOBS',
-    'JOBURG',
-    'JOT',
-    'JOY',
-    'JP',
-    'JPMORGAN',
-    'JPRS',
-    'JUEGOS',
-    'JUNIPER',
-    'KAUFEN',
-    'KDDI',
-    'KE',
-    'KERRYHOTELS',
-    'KERRYLOGISTICS',
-    'KERRYPROPERTIES',
-    'KFH',
-    'KG',
-    'KH',
-    'KI',
-    'KIA',
-    'KIM',
-    'KINDER',
-    'KINDLE',
-    'KITCHEN',
-    'KIWI',
-    'KM',
-    'KN',
-    'KOELN',
-    'KOMATSU',
-    'KOSHER',
-    'KP',
-    'KPMG',
-    'KPN',
-    'KR',
-    'KRD',
-    'KRED',
-    'KUOKGROUP',
-    'KW',
-    'KY',
-    'KYOTO',
-    'KZ',
-    'LA',
-    'LACAIXA',
-    'LADBROKES',
-    'LAMBORGHINI',
-    'LAMER',
-    'LANCASTER',
-    'LANCIA',
-    'LANCOME',
-    'LAND',
-    'LANDROVER',
-    'LANXESS',
-    'LASALLE',
-    'LAT',
-    'LATINO',
-    'LATROBE',
-    'LAW',
-    'LAWYER',
-    'LB',
-    'LC',
-    'LDS',
-    'LEASE',
-    'LECLERC',
-    'LEFRAK',
-    'LEGAL',
-    'LEGO',
-    'LEXUS',
-    'LGBT',
-    'LI',
-    'LIAISON',
-    'LIDL',
-    'LIFE',
-    'LIFEINSURANCE',
-    'LIFESTYLE',
-    'LIGHTING',
-    'LIKE',
-    'LILLY',
-    'LIMITED',
-    'LIMO',
-    'LINCOLN',
-    'LINDE',
-    'LINK',
-    'LIPSY',
-    'LIVE',
-    'LIVING',
-    'LIXIL',
-    'LK',
-    'LLC',
-    'LOAN',
-    'LOANS',
-    'LOCKER',
-    'LOCUS',
-    'LOFT',
-    'LOL',
-    'LONDON',
-    'LOTTE',
-    'LOTTO',
-    'LOVE',
-    'LPL',
-    'LPLFINANCIAL',
-    'LR',
-    'LS',
-    'LT',
-    'LTD',
-    'LTDA',
-    'LU',
-    'LUNDBECK',
-    'LUPIN',
-    'LUXE',
-    'LUXURY',
-    'LV',
-    'LY',
-    'MA',
-    'MACYS',
-    'MADRID',
-    'MAIF',
-    'MAISON',
-    'MAKEUP',
-    'MAN',
-    'MANAGEMENT',
-    'MANGO',
-    'MAP',
-    'MARKET',
-    'MARKETING',
-    'MARKETS',
-    'MARRIOTT',
-    'MARSHALLS',
-    'MASERATI',
-    'MATTEL',
-    'MBA',
-    'MC',
-    'MCKINSEY',
-    'MD',
-    'ME',
-    'MED',
-    'MEDIA',
-    'MEET',
-    'MELBOURNE',
-    'MEME',
-    'MEMORIAL',
-    'MEN',
-    'MENU',
-    'MERCKMSD',
-    'METLIFE',
-    'MG',
-    'MH',
-    'MIAMI',
-    'MICROSOFT',
-    'MIL',
-    'MINI',
-    'MINT',
-    'MIT',
-    'MITSUBISHI',
-    'MK',
-    'ML',
-    'MLB',
-    'MLS',
-    'MM',
-    'MMA',
-    'MN',
-    'MO',
-    'MOBI',
-    'MOBILE',
-    'MODA',
-    'MOE',
-    'MOI',
-    'MOM',
-    'MONASH',
-    'MONEY',
-    'MONSTER',
-    'MOPAR',
-    'MORMON',
-    'MORTGAGE',
-    'MOSCOW',
-    'MOTO',
-    'MOTORCYCLES',
-    'MOV',
-    'MOVIE',
-    'MOVISTAR',
-    'MP',
-    'MQ',
-    'MR',
-    'MS',
-    'MSD',
-    'MT',
-    'MTN',
-    'MTR',
-    'MU',
-    'MUSEUM',
-    'MUTUAL',
-    'MV',
-    'MW',
-    'MX',
-    'MY',
-    'MZ',
-    'NA',
-    'NAB',
-    'NADEX',
-    'NAGOYA',
-    'NAME',
-    'NATIONWIDE',
-    'NATURA',
-    'NAVY',
-    'NBA',
-    'NC',
-    'NE',
-    'NEC',
-    'NET',
-    'NETBANK',
-    'NETFLIX',
-    'NETWORK',
-    'NEUSTAR',
-    'NEW',
-    'NEWHOLLAND',
-    'NEWS',
-    'NEXT',
-    'NEXTDIRECT',
-    'NEXUS',
-    'NF',
-    'NFL',
-    'NG',
-    'NGO',
-    'NHK',
-    'NI',
-    'NICO',
-    'NIKE',
-    'NIKON',
-    'NINJA',
-    'NISSAN',
-    'NISSAY',
-    'NL',
-    'NO',
-    'NOKIA',
-    'NORTHWESTERNMUTUAL',
-    'NORTON',
-    'NOW',
-    'NOWRUZ',
-    'NOWTV',
-    'NP',
-    'NR',
-    'NRA',
-    'NRW',
-    'NTT',
-    'NU',
-    'NYC',
-    'NZ',
-    'OBI',
-    'OBSERVER',
-    'OFF',
-    'OFFICE',
-    'OKINAWA',
-    'OLAYAN',
-    'OLAYANGROUP',
-    'OLDNAVY',
-    'OLLO',
-    'OM',
-    'OMEGA',
-    'ONE',
-    'ONG',
-    'ONL',
-    'ONLINE',
-    'ONYOURSIDE',
-    'OOO',
-    'OPEN',
-    'ORACLE',
-    'ORANGE',
-    'ORG',
-    'ORGANIC',
-    'ORIGINS',
-    'OSAKA',
-    'OTSUKA',
-    'OTT',
-    'OVH',
-    'PA',
-    'PAGE',
-    'PANASONIC',
-    'PARIS',
-    'PARS',
-    'PARTNERS',
-    'PARTS',
-    'PARTY',
-    'PASSAGENS',
-    'PAY',
-    'PCCW',
-    'PE',
-    'PET',
-    'PF',
-    'PFIZER',
-    'PG',
-    'PH',
-    'PHARMACY',
-    'PHD',
-    'PHILIPS',
-    'PHONE',
-    'PHOTO',
-    'PHOTOGRAPHY',
-    'PHOTOS',
-    'PHYSIO',
-    'PIAGET',
-    'PICS',
-    'PICTET',
-    'PICTURES',
-    'PID',
-    'PIN',
-    'PING',
-    'PINK',
-    'PIONEER',
-    'PIZZA',
-    'PK',
-    'PL',
-    'PLACE',
-    'PLAY',
-    'PLAYSTATION',
-    'PLUMBING',
-    'PLUS',
-    'PM',
-    'PN',
-    'PNC',
-    'POHL',
-    'POKER',
-    'POLITIE',
-    'PORN',
-    'POST',
-    'PR',
-    'PRAMERICA',
-    'PRAXI',
-    'PRESS',
-    'PRIME',
-    'PRO',
-    'PROD',
-    'PRODUCTIONS',
-    'PROF',
-    'PROGRESSIVE',
-    'PROMO',
-    'PROPERTIES',
-    'PROPERTY',
-    'PROTECTION',
-    'PRU',
-    'PRUDENTIAL',
-    'PS',
-    'PT',
-    'PUB',
-    'PW',
-    'PWC',
-    'PY',
-    'QA',
-    'QPON',
-    'QUEBEC',
-    'QUEST',
-    'QVC',
-    'RACING',
-    'RADIO',
-    'RAID',
-    'RE',
-    'READ',
-    'REALESTATE',
-    'REALTOR',
-    'REALTY',
-    'RECIPES',
-    'RED',
-    'REDSTONE',
-    'REDUMBRELLA',
-    'REHAB',
-    'REISE',
-    'REISEN',
-    'REIT',
-    'RELIANCE',
-    'REN',
-    'RENT',
-    'RENTALS',
-    'REPAIR',
-    'REPORT',
-    'REPUBLICAN',
-    'REST',
-    'RESTAURANT',
-    'REVIEW',
-    'REVIEWS',
-    'REXROTH',
-    'RICH',
-    'RICHARDLI',
-    'RICOH',
-    'RIGHTATHOME',
-    'RIL',
-    'RIO',
-    'RIP',
-    'RMIT',
-    'RO',
-    'ROCHER',
-    'ROCKS',
-    'RODEO',
-    'ROGERS',
-    'ROOM',
-    'RS',
-    'RSVP',
-    'RU',
-    'RUGBY',
-    'RUHR',
-    'RUN',
-    'RW',
-    'RWE',
-    'RYUKYU',
-    'SA',
-    'SAARLAND',
-    'SAFE',
-    'SAFETY',
-    'SAKURA',
-    'SALE',
-    'SALON',
-    'SAMSCLUB',
-    'SAMSUNG',
-    'SANDVIK',
-    'SANDVIKCOROMANT',
-    'SANOFI',
-    'SAP',
-    'SARL',
-    'SAS',
-    'SAVE',
-    'SAXO',
-    'SB',
-    'SBI',
-    'SBS',
-    'SC',
-    'SCA',
-    'SCB',
-    'SCHAEFFLER',
-    'SCHMIDT',
-    'SCHOLARSHIPS',
-    'SCHOOL',
-    'SCHULE',
-    'SCHWARZ',
-    'SCIENCE',
-    'SCJOHNSON',
-    'SCOR',
-    'SCOT',
-    'SD',
-    'SE',
-    'SEARCH',
-    'SEAT',
-    'SECURE',
-    'SECURITY',
-    'SEEK',
-    'SELECT',
-    'SENER',
-    'SERVICES',
-    'SES',
-    'SEVEN',
-    'SEW',
-    'SEX',
-    'SEXY',
-    'SFR',
-    'SG',
-    'SH',
-    'SHANGRILA',
-    'SHARP',
-    'SHAW',
-    'SHELL',
-    'SHIA',
-    'SHIKSHA',
-    'SHOES',
-    'SHOP',
-    'SHOPPING',
-    'SHOUJI',
-    'SHOW',
-    'SHOWTIME',
-    'SHRIRAM',
-    'SI',
-    'SILK',
-    'SINA',
-    'SINGLES',
-    'SITE',
-    'SJ',
-    'SK',
-    'SKI',
-    'SKIN',
-    'SKY',
-    'SKYPE',
-    'SL',
-    'SLING',
-    'SM',
-    'SMART',
-    'SMILE',
-    'SN',
-    'SNCF',
-    'SO',
-    'SOCCER',
-    'SOCIAL',
-    'SOFTBANK',
-    'SOFTWARE',
-    'SOHU',
-    'SOLAR',
-    'SOLUTIONS',
-    'SONG',
-    'SONY',
-    'SOY',
-    'SPACE',
-    'SPORT',
-    'SPOT',
-    'SPREADBETTING',
-    'SR',
-    'SRL',
-    'SRT',
-    'SS',
-    'ST',
-    'STADA',
-    'STAPLES',
-    'STAR',
-    'STATEBANK',
-    'STATEFARM',
-    'STC',
-    'STCGROUP',
-    'STOCKHOLM',
-    'STORAGE',
-    'STORE',
-    'STREAM',
-    'STUDIO',
-    'STUDY',
-    'STYLE',
-    'SU',
-    'SUCKS',
-    'SUPPLIES',
-    'SUPPLY',
-    'SUPPORT',
-    'SURF',
-    'SURGERY',
-    'SUZUKI',
-    'SV',
-    'SWATCH',
-    'SWIFTCOVER',
-    'SWISS',
-    'SX',
-    'SY',
-    'SYDNEY',
-    'SYMANTEC',
-    'SYSTEMS',
-    'SZ',
-    'TAB',
-    'TAIPEI',
-    'TALK',
-    'TAOBAO',
-    'TARGET',
-    'TATAMOTORS',
-    'TATAR',
-    'TATTOO',
-    'TAX',
-    'TAXI',
-    'TC',
-    'TCI',
-    'TD',
-    'TDK',
-    'TEAM',
-    'TECH',
-    'TECHNOLOGY',
-    'TEL',
-    'TELEFONICA',
-    'TEMASEK',
-    'TENNIS',
-    'TEVA',
-    'TF',
-    'TG',
-    'TH',
-    'THD',
-    'THEATER',
-    'THEATRE',
-    'TIAA',
-    'TICKETS',
-    'TIENDA',
-    'TIFFANY',
-    'TIPS',
-    'TIRES',
-    'TIROL',
-    'TJ',
-    'TJMAXX',
-    'TJX',
-    'TK',
-    'TKMAXX',
-    'TL',
-    'TM',
-    'TMALL',
-    'TN',
-    'TO',
-    'TODAY',
-    'TOKYO',
-    'TOOLS',
-    'TOP',
-    'TORAY',
-    'TOSHIBA',
-    'TOTAL',
-    'TOURS',
-    'TOWN',
-    'TOYOTA',
-    'TOYS',
-    'TR',
-    'TRADE',
-    'TRADING',
-    'TRAINING',
-    'TRAVEL',
-    'TRAVELCHANNEL',
-    'TRAVELERS',
-    'TRAVELERSINSURANCE',
-    'TRUST',
-    'TRV',
-    'TT',
-    'TUBE',
-    'TUI',
-    'TUNES',
-    'TUSHU',
-    'TV',
-    'TVS',
-    'TW',
-    'TZ',
-    'UA',
-    'UBANK',
-    'UBS',
-    'UCONNECT',
-    'UG',
-    'UK',
-    'UNICOM',
-    'UNIVERSITY',
-    'UNO',
-    'UOL',
-    'UPS',
-    'US',
-    'UY',
-    'UZ',
-    'VA',
-    'VACATIONS',
-    'VANA',
-    'VANGUARD',
-    'VC',
-    'VE',
-    'VEGAS',
-    'VENTURES',
-    'VERISIGN',
-    'VERSICHERUNG',
-    'VET',
-    'VG',
-    'VI',
-    'VIAJES',
-    'VIDEO',
-    'VIG',
-    'VIKING',
-    'VILLAS',
-    'VIN',
-    'VIP',
-    'VIRGIN',
-    'VISA',
-    'VISION',
-    'VISTAPRINT',
-    'VIVA',
-    'VIVO',
-    'VLAANDEREN',
-    'VN',
-    'VODKA',
-    'VOLKSWAGEN',
-    'VOLVO',
-    'VOTE',
-    'VOTING',
-    'VOTO',
-    'VOYAGE',
-    'VU',
-    'VUELOS',
-    'WALES',
-    'WALMART',
-    'WALTER',
-    'WANG',
-    'WANGGOU',
-    'WARMAN',
-    'WATCH',
-    'WATCHES',
-    'WEATHER',
-    'WEATHERCHANNEL',
-    'WEBCAM',
-    'WEBER',
-    'WEBSITE',
-    'WED',
-    'WEDDING',
-    'WEIBO',
-    'WEIR',
-    'WF',
-    'WHOSWHO',
-    'WIEN',
-    'WIKI',
-    'WILLIAMHILL',
-    'WIN',
-    'WINDOWS',
-    'WINE',
-    'WINNERS',
-    'WME',
-    'WOLTERSKLUWER',
-    'WOODSIDE',
-    'WORK',
-    'WORKS',
-    'WORLD',
-    'WOW',
-    'WS',
-    'WTC',
-    'WTF',
-    'XBOX',
-    'XEROX',
-    'XFINITY',
-    'XIHUAN',
-    'XIN',
-    'XN--11B4C3D',
-    'XN--1CK2E1B',
-    'XN--1QQW23A',
-    'XN--2SCRJ9C',
-    'XN--30RR7Y',
-    'XN--3BST00M',
-    'XN--3DS443G',
-    'XN--3E0B707E',
-    'XN--3HCRJ9C',
-    'XN--3OQ18VL8PN36A',
-    'XN--3PXU8K',
-    'XN--42C2D9A',
-    'XN--45BR5CYL',
-    'XN--45BRJ9C',
-    'XN--45Q11C',
-    'XN--4GBRIM',
-    'XN--54B7FTA0CC',
-    'XN--55QW42G',
-    'XN--55QX5D',
-    'XN--5SU34J936BGSG',
-    'XN--5TZM5G',
-    'XN--6FRZ82G',
-    'XN--6QQ986B3XL',
-    'XN--80ADXHKS',
-    'XN--80AO21A',
-    'XN--80AQECDR1A',
-    'XN--80ASEHDB',
-    'XN--80ASWG',
-    'XN--8Y0A063A',
-    'XN--90A3AC',
-    'XN--90AE',
-    'XN--90AIS',
-    'XN--9DBQ2A',
-    'XN--9ET52U',
-    'XN--9KRT00A',
-    'XN--B4W605FERD',
-    'XN--BCK1B9A5DRE4C',
-    'XN--C1AVG',
-    'XN--C2BR7G',
-    'XN--CCK2B3B',
-    'XN--CG4BKI',
-    'XN--CLCHC0EA0B2G2A9GCD',
-    'XN--CZR694B',
-    'XN--CZRS0T',
-    'XN--CZRU2D',
-    'XN--D1ACJ3B',
-    'XN--D1ALF',
-    'XN--E1A4C',
-    'XN--ECKVDTC9D',
-    'XN--EFVY88H',
-    'XN--ESTV75G',
-    'XN--FCT429K',
-    'XN--FHBEI',
-    'XN--FIQ228C5HS',
-    'XN--FIQ64B',
-    'XN--FIQS8S',
-    'XN--FIQZ9S',
-    'XN--FJQ720A',
-    'XN--FLW351E',
-    'XN--FPCRJ9C3D',
-    'XN--FZC2C9E2C',
-    'XN--FZYS8D69UVGM',
-    'XN--G2XX48C',
-    'XN--GCKR3F0F',
-    'XN--GECRJ9C',
-    'XN--GK3AT1E',
-    'XN--H2BREG3EVE',
-    'XN--H2BRJ9C',
-    'XN--H2BRJ9C8C',
-    'XN--HXT814E',
-    'XN--I1B6B1A6A2E',
-    'XN--IMR513N',
-    'XN--IO0A7I',
-    'XN--J1AEF',
-    'XN--J1AMH',
-    'XN--J6W193G',
-    'XN--JLQ61U9W7B',
-    'XN--JVR189M',
-    'XN--KCRX77D1X4A',
-    'XN--KPRW13D',
-    'XN--KPRY57D',
-    'XN--KPU716F',
-    'XN--KPUT3I',
-    'XN--L1ACC',
-    'XN--LGBBAT1AD8J',
-    'XN--MGB9AWBF',
-    'XN--MGBA3A3EJT',
-    'XN--MGBA3A4F16A',
-    'XN--MGBA7C0BBN0A',
-    'XN--MGBAAKC7DVF',
-    'XN--MGBAAM7A8H',
-    'XN--MGBAB2BD',
-    'XN--MGBAH1A3HJKRD',
-    'XN--MGBAI9AZGQP6J',
-    'XN--MGBAYH7GPA',
-    'XN--MGBBH1A',
-    'XN--MGBBH1A71E',
-    'XN--MGBC0A9AZCG',
-    'XN--MGBCA7DZDO',
-    'XN--MGBERP4A5D4AR',
-    'XN--MGBGU82A',
-    'XN--MGBI4ECEXP',
-    'XN--MGBPL2FH',
-    'XN--MGBT3DHD',
-    'XN--MGBTX2B',
-    'XN--MGBX4CD0AB',
-    'XN--MIX891F',
-    'XN--MK1BU44C',
-    'XN--MXTQ1M',
-    'XN--NGBC5AZD',
-    'XN--NGBE9E0A',
-    'XN--NGBRX',
-    'XN--NODE',
-    'XN--NQV7F',
-    'XN--NQV7FS00EMA',
-    'XN--NYQY26A',
-    'XN--O3CW4H',
-    'XN--OGBPF8FL',
-    'XN--OTU796D',
-    'XN--P1ACF',
-    'XN--P1AI',
-    'XN--PBT977C',
-    'XN--PGBS0DH',
-    'XN--PSSY2U',
-    'XN--Q9JYB4C',
-    'XN--QCKA1PMC',
-    'XN--QXA6A',
-    'XN--QXAM',
-    'XN--RHQV96G',
-    'XN--ROVU88B',
-    'XN--RVC1E0AM3E',
-    'XN--S9BRJ9C',
-    'XN--SES554G',
-    'XN--T60B56A',
-    'XN--TCKWE',
-    'XN--TIQ49XQYJ',
-    'XN--UNUP4Y',
-    'XN--VERMGENSBERATER-CTB',
-    'XN--VERMGENSBERATUNG-PWB',
-    'XN--VHQUV',
-    'XN--VUQ861B',
-    'XN--W4R85EL8FHU5DNRA',
-    'XN--W4RS40L',
-    'XN--WGBH1C',
-    'XN--WGBL6A',
-    'XN--XHQ521B',
-    'XN--XKC2AL3HYE2A',
-    'XN--XKC2DL3A5EE0H',
-    'XN--Y9A3AQ',
-    'XN--YFRO4I67O',
-    'XN--YGBI2AMMX',
-    'XN--ZFR164B',
-    'XXX',
-    'XYZ',
-    'YACHTS',
-    'YAHOO',
-    'YAMAXUN',
-    'YANDEX',
-    'YE',
-    'YODOBASHI',
-    'YOGA',
-    'YOKOHAMA',
-    'YOU',
-    'YOUTUBE',
-    'YT',
-    'YUN',
-    'ZA',
-    'ZAPPOS',
-    'ZARA',
-    'ZERO',
-    'ZIP',
-    'ZM',
-    'ZONE',
-    'ZUERICH',
-    'ZW'
-];
-
-
-// Keep as upper-case to make updating from source easier
-
-module.exports = new Set(internals.tlds.map((tld) => tld.toLowerCase()));
-
-},{}],5:[function(require,module,exports){
-'use strict';
-
 const Hoek = require('@hapi/hoek');
 
 
@@ -1952,7 +46,7 @@ const internals = {
         [422, 'Unprocessable Entity'],
         [423, 'Locked'],
         [424, 'Failed Dependency'],
-        [425, 'Unordered Collection'],
+        [425, 'Too Early'],
         [426, 'Upgrade Required'],
         [428, 'Precondition Required'],
         [429, 'Too Many Requests'],
@@ -1973,15 +67,15 @@ const internals = {
 };
 
 
-module.exports = internals.Boom = class extends Error {
+exports.Boom = class extends Error {
 
     constructor(message, options = {}) {
 
         if (message instanceof Error) {
-            return internals.Boom.boomify(Hoek.clone(message), options);
+            return exports.boomify(Hoek.clone(message), options);
         }
 
-        const { statusCode = 500, data = null, ctor = internals.Boom } = options;
+        const { statusCode = 500, data = null, ctor = exports.Boom } = options;
         const error = new Error(message ? message : undefined);         // Avoids settings null message
         Error.captureStackTrace(error, ctor);                           // Filter the stack to our external API
         error.data = data;
@@ -1998,275 +92,310 @@ module.exports = internals.Boom = class extends Error {
 
     static [Symbol.hasInstance](instance) {
 
-        return internals.Boom.isBoom(instance);
-    }
-
-    static isBoom(err) {
-
-        return err instanceof Error && !!err.isBoom;
-    }
-
-    static boomify(err, options) {
-
-        Hoek.assert(err instanceof Error, 'Cannot wrap non-Error object');
-
-        options = options || {};
-
-        if (options.data !== undefined) {
-            err.data = options.data;
-        }
-
-        if (options.decorate) {
-            Object.assign(err, options.decorate);
-        }
-
-        if (!err.isBoom) {
-            return internals.initialize(err, options.statusCode || 500, options.message);
-        }
-
-        if (options.override === false ||                           // Defaults to true
-            !options.statusCode && !options.message) {
-
-            return err;
-        }
-
-        return internals.initialize(err, options.statusCode || err.output.statusCode, options.message);
-    }
-
-    // 4xx Client Errors
-
-    static badRequest(message, data) {
-
-        return new internals.Boom(message, { statusCode: 400, data, ctor: internals.Boom.badRequest });
-    }
-
-    static unauthorized(message, scheme, attributes) {          // Or (message, wwwAuthenticate[])
-
-        const err = new internals.Boom(message, { statusCode: 401, ctor: internals.Boom.unauthorized });
-
-        // function (message)
-
-        if (!scheme) {
-            return err;
-        }
-
-        // function (message, wwwAuthenticate[])
-
-        if (typeof scheme !== 'string') {
-            err.output.headers['WWW-Authenticate'] = scheme.join(', ');
-            return err;
-        }
-
-        // function (message, scheme, attributes)
-
-        let wwwAuthenticate = `${scheme} `;
-
-        if (attributes ||
-            message) {
-
-            err.output.payload.attributes = {};
-        }
-
-        if (attributes) {
-            if (typeof attributes === 'string') {
-                wwwAuthenticate += Hoek.escapeHeaderAttribute(attributes);
-                err.output.payload.attributes = attributes;
-            }
-            else {
-                wwwAuthenticate += Object.keys(attributes).map((name) => {
-
-                    let value = attributes[name];
-                    if (value === null ||
-                        value === undefined) {
-
-                        value = '';
-                    }
-
-                    err.output.payload.attributes[name] = value;
-                    return `${name}="${Hoek.escapeHeaderAttribute(value.toString())}"`;
-                })
-                    .join(', ');
-            }
-        }
-
-        if (message) {
-            if (attributes) {
-                wwwAuthenticate += ', ';
-            }
-
-            wwwAuthenticate += `error="${Hoek.escapeHeaderAttribute(message)}"`;
-            err.output.payload.attributes.error = message;
-        }
-        else {
-            err.isMissing = true;
-        }
-
-        err.output.headers['WWW-Authenticate'] = wwwAuthenticate;
-        return err;
-    }
-
-    static paymentRequired(message, data) {
-
-        return new internals.Boom(message, { statusCode: 402, data, ctor: internals.Boom.paymentRequired });
-    }
-
-    static forbidden(message, data) {
-
-        return new internals.Boom(message, { statusCode: 403, data, ctor: internals.Boom.forbidden });
-    }
-
-    static notFound(message, data) {
-
-        return new internals.Boom(message, { statusCode: 404, data, ctor: internals.Boom.notFound });
-    }
-
-    static methodNotAllowed(message, data, allow) {
-
-        const err = new internals.Boom(message, { statusCode: 405, data, ctor: internals.Boom.methodNotAllowed });
-
-        if (typeof allow === 'string') {
-            allow = [allow];
-        }
-
-        if (Array.isArray(allow)) {
-            err.output.headers.Allow = allow.join(', ');
-        }
-
-        return err;
-    }
-
-    static notAcceptable(message, data) {
-
-        return new internals.Boom(message, { statusCode: 406, data, ctor: internals.Boom.notAcceptable });
-    }
-
-    static proxyAuthRequired(message, data) {
-
-        return new internals.Boom(message, { statusCode: 407, data, ctor: internals.Boom.proxyAuthRequired });
-    }
-
-    static clientTimeout(message, data) {
-
-        return new internals.Boom(message, { statusCode: 408, data, ctor: internals.Boom.clientTimeout });
-    }
-
-    static conflict(message, data) {
-
-        return new internals.Boom(message, { statusCode: 409, data, ctor: internals.Boom.conflict });
-    }
-
-    static resourceGone(message, data) {
-
-        return new internals.Boom(message, { statusCode: 410, data, ctor: internals.Boom.resourceGone });
-    }
-
-    static lengthRequired(message, data) {
-
-        return new internals.Boom(message, { statusCode: 411, data, ctor: internals.Boom.lengthRequired });
-    }
-
-    static preconditionFailed(message, data) {
-
-        return new internals.Boom(message, { statusCode: 412, data, ctor: internals.Boom.preconditionFailed });
-    }
-
-    static entityTooLarge(message, data) {
-
-        return new internals.Boom(message, { statusCode: 413, data, ctor: internals.Boom.entityTooLarge });
-    }
-
-    static uriTooLong(message, data) {
-
-        return new internals.Boom(message, { statusCode: 414, data, ctor: internals.Boom.uriTooLong });
-    }
-
-    static unsupportedMediaType(message, data) {
-
-        return new internals.Boom(message, { statusCode: 415, data, ctor: internals.Boom.unsupportedMediaType });
-    }
-
-    static rangeNotSatisfiable(message, data) {
-
-        return new internals.Boom(message, { statusCode: 416, data, ctor: internals.Boom.rangeNotSatisfiable });
-    }
-
-    static expectationFailed(message, data) {
-
-        return new internals.Boom(message, { statusCode: 417, data, ctor: internals.Boom.expectationFailed });
-    }
-
-    static teapot(message, data) {
-
-        return new internals.Boom(message, { statusCode: 418, data, ctor: internals.Boom.teapot });
-    }
-
-    static badData(message, data) {
-
-        return new internals.Boom(message, { statusCode: 422, data, ctor: internals.Boom.badData });
-    }
-
-    static locked(message, data) {
-
-        return new internals.Boom(message, { statusCode: 423, data, ctor: internals.Boom.locked });
-    }
-
-    static failedDependency(message, data) {
-
-        return new internals.Boom(message, { statusCode: 424, data, ctor: internals.Boom.failedDependency });
-    }
-
-    static preconditionRequired(message, data) {
-
-        return new internals.Boom(message, { statusCode: 428, data, ctor: internals.Boom.preconditionRequired });
-    }
-
-    static tooManyRequests(message, data) {
-
-        return new internals.Boom(message, { statusCode: 429, data, ctor: internals.Boom.tooManyRequests });
-    }
-
-    static illegal(message, data) {
-
-        return new internals.Boom(message, { statusCode: 451, data, ctor: internals.Boom.illegal });
-    }
-
-    // 5xx Server Errors
-
-    static internal(message, data, statusCode = 500) {
-
-        return internals.serverError(message, data, statusCode, internals.Boom.internal);
-    }
-
-    static notImplemented(message, data) {
-
-        return internals.serverError(message, data, 501, internals.Boom.notImplemented);
-    }
-
-    static badGateway(message, data) {
-
-        return internals.serverError(message, data, 502, internals.Boom.badGateway);
-    }
-
-    static serverUnavailable(message, data) {
-
-        return internals.serverError(message, data, 503, internals.Boom.serverUnavailable);
-    }
-
-    static gatewayTimeout(message, data) {
-
-        return internals.serverError(message, data, 504, internals.Boom.gatewayTimeout);
-    }
-
-    static badImplementation(message, data) {
-
-        const err = internals.serverError(message, data, 500, internals.Boom.badImplementation);
-        err.isDeveloperError = true;
-        return err;
+        return exports.isBoom(instance);
     }
 };
 
 
-internals.Boom.default = internals.Boom;        // Support ES6 module import
+exports.isBoom = function (err) {
+
+    return err instanceof Error && !!err.isBoom;
+};
+
+
+exports.boomify = function (err, options) {
+
+    Hoek.assert(err instanceof Error, 'Cannot wrap non-Error object');
+
+    options = options || {};
+
+    if (options.data !== undefined) {
+        err.data = options.data;
+    }
+
+    if (options.decorate) {
+        Object.assign(err, options.decorate);
+    }
+
+    if (!err.isBoom) {
+        return internals.initialize(err, options.statusCode || 500, options.message);
+    }
+
+    if (options.override === false ||                           // Defaults to true
+        !options.statusCode && !options.message) {
+
+        return err;
+    }
+
+    return internals.initialize(err, options.statusCode || err.output.statusCode, options.message);
+};
+
+
+// 4xx Client Errors
+
+exports.badRequest = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 400, data, ctor: exports.badRequest });
+};
+
+
+exports.unauthorized = function (message, scheme, attributes) {          // Or (message, wwwAuthenticate[])
+
+    const err = new exports.Boom(message, { statusCode: 401, ctor: exports.unauthorized });
+
+    // function (message)
+
+    if (!scheme) {
+        return err;
+    }
+
+    // function (message, wwwAuthenticate[])
+
+    if (typeof scheme !== 'string') {
+        err.output.headers['WWW-Authenticate'] = scheme.join(', ');
+        return err;
+    }
+
+    // function (message, scheme, attributes)
+
+    let wwwAuthenticate = `${scheme}`;
+
+    if (attributes ||
+        message) {
+
+        err.output.payload.attributes = {};
+    }
+
+    if (attributes) {
+        if (typeof attributes === 'string') {
+            wwwAuthenticate += ' ' + Hoek.escapeHeaderAttribute(attributes);
+            err.output.payload.attributes = attributes;
+        }
+        else {
+            wwwAuthenticate += ' ' + Object.keys(attributes).map((name) => {
+
+                let value = attributes[name];
+                if (value === null ||
+                    value === undefined) {
+
+                    value = '';
+                }
+
+                err.output.payload.attributes[name] = value;
+                return `${name}="${Hoek.escapeHeaderAttribute(value.toString())}"`;
+            })
+                .join(', ');
+        }
+    }
+
+    if (message) {
+        if (attributes) {
+            wwwAuthenticate += ',';
+        }
+
+        wwwAuthenticate += ` error="${Hoek.escapeHeaderAttribute(message)}"`;
+        err.output.payload.attributes.error = message;
+    }
+    else {
+        err.isMissing = true;
+    }
+
+    err.output.headers['WWW-Authenticate'] = wwwAuthenticate;
+    return err;
+};
+
+
+exports.paymentRequired = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 402, data, ctor: exports.paymentRequired });
+};
+
+
+exports.forbidden = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 403, data, ctor: exports.forbidden });
+};
+
+
+exports.notFound = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 404, data, ctor: exports.notFound });
+};
+
+
+exports.methodNotAllowed = function (message, data, allow) {
+
+    const err = new exports.Boom(message, { statusCode: 405, data, ctor: exports.methodNotAllowed });
+
+    if (typeof allow === 'string') {
+        allow = [allow];
+    }
+
+    if (Array.isArray(allow)) {
+        err.output.headers.Allow = allow.join(', ');
+    }
+
+    return err;
+};
+
+
+exports.notAcceptable = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 406, data, ctor: exports.notAcceptable });
+};
+
+
+exports.proxyAuthRequired = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 407, data, ctor: exports.proxyAuthRequired });
+};
+
+
+exports.clientTimeout = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 408, data, ctor: exports.clientTimeout });
+};
+
+
+exports.conflict = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 409, data, ctor: exports.conflict });
+};
+
+
+exports.resourceGone = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 410, data, ctor: exports.resourceGone });
+};
+
+
+exports.lengthRequired = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 411, data, ctor: exports.lengthRequired });
+};
+
+
+exports.preconditionFailed = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 412, data, ctor: exports.preconditionFailed });
+};
+
+
+exports.entityTooLarge = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 413, data, ctor: exports.entityTooLarge });
+};
+
+
+exports.uriTooLong = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 414, data, ctor: exports.uriTooLong });
+};
+
+
+exports.unsupportedMediaType = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 415, data, ctor: exports.unsupportedMediaType });
+};
+
+
+exports.rangeNotSatisfiable = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 416, data, ctor: exports.rangeNotSatisfiable });
+};
+
+
+exports.expectationFailed = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 417, data, ctor: exports.expectationFailed });
+};
+
+
+exports.teapot = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 418, data, ctor: exports.teapot });
+};
+
+
+exports.badData = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 422, data, ctor: exports.badData });
+};
+
+
+exports.locked = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 423, data, ctor: exports.locked });
+};
+
+
+exports.failedDependency = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 424, data, ctor: exports.failedDependency });
+};
+
+exports.tooEarly = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 425, data, ctor: exports.tooEarly });
+};
+
+
+exports.preconditionRequired = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 428, data, ctor: exports.preconditionRequired });
+};
+
+
+exports.tooManyRequests = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 429, data, ctor: exports.tooManyRequests });
+};
+
+
+exports.illegal = function (message, data) {
+
+    return new exports.Boom(message, { statusCode: 451, data, ctor: exports.illegal });
+};
+
+
+// 5xx Server Errors
+
+exports.internal = function (message, data, statusCode = 500) {
+
+    return internals.serverError(message, data, statusCode, exports.internal);
+};
+
+
+exports.notImplemented = function (message, data) {
+
+    return internals.serverError(message, data, 501, exports.notImplemented);
+};
+
+
+exports.badGateway = function (message, data) {
+
+    return internals.serverError(message, data, 502, exports.badGateway);
+};
+
+
+exports.serverUnavailable = function (message, data) {
+
+    return internals.serverError(message, data, 503, exports.serverUnavailable);
+};
+
+
+exports.gatewayTimeout = function (message, data) {
+
+    return internals.serverError(message, data, 504, exports.gatewayTimeout);
+};
+
+
+exports.badImplementation = function (message, data) {
+
+    const err = internals.serverError(message, data, 500, exports.badImplementation);
+    err.isDeveloperError = true;
+    return err;
+};
 
 
 internals.initialize = function (err, statusCode, message) {
@@ -2298,7 +427,7 @@ internals.initialize = function (err, statusCode, message) {
 
     if (message) {
         const props = Object.getOwnPropertyDescriptor(err, 'message') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(err), 'message');
-        Hoek.assert(props.configurable && !props.get, 'The error is not compatible with boom');
+        Hoek.assert(!props || props.configurable && !props.get, 'The error is not compatible with boom');
 
         err.message = message + (err.message ? ': ' + err.message : '');
         err.output.payload.message = err.message;
@@ -2328,13 +457,13 @@ internals.serverError = function (message, data, statusCode, ctor) {
     if (data instanceof Error &&
         !data.isBoom) {
 
-        return internals.Boom.boomify(data, { statusCode, message });
+        return exports.boomify(data, { statusCode, message });
     }
 
-    return new internals.Boom(message, { statusCode, data, ctor });
+    return new exports.Boom(message, { statusCode, data, ctor });
 };
 
-},{"@hapi/hoek":21}],6:[function(require,module,exports){
+},{"@hapi/hoek":17}],2:[function(require,module,exports){
 'use strict';
 
 
@@ -2343,21 +472,13 @@ const internals = {
 };
 
 
-exports.parse = function (text, reviver, options) {
+exports.parse = function (text, ...args) {
 
     // Normalize arguments
 
-    if (!options) {
-        if (reviver &&
-            typeof reviver === 'object') {
-
-            options = reviver;
-            reviver = undefined;
-        }
-        else {
-            options = {};
-        }
-    }
+    const firstOptions = typeof args[0] === 'object' && args[0];
+    const reviver = args.length > 1 || !firstOptions ? args[0] : undefined;
+    const options = (args.length > 1 && args[1]) || firstOptions || {};
 
     // Parse normally, allowing exceptions
 
@@ -2391,9 +512,7 @@ exports.parse = function (text, reviver, options) {
 };
 
 
-exports.scan = function (obj, options) {
-
-    options = options || {};
+exports.scan = function (obj, options = {}) {
 
     let next = [obj];
 
@@ -2433,13 +552,13 @@ exports.safeParse = function (text, reviver) {
     }
 };
 
-},{}],7:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 'use strict';
 
 const Assert = require('./assert');
 const Clone = require('./clone');
 const Merge = require('./merge');
-const Utils = require('./utils');
+const Reach = require('./reach');
 
 
 const internals = {};
@@ -2475,22 +594,62 @@ internals.applyToDefaultsWithShallow = function (defaults, source, options) {
     const keys = options.shallow;
     Assert(Array.isArray(keys), 'Invalid keys');
 
-    options = Object.assign({}, options);
-    options.shallow = false;
+    const seen = new Map();
+    const merge = source === true ? null : new Set();
 
-    const copy = Clone(defaults, { shallow: keys });
+    for (let key of keys) {
+        key = Array.isArray(key) ? key : key.split('.');            // Pre-split optimization
 
-    if (source === true) {                                                      // If source is set to true, use defaults
+        const ref = Reach(defaults, key);
+        if (ref &&
+            typeof ref === 'object') {
+
+            seen.set(ref, merge && Reach(source, key) || ref);
+        }
+        else if (merge) {
+            merge.add(key);
+        }
+    }
+
+    const copy = Clone(defaults, {}, seen);
+
+    if (!merge) {
         return copy;
     }
 
-    const storage = Utils.store(source, keys);                              // Move shallow copy items to storage
-    Merge(copy, source, { mergeArrays: false, nullOverride: false });   // Deep copy the rest
-    Utils.restore(copy, source, storage);                                   // Shallow copy the stored items and restore
-    return copy;
+    for (const key of merge) {
+        internals.reachCopy(copy, source, key);
+    }
+
+    return Merge(copy, source, { mergeArrays: false, nullOverride: false });
 };
 
-},{"./assert":8,"./clone":11,"./merge":23,"./utils":29}],8:[function(require,module,exports){
+
+internals.reachCopy = function (dst, src, path) {
+
+    for (const segment of path) {
+        if (!(segment in src)) {
+            return;
+        }
+
+        src = src[segment];
+    }
+
+    const value = src;
+    let ref = dst;
+    for (let i = 0; i < path.length - 1; ++i) {
+        const segment = path[i];
+        if (typeof ref[segment] !== 'object') {
+            ref[segment] = {};
+        }
+
+        ref = ref[segment];
+    }
+
+    ref[path[path.length - 1]] = value;
+};
+
+},{"./assert":4,"./clone":7,"./merge":20,"./reach":22}],4:[function(require,module,exports){
 'use strict';
 
 const AssertError = require('./error');
@@ -2513,7 +672,7 @@ module.exports = function (condition, ...args) {
     throw new AssertError(args);
 };
 
-},{"./error":14}],9:[function(require,module,exports){
+},{"./error":10}],5:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -2546,7 +705,7 @@ module.exports = internals.Bench = class {
 };
 
 }).call(this,require('_process'))
-},{"_process":119}],10:[function(require,module,exports){
+},{"_process":156}],6:[function(require,module,exports){
 'use strict';
 
 const Ignore = require('./ignore');
@@ -2560,10 +719,11 @@ module.exports = function () {
     return new Promise(Ignore);         // $lab:coverage:ignore$
 };
 
-},{"./ignore":20}],11:[function(require,module,exports){
+},{"./ignore":16}],7:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
+const Reach = require('./reach');
 const Types = require('./types');
 const Utils = require('./utils');
 
@@ -2591,57 +751,36 @@ module.exports = internals.clone = function (obj, options = {}, _seen = null) {
 
         clone = (value) => value;
     }
-    else {
-        seen = seen || new Map();
-
+    else if (seen) {
         const lookup = seen.get(obj);
         if (lookup) {
             return lookup;
         }
     }
+    else {
+        seen = new Map();
+    }
+
+    // Built-in object types
 
     const baseProto = Types.getInternalProto(obj);
-    let newObj;
+    if (baseProto === Types.buffer) {
+        return Buffer && Buffer.from(obj);              // $lab:coverage:ignore$
+    }
 
-    switch (baseProto) {
-        case Types.buffer:
-            return Buffer && Buffer.from(obj);              // $lab:coverage:ignore$
+    if (baseProto === Types.date) {
+        return new Date(obj.getTime());
+    }
 
-        case Types.date:
-            return new Date(obj.getTime());
+    if (baseProto === Types.regex) {
+        return new RegExp(obj);
+    }
 
-        case Types.regex:
-            return new RegExp(obj);
+    // Generic objects
 
-        case Types.array:
-            newObj = [];
-            break;
-
-        default:
-            if (options.prototype !== false) {              // Defaults to true
-                const proto = Object.getPrototypeOf(obj);
-                if (proto &&
-                    proto.isImmutable) {
-
-                    return obj;
-                }
-
-                if (internals.needsProtoHack.has(baseProto)) {
-                    newObj = new proto.constructor();
-                    if (proto !== baseProto) {
-                        Object.setPrototypeOf(newObj, proto);
-                    }
-                }
-                else {
-                    newObj = Object.create(proto);
-                }
-            }
-            else if (internals.needsProtoHack.has(baseProto)) {
-                newObj = new baseProto.constructor();
-            }
-            else {
-                newObj = {};
-            }
+    const newObj = internals.base(obj, baseProto, options);
+    if (newObj === obj) {
+        return obj;
     }
 
     if (seen) {
@@ -2660,33 +799,36 @@ module.exports = internals.clone = function (obj, options = {}, _seen = null) {
     }
 
     const keys = Utils.keys(obj, options);
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-
+    for (const key of keys) {
         if (baseProto === Types.array &&
             key === 'length') {
 
+            newObj.length = obj.length;
             continue;
         }
 
         const descriptor = Object.getOwnPropertyDescriptor(obj, key);
-        if (descriptor &&
-            (descriptor.get || descriptor.set)) {
+        if (descriptor) {
+            if (descriptor.get ||
+                descriptor.set) {
 
-            Object.defineProperty(newObj, key, descriptor);
+                Object.defineProperty(newObj, key, descriptor);
+            }
+            else if (descriptor.enumerable) {
+                newObj[key] = clone(obj[key], options, seen);
+            }
+            else {
+                Object.defineProperty(newObj, key, { enumerable: false, writable: true, configurable: true, value: clone(obj[key], options, seen) });
+            }
         }
         else {
             Object.defineProperty(newObj, key, {
-                enumerable: descriptor ? descriptor.enumerable : true,
+                enumerable: true,
                 writable: true,
                 configurable: true,
                 value: clone(obj[key], options, seen)
             });
         }
-    }
-
-    if (baseProto === Types.array) {
-        newObj.length = obj.length;
     }
 
     return newObj;
@@ -2699,14 +841,61 @@ internals.cloneWithShallow = function (source, options) {
     options = Object.assign({}, options);
     options.shallow = false;
 
-    const storage = Utils.store(source, keys);    // Move shallow copy items to storage
-    const copy = internals.clone(source, options);      // Deep copy the rest
-    Utils.restore(copy, source, storage);         // Shallow copy the stored items and restore
-    return copy;
+    const seen = new Map();
+
+    for (const key of keys) {
+        const ref = Reach(source, key);
+        if (typeof ref === 'object' ||
+            typeof ref === 'function') {
+
+            seen.set(ref, ref);
+        }
+    }
+
+    return internals.clone(source, options, seen);
+};
+
+
+internals.base = function (obj, baseProto, options) {
+
+    if (options.prototype === false) {                  // Defaults to true
+        if (internals.needsProtoHack.has(baseProto)) {
+            return new baseProto.constructor();
+        }
+
+        return baseProto === Types.array ? [] : {};
+    }
+
+    const proto = Object.getPrototypeOf(obj);
+    if (proto &&
+        proto.isImmutable) {
+
+        return obj;
+    }
+
+    if (baseProto === Types.array) {
+        const newObj = [];
+        if (proto !== baseProto) {
+            Object.setPrototypeOf(newObj, proto);
+        }
+
+        return newObj;
+    }
+
+    if (internals.needsProtoHack.has(baseProto)) {
+        const newObj = new proto.constructor();
+        if (proto !== baseProto) {
+            Object.setPrototypeOf(newObj, proto);
+        }
+
+        return newObj;
+    }
+
+    return Object.create(proto);
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./types":28,"./utils":29,"buffer":78}],12:[function(require,module,exports){
+},{"./reach":22,"./types":25,"./utils":26,"buffer":48}],8:[function(require,module,exports){
 'use strict';
 
 const Assert = require('./assert');
@@ -2901,7 +1090,7 @@ internals.object = function (ref, values, options) {
     }
 
     if (set.size) {
-        return !!options.part;
+        return options.part ? set.size < targets.length : false;
     }
 
     return true;
@@ -2963,7 +1152,12 @@ internals.string = function (ref, values, options) {
         return false;
     }
 
+    let any = false;
     for (const match of map.values()) {
+        if (match.hits) {
+            any = true;
+        }
+
         if (match.hits === match.allowed) {
             continue;
         }
@@ -2981,7 +1175,7 @@ internals.string = function (ref, values, options) {
         }
     }
 
-    return true;
+    return !!any;
 };
 
 
@@ -3008,7 +1202,7 @@ internals.shallow = function (a, b) {
     return a === b;
 };
 
-},{"./assert":8,"./deepEqual":13,"./escapeRegex":18,"./utils":29}],13:[function(require,module,exports){
+},{"./assert":4,"./deepEqual":9,"./escapeRegex":14,"./utils":26}],9:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -3329,7 +1523,7 @@ internals.SeenEntry = class {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./types":28,"buffer":78}],14:[function(require,module,exports){
+},{"./types":25,"buffer":48}],10:[function(require,module,exports){
 'use strict';
 
 const Stringify = require('./stringify');
@@ -3350,11 +1544,14 @@ module.exports = class extends Error {
             });
 
         super(msgs.join(' ') || 'Unknown error');
-        Error.captureStackTrace(this, exports.assert);
+
+        if (typeof Error.captureStackTrace === 'function') {            // $lab:coverage:ignore$
+            Error.captureStackTrace(this, exports.assert);
+        }
     }
 };
 
-},{"./stringify":27}],15:[function(require,module,exports){
+},{"./stringify":24}],11:[function(require,module,exports){
 'use strict';
 
 const Assert = require('./assert');
@@ -3372,7 +1569,7 @@ module.exports = function (attribute) {
     return attribute.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');                             // Escape quotes and slash
 };
 
-},{"./assert":8}],16:[function(require,module,exports){
+},{"./assert":4}],12:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3461,7 +1658,7 @@ internals.safeCharCodes = (function () {
     return safe;
 }());
 
-},{}],17:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3504,7 +1701,7 @@ module.exports = function (input) {
     });
 };
 
-},{}],18:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3517,7 +1714,7 @@ module.exports = function (string) {
     return string.replace(/[\^\$\.\*\+\-\?\=\!\:\|\\\/\(\)\[\]\{\}\,]/g, '\\$&');
 };
 
-},{}],19:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3539,7 +1736,7 @@ module.exports = internals.flatten = function (array, target) {
     return result;
 };
 
-},{}],20:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3547,7 +1744,7 @@ const internals = {};
 
 module.exports = function () { };
 
-},{}],21:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3569,6 +1766,7 @@ module.exports = {
     flatten: require('./flatten'),
     ignore: require('./ignore'),
     intersect: require('./intersect'),
+    isPromise: require('./isPromise'),
     merge: require('./merge'),
     once: require('./once'),
     reach: require('./reach'),
@@ -3577,7 +1775,7 @@ module.exports = {
     wait: require('./wait')
 };
 
-},{"./applyToDefaults":7,"./assert":8,"./bench":9,"./block":10,"./clone":11,"./contain":12,"./deepEqual":13,"./error":14,"./escapeHeaderAttribute":15,"./escapeHtml":16,"./escapeJson":17,"./escapeRegex":18,"./flatten":19,"./ignore":20,"./intersect":22,"./merge":23,"./once":24,"./reach":25,"./reachTemplate":26,"./stringify":27,"./wait":30}],22:[function(require,module,exports){
+},{"./applyToDefaults":3,"./assert":4,"./bench":5,"./block":6,"./clone":7,"./contain":8,"./deepEqual":9,"./error":10,"./escapeHeaderAttribute":11,"./escapeHtml":12,"./escapeJson":13,"./escapeRegex":14,"./flatten":15,"./ignore":16,"./intersect":18,"./isPromise":19,"./merge":20,"./once":21,"./reach":22,"./reachTemplate":23,"./stringify":24,"./wait":27}],18:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3620,7 +1818,18 @@ internals.has = function (ref, key) {
     return ref[key] !== undefined;
 };
 
-},{}],23:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = function (promise) {
+
+    return !!promise && typeof promise.then === 'function';
+};
+
+},{}],20:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -3669,6 +1878,10 @@ module.exports = internals.merge = function (target, source, options) {
         if (value &&
             typeof value === 'object') {
 
+            if (target[key] === value) {
+                continue;                                           // Can occur for shallow merges
+            }
+
             if (!target[key] ||
                 typeof target[key] !== 'object' ||
                 (Array.isArray(target[key]) !== Array.isArray(value)) ||
@@ -3698,7 +1911,7 @@ module.exports = internals.merge = function (target, source, options) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./assert":8,"./clone":11,"./utils":29,"buffer":78}],24:[function(require,module,exports){
+},{"./assert":4,"./clone":7,"./utils":26,"buffer":48}],21:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3723,7 +1936,7 @@ module.exports = function (method) {
     return wrapped;
 };
 
-},{}],25:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 const Assert = require('./assert');
@@ -3801,7 +2014,7 @@ internals.iterables = function (ref) {
     }
 };
 
-},{"./assert":8}],26:[function(require,module,exports){
+},{"./assert":4}],23:[function(require,module,exports){
 'use strict';
 
 const Reach = require('./reach');
@@ -3819,7 +2032,7 @@ module.exports = function (obj, template, options) {
     });
 };
 
-},{"./reach":25}],27:[function(require,module,exports){
+},{"./reach":22}],24:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3835,7 +2048,7 @@ module.exports = function (...args) {
     }
 };
 
-},{}],28:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -3894,11 +2107,8 @@ exports.getInternalProto = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":78}],29:[function(require,module,exports){
+},{"buffer":48}],26:[function(require,module,exports){
 'use strict';
-
-const Reach = require('./reach');
-
 
 const internals = {};
 
@@ -3908,49 +2118,7 @@ exports.keys = function (obj, options = {}) {
     return options.symbols !== false ? Reflect.ownKeys(obj) : Object.getOwnPropertyNames(obj);  // Defaults to true
 };
 
-
-exports.store = function (source, keys) {
-
-    const storage = new Map();
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        const value = Reach(source, key);
-        if (typeof value === 'object' ||
-            typeof value === 'function') {
-
-            storage.set(key, value);
-            internals.reachSet(source, key, undefined);
-        }
-    }
-
-    return storage;
-};
-
-
-exports.restore = function (copy, source, storage) {
-
-    for (const [key, value] of storage) {
-        internals.reachSet(copy, key, value);
-        internals.reachSet(source, key, value);
-    }
-};
-
-
-internals.reachSet = function (obj, key, value) {
-
-    const path = Array.isArray(key) ? key : key.split('.');
-    let ref = obj;
-    for (let i = 0; i < path.length; ++i) {
-        const segment = path[i];
-        if (i + 1 === path.length) {
-            ref[segment] = value;
-        }
-
-        ref = ref[segment];
-    }
-};
-
-},{"./reach":25}],30:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -3961,6480 +2129,8 @@ module.exports = function (timeout) {
     return new Promise((resolve) => setTimeout(resolve, timeout));
 };
 
-},{}],31:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Ref = require('./ref');
-
-
-const internals = {};
-
-
-exports.schema = function (Joi, config) {
-
-    if (config !== undefined && config !== null && typeof config === 'object') {
-
-        if (config.isJoi) {
-            return config;
-        }
-
-        if (Array.isArray(config)) {
-            return Joi.alternatives().try(config);
-        }
-
-        if (config instanceof RegExp) {
-            return Joi.string().regex(config);
-        }
-
-        if (config instanceof Date) {
-            return Joi.date().valid(config);
-        }
-
-        return Joi.object().keys(config);
-    }
-
-    if (typeof config === 'string') {
-        return Joi.string().valid(config);
-    }
-
-    if (typeof config === 'number') {
-        return Joi.number().valid(config);
-    }
-
-    if (typeof config === 'boolean') {
-        return Joi.boolean().valid(config);
-    }
-
-    if (Ref.isRef(config)) {
-        return Joi.valid(config);
-    }
-
-    Hoek.assert(config === null, 'Invalid schema content:', config);
-
-    return Joi.valid(null);
-};
-
-
-exports.ref = function (id) {
-
-    return Ref.isRef(id) ? id : Ref.create(id);
-};
-
-},{"./ref":35,"@hapi/hoek":21}],32:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Language = require('./language');
-
-
-const internals = {
-    annotations: Symbol('joi-annotations')
-};
-
-
-internals.stringify = function (value, wrapArrays) {
-
-    const type = typeof value;
-
-    if (value === null) {
-        return 'null';
-    }
-
-    if (type === 'string') {
-        return value;
-    }
-
-    if (value instanceof exports.Err || type === 'function' || type === 'symbol') {
-        return value.toString();
-    }
-
-    if (type === 'object') {
-        if (Array.isArray(value)) {
-            let partial = '';
-
-            for (let i = 0; i < value.length; ++i) {
-                partial = partial + (partial.length ? ', ' : '') + internals.stringify(value[i], wrapArrays);
-            }
-
-            return wrapArrays ? '[' + partial + ']' : partial;
-        }
-
-        return value.toString();
-    }
-
-    return JSON.stringify(value);
-};
-
-
-exports.Err = class {
-
-    constructor(type, context, state, options, flags, message, template) {
-
-        this.isJoi = true;
-        this.type = type;
-        this.context = context || {};
-        this.context.key = state.path[state.path.length - 1];
-        this.context.label = state.key;
-        this.path = state.path;
-        this.options = options;
-        this.flags = flags;
-        this.message = message;
-        this.template = template;
-
-        const localized = this.options.language;
-
-        if (this.flags.label) {
-            this.context.label = this.flags.label;
-        }
-        else if (localized &&                   // language can be null for arrays exclusion check
-            (this.context.label === '' ||
-            this.context.label === null)) {
-            this.context.label = localized.root || Language.errors.root;
-        }
-    }
-
-    toString() {
-
-        if (this.message) {
-            return this.message;
-        }
-
-        let format;
-
-        if (this.template) {
-            format = this.template;
-        }
-
-        const localized = this.options.language;
-
-        format = format || Hoek.reach(localized, this.type) || Hoek.reach(Language.errors, this.type);
-
-        if (format === undefined) {
-            return `Error code "${this.type}" is not defined, your custom type is missing the correct language definition`;
-        }
-
-        let wrapArrays = Hoek.reach(localized, 'messages.wrapArrays');
-        if (typeof wrapArrays !== 'boolean') {
-            wrapArrays = Language.errors.messages.wrapArrays;
-        }
-
-        if (format === null) {
-            const childrenString = internals.stringify(this.context.reason, wrapArrays);
-            if (wrapArrays) {
-                return childrenString.slice(1, -1);
-            }
-
-            return childrenString;
-        }
-
-        const hasKey = /{{!?label}}/.test(format);
-        const skipKey = format.length > 2 && format[0] === '!' && format[1] === '!';
-
-        if (skipKey) {
-            format = format.slice(2);
-        }
-
-        if (!hasKey && !skipKey) {
-            const localizedKey = Hoek.reach(localized, 'key');
-            if (typeof localizedKey === 'string') {
-                format = localizedKey + format;
-            }
-            else {
-                format = Hoek.reach(Language.errors, 'key') + format;
-            }
-        }
-
-        const message =  format.replace(/{{(!?)([^}]+)}}/g, ($0, isSecure, name) => {
-
-            const value = Hoek.reach(this.context, name);
-            const normalized = internals.stringify(value, wrapArrays);
-            return (isSecure && this.options.escapeHtml ? Hoek.escapeHtml(normalized) : normalized);
-        });
-
-        this.toString = () => message;  // Persist result of last toString call, it won't change
-
-        return message;
-    }
-
-};
-
-
-exports.create = function (type, context, state, options, flags, message, template) {
-
-    return new exports.Err(type, context, state, options, flags, message, template);
-};
-
-
-exports.process = function (errors, object) {
-
-    if (!errors) {
-        return null;
-    }
-
-    // Construct error
-
-    let message = '';
-    const details = [];
-
-    const processErrors = function (localErrors, parent, overrideMessage) {
-
-        for (let i = 0; i < localErrors.length; ++i) {
-            const item = localErrors[i];
-
-            if (item instanceof Error) {
-                return item;
-            }
-
-            if (item.flags.error && typeof item.flags.error !== 'function') {
-                if (!item.flags.selfError || !item.context.reason) {
-                    return item.flags.error;
-                }
-            }
-
-            let itemMessage;
-            if (parent === undefined) {
-                itemMessage = item.toString();
-                message = message + (message ? '. ' : '') + itemMessage;
-            }
-
-            // Do not push intermediate errors, we're only interested in leafs
-
-            if (item.context.reason) {
-                const override = processErrors(item.context.reason, item.path, item.type === 'override' ? item.message : null);
-                if (override) {
-                    return override;
-                }
-            }
-            else {
-                details.push({
-                    message: overrideMessage || itemMessage || item.toString(),
-                    path: item.path,
-                    type: item.type,
-                    context: item.context
-                });
-            }
-        }
-    };
-
-    const override = processErrors(errors);
-    if (override) {
-        return override;
-    }
-
-    const error = new Error(message);
-    error.isJoi = true;
-    error.name = 'ValidationError';
-    error.details = details;
-    error._object = object;
-    error.annotate = internals.annotate;
-    return error;
-};
-
-
-// Inspired by json-stringify-safe
-
-internals.safeStringify = function (obj, spaces) {
-
-    return JSON.stringify(obj, internals.serializer(), spaces);
-};
-
-
-internals.serializer = function () {
-
-    const keys = [];
-    const stack = [];
-
-    const cycleReplacer = (key, value) => {
-
-        if (stack[0] === value) {
-            return '[Circular ~]';
-        }
-
-        return '[Circular ~.' + keys.slice(0, stack.indexOf(value)).join('.') + ']';
-    };
-
-    return function (key, value) {
-
-        if (stack.length > 0) {
-            const thisPos = stack.indexOf(this);
-            if (~thisPos) {
-                stack.length = thisPos + 1;
-                keys.length = thisPos + 1;
-                keys[thisPos] = key;
-            }
-            else {
-                stack.push(this);
-                keys.push(key);
-            }
-
-            if (~stack.indexOf(value)) {
-                value = cycleReplacer.call(this, key, value);
-            }
-        }
-        else {
-            stack.push(value);
-        }
-
-        if (value) {
-            const annotations = value[internals.annotations];
-            if (annotations) {
-                if (Array.isArray(value)) {
-                    const annotated = [];
-
-                    for (let i = 0; i < value.length; ++i) {
-                        if (annotations.errors[i]) {
-                            annotated.push(`_$idx$_${annotations.errors[i].sort().join(', ')}_$end$_`);
-                        }
-
-                        annotated.push(value[i]);
-                    }
-
-                    value = annotated;
-                }
-                else {
-                    const errorKeys = Object.keys(annotations.errors);
-                    for (let i = 0; i < errorKeys.length; ++i) {
-                        const errorKey = errorKeys[i];
-                        value[`${errorKey}_$key$_${annotations.errors[errorKey].sort().join(', ')}_$end$_`] = value[errorKey];
-                        value[errorKey] = undefined;
-                    }
-
-                    const missingKeys = Object.keys(annotations.missing);
-                    for (let i = 0; i < missingKeys.length; ++i) {
-                        const missingKey = missingKeys[i];
-                        value[`_$miss$_${missingKey}|${annotations.missing[missingKey]}_$end$_`] = '__missing__';
-                    }
-                }
-
-                return value;
-            }
-        }
-
-        if (value === Infinity || value === -Infinity || Number.isNaN(value) ||
-            typeof value === 'function' || typeof value === 'symbol') {
-            return '[' + value.toString() + ']';
-        }
-
-        return value;
-    };
-};
-
-
-internals.annotate = function (stripColorCodes) {
-
-    const redFgEscape = stripColorCodes ? '' : '\u001b[31m';
-    const redBgEscape = stripColorCodes ? '' : '\u001b[41m';
-    const endColor = stripColorCodes ? '' : '\u001b[0m';
-
-    if (typeof this._object !== 'object') {
-        return this.details[0].message;
-    }
-
-    const obj = Hoek.clone(this._object || {});
-
-    for (let i = this.details.length - 1; i >= 0; --i) {        // Reverse order to process deepest child first
-        const pos = i + 1;
-        const error = this.details[i];
-        const path = error.path;
-        let ref = obj;
-        for (let j = 0; ; ++j) {
-            const seg = path[j];
-
-            if (ref.isImmutable) {
-                ref = ref.clone();                              // joi schemas are not cloned by hoek, we have to take this extra step
-            }
-
-            if (j + 1 < path.length &&
-                ref[seg] &&
-                typeof ref[seg] !== 'string') {
-
-                ref = ref[seg];
-            }
-            else {
-                const refAnnotations = ref[internals.annotations] = ref[internals.annotations] || { errors: {}, missing: {} };
-                const value = ref[seg];
-                const cacheKey = seg || error.context.label;
-
-                if (value !== undefined) {
-                    refAnnotations.errors[cacheKey] = refAnnotations.errors[cacheKey] || [];
-                    refAnnotations.errors[cacheKey].push(pos);
-                }
-                else {
-                    refAnnotations.missing[cacheKey] = pos;
-                }
-
-                break;
-            }
-        }
-    }
-
-    const replacers = {
-        key: /_\$key\$_([, \d]+)_\$end\$_"/g,
-        missing: /"_\$miss\$_([^|]+)\|(\d+)_\$end\$_": "__missing__"/g,
-        arrayIndex: /\s*"_\$idx\$_([, \d]+)_\$end\$_",?\n(.*)/g,
-        specials: /"\[(NaN|Symbol.*|-?Infinity|function.*|\(.*)]"/g
-    };
-
-    let message = internals.safeStringify(obj, 2)
-        .replace(replacers.key, ($0, $1) => `" ${redFgEscape}[${$1}]${endColor}`)
-        .replace(replacers.missing, ($0, $1, $2) => `${redBgEscape}"${$1}"${endColor}${redFgEscape} [${$2}]: -- missing --${endColor}`)
-        .replace(replacers.arrayIndex, ($0, $1, $2) => `\n${$2} ${redFgEscape}[${$1}]${endColor}`)
-        .replace(replacers.specials, ($0, $1) => $1);
-
-    message = `${message}\n${redFgEscape}`;
-
-    for (let i = 0; i < this.details.length; ++i) {
-        const pos = i + 1;
-        message = `${message}\n[${pos}] ${this.details[i].message}`;
-    }
-
-    message = message + endColor;
-
-    return message;
-};
-
-},{"./language":34,"@hapi/hoek":21}],33:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('./types/any');
-const Cast = require('./cast');
-const Errors = require('./errors');
-const Lazy = require('./types/lazy');
-const Ref = require('./ref');
-
-
-const internals = {
-    alternatives: require('./types/alternatives'),
-    array: require('./types/array'),
-    boolean: require('./types/boolean'),
-    binary: require('./types/binary'),
-    date: require('./types/date'),
-    func: require('./types/func'),
-    number: require('./types/number'),
-    object: require('./types/object'),
-    string: require('./types/string'),
-    symbol: require('./types/symbol')
-};
-
-
-internals.callWithDefaults = function (schema, args) {
-
-    Hoek.assert(this, 'Must be invoked on a Joi instance.');
-
-    if (this._defaults) {
-        schema = this._defaults(schema);
-    }
-
-    schema._currentJoi = this;
-
-    return schema._init(...args);
-};
-
-
-internals.root = function () {
-
-    const any = new Any();
-
-    const root = any.clone();
-    Any.prototype._currentJoi = root;
-    root._currentJoi = root;
-    root._binds = new Set(['any', 'alternatives', 'alt', 'array', 'bool', 'boolean', 'binary', 'date', 'func', 'number', 'object', 'string', 'symbol', 'validate', 'describe', 'compile', 'assert', 'attempt', 'lazy', 'defaults', 'extend', 'allow', 'valid', 'only', 'equal', 'invalid', 'disallow', 'not', 'required', 'exist', 'optional', 'forbidden', 'strip', 'when', 'empty', 'default']);
-
-    root.any = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.any() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, any, args);
-    };
-
-    root.alternatives = root.alt = function (...args) {
-
-        return internals.callWithDefaults.call(this, internals.alternatives, args);
-    };
-
-    root.array = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.array() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.array, args);
-    };
-
-    root.boolean = root.bool = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.boolean() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.boolean, args);
-    };
-
-    root.binary = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.binary() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.binary, args);
-    };
-
-    root.date = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.date() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.date, args);
-    };
-
-    root.func = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.func() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.func, args);
-    };
-
-    root.number = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.number() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.number, args);
-    };
-
-    root.object = function (...args) {
-
-        return internals.callWithDefaults.call(this, internals.object, args);
-    };
-
-    root.string = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.string() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.string, args);
-    };
-
-    root.symbol = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.symbol() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.symbol, args);
-    };
-
-    root.ref = function (...args) {
-
-        return Ref.create(...args);
-    };
-
-    root.isRef = function (ref) {
-
-        return Ref.isRef(ref);
-    };
-
-    root.validate = function (value, ...args /*, [schema], [options], callback */) {
-
-        const last = args[args.length - 1];
-        const callback = typeof last === 'function' ? last : null;
-
-        const count = args.length - (callback ? 1 : 0);
-        if (count === 0) {
-            return any.validate(value, callback);
-        }
-
-        const options = count === 2 ? args[1] : undefined;
-        const schema = this.compile(args[0]);
-
-        return schema._validateWithOptions(value, options, callback);
-    };
-
-    root.describe = function (...args) {
-
-        const schema = args.length ? this.compile(args[0]) : any;
-        return schema.describe();
-    };
-
-    root.compile = function (schema) {
-
-        try {
-            return Cast.schema(this, schema);
-        }
-        catch (err) {
-            if (err.hasOwnProperty('path')) {
-                err.message = err.message + '(' + err.path + ')';
-            }
-
-            throw err;
-        }
-    };
-
-    root.assert = function (value, schema, message) {
-
-        this.attempt(value, schema, message);
-    };
-
-    root.attempt = function (value, schema, message) {
-
-        const result = this.validate(value, schema);
-        const error = result.error;
-        if (error) {
-            if (!message) {
-                if (typeof error.annotate === 'function') {
-                    error.message = error.annotate();
-                }
-
-                throw error;
-            }
-
-            if (!(message instanceof Error)) {
-                if (typeof error.annotate === 'function') {
-                    error.message = `${message} ${error.annotate()}`;
-                }
-
-                throw error;
-            }
-
-            throw message;
-        }
-
-        return result.value;
-    };
-
-    root.reach = function (schema, path) {
-
-        Hoek.assert(schema && schema instanceof Any, 'you must provide a joi schema');
-        Hoek.assert(Array.isArray(path) || typeof path === 'string', 'path must be a string or an array of strings');
-
-        const reach = (sourceSchema, schemaPath) => {
-
-            if (!schemaPath.length) {
-                return sourceSchema;
-            }
-
-            const children = sourceSchema._inner.children;
-            if (!children) {
-                return;
-            }
-
-            const key = schemaPath.shift();
-            for (let i = 0; i < children.length; ++i) {
-                const child = children[i];
-                if (child.key === key) {
-                    return reach(child.schema, schemaPath);
-                }
-            }
-        };
-
-        const schemaPath = typeof path === 'string' ? (path ? path.split('.') : []) : path.slice();
-
-        return reach(schema, schemaPath);
-    };
-
-    root.lazy = function (...args) {
-
-        return internals.callWithDefaults.call(this, Lazy, args);
-    };
-
-    root.defaults = function (fn) {
-
-        Hoek.assert(typeof fn === 'function', 'Defaults must be a function');
-
-        let joi = Object.create(this.any());
-        joi = fn(joi);
-
-        Hoek.assert(joi && joi instanceof this.constructor, 'defaults() must return a schema');
-
-        Object.assign(joi, this, joi.clone()); // Re-add the types from `this` but also keep the settings from joi's potential new defaults
-
-        joi._defaults = (schema) => {
-
-            if (this._defaults) {
-                schema = this._defaults(schema);
-                Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
-            }
-
-            schema = fn(schema);
-            Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
-            return schema;
-        };
-
-        return joi;
-    };
-
-    root.bind = function () {
-
-        const joi = Object.create(this);
-
-        joi._binds.forEach((bind) => {
-
-            joi[bind] = joi[bind].bind(joi);
-        });
-
-        return joi;
-    };
-
-    root.extend = function (...args) {
-
-        const extensions = Hoek.flatten(args);
-        Hoek.assert(extensions.length > 0, 'You need to provide at least one extension');
-
-        this.assert(extensions, root.extensionsSchema);
-
-        const joi = Object.create(this.any());
-        Object.assign(joi, this);
-        joi._currentJoi = joi;
-        joi._binds = new Set(joi._binds);
-
-        for (let i = 0; i < extensions.length; ++i) {
-            let extension = extensions[i];
-
-            if (typeof extension === 'function') {
-                extension = extension(joi);
-            }
-
-            this.assert(extension, root.extensionSchema);
-
-            const base = (extension.base || this.any()).clone(); // Cloning because we're going to override language afterwards
-            const ctor = base.constructor;
-            const type = class extends ctor { // eslint-disable-line no-loop-func
-
-                constructor() {
-
-                    super();
-                    if (extension.base) {
-                        Object.assign(this, base);
-                    }
-
-                    this._type = extension.name;
-                }
-
-            };
-
-            if (extension.language) {
-                const lang = {
-                    [extension.name]: extension.language
-                };
-                type.prototype._language = Hoek.applyToDefaults(type.prototype._language || (base._settings && base._settings.language) || {}, lang);
-            }
-
-
-            if (extension.coerce) {
-                type.prototype._coerce = function (value, state, options) {
-
-                    if (ctor.prototype._coerce) {
-                        const baseRet = ctor.prototype._coerce.call(this, value, state, options);
-
-                        if (baseRet.errors) {
-                            return baseRet;
-                        }
-
-                        value = baseRet.value;
-                    }
-
-                    const ret = extension.coerce.call(this, value, state, options);
-                    if (ret instanceof Errors.Err) {
-                        return { value, errors: ret };
-                    }
-
-                    return { value: ret };
-                };
-            }
-
-            if (extension.pre) {
-                type.prototype._base = function (value, state, options) {
-
-                    if (ctor.prototype._base) {
-                        const baseRet = ctor.prototype._base.call(this, value, state, options);
-
-                        if (baseRet.errors) {
-                            return baseRet;
-                        }
-
-                        value = baseRet.value;
-                    }
-
-                    const ret = extension.pre.call(this, value, state, options);
-                    if (ret instanceof Errors.Err) {
-                        return { value, errors: ret };
-                    }
-
-                    return { value: ret };
-                };
-            }
-
-            if (extension.rules) {
-                for (let j = 0; j < extension.rules.length; ++j) {
-                    const rule = extension.rules[j];
-                    const ruleArgs = rule.params ?
-                        (rule.params instanceof Any ? rule.params._inner.children.map((k) => k.key) : Object.keys(rule.params)) :
-                        [];
-                    const validateArgs = rule.params ? Cast.schema(this, rule.params) : null;
-
-                    type.prototype[rule.name] = function (...rArgs) { // eslint-disable-line no-loop-func
-
-                        if (rArgs.length > ruleArgs.length) {
-                            throw new Error('Unexpected number of arguments');
-                        }
-
-                        let hasRef = false;
-                        let arg = {};
-
-                        for (let k = 0; k < ruleArgs.length; ++k) {
-                            arg[ruleArgs[k]] = rArgs[k];
-                            if (!hasRef && Ref.isRef(rArgs[k])) {
-                                hasRef = true;
-                            }
-                        }
-
-                        if (validateArgs) {
-                            arg = joi.attempt(arg, validateArgs);
-                        }
-
-                        let schema;
-                        if (rule.validate && !rule.setup) {
-                            const validate = function (value, state, options) {
-
-                                return rule.validate.call(this, arg, value, state, options);
-                            };
-
-                            schema = this._test(rule.name, arg, validate, {
-                                description: rule.description,
-                                hasRef
-                            });
-                        }
-                        else {
-                            schema = this.clone();
-                        }
-
-                        if (rule.setup) {
-                            const newSchema = rule.setup.call(schema, arg);
-                            if (newSchema !== undefined) {
-                                Hoek.assert(newSchema instanceof Any, `Setup of extension Joi.${this._type}().${rule.name}() must return undefined or a Joi object`);
-                                schema = newSchema;
-                            }
-
-                            if (rule.validate) {
-                                const validate = function (value, state, options) {
-
-                                    return rule.validate.call(this, arg, value, state, options);
-                                };
-
-                                schema = schema._test(rule.name, arg, validate, {
-                                    description: rule.description,
-                                    hasRef
-                                });
-                            }
-                        }
-
-                        return schema;
-                    };
-                }
-            }
-
-            if (extension.describe) {
-                type.prototype.describe = function () {
-
-                    const description = ctor.prototype.describe.call(this);
-                    return extension.describe.call(this, description);
-                };
-            }
-
-            const instance = new type();
-            joi[extension.name] = function (...extArgs) {
-
-                return internals.callWithDefaults.call(this, instance, extArgs);
-            };
-
-            joi._binds.add(extension.name);
-        }
-
-        return joi;
-    };
-
-    root.extensionSchema = internals.object.keys({
-        base: internals.object.type(Any, 'Joi object'),
-        name: internals.string.required(),
-        coerce: internals.func.arity(3),
-        pre: internals.func.arity(3),
-        language: internals.object,
-        describe: internals.func.arity(1),
-        rules: internals.array.items(internals.object.keys({
-            name: internals.string.required(),
-            setup: internals.func.arity(1),
-            validate: internals.func.arity(4),
-            params: [
-                internals.object.pattern(/.*/, internals.object.type(Any, 'Joi object')),
-                internals.object.type(internals.object.constructor, 'Joi object')
-            ],
-            description: [internals.string, internals.func.arity(1)]
-        }).or('setup', 'validate'))
-    }).strict();
-
-    root.extensionsSchema = internals.array.items([internals.object, internals.func.arity(1)]).strict();
-
-    root.version = require('../package.json').version;
-
-    return root;
-};
-
-
-module.exports = internals.root();
-
-},{"../package.json":56,"./cast":31,"./errors":32,"./ref":35,"./types/alternatives":38,"./types/any":39,"./types/array":41,"./types/binary":42,"./types/boolean":43,"./types/date":44,"./types/func":45,"./types/lazy":46,"./types/number":47,"./types/object":48,"./types/string":50,"./types/symbol":54,"@hapi/hoek":21}],34:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-exports.errors = {
-    root: 'value',
-    key: '"{{!label}}" ',
-    messages: {
-        wrapArrays: true
-    },
-    any: {
-        unknown: 'is not allowed',
-        invalid: 'contains an invalid value',
-        empty: 'is not allowed to be empty',
-        required: 'is required',
-        allowOnly: 'must be one of {{valids}}',
-        default: 'threw an error when running default method'
-    },
-    alternatives: {
-        base: 'not matching any of the allowed alternatives',
-        child: null
-    },
-    array: {
-        base: 'must be an array',
-        includes: 'at position {{pos}} does not match any of the allowed types',
-        includesSingle: 'single value of "{{!label}}" does not match any of the allowed types',
-        includesOne: 'at position {{pos}} fails because {{reason}}',
-        includesOneSingle: 'single value of "{{!label}}" fails because {{reason}}',
-        includesRequiredUnknowns: 'does not contain {{unknownMisses}} required value(s)',
-        includesRequiredKnowns: 'does not contain {{knownMisses}}',
-        includesRequiredBoth: 'does not contain {{knownMisses}} and {{unknownMisses}} other required value(s)',
-        excludes: 'at position {{pos}} contains an excluded value',
-        excludesSingle: 'single value of "{{!label}}" contains an excluded value',
-        hasKnown: 'does not contain at least one required match for type "{{!patternLabel}}"',
-        hasUnknown: 'does not contain at least one required match',
-        min: 'must contain at least {{limit}} items',
-        max: 'must contain less than or equal to {{limit}} items',
-        length: 'must contain {{limit}} items',
-        ordered: 'at position {{pos}} fails because {{reason}}',
-        orderedLength: 'at position {{pos}} fails because array must contain at most {{limit}} items',
-        ref: 'references "{{ref}}" which is not a positive integer',
-        sparse: 'must not be a sparse array',
-        unique: 'position {{pos}} contains a duplicate value'
-    },
-    boolean: {
-        base: 'must be a boolean'
-    },
-    binary: {
-        base: 'must be a buffer or a string',
-        min: 'must be at least {{limit}} bytes',
-        max: 'must be less than or equal to {{limit}} bytes',
-        length: 'must be {{limit}} bytes'
-    },
-    date: {
-        base: 'must be a number of milliseconds or valid date string',
-        strict: 'must be a valid date',
-        min: 'must be larger than or equal to "{{limit}}"',
-        max: 'must be less than or equal to "{{limit}}"',
-        less: 'must be less than "{{limit}}"',
-        greater: 'must be greater than "{{limit}}"',
-        isoDate: 'must be a valid ISO 8601 date',
-        timestamp: {
-            javascript: 'must be a valid timestamp or number of milliseconds',
-            unix: 'must be a valid timestamp or number of seconds'
-        },
-        ref: 'references "{{ref}}" which is not a date'
-    },
-    function: {
-        base: 'must be a Function',
-        arity: 'must have an arity of {{n}}',
-        minArity: 'must have an arity greater or equal to {{n}}',
-        maxArity: 'must have an arity lesser or equal to {{n}}',
-        ref: 'must be a Joi reference',
-        class: 'must be a class'
-    },
-    lazy: {
-        base: '!!schema error: lazy schema must be set',
-        schema: '!!schema error: lazy schema function must return a schema'
-    },
-    object: {
-        base: 'must be an object',
-        child: '!!child "{{!child}}" fails because {{reason}}',
-        min: 'must have at least {{limit}} children',
-        max: 'must have less than or equal to {{limit}} children',
-        length: 'must have {{limit}} children',
-        allowUnknown: '!!"{{!child}}" is not allowed',
-        with: '!!"{{mainWithLabel}}" missing required peer "{{peerWithLabel}}"',
-        without: '!!"{{mainWithLabel}}" conflict with forbidden peer "{{peerWithLabel}}"',
-        missing: 'must contain at least one of {{peersWithLabels}}',
-        xor: 'contains a conflict between exclusive peers {{peersWithLabels}}',
-        oxor: 'contains a conflict between optional exclusive peers {{peersWithLabels}}',
-        and: 'contains {{presentWithLabels}} without its required peers {{missingWithLabels}}',
-        nand: '!!"{{mainWithLabel}}" must not exist simultaneously with {{peersWithLabels}}',
-        assert: '!!"{{ref}}" validation failed because "{{ref}}" failed to {{message}}',
-        rename: {
-            multiple: 'cannot rename child "{{from}}" because multiple renames are disabled and another key was already renamed to "{{to}}"',
-            override: 'cannot rename child "{{from}}" because override is disabled and target "{{to}}" exists',
-            regex: {
-                multiple: 'cannot rename children {{from}} because multiple renames are disabled and another key was already renamed to "{{to}}"',
-                override: 'cannot rename children {{from}} because override is disabled and target "{{to}}" exists'
-            }
-        },
-        type: 'must be an instance of "{{type}}"',
-        schema: 'must be a Joi instance'
-    },
-    number: {
-        base: 'must be a number',
-        unsafe: 'must be a safe number',
-        min: 'must be larger than or equal to {{limit}}',
-        max: 'must be less than or equal to {{limit}}',
-        less: 'must be less than {{limit}}',
-        greater: 'must be greater than {{limit}}',
-        integer: 'must be an integer',
-        negative: 'must be a negative number',
-        positive: 'must be a positive number',
-        precision: 'must have no more than {{limit}} decimal places',
-        ref: 'references "{{ref}}" which is not a number',
-        multiple: 'must be a multiple of {{multiple}}',
-        port: 'must be a valid port'
-    },
-    string: {
-        base: 'must be a string',
-        min: 'length must be at least {{limit}} characters long',
-        max: 'length must be less than or equal to {{limit}} characters long',
-        length: 'length must be {{limit}} characters long',
-        alphanum: 'must only contain alpha-numeric characters',
-        token: 'must only contain alpha-numeric and underscore characters',
-        regex: {
-            base: 'with value "{{!value}}" fails to match the required pattern: {{pattern}}',
-            name: 'with value "{{!value}}" fails to match the {{name}} pattern',
-            invert: {
-                base: 'with value "{{!value}}" matches the inverted pattern: {{pattern}}',
-                name: 'with value "{{!value}}" matches the inverted {{name}} pattern'
-            }
-        },
-        email: 'must be a valid email',
-        uri: 'must be a valid uri',
-        uriRelativeOnly: 'must be a valid relative uri',
-        uriCustomScheme: 'must be a valid uri with a scheme matching the {{scheme}} pattern',
-        isoDate: 'must be a valid ISO 8601 date',
-        guid: 'must be a valid GUID',
-        hex: 'must only contain hexadecimal characters',
-        hexAlign: 'hex decoded representation must be byte aligned',
-        base64: 'must be a valid base64 string',
-        dataUri: 'must be a valid dataUri string',
-        hostname: 'must be a valid hostname',
-        normalize: 'must be unicode normalized in the {{form}} form',
-        lowercase: 'must only contain lowercase characters',
-        uppercase: 'must only contain uppercase characters',
-        trim: 'must not have leading or trailing whitespace',
-        creditCard: 'must be a credit card',
-        ref: 'references "{{ref}}" which is not a number',
-        ip: 'must be a valid ip address with a {{cidr}} CIDR',
-        ipVersion: 'must be a valid ip address of one of the following versions {{version}} with a {{cidr}} CIDR'
-    },
-    symbol: {
-        base: 'must be a symbol',
-        map: 'must be one of {{map}}'
-    }
-};
-
-},{}],35:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-
-const internals = {};
-
-
-exports.create = function (key, options) {
-
-    Hoek.assert(typeof key === 'string', 'Invalid reference key:', key);
-
-    const settings = Hoek.clone(options);         // options can be reused and modified
-
-    const ref = function (value, validationOptions) {
-
-        return Hoek.reach(ref.isContext ? validationOptions.context : value, ref.key, settings);
-    };
-
-    ref.isContext = (key[0] === ((settings && settings.contextPrefix) || '$'));
-    ref.key = (ref.isContext ? key.slice(1) : key);
-    ref.path = ref.key.split((settings && settings.separator) || '.');
-    ref.depth = ref.path.length;
-    ref.root = ref.path[0];
-    ref.isJoi = true;
-
-    ref.toString = function () {
-
-        return (ref.isContext ? 'context:' : 'ref:') + ref.key;
-    };
-
-    return ref;
-};
-
-
-exports.isRef = function (ref) {
-
-    return typeof ref === 'function' && ref.isJoi;
-};
-
-
-exports.push = function (array, ref) {
-
-    if (exports.isRef(ref) &&
-        !ref.isContext) {
-
-        array.push(ref.root);
-    }
-};
-
-},{"@hapi/hoek":21}],36:[function(require,module,exports){
-'use strict';
-
-const Joi = require('./index');
-
-
-const internals = {};
-
-
-exports.options = Joi.object({
-    abortEarly: Joi.boolean(),
-    convert: Joi.boolean(),
-    allowUnknown: Joi.boolean(),
-    skipFunctions: Joi.boolean(),
-    stripUnknown: [Joi.boolean(), Joi.object({ arrays: Joi.boolean(), objects: Joi.boolean() }).or('arrays', 'objects')],
-    language: Joi.object(),
-    presence: Joi.string().only('required', 'optional', 'forbidden', 'ignore'),
-    context: Joi.object(),
-    noDefaults: Joi.boolean(),
-    escapeHtml: Joi.boolean()
-}).strict();
-
-},{"./index":33}],37:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (Buffer){
-'use strict';
-
-const Ref = require('./ref');
-
-
-const internals = {};
-
-
-internals.extendedCheckForValue = function (value, insensitive) {
-
-    const valueType = typeof value;
-
-    if (valueType === 'object') {
-        if (value instanceof Date) {
-            return (item) => {
-
-                return item instanceof Date && value.getTime() === item.getTime();
-            };
-        }
-
-        if (Buffer.isBuffer(value)) {
-            return (item) => {
-
-                return Buffer.isBuffer(item) && value.length === item.length && value.toString('binary') === item.toString('binary');
-            };
-        }
-    }
-    else if (insensitive && valueType === 'string') {
-        const lowercaseValue = value.toLowerCase();
-        return (item) => {
-
-            return typeof item === 'string' && lowercaseValue === item.toLowerCase();
-        };
-    }
-
-    return null;
-};
-
-
-module.exports = class InternalSet {
-
-    constructor(from) {
-
-        this._set = new Set(from);
-        this._hasRef = false;
-    }
-
-    add(value, refs) {
-
-        const isRef = Ref.isRef(value);
-        if (!isRef && this.has(value, null, null, false)) {
-
-            return this;
-        }
-
-        if (refs !== undefined) { // If it's a merge, we don't have any refs
-            Ref.push(refs, value);
-        }
-
-        this._set.add(value);
-
-        this._hasRef |= isRef;
-
-        return this;
-    }
-
-    merge(add, remove) {
-
-        for (const item of add._set) {
-            this.add(item);
-        }
-
-        for (const item of remove._set) {
-            this.remove(item);
-        }
-
-        return this;
-    }
-
-    remove(value) {
-
-        this._set.delete(value);
-        return this;
-    }
-
-    has(value, state, options, insensitive) {
-
-        return !!this.get(value, state, options, insensitive);
-    }
-
-    get(value, state, options, insensitive) {
-
-        if (!this._set.size) {
-            return false;
-        }
-
-        const hasValue = this._set.has(value);
-        if (hasValue) {
-            return { value };
-        }
-
-        const extendedCheck = internals.extendedCheckForValue(value, insensitive);
-        if (!extendedCheck) {
-            if (state && this._hasRef) {
-                for (let item of this._set) {
-                    if (Ref.isRef(item)) {
-                        item = [].concat(item(state.reference || state.parent, options));
-                        const found = item.indexOf(value);
-                        if (found >= 0) {
-                            return { value: item[found] };
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        return this._has(value, state, options, extendedCheck);
-    }
-
-    _has(value, state, options, check) {
-
-        const checkRef = !!(state && this._hasRef);
-
-        const isReallyEqual = function (item) {
-
-            if (value === item) {
-                return true;
-            }
-
-            return check(item);
-        };
-
-        for (let item of this._set) {
-            if (checkRef && Ref.isRef(item)) { // Only resolve references if there is a state, otherwise it's a merge
-                item = item(state.reference || state.parent, options);
-
-                if (Array.isArray(item)) {
-                    const found = item.findIndex(isReallyEqual);
-                    if (found >= 0) {
-                        return {
-                            value: item[found]
-                        };
-                    }
-
-                    continue;
-                }
-            }
-
-            if (isReallyEqual(item)) {
-                return {
-                    value: item
-                };
-            }
-        }
-
-        return false;
-    }
-
-    values(options) {
-
-        if (options && options.stripUndefined) {
-            const values = [];
-
-            for (const item of this._set) {
-                if (item !== undefined) {
-                    values.push(item);
-                }
-            }
-
-            return values;
-        }
-
-        return Array.from(this._set);
-    }
-
-    slice() {
-
-        const set = new InternalSet(this._set);
-        set._hasRef = this._hasRef;
-        return set;
-    }
-
-    concat(source) {
-
-        const set = new InternalSet([...this._set, ...source._set]);
-        set._hasRef = !!(this._hasRef | source._hasRef);
-        return set;
-    }
-};
-
-}).call(this,{"isBuffer":require("../../../is-buffer/index.js")})
-},{"../../../is-buffer/index.js":89,"./ref":35}],38:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Cast = require('../../cast');
-const Ref = require('../../ref');
-
-
-const internals = {};
-
-
-internals.Alternatives = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'alternatives';
-        this._invalids.remove(null);
-        this._inner.matches = [];
-    }
-
-    _init(...args) {
-
-        return args.length ? this.try(...args) : this;
-    }
-
-    _base(value, state, options) {
-
-        const errors = [];
-        const il = this._inner.matches.length;
-        const baseType = this._baseType;
-
-        for (let i = 0; i < il; ++i) {
-            const item = this._inner.matches[i];
-            if (!item.schema) {
-                const schema = item.peek || item.is;
-                const input = item.is ? item.ref(state.reference || state.parent, options) : value;
-                const failed = schema._validate(input, null, options, state.parent).errors;
-
-                if (failed) {
-                    if (item.otherwise) {
-                        return item.otherwise._validate(value, state, options);
-                    }
-                }
-                else if (item.then) {
-                    return item.then._validate(value, state, options);
-                }
-
-                if (i === (il - 1) && baseType) {
-                    return baseType._validate(value, state, options);
-                }
-
-                continue;
-            }
-
-            const result = item.schema._validate(value, state, options);
-            if (!result.errors) {     // Found a valid match
-                return result;
-            }
-
-            errors.push(...result.errors);
-        }
-
-        if (errors.length) {
-            return { errors: this.createError('alternatives.child', { reason: errors }, state, options) };
-        }
-
-        return { errors: this.createError('alternatives.base', null, state, options) };
-    }
-
-    try(...schemas) {
-
-        schemas = Hoek.flatten(schemas);
-        Hoek.assert(schemas.length, 'Cannot add other alternatives without at least one schema');
-
-        const obj = this.clone();
-
-        for (let i = 0; i < schemas.length; ++i) {
-            const cast = Cast.schema(this._currentJoi, schemas[i]);
-            if (cast._refs.length) {
-                obj._refs.push(...cast._refs);
-            }
-
-            obj._inner.matches.push({ schema: cast });
-        }
-
-        return obj;
-    }
-
-    when(condition, options) {
-
-        let schemaCondition = false;
-        Hoek.assert(Ref.isRef(condition) || typeof condition === 'string' || (schemaCondition = condition instanceof Any), 'Invalid condition:', condition);
-        Hoek.assert(options, 'Missing options');
-        Hoek.assert(typeof options === 'object', 'Invalid options');
-        if (schemaCondition) {
-            Hoek.assert(!options.hasOwnProperty('is'), '"is" can not be used with a schema condition');
-        }
-        else {
-            Hoek.assert(options.hasOwnProperty('is'), 'Missing "is" directive');
-        }
-
-        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
-
-        const obj = this.clone();
-        let is;
-        if (!schemaCondition) {
-            is = Cast.schema(this._currentJoi, options.is);
-
-            if (options.is === null || !(Ref.isRef(options.is) || options.is instanceof Any)) {
-
-                // Only apply required if this wasn't already a schema or a ref, we'll suppose people know what they're doing
-                is = is.required();
-            }
-        }
-
-        const item = {
-            ref: schemaCondition ? null : Cast.ref(condition),
-            peek: schemaCondition ? condition : null,
-            is,
-            then: options.then !== undefined ? Cast.schema(this._currentJoi, options.then) : undefined,
-            otherwise: options.otherwise !== undefined ? Cast.schema(this._currentJoi, options.otherwise) : undefined
-        };
-
-        if (obj._baseType) {
-
-            item.then = item.then && obj._baseType.concat(item.then);
-            item.otherwise = item.otherwise && obj._baseType.concat(item.otherwise);
-        }
-
-        if (!schemaCondition) {
-            Ref.push(obj._refs, item.ref);
-            obj._refs.push(...item.is._refs);
-        }
-
-        if (item.then && item.then._refs.length) {
-            obj._refs.push(...item.then._refs);
-        }
-
-        if (item.otherwise && item.otherwise._refs.length) {
-            obj._refs.push(...item.otherwise._refs);
-        }
-
-        obj._inner.matches.push(item);
-
-        return obj;
-    }
-
-    label(name) {
-
-        const obj = super.label(name);
-        obj._inner.matches = obj._inner.matches.map((match) => {
-
-            if (match.schema) {
-                return { schema: match.schema.label(name) };
-            }
-
-            match = Object.assign({}, match);
-            if (match.then) {
-                match.then = match.then.label(name);
-            }
-
-            if (match.otherwise) {
-                match.otherwise = match.otherwise.label(name);
-            }
-
-            return match;
-        });
-        return obj;
-    }
-
-    describe() {
-
-        const description = super.describe();
-        const alternatives = [];
-        for (let i = 0; i < this._inner.matches.length; ++i) {
-            const item = this._inner.matches[i];
-            if (item.schema) {
-
-                // try()
-
-                alternatives.push(item.schema.describe());
-            }
-            else {
-
-                // when()
-
-                const when = item.is ? {
-                    ref: item.ref.toString(),
-                    is: item.is.describe()
-                } : {
-                    peek: item.peek.describe()
-                };
-
-                if (item.then) {
-                    when.then = item.then.describe();
-                }
-
-                if (item.otherwise) {
-                    when.otherwise = item.otherwise.describe();
-                }
-
-                alternatives.push(when);
-            }
-        }
-
-        description.alternatives = alternatives;
-        return description;
-    }
-
-};
-
-
-module.exports = new internals.Alternatives();
-
-},{"../../cast":31,"../../ref":35,"../any":39,"@hapi/hoek":21}],39:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Cast = require('../../cast');
-const Settings = require('./settings');
-const Ref = require('../../ref');
-const Errors = require('../../errors');
-const State = require('../state');
-const Symbols = require('../symbols');
-
-const Pkg = require('../../../package.json');
-
-let Alternatives = null;                            // Delay-loaded to prevent circular dependencies
-let Schemas = null;
-
-
-const internals = {
-    Set: require('../../set'),
-    symbol: Symbol.for('@hapi/joi/schema')
-};
-
-
-internals.defaults = {
-    abortEarly: true,
-    convert: true,
-    allowUnknown: false,
-    skipFunctions: false,
-    stripUnknown: false,
-    language: {},
-    presence: 'optional',
-    noDefaults: false,
-    escapeHtml: false
-
-    // context: null
-};
-
-
-module.exports = internals.Any = class {
-
-    constructor() {
-
-        this.isJoi = true;
-        this._type = 'any';
-        this._settings = null;
-        this._valids = new internals.Set();
-        this._invalids = new internals.Set();
-        this._tests = [];
-        this._refs = [];
-        this._flags = {
-            /*
-             presence: 'optional',                   // optional, required, forbidden, ignore
-             allowOnly: false,
-             allowUnknown: undefined,
-             default: undefined,
-             forbidden: false,
-             encoding: undefined,
-             insensitive: false,
-             trim: false,
-             normalize: undefined,                   // NFC, NFD, NFKC, NFKD
-             case: undefined,                        // upper, lower
-             empty: undefined,
-             func: false,
-             raw: false
-             */
-        };
-
-        this._description = null;
-        this._unit = null;
-        this._notes = [];
-        this._tags = [];
-        this._examples = [];
-        this._meta = [];
-
-        this._inner = {};                           // Hash of arrays of immutable objects
-    }
-
-    _init() {
-
-        return this;
-    }
-
-    get schemaType() {
-
-        return this._type;
-    }
-
-    createError(type, context, state, options, flags = this._flags) {
-
-        return Errors.create(type, context, state, options, flags);
-    }
-
-    createOverrideError(type, context, state, options, message, template) {
-
-        return Errors.create(type, context, state, options, this._flags, message, template);
-    }
-
-    checkOptions(options) {
-
-        Schemas = Schemas || require('../../schemas');
-
-        const result = Schemas.options.validate(options);
-
-        if (result.error) {
-            throw new Error(result.error.details[0].message);
-        }
-    }
-
-    clone() {
-
-        const obj = Object.create(Object.getPrototypeOf(this));
-
-        obj.isJoi = true;
-        obj._currentJoi = this._currentJoi;
-        obj._type = this._type;
-        obj._settings = this._settings;
-        obj._baseType = this._baseType;
-        obj._valids = this._valids.slice();
-        obj._invalids = this._invalids.slice();
-        obj._tests = this._tests.slice();
-        obj._refs = this._refs.slice();
-        obj._flags = Hoek.clone(this._flags);
-
-        obj._description = this._description;
-        obj._unit = this._unit;
-        obj._notes = this._notes.slice();
-        obj._tags = this._tags.slice();
-        obj._examples = this._examples.slice();
-        obj._meta = this._meta.slice();
-
-        obj._inner = {};
-        const inners = Object.keys(this._inner);
-        for (let i = 0; i < inners.length; ++i) {
-            const key = inners[i];
-            obj._inner[key] = this._inner[key] ? this._inner[key].slice() : null;
-        }
-
-        return obj;
-    }
-
-    concat(schema) {
-
-        Hoek.assert(schema instanceof internals.Any, 'Invalid schema object');
-        Hoek.assert(this._type === 'any' || schema._type === 'any' || schema._type === this._type, 'Cannot merge type', this._type, 'with another type:', schema._type);
-
-        let obj = this.clone();
-
-        if (this._type === 'any' && schema._type !== 'any') {
-
-            // Reset values as if we were "this"
-            const tmpObj = schema.clone();
-            const keysToRestore = ['_settings', '_valids', '_invalids', '_tests', '_refs', '_flags', '_description', '_unit',
-                '_notes', '_tags', '_examples', '_meta', '_inner'];
-
-            for (let i = 0; i < keysToRestore.length; ++i) {
-                tmpObj[keysToRestore[i]] = obj[keysToRestore[i]];
-            }
-
-            obj = tmpObj;
-        }
-
-        obj._settings = obj._settings ? Settings.concat(obj._settings, schema._settings) : schema._settings;
-        obj._valids.merge(schema._valids, schema._invalids);
-        obj._invalids.merge(schema._invalids, schema._valids);
-        obj._tests.push(...schema._tests);
-        obj._refs.push(...schema._refs);
-        if (obj._flags.empty && schema._flags.empty) {
-            obj._flags.empty = obj._flags.empty.concat(schema._flags.empty);
-            const flags = Object.assign({}, schema._flags);
-            delete flags.empty;
-            Hoek.merge(obj._flags, flags);
-        }
-        else if (schema._flags.empty) {
-            obj._flags.empty = schema._flags.empty;
-            const flags = Object.assign({}, schema._flags);
-            delete flags.empty;
-            Hoek.merge(obj._flags, flags);
-        }
-        else {
-            Hoek.merge(obj._flags, schema._flags);
-        }
-
-        obj._description = schema._description || obj._description;
-        obj._unit = schema._unit || obj._unit;
-        obj._notes.push(...schema._notes);
-        obj._tags.push(...schema._tags);
-        obj._examples.push(...schema._examples);
-        obj._meta.push(...schema._meta);
-
-        const inners = Object.keys(schema._inner);
-        const isObject = obj._type === 'object';
-        for (let i = 0; i < inners.length; ++i) {
-            const key = inners[i];
-            const source = schema._inner[key];
-            if (source) {
-                const target = obj._inner[key];
-                if (target) {
-                    if (isObject && key === 'children') {
-                        const keys = {};
-
-                        for (let j = 0; j < target.length; ++j) {
-                            keys[target[j].key] = j;
-                        }
-
-                        for (let j = 0; j < source.length; ++j) {
-                            const sourceKey = source[j].key;
-                            if (keys[sourceKey] >= 0) {
-                                target[keys[sourceKey]] = {
-                                    key: sourceKey,
-                                    schema: target[keys[sourceKey]].schema.concat(source[j].schema)
-                                };
-                            }
-                            else {
-                                target.push(source[j]);
-                            }
-                        }
-                    }
-                    else {
-                        obj._inner[key] = obj._inner[key].concat(source);
-                    }
-                }
-                else {
-                    obj._inner[key] = source.slice();
-                }
-            }
-        }
-
-        return obj;
-    }
-
-    _test(name, arg, func, options) {
-
-        const obj = this.clone();
-        obj._tests.push({ func, name, arg, options });
-        return obj;
-    }
-
-    _testUnique(name, arg, func, options) {
-
-        const obj = this.clone();
-        obj._tests = obj._tests.filter((test) => test.name !== name);
-        obj._tests.push({ func, name, arg, options });
-        return obj;
-    }
-
-    options(options) {
-
-        Hoek.assert(!options.context, 'Cannot override context');
-        this.checkOptions(options);
-
-        const obj = this.clone();
-        obj._settings = Settings.concat(obj._settings, options);
-        return obj;
-    }
-
-    strict(isStrict) {
-
-        const obj = this.clone();
-
-        const convert = isStrict === undefined ? false : !isStrict;
-        obj._settings = Settings.concat(obj._settings, { convert });
-        return obj;
-    }
-
-    raw(isRaw) {
-
-        const value = isRaw === undefined ? true : isRaw;
-
-        if (this._flags.raw === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.raw = value;
-        return obj;
-    }
-
-    error(err, options = { self: false }) {
-
-        Hoek.assert(err && (err instanceof Error || typeof err === 'function'), 'Must provide a valid Error object or a function');
-
-        const unknownKeys = Object.keys(options).filter((k) => !['self'].includes(k));
-        Hoek.assert(unknownKeys.length === 0, `Options ${unknownKeys} are unknown`);
-
-        const obj = this.clone();
-        obj._flags.error = err;
-
-        if (options.self) {
-            obj._flags.selfError = true;
-        }
-
-        return obj;
-    }
-
-    allow(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
-            obj._invalids.remove(value);
-            obj._valids.add(value, obj._refs);
-        }
-
-        return obj;
-    }
-
-    valid(...values) {
-
-        const obj = this.allow(...values);
-        obj._flags.allowOnly = true;
-        return obj;
-    }
-
-    invalid(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
-            obj._valids.remove(value);
-            obj._invalids.add(value, obj._refs);
-        }
-
-        return obj;
-    }
-
-    required() {
-
-        if (this._flags.presence === 'required') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'required';
-        return obj;
-    }
-
-    optional() {
-
-        if (this._flags.presence === 'optional') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'optional';
-        return obj;
-    }
-
-
-    forbidden() {
-
-        if (this._flags.presence === 'forbidden') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'forbidden';
-        return obj;
-    }
-
-
-    strip() {
-
-        if (this._flags.strip) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.strip = true;
-        return obj;
-    }
-
-    applyFunctionToChildren(children, fn, args = [], root) {
-
-        children = [].concat(children);
-
-        if (children.length !== 1 || children[0] !== '') {
-            root = root ? (root + '.') : '';
-
-            const extraChildren = (children[0] === '' ? children.slice(1) : children).map((child) => {
-
-                return root + child;
-            });
-
-            throw new Error('unknown key(s) ' + extraChildren.join(', '));
-        }
-
-        return this[fn](...args);
-    }
-
-    default(value, description) {
-
-        if (typeof value === 'function' &&
-            !Ref.isRef(value)) {
-
-            if (!value.description &&
-                description) {
-
-                value.description = description;
-            }
-
-            if (!this._flags.func) {
-                Hoek.assert(typeof value.description === 'string' && value.description.length > 0, 'description must be provided when default value is a function');
-            }
-        }
-
-        const obj = this.clone();
-        obj._flags.default = value;
-        Ref.push(obj._refs, value);
-        return obj;
-    }
-
-    empty(schema) {
-
-        const obj = this.clone();
-        if (schema === undefined) {
-            delete obj._flags.empty;
-        }
-        else {
-            obj._flags.empty = Cast.schema(this._currentJoi, schema);
-        }
-
-        return obj;
-    }
-
-    when(condition, options) {
-
-        Hoek.assert(options && typeof options === 'object', 'Invalid options');
-        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
-
-        const then = options.hasOwnProperty('then') ? this.concat(Cast.schema(this._currentJoi, options.then)) : undefined;
-        const otherwise = options.hasOwnProperty('otherwise') ? this.concat(Cast.schema(this._currentJoi, options.otherwise)) : undefined;
-
-        Alternatives = Alternatives || require('../alternatives');
-
-        const alternativeOptions = { then, otherwise };
-        if (Object.prototype.hasOwnProperty.call(options, 'is')) {
-            alternativeOptions.is = options.is;
-        }
-
-        const obj = Alternatives.when(condition, alternativeOptions);
-        obj._flags.presence = 'ignore';
-        obj._baseType = this;
-
-        return obj;
-    }
-
-    description(desc) {
-
-        Hoek.assert(desc && typeof desc === 'string', 'Description must be a non-empty string');
-
-        const obj = this.clone();
-        obj._description = desc;
-        return obj;
-    }
-
-    notes(notes) {
-
-        Hoek.assert(notes && (typeof notes === 'string' || Array.isArray(notes)), 'Notes must be a non-empty string or array');
-
-        const obj = this.clone();
-        obj._notes = obj._notes.concat(notes);
-        return obj;
-    }
-
-    tags(tags) {
-
-        Hoek.assert(tags && (typeof tags === 'string' || Array.isArray(tags)), 'Tags must be a non-empty string or array');
-
-        const obj = this.clone();
-        obj._tags = obj._tags.concat(tags);
-        return obj;
-    }
-
-    meta(meta) {
-
-        Hoek.assert(meta !== undefined, 'Meta cannot be undefined');
-
-        const obj = this.clone();
-        obj._meta = obj._meta.concat(meta);
-        return obj;
-    }
-
-    example(...examples) {
-
-        Hoek.assert(examples.length > 0, 'Missing examples');
-
-        const processed = [];
-        for (let i = 0; i < examples.length; ++i) {
-            const example = [].concat(examples[i]);
-            Hoek.assert(example.length <= 2, `Bad example format at index ${i}`);
-
-            const value = example[0];
-            let options = example[1];
-            if (options !== undefined) {
-                Hoek.assert(options && typeof options === 'object', `Options for example at index ${i} must be an object`);
-                const unknownOptions = Object.keys(options).filter((option) => !['parent', 'context'].includes(option));
-                Hoek.assert(unknownOptions.length === 0, `Unknown example options ${unknownOptions} at index ${i}`);
-            }
-            else {
-                options = {};
-            }
-
-            const localState = new State('', [], options.parent || null);
-            const result = this._validate(value, localState, Settings.concat(internals.defaults, options.context ? { context: options.context } : null));
-            Hoek.assert(!result.errors, `Bad example at index ${i}:`, result.errors && Errors.process(result.errors, value));
-
-            const ex = { value };
-            if (Object.keys(options).length) {
-                ex.options = options;
-            }
-
-            processed.push(ex);
-        }
-
-        const obj = this.clone();
-        obj._examples = processed;
-        return obj;
-    }
-
-    unit(name) {
-
-        Hoek.assert(name && typeof name === 'string', 'Unit name must be a non-empty string');
-
-        const obj = this.clone();
-        obj._unit = name;
-        return obj;
-    }
-
-    _prepareEmptyValue(value) {
-
-        if (typeof value === 'string' && this._flags.trim) {
-            return value.trim();
-        }
-
-        return value;
-    }
-
-    _validate(value, state, options, reference) {
-
-        const originalValue = value;
-
-        // Setup state and settings
-
-        state = state || new State('', [], null, reference);
-
-        if (this._settings) {
-            const isDefaultOptions = options === internals.defaults;
-            if (isDefaultOptions && this._settings[Symbols.settingsCache]) {
-                options = this._settings[Symbols.settingsCache];
-            }
-            else {
-                options = Settings.concat(this._language ? Settings.concat({ language: this._language }, options) : options, this._settings);
-                if (isDefaultOptions) {
-                    this._settings[Symbols.settingsCache] = options;
-                }
-            }
-        }
-        else if (this._language) {
-            options = Settings.concat({ language: this._language }, options);
-        }
-
-        let errors = [];
-
-        if (this._coerce) {
-            const coerced = this._coerce(value, state, options);
-            if (coerced.errors) {
-                value = coerced.value;
-                errors = errors.concat(coerced.errors);
-                return this._finalizeValue(value, originalValue, errors, state, options);                            // Coerced error always aborts early
-            }
-
-            value = coerced.value;
-        }
-
-        if (this._flags.empty && !this._flags.empty._validate(this._prepareEmptyValue(value), null, internals.defaults).errors) {
-            value = undefined;
-        }
-
-        // Check presence requirements
-
-        const presence = this._flags.presence || options.presence;
-        if (presence === 'optional') {
-            if (value === undefined) {
-                const isDeepDefault = this._flags.hasOwnProperty('default') && this._flags.default === undefined;
-                if (isDeepDefault && this._type === 'object') {
-                    value = {};
-                }
-                else {
-                    return this._finalizeValue(value, originalValue, errors, state, options);
-                }
-            }
-        }
-        else if (presence === 'required' &&
-            value === undefined) {
-
-            errors.push(this.createError('any.required', null, state, options));
-            return this._finalizeValue(value, originalValue, errors, state, options);
-        }
-        else if (presence === 'forbidden') {
-            if (value === undefined) {
-                return this._finalizeValue(value, originalValue, errors, state, options);
-            }
-
-            errors.push(this.createError('any.unknown', null, state, options));
-            return this._finalizeValue(value, originalValue, errors, state, options);
-        }
-
-        // Check allowed and denied values using the original value
-
-        let match = this._valids.get(value, state, options, this._flags.insensitive);
-        if (match) {
-            if (options.convert) {
-                value = match.value;
-            }
-
-            return this._finalizeValue(value, originalValue, errors, state, options);
-        }
-
-        if (this._invalids.has(value, state, options, this._flags.insensitive)) {
-            errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
-            if (options.abortEarly) {
-
-                return this._finalizeValue(value, originalValue, errors, state, options);
-            }
-        }
-
-        // Convert value and validate type
-
-        if (this._base) {
-            const base = this._base(value, state, options);
-            if (base.errors) {
-                value = base.value;
-                errors = errors.concat(base.errors);
-                return this._finalizeValue(value, originalValue, errors, state, options);                            // Base error always aborts early
-            }
-
-            if (base.value !== value) {
-                value = base.value;
-
-                // Check allowed and denied values using the converted value
-
-                match = this._valids.get(value, state, options, this._flags.insensitive);
-                if (match) {
-                    value = match.value;
-                    return this._finalizeValue(value, originalValue, errors, state, options);
-                }
-
-                if (this._invalids.has(value, state, options, this._flags.insensitive)) {
-                    errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
-                    if (options.abortEarly) {
-                        return this._finalizeValue(value, originalValue, errors, state, options);
-                    }
-                }
-            }
-        }
-
-        // Required values did not match
-
-        if (this._flags.allowOnly) {
-            errors.push(this.createError('any.allowOnly', { value, valids: this._valids.values({ stripUndefined: true }) }, state, options));
-            if (options.abortEarly) {
-                return this._finalizeValue(value, originalValue, errors, state, options);
-            }
-        }
-
-        // Validate tests
-
-        for (let i = 0; i < this._tests.length; ++i) {
-            const test = this._tests[i];
-            const ret = test.func.call(this, value, state, options);
-            if (ret instanceof Errors.Err) {
-                errors.push(ret);
-                if (options.abortEarly) {
-                    return this._finalizeValue(value, originalValue, errors, state, options);
-                }
-            }
-            else {
-                value = ret;
-            }
-        }
-
-        return this._finalizeValue(value, originalValue, errors, state, options);
-    }
-
-    _finalizeValue(value, originalValue, errors, state, options) {
-
-        let finalValue;
-
-        if (value !== undefined) {
-            finalValue = this._flags.raw ? originalValue : value;
-        }
-        else if (options.noDefaults) {
-            finalValue = value;
-        }
-        else if (Ref.isRef(this._flags.default)) {
-            finalValue = this._flags.default(state.parent, options);
-        }
-        else if (typeof this._flags.default === 'function' &&
-            !(this._flags.func && !this._flags.default.description)) {
-
-            let args;
-
-            if (state.parent !== null &&
-                this._flags.default.length > 0) {
-
-                args = [Hoek.clone(state.parent), options];
-            }
-
-            const defaultValue = internals._try(this._flags.default, args);
-            finalValue = defaultValue.value;
-            if (defaultValue.error) {
-                errors.push(this.createError('any.default', { error: defaultValue.error }, state, options));
-            }
-        }
-        else {
-            finalValue = Hoek.clone(this._flags.default);
-        }
-
-        if (errors.length &&
-            typeof this._flags.error === 'function' &&
-            (
-                !this._flags.selfError ||
-                errors.some((e) => state.path.length === e.path.length)
-            )
-        ) {
-            const change = this._flags.error.call(this, errors);
-
-            if (typeof change === 'string') {
-                errors = [this.createOverrideError('override', { reason: errors }, state, options, change)];
-            }
-            else {
-                errors = [].concat(change)
-                    .map((err) => {
-
-                        return err instanceof Error ?
-                            err :
-                            this.createOverrideError(err.type || 'override', err.context, state, options, err.message, err.template);
-                    });
-            }
-        }
-
-        return {
-            value: this._flags.strip ? undefined : finalValue,
-            finalValue,
-            errors: errors.length ? errors : null
-        };
-    }
-
-    _validateWithOptions(value, options, callback) {
-
-        if (options) {
-            this.checkOptions(options);
-        }
-
-        const settings = Settings.concat(internals.defaults, options);
-        const result = this._validate(value, null, settings);
-        const errors = Errors.process(result.errors, value);
-
-        if (callback) {
-            return callback(errors, result.value);
-        }
-
-        return {
-            error: errors,
-            value: result.value,
-            then(resolve, reject) {
-
-                if (errors) {
-                    return Promise.reject(errors).catch(reject);
-                }
-
-                return Promise.resolve(result.value).then(resolve);
-            },
-            catch(reject) {
-
-                if (errors) {
-                    return Promise.reject(errors).catch(reject);
-                }
-
-                return Promise.resolve(result.value);
-            }
-        };
-    }
-
-    validate(value, options, callback) {
-
-        if (typeof options === 'function') {
-            return this._validateWithOptions(value, null, options);
-        }
-
-        return this._validateWithOptions(value, options, callback);
-    }
-
-    describe() {
-
-        const description = {
-            type: this._type
-        };
-
-        const flags = Object.keys(this._flags);
-        if (flags.length) {
-            if (['empty', 'default', 'lazy', 'label'].some((flag) => this._flags.hasOwnProperty(flag))) {
-                description.flags = {};
-                for (let i = 0; i < flags.length; ++i) {
-                    const flag = flags[i];
-                    if (flag === 'empty') {
-                        description.flags[flag] = this._flags[flag].describe();
-                    }
-                    else if (flag === 'default') {
-                        if (Ref.isRef(this._flags[flag])) {
-                            description.flags[flag] = this._flags[flag].toString();
-                        }
-                        else if (typeof this._flags[flag] === 'function') {
-                            description.flags[flag] = {
-                                description: this._flags[flag].description,
-                                function   : this._flags[flag]
-                            };
-                        }
-                        else {
-                            description.flags[flag] = this._flags[flag];
-                        }
-                    }
-                    else if (flag === 'lazy' || flag === 'label') {
-                        // We don't want it in the description
-                    }
-                    else {
-                        description.flags[flag] = this._flags[flag];
-                    }
-                }
-            }
-            else {
-                description.flags = this._flags;
-            }
-        }
-
-        if (this._settings) {
-            description.options = Hoek.clone(this._settings);
-        }
-
-        if (this._baseType) {
-            description.base = this._baseType.describe();
-        }
-
-        if (this._description) {
-            description.description = this._description;
-        }
-
-        if (this._notes.length) {
-            description.notes = this._notes;
-        }
-
-        if (this._tags.length) {
-            description.tags = this._tags;
-        }
-
-        if (this._meta.length) {
-            description.meta = this._meta;
-        }
-
-        if (this._examples.length) {
-            description.examples = this._examples;
-        }
-
-        if (this._unit) {
-            description.unit = this._unit;
-        }
-
-        const valids = this._valids.values();
-        if (valids.length) {
-            description.valids = valids.map((v) => {
-
-                return Ref.isRef(v) ? v.toString() : v;
-            });
-        }
-
-        const invalids = this._invalids.values();
-        if (invalids.length) {
-            description.invalids = invalids.map((v) => {
-
-                return Ref.isRef(v) ? v.toString() : v;
-            });
-        }
-
-        description.rules = [];
-
-        for (let i = 0; i < this._tests.length; ++i) {
-            const validator = this._tests[i];
-            const item = { name: validator.name };
-
-            if (validator.arg !== void 0) {
-                item.arg = Ref.isRef(validator.arg) ? validator.arg.toString() : validator.arg;
-            }
-
-            const options = validator.options;
-            if (options) {
-                if (options.hasRef) {
-                    item.arg = {};
-                    const keys = Object.keys(validator.arg);
-                    for (let j = 0; j < keys.length; ++j) {
-                        const key = keys[j];
-                        const value = validator.arg[key];
-                        item.arg[key] = Ref.isRef(value) ? value.toString() : value;
-                    }
-                }
-
-                if (typeof options.description === 'string') {
-                    item.description = options.description;
-                }
-                else if (typeof options.description === 'function') {
-                    item.description = options.description(item.arg);
-                }
-            }
-
-            description.rules.push(item);
-        }
-
-        if (!description.rules.length) {
-            delete description.rules;
-        }
-
-        const label = this._getLabel();
-        if (label) {
-            description.label = label;
-        }
-
-        return description;
-    }
-
-    label(name) {
-
-        Hoek.assert(name && typeof name === 'string', 'Label name must be a non-empty string');
-
-        const obj = this.clone();
-        obj._flags.label = name;
-        return obj;
-    }
-
-    _getLabel(def) {
-
-        return this._flags.label || def;
-    }
-
-};
-
-
-internals.Any.prototype.isImmutable = true;     // Prevents Hoek from deep cloning schema objects
-
-// Aliases
-
-internals.Any.prototype.only = internals.Any.prototype.equal = internals.Any.prototype.valid;
-internals.Any.prototype.disallow = internals.Any.prototype.not = internals.Any.prototype.invalid;
-internals.Any.prototype.exist = internals.Any.prototype.required;
-
-
-internals.Any.prototype[internals.symbol] = {
-    version: Pkg.version,
-    compile: Cast.schema,
-    root: '_currentJoi'
-};
-
-
-internals._try = function (fn, args = []) {
-
-    let err;
-    let result;
-
-    try {
-        result = fn(...args);
-    }
-    catch (e) {
-        err = e;
-    }
-
-    return {
-        value: result,
-        error: err
-    };
-};
-
-},{"../../../package.json":56,"../../cast":31,"../../errors":32,"../../ref":35,"../../schemas":36,"../../set":37,"../alternatives":38,"../state":49,"../symbols":55,"./settings":40,"@hapi/hoek":21}],40:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Symbols = require('../symbols');
-
-
-const internals = {};
-
-
-exports.concat = function (target, source) {
-
-    if (!source) {
-        return target;
-    }
-
-    const obj = Object.assign({}, target);
-
-    const language = source.language;
-
-    Object.assign(obj, source);
-
-    if (language && target && target.language) {
-        obj.language = Hoek.applyToDefaults(target.language, language);
-    }
-
-    if (obj[Symbols.settingsCache]) {
-        delete obj[Symbols.settingsCache];
-    }
-
-    return obj;
-};
-
-},{"../symbols":55,"@hapi/hoek":21}],41:[function(require,module,exports){
-'use strict';
-
-const Bourne = require('@hapi/bourne');
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Cast = require('../../cast');
-const Ref = require('../../ref');
-const State = require('../state');
-
-
-const internals = {};
-
-
-internals.fastSplice = function (arr, i) {
-
-    let pos = i;
-    while (pos < arr.length) {
-        arr[pos++] = arr[pos];
-    }
-
-    --arr.length;
-};
-
-
-internals.Array = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'array';
-        this._inner.items = [];
-        this._inner.ordereds = [];
-        this._inner.inclusions = [];
-        this._inner.exclusions = [];
-        this._inner.requireds = [];
-        this._flags.sparse = false;
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (value.length > 1 &&
-                (value[0] === '[' || /^\s*\[/.test(value))) {
-
-                try {
-                    result.value = Bourne.parse(value);
-                }
-                catch (e) { }
-            }
-        }
-
-        let isArray = Array.isArray(result.value);
-        const wasArray = isArray;
-        if (options.convert && this._flags.single && !isArray) {
-            result.value = [result.value];
-            isArray = true;
-        }
-
-        if (!isArray) {
-            result.errors = this.createError('array.base', null, state, options);
-            return result;
-        }
-
-        if (this._inner.inclusions.length ||
-            this._inner.exclusions.length ||
-            this._inner.requireds.length ||
-            this._inner.ordereds.length ||
-            !this._flags.sparse) {
-
-            // Clone the array so that we don't modify the original
-            if (wasArray) {
-                result.value = result.value.slice(0);
-            }
-
-            result.errors = this._checkItems(result.value, wasArray, state, options);
-
-            if (result.errors && wasArray && options.convert && this._flags.single) {
-
-                // Attempt a 2nd pass by putting the array inside one.
-                const previousErrors = result.errors;
-
-                result.value = [result.value];
-                result.errors = this._checkItems(result.value, wasArray, state, options);
-
-                if (result.errors) {
-
-                    // Restore previous errors and value since this didn't validate either.
-                    result.errors = previousErrors;
-                    result.value = result.value[0];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    _checkItems(items, wasArray, state, options) {
-
-        const errors = [];
-        let errored;
-
-        const requireds = this._inner.requireds.slice();
-        const ordereds = this._inner.ordereds.slice();
-        const inclusions = [...this._inner.inclusions, ...requireds];
-
-        let il = items.length;
-        for (let i = 0; i < il; ++i) {
-            errored = false;
-            const item = items[i];
-            let isValid = false;
-            const key = wasArray ? i : state.key;
-            const path = wasArray ? [...state.path, i] : state.path;
-            const localState = new State(key, path, state.parent, state.reference);
-            let res;
-
-            // Sparse
-
-            if (!this._flags.sparse && item === undefined) {
-                errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                if (options.abortEarly) {
-                    return errors;
-                }
-
-                ordereds.shift();
-
-                continue;
-            }
-
-            // Exclusions
-
-            for (let j = 0; j < this._inner.exclusions.length; ++j) {
-                res = this._inner.exclusions[j]._validate(item, localState, {});                // Not passing options to use defaults
-
-                if (!res.errors) {
-                    errors.push(this.createError(wasArray ? 'array.excludes' : 'array.excludesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
-                    errored = true;
-
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    ordereds.shift();
-
-                    break;
-                }
-            }
-
-            if (errored) {
-                continue;
-            }
-
-            // Ordered
-            if (this._inner.ordereds.length) {
-                if (ordereds.length > 0) {
-                    const ordered = ordereds.shift();
-                    res = ordered._validate(item, localState, options);
-                    if (!res.errors) {
-                        if (ordered._flags.strip) {
-                            internals.fastSplice(items, i);
-                            --i;
-                            --il;
-                        }
-                        else if (!this._flags.sparse && res.value === undefined) {
-                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                            if (options.abortEarly) {
-                                return errors;
-                            }
-
-                            continue;
-                        }
-                        else {
-                            items[i] = res.value;
-                        }
-                    }
-                    else {
-                        errors.push(this.createError('array.ordered', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
-                        if (options.abortEarly) {
-                            return errors;
-                        }
-                    }
-
-                    continue;
-                }
-                else if (!this._inner.items.length) {
-                    errors.push(this.createError('array.orderedLength', { pos: i, limit: this._inner.ordereds.length }, { key: state.key, path: localState.path }, options));
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    continue;
-                }
-            }
-
-            // Requireds
-
-            const requiredChecks = [];
-            let jl = requireds.length;
-            for (let j = 0; j < jl; ++j) {
-                res = requiredChecks[j] = requireds[j]._validate(item, localState, options);
-                if (!res.errors) {
-                    items[i] = res.value;
-                    isValid = true;
-                    internals.fastSplice(requireds, j);
-                    --j;
-                    --jl;
-
-                    if (!this._flags.sparse && res.value === undefined) {
-                        errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                        if (options.abortEarly) {
-                            return errors;
-                        }
-                    }
-
-                    break;
-                }
-            }
-
-            if (isValid) {
-                continue;
-            }
-
-            // Inclusions
-
-            const stripUnknown = options.stripUnknown && !!options.stripUnknown.arrays || false;
-
-            jl = inclusions.length;
-            for (let j = 0; j < jl; ++j) {
-                const inclusion = inclusions[j];
-
-                // Avoid re-running requireds that already didn't match in the previous loop
-                const previousCheck = requireds.indexOf(inclusion);
-                if (previousCheck !== -1) {
-                    res = requiredChecks[previousCheck];
-                }
-                else {
-                    res = inclusion._validate(item, localState, options);
-
-                    if (!res.errors) {
-                        if (inclusion._flags.strip) {
-                            internals.fastSplice(items, i);
-                            --i;
-                            --il;
-                        }
-                        else if (!this._flags.sparse && res.value === undefined) {
-                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-                            errored = true;
-                        }
-                        else {
-                            items[i] = res.value;
-                        }
-
-                        isValid = true;
-                        break;
-                    }
-                }
-
-                // Return the actual error if only one inclusion defined
-                if (jl === 1) {
-                    if (stripUnknown) {
-                        internals.fastSplice(items, i);
-                        --i;
-                        --il;
-                        isValid = true;
-                        break;
-                    }
-
-                    errors.push(this.createError(wasArray ? 'array.includesOne' : 'array.includesOneSingle', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
-                    errored = true;
-
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    break;
-                }
-            }
-
-            if (errored) {
-                continue;
-            }
-
-            if (this._inner.inclusions.length && !isValid) {
-                if (stripUnknown) {
-                    internals.fastSplice(items, i);
-                    --i;
-                    --il;
-                    continue;
-                }
-
-                errors.push(this.createError(wasArray ? 'array.includes' : 'array.includesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
-
-                if (options.abortEarly) {
-                    return errors;
-                }
-            }
-        }
-
-        if (requireds.length) {
-            this._fillMissedErrors(errors, requireds, state, options);
-        }
-
-        if (ordereds.length) {
-            this._fillOrderedErrors(errors, ordereds, state, options);
-        }
-
-        return errors.length ? errors : null;
-    }
-
-    describe() {
-
-        const description = super.describe();
-
-        if (this._inner.ordereds.length) {
-            description.orderedItems = [];
-
-            for (let i = 0; i < this._inner.ordereds.length; ++i) {
-                description.orderedItems.push(this._inner.ordereds[i].describe());
-            }
-        }
-
-        if (this._inner.items.length) {
-            description.items = [];
-
-            for (let i = 0; i < this._inner.items.length; ++i) {
-                description.items.push(this._inner.items[i].describe());
-            }
-        }
-
-        if (description.rules) {
-            for (let i = 0; i < description.rules.length; ++i) {
-                const rule = description.rules[i];
-                if (rule.name === 'has') {
-                    rule.arg = rule.arg.describe();
-                }
-            }
-        }
-
-        return description;
-    }
-
-    items(...schemas) {
-
-        const obj = this.clone();
-
-        Hoek.flatten(schemas).forEach((type, index) => {
-
-            try {
-                type = Cast.schema(this._currentJoi, type);
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = index + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = index;
-                }
-
-                castErr.message = `${castErr.message}(${castErr.path})`;
-                throw castErr;
-            }
-
-            obj._inner.items.push(type);
-
-            if (type._flags.presence === 'required') {
-                obj._inner.requireds.push(type);
-            }
-            else if (type._flags.presence === 'forbidden') {
-                obj._inner.exclusions.push(type.optional());
-            }
-            else {
-                obj._inner.inclusions.push(type);
-            }
-        });
-
-        return obj;
-    }
-
-    ordered(...schemas) {
-
-        const obj = this.clone();
-
-        Hoek.flatten(schemas).forEach((type, index) => {
-
-            try {
-                type = Cast.schema(this._currentJoi, type);
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = index + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = index;
-                }
-
-                castErr.message = `${castErr.message}(${castErr.path})`;
-                throw castErr;
-            }
-
-            obj._inner.ordereds.push(type);
-        });
-
-        return obj;
-    }
-
-    min(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._testUnique('min', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit, value: compareTo }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length >= compareTo) {
-                return value;
-            }
-
-            return this.createError('array.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._testUnique('max', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length <= compareTo) {
-                return value;
-            }
-
-            return this.createError('array.max', { limit, value }, state, options);
-        });
-    }
-
-    length(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._testUnique('length', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length === compareTo) {
-                return value;
-            }
-
-            return this.createError('array.length', { limit, value }, state, options);
-        });
-    }
-
-    has(schema) {
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = `${castErr.message}(${castErr.path})`;
-            }
-
-            throw castErr;
-        }
-
-        return this._test('has', schema, function (value, state, options) {
-
-            const isValid = value.some((item, idx) => {
-
-                const localState = new State(idx, [...state.path, idx], state.key, state.reference);
-                return !schema._validate(item, localState, options).errors;
-            });
-
-            if (isValid) {
-                return value;
-            }
-
-            const patternLabel = schema._getLabel();
-            if (patternLabel) {
-                return this.createError('array.hasKnown', { patternLabel }, state, options);
-            }
-
-            return this.createError('array.hasUnknown', null, state, options);
-        });
-    }
-
-    unique(comparator, configs) {
-
-        Hoek.assert(comparator === undefined ||
-            typeof comparator === 'function' ||
-            typeof comparator === 'string', 'comparator must be a function or a string');
-
-        Hoek.assert(configs === undefined ||
-            typeof configs === 'object', 'configs must be an object');
-
-        const settings = {
-            ignoreUndefined: (configs && configs.ignoreUndefined) || false
-        };
-
-
-        if (typeof comparator === 'string') {
-            settings.path = comparator;
-        }
-        else if (typeof comparator === 'function') {
-            settings.comparator = comparator;
-        }
-
-        return this._test('unique', settings, function (value, state, options) {
-
-            const found = {
-                string: Object.create(null),
-                number: Object.create(null),
-                undefined: Object.create(null),
-                boolean: Object.create(null),
-                object: new Map(),
-                function: new Map(),
-                custom: new Map()
-            };
-
-            const compare = settings.comparator || Hoek.deepEqual;
-            const ignoreUndefined = settings.ignoreUndefined;
-
-            for (let i = 0; i < value.length; ++i) {
-                const item = settings.path ? Hoek.reach(value[i], settings.path) : value[i];
-                const records = settings.comparator ? found.custom : found[typeof item];
-
-                // All available types are supported, so it's not possible to reach 100% coverage without ignoring this line.
-                // I still want to keep the test for future js versions with new types (eg. Symbol).
-                if (/* $lab:coverage:off$ */ records /* $lab:coverage:on$ */) {
-                    if (records instanceof Map) {
-                        const entries = records.entries();
-                        let current;
-                        while (!(current = entries.next()).done) {
-                            if (compare(current.value[0], item)) {
-                                const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
-                                const context = {
-                                    pos: i,
-                                    value: value[i],
-                                    dupePos: current.value[1],
-                                    dupeValue: value[current.value[1]]
-                                };
-
-                                if (settings.path) {
-                                    context.path = settings.path;
-                                }
-
-                                return this.createError('array.unique', context, localState, options);
-                            }
-                        }
-
-                        records.set(item, i);
-                    }
-                    else {
-                        if ((!ignoreUndefined || item !== undefined) && records[item] !== undefined) {
-                            const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
-
-                            const context = {
-                                pos: i,
-                                value: value[i],
-                                dupePos: records[item],
-                                dupeValue: value[records[item]]
-                            };
-
-                            if (settings.path) {
-                                context.path = settings.path;
-                            }
-
-                            return this.createError('array.unique', context, localState, options);
-                        }
-
-                        records[item] = i;
-                    }
-                }
-            }
-
-            return value;
-        });
-    }
-
-    sparse(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.sparse === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.sparse = value;
-        return obj;
-    }
-
-    single(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.single === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.single = value;
-        return obj;
-    }
-
-    _fillMissedErrors(errors, requireds, state, options) {
-
-        const knownMisses = [];
-        let unknownMisses = 0;
-        for (let i = 0; i < requireds.length; ++i) {
-            const label = requireds[i]._getLabel();
-            if (label) {
-                knownMisses.push(label);
-            }
-            else {
-                ++unknownMisses;
-            }
-        }
-
-        if (knownMisses.length) {
-            if (unknownMisses) {
-                errors.push(this.createError('array.includesRequiredBoth', { knownMisses, unknownMisses }, { key: state.key, path: state.path }, options));
-            }
-            else {
-                errors.push(this.createError('array.includesRequiredKnowns', { knownMisses }, { key: state.key, path: state.path }, options));
-            }
-        }
-        else {
-            errors.push(this.createError('array.includesRequiredUnknowns', { unknownMisses }, { key: state.key, path: state.path }, options));
-        }
-    }
-
-
-    _fillOrderedErrors(errors, ordereds, state, options) {
-
-        const requiredOrdereds = [];
-
-        for (let i = 0; i < ordereds.length; ++i) {
-            const presence = Hoek.reach(ordereds[i], '_flags.presence');
-            if (presence === 'required') {
-                requiredOrdereds.push(ordereds[i]);
-            }
-        }
-
-        if (requiredOrdereds.length) {
-            this._fillMissedErrors(errors, requiredOrdereds, state, options);
-        }
-    }
-
-};
-
-
-module.exports = new internals.Array();
-
-},{"../../cast":31,"../../ref":35,"../any":39,"../state":49,"@hapi/bourne":6,"@hapi/hoek":21}],42:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {};
-
-
-internals.Binary = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'binary';
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            try {
-                result.value = Buffer.from(value, this._flags.encoding);
-            }
-            catch (e) { }
-        }
-
-        result.errors = Buffer.isBuffer(result.value) ? null : this.createError('binary.base', null, state, options);
-        return result;
-    }
-
-    encoding(encoding) {
-
-        Hoek.assert(Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
-
-        if (this._flags.encoding === encoding) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.encoding = encoding;
-        return obj;
-    }
-
-    min(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            if (value.length >= limit) {
-                return value;
-            }
-
-            return this.createError('binary.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            if (value.length <= limit) {
-                return value;
-            }
-
-            return this.createError('binary.max', { limit, value }, state, options);
-        });
-    }
-
-    length(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            if (value.length === limit) {
-                return value;
-            }
-
-            return this.createError('binary.length', { limit, value }, state, options);
-        });
-    }
-
-};
-
-
-module.exports = new internals.Binary();
-
-}).call(this,require("buffer").Buffer)
-},{"../any":39,"@hapi/hoek":21,"buffer":78}],43:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {
-    Set: require('../../set')
-};
-
-
-internals.Boolean = class extends Any {
-    constructor() {
-
-        super();
-        this._type = 'boolean';
-        this._flags.insensitive = true;
-        this._inner.truthySet = new internals.Set();
-        this._inner.falsySet = new internals.Set();
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            const normalized = this._flags.insensitive ? value.toLowerCase() : value;
-            result.value = (normalized === 'true' ? true
-                : (normalized === 'false' ? false : value));
-        }
-
-        if (typeof result.value !== 'boolean') {
-            result.value = (this._inner.truthySet.has(value, null, null, this._flags.insensitive) ? true
-                : (this._inner.falsySet.has(value, null, null, this._flags.insensitive) ? false : value));
-        }
-
-        result.errors = (typeof result.value === 'boolean') ? null : this.createError('boolean.base', { value }, state, options);
-        return result;
-    }
-
-    truthy(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call truthy with undefined');
-            obj._inner.truthySet.add(value);
-        }
-
-        return obj;
-    }
-
-    falsy(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call falsy with undefined');
-            obj._inner.falsySet.add(value);
-        }
-
-        return obj;
-    }
-
-    insensitive(enabled) {
-
-        const insensitive = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.insensitive === insensitive) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.insensitive = insensitive;
-        return obj;
-    }
-
-    describe() {
-
-        const description = super.describe();
-        description.truthy = [true, ...this._inner.truthySet.values()];
-        description.falsy = [false, ...this._inner.falsySet.values()];
-        return description;
-    }
-};
-
-
-module.exports = new internals.Boolean();
-
-},{"../../set":37,"../any":39,"@hapi/hoek":21}],44:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Ref = require('../../ref');
-
-
-const internals = {};
-
-internals.isoDate = /^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/;
-internals.invalidDate = new Date('');
-internals.isIsoDate = (() => {
-
-    const isoString = internals.isoDate.toString();
-
-    return (date) => {
-
-        return date && (date.toString() === isoString);
-    };
-})();
-
-internals.Date = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'date';
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value: (options.convert && internals.Date.toDate(value, this._flags.format, this._flags.timestamp, this._flags.multiplier)) || value
-        };
-
-        if (result.value instanceof Date && !isNaN(result.value.getTime())) {
-            result.errors = null;
-        }
-        else if (!options.convert) {
-            result.errors = this.createError('date.strict', { value }, state, options);
-        }
-        else {
-            let type;
-            if (internals.isIsoDate(this._flags.format)) {
-                type = 'isoDate';
-            }
-            else if (this._flags.timestamp) {
-                type = `timestamp.${this._flags.timestamp}`;
-            }
-            else {
-                type = 'base';
-            }
-
-            result.errors = this.createError(`date.${type}`, { value }, state, options);
-        }
-
-        return result;
-    }
-
-    static toDate(value, format, timestamp, multiplier) {
-
-        if (value instanceof Date) {
-            return value;
-        }
-
-        if (typeof value === 'string' ||
-            (typeof value === 'number' && !isNaN(value) && isFinite(value))) {
-
-            const isIsoDate = format && internals.isIsoDate(format);
-            if (!isIsoDate &&
-                typeof value === 'string' &&
-                /^[+-]?\d+(\.\d+)?$/.test(value)) {
-
-                value = parseFloat(value);
-            }
-
-            let date;
-            if (isIsoDate) {
-                date = format.test(value) ? new Date(value.toString()) : internals.invalidDate;
-            }
-            else if (timestamp) {
-                date = /^\s*$/.test(value) ? internals.invalidDate : new Date(value * multiplier);
-            }
-            else {
-                date = new Date(value);
-            }
-
-            if (!isNaN(date.getTime())) {
-                return date;
-            }
-        }
-
-        return null;
-    }
-
-    iso() {
-
-        if (this._flags.format === internals.isoDate) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.format = internals.isoDate;
-        return obj;
-    }
-
-    timestamp(type = 'javascript') {
-
-        const allowed = ['javascript', 'unix'];
-        Hoek.assert(allowed.includes(type), '"type" must be one of "' + allowed.join('", "') + '"');
-
-        if (this._flags.timestamp === type) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.timestamp = type;
-        obj._flags.multiplier = type === 'unix' ? 1000 : 1;
-        return obj;
-    }
-
-    _isIsoDate(value) {
-
-        return internals.isoDate.test(value);
-    }
-
-};
-
-internals.compare = function (type, compare) {
-
-    return function (date) {
-
-        const isNow = date === 'now';
-        const isRef = Ref.isRef(date);
-
-        if (!isNow && !isRef) {
-            date = internals.Date.toDate(date);
-        }
-
-        Hoek.assert(date, 'Invalid date format');
-
-        return this._test(type, date, function (value, state, options) {
-
-            let compareTo;
-            if (isNow) {
-                compareTo = Date.now();
-            }
-            else if (isRef) {
-                const refValue = date(state.reference || state.parent, options);
-                compareTo = internals.Date.toDate(refValue);
-
-                if (!compareTo) {
-                    return this.createError('date.ref', { ref: date, value: refValue }, state, options);
-                }
-
-                compareTo = compareTo.getTime();
-            }
-            else {
-                compareTo = date.getTime();
-            }
-
-            if (compare(value.getTime(), compareTo)) {
-                return value;
-            }
-
-            return this.createError('date.' + type, { limit: new Date(compareTo), value }, state, options);
-        });
-    };
-};
-
-
-internals.Date.prototype.min = internals.compare('min', (value, date) => value >= date);
-internals.Date.prototype.max = internals.compare('max', (value, date) => value <= date);
-internals.Date.prototype.greater = internals.compare('greater', (value, date) => value > date);
-internals.Date.prototype.less = internals.compare('less', (value, date) => value < date);
-
-
-module.exports = new internals.Date();
-
-},{"../../ref":35,"../any":39,"@hapi/hoek":21}],45:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const ObjectType = require('../object');
-const Ref = require('../../ref');
-
-
-const internals = {};
-
-
-internals.Func = class extends ObjectType.constructor {
-
-    constructor() {
-
-        super();
-        this._flags.func = true;
-    }
-
-    arity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
-
-        return this._test('arity', n, function (value, state, options) {
-
-            if (value.length === n) {
-                return value;
-            }
-
-            return this.createError('function.arity', { n }, state, options);
-        });
-    }
-
-    minArity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n > 0, 'n must be a strict positive integer');
-
-        return this._test('minArity', n, function (value, state, options) {
-
-            if (value.length >= n) {
-                return value;
-            }
-
-            return this.createError('function.minArity', { n }, state, options);
-        });
-    }
-
-    maxArity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
-
-        return this._test('maxArity', n, function (value, state, options) {
-
-            if (value.length <= n) {
-                return value;
-            }
-
-            return this.createError('function.maxArity', { n }, state, options);
-        });
-    }
-
-    ref() {
-
-        return this._test('ref', null, function (value, state, options) {
-
-            if (Ref.isRef(value)) {
-                return value;
-            }
-
-            return this.createError('function.ref', { value }, state, options);
-        });
-    }
-
-    class() {
-
-        return this._test('class', null, function (value, state, options) {
-
-            if ((/^\s*class\s/).test(value.toString())) {
-                return value;
-            }
-
-            return this.createError('function.class', { value }, state, options);
-        });
-    }
-};
-
-module.exports = new internals.Func();
-
-},{"../../ref":35,"../object":48,"@hapi/hoek":21}],46:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {};
-
-
-internals.Lazy = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'lazy';
-        this._flags.once = true;
-        this._cache = null;
-    }
-
-    _init(fn, options) {
-
-        return this.set(fn, options);
-    }
-
-    _base(value, state, options) {
-
-        let schema;
-        if (this._cache) {
-            schema = this._cache;
-        }
-        else {
-            const result = { value };
-            const lazy = this._flags.lazy;
-
-            if (!lazy) {
-                result.errors = this.createError('lazy.base', null, state, options);
-                return result;
-            }
-
-            schema = lazy();
-
-            if (!(schema instanceof Any)) {
-                result.errors = this.createError('lazy.schema', { schema }, state, options);
-                return result;
-            }
-
-            if (this._flags.once) {
-                this._cache = schema;
-            }
-        }
-
-        return schema._validate(value, state, options);
-    }
-
-    set(fn, options) {
-
-        Hoek.assert(typeof fn === 'function', 'You must provide a function as first argument');
-        Hoek.assert(options === undefined || (options && typeof options === 'object' && !Array.isArray(options)), `Options must be an object`);
-
-        if (options) {
-            const unknownOptions = Object.keys(options).filter((key) => !['once'].includes(key));
-            Hoek.assert(unknownOptions.length === 0, `Options contain unknown keys: ${unknownOptions}`);
-            Hoek.assert(options.once === undefined || typeof options.once === 'boolean', 'Option "once" must be a boolean');
-        }
-
-        const obj = this.clone();
-        obj._flags.lazy = fn;
-
-        if (options && options.once !== obj._flags.once) {
-            obj._flags.once = options.once;
-        }
-
-        return obj;
-    }
-
-};
-
-module.exports = new internals.Lazy();
-
-},{"../any":39,"@hapi/hoek":21}],47:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Ref = require('../../ref');
-
-
-const internals = {
-    precisionRx: /(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/,
-    normalizeExponent(str) {
-
-        return str
-            .replace(/\.?0+e/, 'e')
-            .replace(/e\+/, 'e')
-            .replace(/^\+/, '')
-            .replace(/^(-?)0+([1-9])/, '$1$2');
-    },
-    normalizeDecimal(str) {
-
-        str = str
-            .replace(/^\+/, '')
-            .replace(/\.0+$/, '')
-            .replace(/^(-?)0+([1-9])/, '$1$2');
-
-        if (str.includes('.') && str.endsWith('0')) {
-            str = str.replace(/0+$/, '');
-        }
-
-        return str;
-    }
-};
-
-
-internals.Number = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'number';
-        this._flags.unsafe = false;
-        this._invalids.add(Infinity);
-        this._invalids.add(-Infinity);
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            errors: null,
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            const matches = value.match(/^\s*[+-]?\d+(?:\.\d+)?(?:e([+-]?\d+))?\s*$/i);
-            if (matches) {
-
-                value = value.trim();
-                result.value = parseFloat(value);
-
-                if (!this._flags.unsafe) {
-                    if (value.includes('e')) {
-                        if (internals.normalizeExponent(`${result.value / Math.pow(10, matches[1])}e${matches[1]}`) !== internals.normalizeExponent(value)) {
-                            result.errors = this.createError('number.unsafe', { value }, state, options);
-                            return result;
-                        }
-                    }
-                    else {
-                        if (result.value.toString() !== internals.normalizeDecimal(value)) {
-                            result.errors = this.createError('number.unsafe', { value }, state, options);
-                            return result;
-                        }
-                    }
-                }
-            }
-        }
-
-        const isNumber = typeof result.value === 'number' && !isNaN(result.value);
-
-        if (options.convert && 'precision' in this._flags && isNumber) {
-
-            // This is conceptually equivalent to using toFixed but it should be much faster
-            const precision = Math.pow(10, this._flags.precision);
-            result.value = Math.round(result.value * precision) / precision;
-        }
-
-        if (isNumber) {
-            if (!this._flags.unsafe &&
-                (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) {
-                result.errors = this.createError('number.unsafe', { value }, state, options);
-            }
-        }
-        else {
-            result.errors = this.createError('number.base', { value }, state, options);
-        }
-
-        return result;
-    }
-
-    multiple(base) {
-
-        const isRef = Ref.isRef(base);
-
-        if (!isRef) {
-            Hoek.assert(typeof base === 'number' && isFinite(base), 'multiple must be a number');
-            Hoek.assert(base > 0, 'multiple must be greater than 0');
-        }
-
-        return this._test('multiple', base, function (value, state, options) {
-
-            const divisor = isRef ? base(state.reference || state.parent, options) : base;
-
-            if (isRef && (typeof divisor !== 'number' || !isFinite(divisor))) {
-                return this.createError('number.ref', { ref: base.key }, state, options);
-            }
-
-            if (value % divisor === 0) {
-                return value;
-            }
-
-            return this.createError('number.multiple', { multiple: base, value }, state, options);
-        });
-    }
-
-    integer() {
-
-        return this._test('integer', undefined, function (value, state, options) {
-
-            return Math.trunc(value) - value === 0 ? value : this.createError('number.integer', { value }, state, options);
-        });
-    }
-
-    unsafe(enabled = true) {
-
-        Hoek.assert(typeof enabled === 'boolean', 'enabled must be a boolean');
-
-        if (this._flags.unsafe === enabled) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.unsafe = enabled;
-        return obj;
-    }
-
-    negative() {
-
-        return this._test('negative', undefined, function (value, state, options) {
-
-            if (value < 0) {
-                return value;
-            }
-
-            return this.createError('number.negative', { value }, state, options);
-        });
-    }
-
-    positive() {
-
-        return this._test('positive', undefined, function (value, state, options) {
-
-            if (value > 0) {
-                return value;
-            }
-
-            return this.createError('number.positive', { value }, state, options);
-        });
-    }
-
-    precision(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit), 'limit must be an integer');
-        Hoek.assert(!('precision' in this._flags), 'precision already set');
-
-        const obj = this._test('precision', limit, function (value, state, options) {
-
-            const places = value.toString().match(internals.precisionRx);
-            const decimals = Math.max((places[1] ? places[1].length : 0) - (places[2] ? parseInt(places[2], 10) : 0), 0);
-            if (decimals <= limit) {
-                return value;
-            }
-
-            return this.createError('number.precision', { limit, value }, state, options);
-        });
-
-        obj._flags.precision = limit;
-        return obj;
-    }
-
-    port() {
-
-        return this._test('port', undefined, function (value, state, options) {
-
-            if (!Number.isSafeInteger(value) || value < 0 || value > 65535) {
-                return this.createError('number.port', { value }, state, options);
-            }
-
-            return value;
-        });
-    }
-
-};
-
-
-internals.compare = function (type, compare) {
-
-    return function (limit) {
-
-        const isRef = Ref.isRef(limit);
-        const isNumber = typeof limit === 'number' && !isNaN(limit);
-
-        Hoek.assert(isNumber || isRef, 'limit must be a number or reference');
-
-        return this._test(type, limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(typeof compareTo === 'number' && !isNaN(compareTo))) {
-                    return this.createError('number.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (compare(value, compareTo)) {
-                return value;
-            }
-
-            return this.createError('number.' + type, { limit: compareTo, value }, state, options);
-        });
-    };
-};
-
-
-internals.Number.prototype.min = internals.compare('min', (value, limit) => value >= limit);
-internals.Number.prototype.max = internals.compare('max', (value, limit) => value <= limit);
-internals.Number.prototype.greater = internals.compare('greater', (value, limit) => value > limit);
-internals.Number.prototype.less = internals.compare('less', (value, limit) => value < limit);
-
-
-module.exports = new internals.Number();
-
-},{"../../ref":35,"../any":39,"@hapi/hoek":21}],48:[function(require,module,exports){
-'use strict';
-
-const Bourne = require('@hapi/bourne');
-const Hoek = require('@hapi/hoek');
-const Topo = require('@hapi/topo');
-
-const Any = require('../any');
-const Errors = require('../../errors');
-const Cast = require('../../cast');
-const State = require('../state');
-
-
-const internals = {};
-
-
-internals.Object = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'object';
-        this._inner.children = null;
-        this._inner.renames = [];
-        this._inner.dependencies = [];
-        this._inner.patterns = [];
-    }
-
-    _init(...args) {
-
-        return args.length ? this.keys(...args) : this;
-    }
-
-    _base(value, state, options) {
-
-        let target = value;
-        const errors = [];
-        const finish = () => {
-
-            return {
-                value: target,
-                errors: errors.length ? errors : null
-            };
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (value.length > 1 &&
-                (value[0] === '{' || /^\s*\{/.test(value))) {
-
-                try {
-                    value = Bourne.parse(value);
-                }
-                catch (e) { }
-            }
-        }
-
-        const type = this._flags.func ? 'function' : 'object';
-        if (!value ||
-            typeof value !== type ||
-            Array.isArray(value)) {
-
-            errors.push(this.createError(type + '.base', { value }, state, options));
-            return finish();
-        }
-
-        // Skip if there are no other rules to test
-
-        if (!this._inner.renames.length &&
-            !this._inner.dependencies.length &&
-            !this._inner.children &&                    // null allows any keys
-            !this._inner.patterns.length) {
-
-            target = value;
-            return finish();
-        }
-
-        // Ensure target is a local copy (parsed) or shallow copy
-
-        if (target === value) {
-            if (type === 'object') {
-                target = Object.create(Object.getPrototypeOf(value));
-            }
-            else {
-                target = function (...args) {
-
-                    return value.apply(this, args);
-                };
-
-                target.prototype = Hoek.clone(value.prototype);
-            }
-
-            const valueKeys = Object.keys(value);
-            for (let i = 0; i < valueKeys.length; ++i) {
-                target[valueKeys[i]] = value[valueKeys[i]];
-            }
-        }
-        else {
-            target = value;
-        }
-
-        // Rename keys
-
-        const renamed = {};
-        for (let i = 0; i < this._inner.renames.length; ++i) {
-            const rename = this._inner.renames[i];
-
-            if (rename.isRegExp) {
-                const targetKeys = Object.keys(target);
-                const matchedTargetKeys = [];
-
-                for (let j = 0; j < targetKeys.length; ++j) {
-                    if (rename.from.test(targetKeys[j])) {
-                        matchedTargetKeys.push(targetKeys[j]);
-                    }
-                }
-
-                const allUndefined = matchedTargetKeys.every((key) => target[key] === undefined);
-                if (rename.options.ignoreUndefined && allUndefined) {
-                    continue;
-                }
-
-                if (!rename.options.multiple &&
-                    renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.regex.multiple', { from: matchedTargetKeys, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
-                    !rename.options.override &&
-                    !renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.regex.override', { from: matchedTargetKeys, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (allUndefined) {
-                    delete target[rename.to];
-                }
-                else {
-                    target[rename.to] = target[matchedTargetKeys[matchedTargetKeys.length - 1]];
-                }
-
-                renamed[rename.to] = true;
-
-                if (!rename.options.alias) {
-                    for (let j = 0; j < matchedTargetKeys.length; ++j) {
-                        delete target[matchedTargetKeys[j]];
-                    }
-                }
-            }
-            else {
-                if (rename.options.ignoreUndefined && target[rename.from] === undefined) {
-                    continue;
-                }
-
-                if (!rename.options.multiple &&
-                    renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.multiple', { from: rename.from, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
-                    !rename.options.override &&
-                    !renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.override', { from: rename.from, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (target[rename.from] === undefined) {
-                    delete target[rename.to];
-                }
-                else {
-                    target[rename.to] = target[rename.from];
-                }
-
-                renamed[rename.to] = true;
-
-                if (!rename.options.alias) {
-                    delete target[rename.from];
-                }
-            }
-        }
-
-        // Validate schema
-
-        if (!this._inner.children &&            // null allows any keys
-            !this._inner.patterns.length &&
-            !this._inner.dependencies.length) {
-
-            return finish();
-        }
-
-        const unprocessed = new Set(Object.keys(target));
-
-        if (this._inner.children) {
-            const stripProps = [];
-
-            for (let i = 0; i < this._inner.children.length; ++i) {
-                const child = this._inner.children[i];
-                const key = child.key;
-                const item = target[key];
-
-                unprocessed.delete(key);
-
-                const localState = new State(key, [...state.path, key], target, state.reference);
-                const result = child.schema._validate(item, localState, options);
-                if (result.errors) {
-                    errors.push(this.createError('object.child', { key, child: child.schema._getLabel(key), reason: result.errors }, localState, options));
-
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-                else {
-                    if (child.schema._flags.strip || (result.value === undefined && result.value !== item)) {
-                        stripProps.push(key);
-                        target[key] = result.finalValue;
-                    }
-                    else if (result.value !== undefined) {
-                        target[key] = result.value;
-                    }
-                }
-            }
-
-            for (let i = 0; i < stripProps.length; ++i) {
-                delete target[stripProps[i]];
-            }
-        }
-
-        // Unknown keys
-
-        if (unprocessed.size && this._inner.patterns.length) {
-
-            for (const key of unprocessed) {
-                const localState = new State(key, [...state.path, key], target, state.reference);
-                const item = target[key];
-
-                for (let i = 0; i < this._inner.patterns.length; ++i) {
-                    const pattern = this._inner.patterns[i];
-
-                    if (pattern.regex ?
-                        pattern.regex.test(key) :
-                        !pattern.schema._validate(key, state, { ...options, abortEarly:true }).errors) {
-
-                        unprocessed.delete(key);
-
-                        const result = pattern.rule._validate(item, localState, options);
-                        if (result.errors) {
-                            errors.push(this.createError('object.child', {
-                                key,
-                                child: pattern.rule._getLabel(key),
-                                reason: result.errors
-                            }, localState, options));
-
-                            if (options.abortEarly) {
-                                return finish();
-                            }
-                        }
-
-                        target[key] = result.value;
-                    }
-                }
-            }
-        }
-
-        if (unprocessed.size && (this._inner.children || this._inner.patterns.length)) {
-            if ((options.stripUnknown && this._flags.allowUnknown !== true) ||
-                options.skipFunctions) {
-
-                const stripUnknown = options.stripUnknown
-                    ? (options.stripUnknown === true ? true : !!options.stripUnknown.objects)
-                    : false;
-
-
-                for (const key of unprocessed) {
-                    if (stripUnknown) {
-                        delete target[key];
-                        unprocessed.delete(key);
-                    }
-                    else if (typeof target[key] === 'function') {
-                        unprocessed.delete(key);
-                    }
-                }
-            }
-
-            if ((this._flags.allowUnknown !== undefined ? !this._flags.allowUnknown : !options.allowUnknown)) {
-
-                for (const unprocessedKey of unprocessed) {
-                    errors.push(this.createError('object.allowUnknown', { child: unprocessedKey, value: target[unprocessedKey] }, {
-                        key: unprocessedKey,
-                        path: [...state.path, unprocessedKey]
-                    }, options, {}));
-                }
-            }
-        }
-
-        // Validate dependencies
-
-        for (let i = 0; i < this._inner.dependencies.length; ++i) {
-            const dep = this._inner.dependencies[i];
-            const hasKey = dep.key !== null;
-            const splitKey = hasKey && dep.key.split('.');
-            const localState = hasKey ? new State(splitKey[splitKey.length - 1], [...state.path, ...splitKey]) : new State(null, state.path);
-            const err = internals[dep.type].call(this, dep.key, hasKey && Hoek.reach(target, dep.key, { functions: true }), dep.peers, target, localState, options);
-            if (err instanceof Errors.Err) {
-                errors.push(err);
-                if (options.abortEarly) {
-                    return finish();
-                }
-            }
-        }
-
-        return finish();
-    }
-
-    keys(schema) {
-
-        Hoek.assert(schema === null || schema === undefined || typeof schema === 'object', 'Object schema must be a valid object');
-        Hoek.assert(!schema || !(schema instanceof Any), 'Object schema cannot be a joi schema');
-
-        const obj = this.clone();
-
-        if (!schema) {
-            obj._inner.children = null;
-            return obj;
-        }
-
-        const children = Object.keys(schema);
-
-        if (!children.length) {
-            obj._inner.children = [];
-            return obj;
-        }
-
-        const topo = new Topo();
-        if (obj._inner.children) {
-            for (let i = 0; i < obj._inner.children.length; ++i) {
-                const child = obj._inner.children[i];
-
-                // Only add the key if we are not going to replace it later
-                if (!children.includes(child.key)) {
-                    topo.add(child, { after: child._refs, group: child.key });
-                }
-            }
-        }
-
-        for (let i = 0; i < children.length; ++i) {
-            const key = children[i];
-            const child = schema[key];
-            try {
-                const cast = Cast.schema(this._currentJoi, child);
-                topo.add({ key, schema: cast }, { after: cast._refs, group: key });
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = key + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = key;
-                }
-
-                throw castErr;
-            }
-        }
-
-        obj._inner.children = topo.nodes;
-
-        return obj;
-    }
-
-    append(schema) {
-        // Skip any changes
-        if (schema === null || schema === undefined || Object.keys(schema).length === 0) {
-            return this;
-        }
-
-        return this.keys(schema);
-    }
-
-    unknown(allow) {
-
-        const value = allow !== false;
-
-        if (this._flags.allowUnknown === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.allowUnknown = value;
-        return obj;
-    }
-
-    length(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            if (Object.keys(value).length === limit) {
-                return value;
-            }
-
-            return this.createError('object.length', { limit, value }, state, options);
-        });
-    }
-
-    min(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            if (Object.keys(value).length >= limit) {
-                return value;
-            }
-
-            return this.createError('object.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            if (Object.keys(value).length <= limit) {
-                return value;
-            }
-
-            return this.createError('object.max', { limit, value }, state, options);
-        });
-    }
-
-    pattern(pattern, schema) {
-
-        const isRegExp = pattern instanceof RegExp;
-        Hoek.assert(isRegExp || pattern instanceof Any, 'pattern must be a regex or schema');
-        Hoek.assert(schema !== undefined, 'Invalid rule');
-
-        if (isRegExp) {
-            Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
-        }
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = `${castErr.message}(${castErr.path})`;
-            }
-
-            throw castErr;
-        }
-
-        const obj = this.clone();
-        if (isRegExp) {
-            obj._inner.patterns.push({ regex: pattern, rule: schema });
-        }
-        else {
-            obj._inner.patterns.push({ schema: pattern, rule: schema });
-        }
-
-        return obj;
-    }
-
-    schema() {
-
-        return this._test('schema', null, function (value, state, options) {
-
-            if (value instanceof Any) {
-                return value;
-            }
-
-            return this.createError('object.schema', null, state, options);
-        });
-    }
-
-    with(key, peers) {
-
-        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
-
-        return this._dependency('with', key, peers);
-    }
-
-    without(key, peers) {
-
-        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
-
-        return this._dependency('without', key, peers);
-    }
-
-    xor(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('xor', null, peers);
-    }
-
-    oxor(...peers) {
-
-        return this._dependency('oxor', null, peers);
-    }
-
-    or(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('or', null, peers);
-    }
-
-    and(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('and', null, peers);
-    }
-
-    nand(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('nand', null, peers);
-    }
-
-    requiredKeys(...children) {
-
-        children = Hoek.flatten(children);
-        return this.applyFunctionToChildren(children, 'required');
-    }
-
-    optionalKeys(...children) {
-
-        children = Hoek.flatten(children);
-        return this.applyFunctionToChildren(children, 'optional');
-    }
-
-    forbiddenKeys(...children) {
-
-        children = Hoek.flatten(children);
-        return this.applyFunctionToChildren(children, 'forbidden');
-    }
-
-    rename(from, to, options) {
-
-        Hoek.assert(typeof from === 'string' || from instanceof RegExp, 'Rename missing the from argument');
-        Hoek.assert(typeof to === 'string', 'Rename missing the to argument');
-        Hoek.assert(to !== from, 'Cannot rename key to same name:', from);
-
-        for (let i = 0; i < this._inner.renames.length; ++i) {
-            Hoek.assert(this._inner.renames[i].from !== from, 'Cannot rename the same key multiple times');
-        }
-
-        const obj = this.clone();
-
-        obj._inner.renames.push({
-            from,
-            to,
-            options: Hoek.applyToDefaults(internals.renameDefaults, options || {}),
-            isRegExp: from instanceof RegExp
-        });
-
-        return obj;
-    }
-
-    applyFunctionToChildren(children, fn, args = [], root) {
-
-        children = [].concat(children);
-        Hoek.assert(children.length > 0, 'expected at least one children');
-
-        const groupedChildren = internals.groupChildren(children);
-        let obj;
-
-        if ('' in groupedChildren) {
-            obj = this[fn](...args);
-            delete groupedChildren[''];
-        }
-        else {
-            obj = this.clone();
-        }
-
-        if (obj._inner.children) {
-            root = root ? (root + '.') : '';
-
-            for (let i = 0; i < obj._inner.children.length; ++i) {
-                const child = obj._inner.children[i];
-                const group = groupedChildren[child.key];
-
-                if (group) {
-                    obj._inner.children[i] = {
-                        key: child.key,
-                        _refs: child._refs,
-                        schema: child.schema.applyFunctionToChildren(group, fn, args, root + child.key)
-                    };
-
-                    delete groupedChildren[child.key];
-                }
-            }
-        }
-
-        const remaining = Object.keys(groupedChildren);
-        Hoek.assert(remaining.length === 0, 'unknown key(s)', remaining.join(', '));
-
-        return obj;
-    }
-
-    _dependency(type, key, peers) {
-
-        peers = [].concat(peers);
-        for (let i = 0; i < peers.length; ++i) {
-            Hoek.assert(typeof peers[i] === 'string', type, 'peers must be a string or array of strings');
-        }
-
-        const obj = this.clone();
-        obj._inner.dependencies.push({ type, key, peers });
-        return obj;
-    }
-
-    describe(shallow) {
-
-        const description = super.describe();
-
-        if (description.rules) {
-            for (let i = 0; i < description.rules.length; ++i) {
-                const rule = description.rules[i];
-                // Coverage off for future-proof descriptions, only object().assert() is use right now
-                if (/* $lab:coverage:off$ */rule.arg &&
-                    typeof rule.arg === 'object' &&
-                    rule.arg.schema &&
-                    rule.arg.ref /* $lab:coverage:on$ */) {
-                    rule.arg = {
-                        schema: rule.arg.schema.describe(),
-                        ref: rule.arg.ref.toString()
-                    };
-                }
-            }
-        }
-
-        if (this._inner.children &&
-            !shallow) {
-
-            description.children = {};
-            for (let i = 0; i < this._inner.children.length; ++i) {
-                const child = this._inner.children[i];
-                description.children[child.key] = child.schema.describe();
-            }
-        }
-
-        if (this._inner.dependencies.length) {
-            description.dependencies = Hoek.clone(this._inner.dependencies);
-        }
-
-        if (this._inner.patterns.length) {
-            description.patterns = [];
-
-            for (let i = 0; i < this._inner.patterns.length; ++i) {
-                const pattern = this._inner.patterns[i];
-                if (pattern.regex) {
-                    description.patterns.push({ regex: pattern.regex.toString(), rule: pattern.rule.describe() });
-                }
-                else {
-                    description.patterns.push({ schema: pattern.schema.describe(), rule: pattern.rule.describe() });
-                }
-            }
-        }
-
-        if (this._inner.renames.length > 0) {
-            description.renames = Hoek.clone(this._inner.renames);
-        }
-
-        return description;
-    }
-
-    assert(ref, schema, message) {
-
-        ref = Cast.ref(ref);
-        Hoek.assert(ref.isContext || ref.depth > 1, 'Cannot use assertions for root level references - use direct key rules instead');
-        message = message || 'pass the assertion test';
-        Hoek.assert(typeof message === 'string', 'Message must be a string');
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = `${castErr.message}(${castErr.path})`;
-            }
-
-            throw castErr;
-        }
-
-        const key = ref.path[ref.path.length - 1];
-        const path = ref.path.join('.');
-
-        return this._test('assert', { schema, ref }, function (value, state, options) {
-
-            const result = schema._validate(ref(value), null, options, value);
-            if (!result.errors) {
-                return value;
-            }
-
-            const localState = new State(key, ref.path, state.parent, state.reference);
-            return this.createError('object.assert', { ref: path, message }, localState, options);
-        });
-    }
-
-    type(constructor, name = constructor.name) {
-
-        Hoek.assert(typeof constructor === 'function', 'type must be a constructor function');
-        const typeData = {
-            name,
-            ctor: constructor
-        };
-
-        return this._test('type', typeData, function (value, state, options) {
-
-            if (value instanceof constructor) {
-                return value;
-            }
-
-            return this.createError('object.type', { type: typeData.name, value }, state, options);
-        });
-    }
-};
-
-
-internals.renameDefaults = {
-    alias: false,                   // Keep old value in place
-    multiple: false,                // Allow renaming multiple keys into the same target
-    override: false                 // Overrides an existing key
-};
-
-
-internals.groupChildren = function (children) {
-
-    children.sort();
-
-    const grouped = {};
-
-    for (let i = 0; i < children.length; ++i) {
-        const child = children[i];
-        Hoek.assert(typeof child === 'string', 'children must be strings');
-        const group = child.split('.')[0];
-        const childGroup = grouped[group] = (grouped[group] || []);
-        childGroup.push(child.substring(group.length + 1));
-    }
-
-    return grouped;
-};
-
-
-internals.keysToLabels = function (schema, keys) {
-
-    const children = schema._inner.children;
-
-    if (!children) {
-        return keys;
-    }
-
-    const findLabel = function (key) {
-
-        const matchingChild = schema._currentJoi.reach(schema, key);
-        return matchingChild ? matchingChild._getLabel(key) : key;
-    };
-
-    if (Array.isArray(keys)) {
-        return keys.map(findLabel);
-    }
-
-    return findLabel(keys);
-};
-
-
-internals.with = function (key, value, peers, parent, state, options) {
-
-    if (value === undefined) {
-        return;
-    }
-
-    for (let i = 0; i < peers.length; ++i) {
-
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist === undefined) {
-
-            return this.createError('object.with', {
-                main: key,
-                mainWithLabel: internals.keysToLabels(this, key),
-                peer,
-                peerWithLabel: internals.keysToLabels(this, peer)
-            }, state, options);
-        }
-    }
-};
-
-
-internals.without = function (key, value, peers, parent, state, options) {
-
-    if (value === undefined) {
-        return;
-    }
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-
-            return this.createError('object.without', {
-                main: key,
-                mainWithLabel: internals.keysToLabels(this, key),
-                peer,
-                peerWithLabel: internals.keysToLabels(this, peer)
-            }, state, options);
-        }
-    }
-};
-
-
-internals.xor = function (key, value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-            present.push(peer);
-        }
-    }
-
-    if (present.length === 1) {
-        return;
-    }
-
-    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
-
-    if (present.length === 0) {
-        return this.createError('object.missing', context, state, options);
-    }
-
-    context.present = present;
-    context.presentWithLabels = internals.keysToLabels(this, present);
-
-    return this.createError('object.xor', context, state, options);
-};
-
-
-internals.oxor = function (key, value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-            present.push(peer);
-        }
-    }
-
-    if (!present.length ||
-        present.length === 1) {
-
-        return;
-    }
-
-    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
-    context.present = present;
-    context.presentWithLabels = internals.keysToLabels(this, present);
-
-    return this.createError('object.oxor', context, state, options);
-};
-
-
-internals.or = function (key, value, peers, parent, state, options) {
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-            return;
-        }
-    }
-
-    return this.createError('object.missing', {
-        peers,
-        peersWithLabels: internals.keysToLabels(this, peers)
-    }, state, options);
-};
-
-
-internals.and = function (key, value, peers, parent, state, options) {
-
-    const missing = [];
-    const present = [];
-    const count = peers.length;
-    for (let i = 0; i < count; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist === undefined) {
-
-            missing.push(peer);
-        }
-        else {
-            present.push(peer);
-        }
-    }
-
-    const aon = (missing.length === count || present.length === count);
-
-    if (!aon) {
-
-        return this.createError('object.and', {
-            present,
-            presentWithLabels: internals.keysToLabels(this, present),
-            missing,
-            missingWithLabels: internals.keysToLabels(this, missing)
-        }, state, options);
-    }
-};
-
-
-internals.nand = function (key, value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-
-            present.push(peer);
-        }
-    }
-
-    const main = peers[0];
-    const values = peers.slice(1);
-    const allPresent = (present.length === peers.length);
-    return allPresent ? this.createError('object.nand', {
-        main,
-        mainWithLabel: internals.keysToLabels(this, main),
-        peers: values,
-        peersWithLabels: internals.keysToLabels(this, values)
-    }, state, options) : null;
-};
-
-
-module.exports = new internals.Object();
-
-},{"../../cast":31,"../../errors":32,"../any":39,"../state":49,"@hapi/bourne":6,"@hapi/hoek":21,"@hapi/topo":57}],49:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-module.exports = class {
-    constructor(key, path, parent, reference) {
-
-        this.key = key;
-        this.path = path;
-        this.parent = parent;
-        this.reference = reference;
-    }
-};
-
-},{}],50:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Net = require('net');
-
-const Address = require('@hapi/address');
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Ref = require('../../ref');
-const JoiDate = require('../date');
-
-const Uri = require('./uri');
-const Ip = require('./ip');
-
-
-const internals = {
-    uriRegex: Uri.createUriRegex(),
-    ipRegex: Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], 'optional'),
-    guidBrackets: {
-        '{': '}', '[': ']', '(': ')', '': ''
-    },
-    guidVersions: {
-        uuidv1: '1',
-        uuidv2: '2',
-        uuidv3: '3',
-        uuidv4: '4',
-        uuidv5: '5'
-    },
-    cidrPresences: ['required', 'optional', 'forbidden'],
-    normalizationForms: ['NFC', 'NFD', 'NFKC', 'NFKD']
-};
-
-
-internals.String = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'string';
-        this._invalids.add('');
-    }
-
-    _base(value, state, options) {
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (this._flags.normalize) {
-                value = value.normalize(this._flags.normalize);
-            }
-
-            if (this._flags.case) {
-                value = (this._flags.case === 'upper' ? value.toLocaleUpperCase() : value.toLocaleLowerCase());
-            }
-
-            if (this._flags.trim) {
-                value = value.trim();
-            }
-
-            if (this._inner.replacements) {
-
-                for (let i = 0; i < this._inner.replacements.length; ++i) {
-                    const replacement = this._inner.replacements[i];
-                    value = value.replace(replacement.pattern, replacement.replacement);
-                }
-            }
-
-            if (this._flags.truncate) {
-                for (let i = 0; i < this._tests.length; ++i) {
-                    const test = this._tests[i];
-                    if (test.name === 'max') {
-                        value = value.slice(0, test.arg);
-                        break;
-                    }
-                }
-            }
-
-            if (this._flags.byteAligned && value.length % 2 !== 0) {
-                value = `0${value}`;
-            }
-        }
-
-        return {
-            value,
-            errors: (typeof value === 'string') ? null : this.createError('string.base', { value }, state, options)
-        };
-    }
-
-    insensitive() {
-
-        if (this._flags.insensitive) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.insensitive = true;
-        return obj;
-    }
-
-    creditCard() {
-
-        return this._test('creditCard', undefined, function (value, state, options) {
-
-            let i = value.length;
-            let sum = 0;
-            let mul = 1;
-
-            while (i--) {
-                const char = value.charAt(i) * mul;
-                sum = sum + (char - (char > 9) * 9);
-                mul = mul ^ 3;
-            }
-
-            const check = (sum % 10 === 0) && (sum > 0);
-            return check ? value : this.createError('string.creditCard', { value }, state, options);
-        });
-    }
-
-    regex(pattern, patternOptions) {
-
-        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
-        Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
-
-        const patternObject = { pattern };
-
-        if (typeof patternOptions === 'string') {
-            patternObject.name = patternOptions;
-        }
-        else if (typeof patternOptions === 'object') {
-            patternObject.invert = !!patternOptions.invert;
-
-            if (patternOptions.name) {
-                patternObject.name = patternOptions.name;
-            }
-        }
-
-        const errorCode = ['string.regex', patternObject.invert ? '.invert' : '', patternObject.name ? '.name' : '.base'].join('');
-
-        return this._test('regex', patternObject, function (value, state, options) {
-
-            const patternMatch = patternObject.pattern.test(value);
-
-            if (patternMatch ^ patternObject.invert) {
-                return value;
-            }
-
-            return this.createError(errorCode, { name: patternObject.name, pattern: patternObject.pattern, value }, state, options);
-        });
-    }
-
-    alphanum() {
-
-        return this._test('alphanum', undefined, function (value, state, options) {
-
-            if (/^[a-zA-Z0-9]+$/.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.alphanum', { value }, state, options);
-        });
-    }
-
-    token() {
-
-        return this._test('token', undefined, function (value, state, options) {
-
-            if (/^\w+$/.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.token', { value }, state, options);
-        });
-    }
-
-    email(validationOptions) {
-
-        if (validationOptions) {
-            Hoek.assert(typeof validationOptions === 'object', 'email options must be an object');
-
-            // Migration validation for unsupported options
-
-            Hoek.assert(validationOptions.checkDNS === undefined, 'checkDNS option is not supported');
-            Hoek.assert(validationOptions.errorLevel === undefined, 'errorLevel option is not supported');
-            Hoek.assert(validationOptions.minDomainAtoms === undefined, 'minDomainAtoms option is not supported, use minDomainSegments instead');
-            Hoek.assert(validationOptions.tldBlacklist === undefined, 'tldBlacklist option is not supported, use tlds.deny instead');
-            Hoek.assert(validationOptions.tldWhitelist === undefined, 'tldWhitelist option is not supported, use tlds.allow instead');
-
-            // Validate options
-
-            if (validationOptions.tlds &&
-                typeof validationOptions.tlds === 'object') {
-
-                Hoek.assert(validationOptions.tlds.allow === undefined ||
-                    validationOptions.tlds.allow === false ||
-                    validationOptions.tlds.allow === true ||
-                    Array.isArray(validationOptions.tlds.allow) ||
-                    validationOptions.tlds.allow instanceof Set, 'tlds.allow must be an array, Set, or boolean');
-
-                Hoek.assert(validationOptions.tlds.deny === undefined ||
-                    Array.isArray(validationOptions.tlds.deny) ||
-                    validationOptions.tlds.deny instanceof Set, 'tlds.deny must be an array or Set');
-
-                const normalizeTable = (table) => {
-
-                    if (table === undefined ||
-                        typeof table === 'boolean' ||
-                        table instanceof Set) {
-
-                        return table;
-                    }
-
-                    return new Set(table);
-                };
-
-                validationOptions = Object.assign({}, validationOptions);       // Shallow cloned
-                validationOptions.tlds = {
-                    allow: normalizeTable(validationOptions.tlds.allow),
-                    deny: normalizeTable(validationOptions.tlds.deny)
-                };
-            }
-
-            Hoek.assert(validationOptions.minDomainSegments === undefined ||
-                Number.isSafeInteger(validationOptions.minDomainSegments) && validationOptions.minDomainSegments > 0, 'minDomainSegments must be a positive integer');
-        }
-
-        return this._test('email', validationOptions, function (value, state, options) {
-
-            if (Address.email.isValid(value, validationOptions)) {
-                return value;
-            }
-
-            return this.createError('string.email', { value }, state, options);
-        });
-    }
-
-    ip(ipOptions = {}) {
-
-        let regex = internals.ipRegex;
-        Hoek.assert(typeof ipOptions === 'object', 'options must be an object');
-
-        if (ipOptions.cidr) {
-            Hoek.assert(typeof ipOptions.cidr === 'string', 'cidr must be a string');
-            ipOptions.cidr = ipOptions.cidr.toLowerCase();
-
-            Hoek.assert(Hoek.contain(internals.cidrPresences, ipOptions.cidr), 'cidr must be one of ' + internals.cidrPresences.join(', '));
-
-            // If we only received a `cidr` setting, create a regex for it. But we don't need to create one if `cidr` is "optional" since that is the default
-            if (!ipOptions.version && ipOptions.cidr !== 'optional') {
-                regex = Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], ipOptions.cidr);
-            }
-        }
-        else {
-
-            // Set our default cidr strategy
-            ipOptions.cidr = 'optional';
-        }
-
-        let versions;
-        if (ipOptions.version) {
-            if (!Array.isArray(ipOptions.version)) {
-                ipOptions.version = [ipOptions.version];
-            }
-
-            Hoek.assert(ipOptions.version.length >= 1, 'version must have at least 1 version specified');
-
-            versions = [];
-            for (let i = 0; i < ipOptions.version.length; ++i) {
-                let version = ipOptions.version[i];
-                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
-                version = version.toLowerCase();
-                Hoek.assert(Ip.versions[version], 'version at position ' + i + ' must be one of ' + Object.keys(Ip.versions).join(', '));
-                versions.push(version);
-            }
-
-            // Make sure we have a set of versions
-            versions = Array.from(new Set(versions));
-
-            regex = Ip.createIpRegex(versions, ipOptions.cidr);
-        }
-
-        return this._test('ip', ipOptions, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            if (versions) {
-                return this.createError('string.ipVersion', { value, cidr: ipOptions.cidr, version: versions }, state, options);
-            }
-
-            return this.createError('string.ip', { value, cidr: ipOptions.cidr }, state, options);
-        });
-    }
-
-    uri(uriOptions) {
-
-        let customScheme = '';
-        let allowRelative = false;
-        let relativeOnly = false;
-        let allowQuerySquareBrackets = false;
-        let regex = internals.uriRegex;
-
-        if (uriOptions) {
-            Hoek.assert(typeof uriOptions === 'object', 'options must be an object');
-
-            const unknownOptions = Object.keys(uriOptions).filter((key) => !['scheme', 'allowRelative', 'relativeOnly', 'allowQuerySquareBrackets'].includes(key));
-            Hoek.assert(unknownOptions.length === 0, `options contain unknown keys: ${unknownOptions}`);
-
-            if (uriOptions.scheme) {
-                Hoek.assert(uriOptions.scheme instanceof RegExp || typeof uriOptions.scheme === 'string' || Array.isArray(uriOptions.scheme), 'scheme must be a RegExp, String, or Array');
-
-                if (!Array.isArray(uriOptions.scheme)) {
-                    uriOptions.scheme = [uriOptions.scheme];
-                }
-
-                Hoek.assert(uriOptions.scheme.length >= 1, 'scheme must have at least 1 scheme specified');
-
-                // Flatten the array into a string to be used to match the schemes.
-                for (let i = 0; i < uriOptions.scheme.length; ++i) {
-                    const scheme = uriOptions.scheme[i];
-                    Hoek.assert(scheme instanceof RegExp || typeof scheme === 'string', 'scheme at position ' + i + ' must be a RegExp or String');
-
-                    // Add OR separators if a value already exists
-                    customScheme = customScheme + (customScheme ? '|' : '');
-
-                    // If someone wants to match HTTP or HTTPS for example then we need to support both RegExp and String so we don't escape their pattern unknowingly.
-                    if (scheme instanceof RegExp) {
-                        customScheme = customScheme + scheme.source;
-                    }
-                    else {
-                        Hoek.assert(/[a-zA-Z][a-zA-Z0-9+-\.]*/.test(scheme), 'scheme at position ' + i + ' must be a valid scheme');
-                        customScheme = customScheme + Hoek.escapeRegex(scheme);
-                    }
-                }
-            }
-
-            if (uriOptions.allowRelative) {
-                allowRelative = true;
-            }
-
-            if (uriOptions.relativeOnly) {
-                relativeOnly = true;
-            }
-
-            if (uriOptions.allowQuerySquareBrackets) {
-                allowQuerySquareBrackets = true;
-            }
-        }
-
-        if (customScheme || allowRelative || relativeOnly || allowQuerySquareBrackets) {
-            regex = Uri.createUriRegex(customScheme, allowRelative, relativeOnly, allowQuerySquareBrackets);
-        }
-
-        return this._test('uri', uriOptions, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            if (relativeOnly) {
-                return this.createError('string.uriRelativeOnly', { value }, state, options);
-            }
-
-            if (customScheme) {
-                return this.createError('string.uriCustomScheme', { scheme: customScheme, value }, state, options);
-            }
-
-            return this.createError('string.uri', { value }, state, options);
-        });
-    }
-
-    isoDate() {
-
-        return this._test('isoDate', undefined, function (value, state, options) {
-
-            if (JoiDate._isIsoDate(value)) {
-                if (!options.convert) {
-                    return value;
-                }
-
-                const d = new Date(value);
-                if (!isNaN(d.getTime())) {
-                    return d.toISOString();
-                }
-            }
-
-            return this.createError('string.isoDate', { value }, state, options);
-        });
-    }
-
-    guid(guidOptions) {
-
-        let versionNumbers = '';
-
-        if (guidOptions && guidOptions.version) {
-            if (!Array.isArray(guidOptions.version)) {
-                guidOptions.version = [guidOptions.version];
-            }
-
-            Hoek.assert(guidOptions.version.length >= 1, 'version must have at least 1 valid version specified');
-            const versions = new Set();
-
-            for (let i = 0; i < guidOptions.version.length; ++i) {
-                let version = guidOptions.version[i];
-                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
-                version = version.toLowerCase();
-                const versionNumber = internals.guidVersions[version];
-                Hoek.assert(versionNumber, 'version at position ' + i + ' must be one of ' + Object.keys(internals.guidVersions).join(', '));
-                Hoek.assert(!(versions.has(versionNumber)), 'version at position ' + i + ' must not be a duplicate.');
-
-                versionNumbers += versionNumber;
-                versions.add(versionNumber);
-            }
-        }
-
-        const guidRegex = new RegExp(`^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[${versionNumbers || '0-9A-F'}][0-9A-F]{3}\\2?[${versionNumbers ? '89AB' : '0-9A-F'}][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$`, 'i');
-
-        return this._test('guid', guidOptions, function (value, state, options) {
-
-            const results = guidRegex.exec(value);
-
-            if (!results) {
-                return this.createError('string.guid', { value }, state, options);
-            }
-
-            // Matching braces
-            if (internals.guidBrackets[results[1]] !== results[results.length - 1]) {
-                return this.createError('string.guid', { value }, state, options);
-            }
-
-            return value;
-        });
-    }
-
-    hex(hexOptions = {}) {
-
-        Hoek.assert(typeof hexOptions === 'object', 'hex options must be an object');
-        Hoek.assert(typeof hexOptions.byteAligned === 'undefined' || typeof hexOptions.byteAligned === 'boolean',
-            'byteAligned must be boolean');
-
-        const byteAligned = hexOptions.byteAligned === true;
-        const regex = /^[a-f0-9]+$/i;
-
-        const obj = this._test('hex', regex, function (value, state, options) {
-
-            if (regex.test(value)) {
-                if (byteAligned && value.length % 2 !== 0) {
-                    return this.createError('string.hexAlign', { value }, state, options);
-                }
-
-                return value;
-            }
-
-            return this.createError('string.hex', { value }, state, options);
-        });
-
-        if (byteAligned) {
-            obj._flags.byteAligned = true;
-        }
-
-        return obj;
-    }
-
-    base64(base64Options = {}) {
-
-        // Validation.
-        Hoek.assert(typeof base64Options === 'object', 'base64 options must be an object');
-        Hoek.assert(typeof base64Options.paddingRequired === 'undefined' || typeof base64Options.paddingRequired === 'boolean',
-            'paddingRequired must be boolean');
-
-        // Determine if padding is required.
-        const paddingRequired = base64Options.paddingRequired === false ?
-            base64Options.paddingRequired
-            : base64Options.paddingRequired || true;
-
-        // Set validation based on preference.
-        const regex = paddingRequired ?
-            // Padding is required.
-            /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
-            // Padding is optional.
-            : /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
-
-        return this._test('base64', regex, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.base64', { value }, state, options);
-        });
-    }
-
-    dataUri(dataUriOptions = {}) {
-
-        const regex = /^data:[\w+.-]+\/[\w+.-]+;((charset=[\w-]+|base64),)?(.*)$/;
-
-        // Determine if padding is required.
-        const paddingRequired = dataUriOptions.paddingRequired === false ?
-            dataUriOptions.paddingRequired
-            : dataUriOptions.paddingRequired || true;
-
-        const base64regex = paddingRequired ?
-            /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
-            : /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
-
-        return this._test('dataUri', regex, function (value, state, options) {
-
-            const matches = value.match(regex);
-
-            if (matches) {
-                if (!matches[2]) {
-                    return value;
-                }
-
-                if (matches[2] !== 'base64') {
-                    return value;
-                }
-
-                if (base64regex.test(matches[3])) {
-                    return value;
-                }
-            }
-
-            return this.createError('string.dataUri', { value }, state, options);
-        });
-    }
-
-    hostname() {
-
-        const regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
-
-        return this._test('hostname', undefined, function (value, state, options) {
-
-            if ((value.length <= 255 && regex.test(value)) ||
-                Net.isIPv6(value)) {
-
-                return value;
-            }
-
-            return this.createError('string.hostname', { value }, state, options);
-        });
-    }
-
-    normalize(form = 'NFC') {
-
-        Hoek.assert(Hoek.contain(internals.normalizationForms, form), 'normalization form must be one of ' + internals.normalizationForms.join(', '));
-
-        const obj = this._test('normalize', form, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.normalize(form)) {
-
-                return value;
-            }
-
-            return this.createError('string.normalize', { value, form }, state, options);
-        });
-
-        obj._flags.normalize = form;
-        return obj;
-    }
-
-    lowercase() {
-
-        const obj = this._test('lowercase', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.toLocaleLowerCase()) {
-
-                return value;
-            }
-
-            return this.createError('string.lowercase', { value }, state, options);
-        });
-
-        obj._flags.case = 'lower';
-        return obj;
-    }
-
-    uppercase() {
-
-        const obj = this._test('uppercase', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.toLocaleUpperCase()) {
-
-                return value;
-            }
-
-            return this.createError('string.uppercase', { value }, state, options);
-        });
-
-        obj._flags.case = 'upper';
-        return obj;
-    }
-
-    trim(enabled = true) {
-
-        Hoek.assert(typeof enabled === 'boolean', 'option must be a boolean');
-
-        if ((this._flags.trim && enabled) || (!this._flags.trim && !enabled)) {
-            return this;
-        }
-
-        let obj;
-        if (enabled) {
-            obj = this._test('trim', undefined, function (value, state, options) {
-
-                if (options.convert ||
-                    value === value.trim()) {
-
-                    return value;
-                }
-
-                return this.createError('string.trim', { value }, state, options);
-            });
-        }
-        else {
-            obj = this.clone();
-            obj._tests = obj._tests.filter((test) => test.name !== 'trim');
-        }
-
-        obj._flags.trim = enabled;
-        return obj;
-    }
-
-    replace(pattern, replacement) {
-
-        if (typeof pattern === 'string') {
-            pattern = new RegExp(Hoek.escapeRegex(pattern), 'g');
-        }
-
-        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
-        Hoek.assert(typeof replacement === 'string', 'replacement must be a String');
-
-        // This can not be considere a test like trim, we can't "reject"
-        // anything from this rule, so just clone the current object
-        const obj = this.clone();
-
-        if (!obj._inner.replacements) {
-            obj._inner.replacements = [];
-        }
-
-        obj._inner.replacements.push({
-            pattern,
-            replacement
-        });
-
-        return obj;
-    }
-
-    truncate(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.truncate === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.truncate = value;
-        return obj;
-    }
-
-};
-
-internals.compare = function (type, compare) {
-
-    return function (limit, encoding) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-        Hoek.assert(!encoding || Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
-
-        return this._test(type, limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!Number.isSafeInteger(compareTo)) {
-                    return this.createError('string.ref', { ref: limit, value: compareTo }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (compare(value, compareTo, encoding)) {
-                return value;
-            }
-
-            return this.createError('string.' + type, { limit: compareTo, value, encoding }, state, options);
-        });
-    };
-};
-
-
-internals.String.prototype.min = internals.compare('min', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length >= limit;
-});
-
-
-internals.String.prototype.max = internals.compare('max', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length <= limit;
-});
-
-
-internals.String.prototype.length = internals.compare('length', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length === limit;
-});
-
-// Aliases
-
-internals.String.prototype.uuid = internals.String.prototype.guid;
-
-module.exports = new internals.String();
-
-}).call(this,require("buffer").Buffer)
-},{"../../ref":35,"../any":39,"../date":44,"./ip":51,"./uri":53,"@hapi/address":3,"@hapi/hoek":21,"buffer":78,"net":76}],51:[function(require,module,exports){
-'use strict';
-
-const RFC3986 = require('./rfc3986');
-
-
-const internals = {
-    Ip: {
-        cidrs: {
-            ipv4: {
-                required: '\\/(?:' + RFC3986.ipv4Cidr + ')',
-                optional: '(?:\\/(?:' + RFC3986.ipv4Cidr + '))?',
-                forbidden: ''
-            },
-            ipv6: {
-                required: '\\/' + RFC3986.ipv6Cidr,
-                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
-                forbidden: ''
-            },
-            ipvfuture: {
-                required: '\\/' + RFC3986.ipv6Cidr,
-                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
-                forbidden: ''
-            }
-        },
-        versions: {
-            ipv4: RFC3986.IPv4address,
-            ipv6: RFC3986.IPv6address,
-            ipvfuture: RFC3986.IPvFuture
-        }
-    }
-};
-
-
-internals.Ip.createIpRegex = function (versions, cidr) {
-
-    let regex;
-    for (let i = 0; i < versions.length; ++i) {
-        const version = versions[i];
-        if (!regex) {
-            regex = '^(?:' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
-        }
-        else {
-            regex += '|' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
-        }
-    }
-
-    return new RegExp(regex + ')$');
-};
-
-module.exports = internals.Ip;
-
-},{"./rfc3986":52}],52:[function(require,module,exports){
-'use strict';
-
-const internals = {
-    rfc3986: {}
-};
-
-
-internals.generate = function () {
-
-    /**
-     * elements separated by forward slash ("/") are alternatives.
-     */
-    const or = '|';
-
-    /**
-     * Rule to support zero-padded addresses.
-     */
-    const zeroPad = '0?';
-
-    /**
-     * DIGIT = %x30-39 ; 0-9
-     */
-    const digit = '0-9';
-    const digitOnly = '[' + digit + ']';
-
-    /**
-     * ALPHA = %x41-5A / %x61-7A   ; A-Z / a-z
-     */
-    const alpha = 'a-zA-Z';
-    const alphaOnly = '[' + alpha + ']';
-
-    /**
-     * IPv4
-     * cidr       = DIGIT                ; 0-9
-     *            / %x31-32 DIGIT         ; 10-29
-     *            / "3" %x30-32           ; 30-32
-     */
-    internals.rfc3986.ipv4Cidr = digitOnly + or + '[1-2]' + digitOnly + or + '3' + '[0-2]';
-
-    /**
-     * IPv6
-     * cidr       = DIGIT                 ; 0-9
-     *            / %x31-39 DIGIT         ; 10-99
-     *            / "1" %x0-1 DIGIT       ; 100-119
-     *            / "12" %x0-8            ; 120-128
-     */
-    internals.rfc3986.ipv6Cidr = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + '[01]' + digitOnly + or + '12[0-8])';
-
-    /**
-     * HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
-     */
-    const hexDigit = digit + 'A-Fa-f';
-    const hexDigitOnly = '[' + hexDigit + ']';
-
-    /**
-     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-     */
-    const unreserved = alpha + digit + '-\\._~';
-
-    /**
-     * sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
-     */
-    const subDelims = '!\\$&\'\\(\\)\\*\\+,;=';
-
-    /**
-     * pct-encoded = "%" HEXDIG HEXDIG
-     */
-    const pctEncoded = '%' + hexDigit;
-
-    /**
-     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
-     */
-    const pchar = unreserved + pctEncoded + subDelims + ':@';
-    const pcharOnly = '[' + pchar + ']';
-
-    /**
-     * squareBrackets example: []
-     */
-    const squareBrackets = '\\[\\]';
-
-    /**
-     * dec-octet   = DIGIT                 ; 0-9
-     *            / %x31-39 DIGIT         ; 10-99
-     *            / "1" 2DIGIT            ; 100-199
-     *            / "2" %x30-34 DIGIT     ; 200-249
-     *            / "25" %x30-35          ; 250-255
-     */
-    const decOctect = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + digitOnly + digitOnly + or + '2' + '[0-4]' + digitOnly + or + '25' + '[0-5])';
-
-    /**
-     * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
-     */
-    internals.rfc3986.IPv4address = '(?:' + decOctect + '\\.){3}' + decOctect;
-
-    /**
-     * h16 = 1*4HEXDIG ; 16 bits of address represented in hexadecimal
-     * ls32 = ( h16 ":" h16 ) / IPv4address ; least-significant 32 bits of address
-     * IPv6address =                            6( h16 ":" ) ls32
-     *             /                       "::" 5( h16 ":" ) ls32
-     *             / [               h16 ] "::" 4( h16 ":" ) ls32
-     *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-     *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-     *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
-     *             / [ *4( h16 ":" ) h16 ] "::"              ls32
-     *             / [ *5( h16 ":" ) h16 ] "::"              h16
-     *             / [ *6( h16 ":" ) h16 ] "::"
-     */
-    const h16 = hexDigitOnly + '{1,4}';
-    const ls32 = '(?:' + h16 + ':' + h16 + '|' + internals.rfc3986.IPv4address + ')';
-    const IPv6SixHex = '(?:' + h16 + ':){6}' + ls32;
-    const IPv6FiveHex = '::(?:' + h16 + ':){5}' + ls32;
-    const IPv6FourHex = '(?:' + h16 + ')?::(?:' + h16 + ':){4}' + ls32;
-    const IPv6ThreeHex = '(?:(?:' + h16 + ':){0,1}' + h16 + ')?::(?:' + h16 + ':){3}' + ls32;
-    const IPv6TwoHex = '(?:(?:' + h16 + ':){0,2}' + h16 + ')?::(?:' + h16 + ':){2}' + ls32;
-    const IPv6OneHex = '(?:(?:' + h16 + ':){0,3}' + h16 + ')?::' + h16 + ':' + ls32;
-    const IPv6NoneHex = '(?:(?:' + h16 + ':){0,4}' + h16 + ')?::' + ls32;
-    const IPv6NoneHex2 = '(?:(?:' + h16 + ':){0,5}' + h16 + ')?::' + h16;
-    const IPv6NoneHex3 = '(?:(?:' + h16 + ':){0,6}' + h16 + ')?::';
-    internals.rfc3986.IPv6address = '(?:' + IPv6SixHex + or + IPv6FiveHex + or + IPv6FourHex + or + IPv6ThreeHex + or + IPv6TwoHex + or + IPv6OneHex + or + IPv6NoneHex + or + IPv6NoneHex2 + or + IPv6NoneHex3 + ')';
-
-    /**
-     * IPvFuture = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
-     */
-    internals.rfc3986.IPvFuture = 'v' + hexDigitOnly + '+\\.[' + unreserved + subDelims + ':]+';
-
-    /**
-     * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-     */
-    internals.rfc3986.scheme = alphaOnly + '[' + alpha + digit + '+-\\.]*';
-
-    /**
-     * userinfo = *( unreserved / pct-encoded / sub-delims / ":" )
-     */
-    const userinfo = '[' + unreserved + pctEncoded + subDelims + ':]*';
-
-    /**
-     * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
-     */
-    const IPLiteral = '\\[(?:' + internals.rfc3986.IPv6address + or + internals.rfc3986.IPvFuture + ')\\]';
-
-    /**
-     * reg-name = *( unreserved / pct-encoded / sub-delims )
-     */
-    const regName = '[' + unreserved + pctEncoded + subDelims + ']{0,255}';
-
-    /**
-     * host = IP-literal / IPv4address / reg-name
-     */
-    const host = '(?:' + IPLiteral + or + internals.rfc3986.IPv4address + or + regName + ')';
-
-    /**
-     * port = *DIGIT
-     */
-    const port = digitOnly + '*';
-
-    /**
-     * authority   = [ userinfo "@" ] host [ ":" port ]
-     */
-    const authority = '(?:' + userinfo + '@)?' + host + '(?::' + port + ')?';
-
-    /**
-     * segment       = *pchar
-     * segment-nz    = 1*pchar
-     * path          = path-abempty    ; begins with "/" or is empty
-     *               / path-absolute   ; begins with "/" but not "//"
-     *               / path-noscheme   ; begins with a non-colon segment
-     *               / path-rootless   ; begins with a segment
-     *               / path-empty      ; zero characters
-     * path-abempty  = *( "/" segment )
-     * path-absolute = "/" [ segment-nz *( "/" segment ) ]
-     * path-rootless = segment-nz *( "/" segment )
-     */
-    const segment = pcharOnly + '*';
-    const segmentNz = pcharOnly + '+';
-    const segmentNzNc = '[' + unreserved + pctEncoded + subDelims + '@' + ']+';
-    const pathEmpty = '';
-    const pathAbEmpty = '(?:\\/' + segment + ')*';
-    const pathAbsolute = '\\/(?:' + segmentNz + pathAbEmpty + ')?';
-    const pathRootless = segmentNz + pathAbEmpty;
-    const pathNoScheme = segmentNzNc + pathAbEmpty;
-
-    /**
-     * hier-part = "//" authority path
-     */
-    internals.rfc3986.hierPart = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty + ')' + or + pathAbsolute + or + pathRootless + ')';
-
-    /**
-     * relative-part = "//" authority path-abempty
-     *                 / path-absolute
-     *                 / path-noscheme
-     *                 / path-empty
-     */
-    internals.rfc3986.relativeRef = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty  + ')' + or + pathAbsolute + or + pathNoScheme + or + pathEmpty + ')';
-
-    /**
-     * query = *( pchar / "/" / "?" )
-     */
-    internals.rfc3986.query = '[' + pchar + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
-
-    /**
-     * query = *( pchar / "[" / "]" / "/" / "?" )
-     */
-    internals.rfc3986.queryWithSquareBrackets = '[' + pchar + squareBrackets + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
-
-    /**
-     * fragment = *( pchar / "/" / "?" )
-     */
-    internals.rfc3986.fragment = '[' + pchar + '\\/\\?]*';
-};
-
-
-internals.generate();
-
-module.exports = internals.rfc3986;
-
-},{}],53:[function(require,module,exports){
-'use strict';
-
-const RFC3986 = require('./rfc3986');
-
-
-const internals = {
-    Uri: {
-        createUriRegex: function (optionalScheme, allowRelative, relativeOnly, allowQuerySquareBrackets) {
-
-            let scheme = RFC3986.scheme;
-            let prefix;
-
-            if (relativeOnly) {
-                prefix = '(?:' + RFC3986.relativeRef + ')';
-            }
-            else {
-                // If we were passed a scheme, use it instead of the generic one
-                if (optionalScheme) {
-
-                    // Have to put this in a non-capturing group to handle the OR statements
-                    scheme = '(?:' + optionalScheme + ')';
-                }
-
-                const withScheme = '(?:' + scheme + ':' + RFC3986.hierPart + ')';
-
-                prefix = allowRelative ? '(?:' + withScheme + '|' + RFC3986.relativeRef + ')' : withScheme;
-            }
-
-            /**
-             * URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-             *
-             * OR
-             *
-             * relative-ref = relative-part [ "?" query ] [ "#" fragment ]
-             */
-            return new RegExp('^' + prefix + '(?:\\?' + (allowQuerySquareBrackets ? RFC3986.queryWithSquareBrackets : RFC3986.query) + ')?' + '(?:#' + RFC3986.fragment + ')?$');
-        }
-    }
-};
-
-module.exports = internals.Uri;
-
-},{"./rfc3986":52}],54:[function(require,module,exports){
-'use strict';
-
-const Util = require('util');
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {};
-
-
-internals.Map = class extends Map {
-
-    slice() {
-
-        return new internals.Map(this);
-    }
-
-    toString() {
-
-        return Util.inspect(this);
-    }
-};
-
-
-internals.Symbol = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'symbol';
-        this._inner.map = new internals.Map();
-    }
-
-    _base(value, state, options) {
-
-        if (options.convert) {
-            const lookup = this._inner.map.get(value);
-            if (lookup) {
-                value = lookup;
-            }
-
-            if (this._flags.allowOnly) {
-                return {
-                    value,
-                    errors: (typeof value === 'symbol') ? null : this.createError('symbol.map', { value, map: this._inner.map }, state, options)
-                };
-            }
-        }
-
-        return {
-            value,
-            errors: (typeof value === 'symbol') ? null : this.createError('symbol.base', { value }, state, options)
-        };
-    }
-
-    map(iterable) {
-
-        if (iterable && !iterable[Symbol.iterator] && typeof iterable === 'object') {
-            iterable = Object.entries(iterable);
-        }
-
-        Hoek.assert(iterable && iterable[Symbol.iterator], 'Iterable must be an iterable or object');
-        const obj = this.clone();
-
-        const symbols = [];
-        for (const entry of iterable) {
-            Hoek.assert(entry && entry[Symbol.iterator], 'Entry must be an iterable');
-            const [key, value] = entry;
-
-            Hoek.assert(typeof key !== 'object' && typeof key !== 'function' && typeof key !== 'symbol', 'Key must not be an object, function, or Symbol');
-            Hoek.assert(typeof value === 'symbol', 'Value must be a Symbol');
-            obj._inner.map.set(key, value);
-            symbols.push(value);
-        }
-
-        return obj.valid(...symbols);
-    }
-
-    describe() {
-
-        const description = super.describe();
-        description.map = new Map(this._inner.map);
-        return description;
-    }
-};
-
-
-module.exports = new internals.Symbol();
-
-},{"../any":39,"@hapi/hoek":21,"util":202}],55:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-module.exports = {
-    settingsCache: Symbol('settingsCache')
-};
-
-},{}],56:[function(require,module,exports){
-module.exports={
-  "_from": "@hapi/joi@15.x.x",
-  "_id": "@hapi/joi@15.1.1",
-  "_inBundle": false,
-  "_integrity": "sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==",
-  "_location": "/@hapi/joi",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "range",
-    "registry": true,
-    "raw": "@hapi/joi@15.x.x",
-    "name": "@hapi/joi",
-    "escapedName": "@hapi%2fjoi",
-    "scope": "@hapi",
-    "rawSpec": "15.x.x",
-    "saveSpec": null,
-    "fetchSpec": "15.x.x"
-  },
-  "_requiredBy": [
-    "/@hapi/hapi",
-    "/optioner",
-    "/seneca"
-  ],
-  "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.1.1.tgz",
-  "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
-  "_spec": "@hapi/joi@15.x.x",
-  "_where": "/Users/richard/Projects/seneca/browser/node_modules/@hapi/hapi",
-  "bugs": {
-    "url": "https://github.com/hapijs/joi/issues"
-  },
-  "bundleDependencies": false,
-  "dependencies": {
-    "@hapi/address": "2.x.x",
-    "@hapi/bourne": "1.x.x",
-    "@hapi/hoek": "8.x.x",
-    "@hapi/topo": "3.x.x"
-  },
-  "deprecated": false,
-  "description": "Object schema validation",
-  "devDependencies": {
-    "@hapi/code": "6.x.x",
-    "@hapi/lab": "20.x.x"
-  },
-  "homepage": "https://github.com/hapijs/joi",
-  "keywords": [
-    "schema",
-    "validation"
-  ],
-  "license": "BSD-3-Clause",
-  "main": "lib/index.js",
-  "name": "@hapi/joi",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/hapijs/joi.git"
-  },
-  "scripts": {
-    "test": "lab -t 100 -a @hapi/code -L",
-    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code"
-  },
-  "version": "15.1.1"
-}
-
-},{}],57:[function(require,module,exports){
-'use strict';
-
-const Assert = require('@hapi/hoek/lib/assert');
-
-
-const internals = {};
-
-
-module.exports = class Topo {
-
-    constructor() {
-
-        this._items = [];
-        this.nodes = [];
-    }
-
-    add(nodes, options) {
-
-        options = options || {};
-
-        // Validate rules
-
-        const before = [].concat(options.before || []);
-        const after = [].concat(options.after || []);
-        const group = options.group || '?';
-        const sort = options.sort || 0;                   // Used for merging only
-
-        Assert(!before.includes(group), `Item cannot come before itself: ${group}`);
-        Assert(!before.includes('?'), 'Item cannot come before unassociated items');
-        Assert(!after.includes(group), `Item cannot come after itself: ${group}`);
-        Assert(!after.includes('?'), 'Item cannot come after unassociated items');
-
-        if (!Array.isArray(nodes)) {
-            nodes = [nodes];
-        }
-
-        for (const node of nodes) {
-            const item = {
-                seq: this._items.length,
-                sort,
-                before,
-                after,
-                group,
-                node
-            };
-
-            this._items.push(item);
-        }
-
-        // Insert event
-
-        const valid = this._sort();
-        Assert(valid, 'item', group !== '?' ? `added into group ${group}` : '', 'created a dependencies error');
-
-        return this.nodes;
-    }
-
-    merge(others) {
-
-        if (!Array.isArray(others)) {
-            others = [others];
-        }
-
-        for (const other of others) {
-            if (other) {
-                for (const item of other._items) {
-                    this._items.push(Object.assign({}, item));      // Shallow cloned
-                }
-            }
-        }
-
-        // Sort items
-
-        this._items.sort(internals.mergeSort);
-        for (let i = 0; i < this._items.length; ++i) {
-            this._items[i].seq = i;
-        }
-
-        const valid = this._sort();
-        Assert(valid, 'merge created a dependencies error');
-
-        return this.nodes;
-    }
-
-    _sort() {
-
-        // Construct graph
-
-        const graph = {};
-        const graphAfters = Object.create(null);            // A prototype can bungle lookups w/ false positives
-        const groups = Object.create(null);
-
-        for (const item of this._items) {
-            const seq = item.seq;                           // Unique across all items
-            const group = item.group;
-
-            // Determine Groups
-
-            groups[group] = groups[group] || [];
-            groups[group].push(seq);
-
-            // Build intermediary graph using 'before'
-
-            graph[seq] = item.before;
-
-            // Build second intermediary graph with 'after'
-
-            for (const after of item.after) {
-                graphAfters[after] = graphAfters[after] || [];
-                graphAfters[after].push(seq);
-            }
-        }
-
-        // Expand intermediary graph
-
-        for (const node in graph) {
-            const expandedGroups = [];
-
-            for (const graphNodeItem in graph[node]) {
-                const group = graph[node][graphNodeItem];
-                groups[group] = groups[group] || [];
-                expandedGroups.push(...groups[group]);
-            }
-
-            graph[node] = expandedGroups;
-        }
-
-        // Merge intermediary graph using graphAfters into final graph
-
-        for (const group in graphAfters) {
-            if (groups[group]) {
-                for (const node of groups[group]) {
-                    graph[node].push(...graphAfters[group]);
-                }
-            }
-        }
-
-        // Compile ancestors
-
-        const ancestors = {};
-        for (const node in graph) {
-            const children = graph[node];
-            for (const child of children) {
-                ancestors[child] = ancestors[child] || [];
-                ancestors[child].push(node);
-            }
-        }
-
-        // Topo sort
-
-        const visited = {};
-        const sorted = [];
-
-        for (let i = 0; i < this._items.length; ++i) {          // Looping through item.seq values out of order
-            let next = i;
-
-            if (ancestors[i]) {
-                next = null;
-                for (let j = 0; j < this._items.length; ++j) {  // As above, these are item.seq values
-                    if (visited[j] === true) {
-                        continue;
-                    }
-
-                    if (!ancestors[j]) {
-                        ancestors[j] = [];
-                    }
-
-                    const shouldSeeCount = ancestors[j].length;
-                    let seenCount = 0;
-                    for (let k = 0; k < shouldSeeCount; ++k) {
-                        if (visited[ancestors[j][k]]) {
-                            ++seenCount;
-                        }
-                    }
-
-                    if (seenCount === shouldSeeCount) {
-                        next = j;
-                        break;
-                    }
-                }
-            }
-
-            if (next !== null) {
-                visited[next] = true;
-                sorted.push(next);
-            }
-        }
-
-        if (sorted.length !== this._items.length) {
-            return false;
-        }
-
-        const seqIndex = {};
-        for (const item of this._items) {
-            seqIndex[item.seq] = item;
-        }
-
-        this._items = [];
-        this.nodes = [];
-
-        for (const value of sorted) {
-            const sortedItem = seqIndex[value];
-            this.nodes.push(sortedItem.node);
-            this._items.push(sortedItem);
-        }
-
-        return true;
-    }
-};
-
-
-internals.mergeSort = (a, b) => {
-
-    return a.sort === b.sort ? 0 : (a.sort < b.sort ? -1 : 1);
-};
-
-},{"@hapi/hoek/lib/assert":8}],58:[function(require,module,exports){
-(function (process,Buffer){
 'use strict';
 
 const Events = require('events');
@@ -10455,46 +2151,539 @@ const Tap = require('./tap');
 
 const internals = {
     jsonRegex: /^application\/([a-z0-9.]*[+-]json|json)$/,
-    shallowOptions: ['agent', 'agents', 'beforeRedirect', 'downstreamRes', 'payload', 'redirected']
+    shallowOptions: ['agent', 'agents', 'beforeRedirect', 'payload', 'redirected']
 };
 
 
 // New instance is exported as module.exports
 
-internals.Client = function (options = {}) {
+internals.Client = class {
 
-    Hoek.assert(!options.agents || (options.agents.https && options.agents.http && options.agents.httpsAllowUnauthorized), 'Option agents must include "http", "https", and "httpsAllowUnauthorized"');
+    constructor(options = {}) {
 
-    this._defaults = Hoek.clone(options, { shallow: internals.shallowOptions });
+        Hoek.assert(!options.agents || options.agents.https && options.agents.http && options.agents.httpsAllowUnauthorized, 'Option agents must include "http", "https", and "httpsAllowUnauthorized"');
 
-    this.agents = this._defaults.agents || {
-        https: new Https.Agent({ maxSockets: Infinity }),
-        http: new Http.Agent({ maxSockets: Infinity }),
-        httpsAllowUnauthorized: new Https.Agent({ maxSockets: Infinity, rejectUnauthorized: false })
-    };
+        this._defaults = Hoek.clone(options, { shallow: internals.shallowOptions });
 
-    if (!options.events) {
-        return;
+        this.agents = this._defaults.agents || {
+            https: new Https.Agent({ maxSockets: Infinity }),
+            http: new Http.Agent({ maxSockets: Infinity }),
+            httpsAllowUnauthorized: new Https.Agent({ maxSockets: Infinity, rejectUnauthorized: false })
+        };
+
+        if (this._defaults.events) {
+            this.events = new Events.EventEmitter();
+        }
     }
 
-    this.events = new Events.EventEmitter();
-    this._emit = function (...args) {
+    defaults(options) {
 
-        this.events.emit(...args);
-    };
-};
+        Hoek.assert(options && typeof options === 'object', 'options must be provided to defaults');
 
+        options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
+        return new internals.Client(options);
+    }
 
-internals.Client.prototype.defaults = function (options) {
+    request(method, url, options = {}) {
 
-    Hoek.assert(options && (typeof options === 'object'), 'options must be provided to defaults');
+        try {
+            options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
 
-    options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
-    return new internals.Client(options);
+            Hoek.assert(options.payload === undefined || typeof options.payload === 'string' || typeof options.payload === 'object', 'options.payload must be a string, a Buffer, a Stream, or an Object');
+            Hoek.assert(options.agent === undefined || options.agent === null || typeof options.rejectUnauthorized !== 'boolean', 'options.agent cannot be set to an Agent at the same time as options.rejectUnauthorized is set');
+            Hoek.assert(options.beforeRedirect === undefined || options.beforeRedirect === null || typeof options.beforeRedirect === 'function', 'options.beforeRedirect must be a function');
+            Hoek.assert(options.redirected === undefined || options.redirected === null || typeof options.redirected === 'function', 'options.redirected must be a function');
+            Hoek.assert(options.gunzip === undefined || typeof options.gunzip === 'boolean' || options.gunzip === 'force', 'options.gunzip must be a boolean or "force"');
+        }
+        catch (err) {
+            return Promise.reject(err);
+        }
+
+        if (options.baseUrl) {
+            url = internals.resolveUrl(options.baseUrl, url);
+            delete options.baseUrl;
+        }
+
+        const relay = {};
+        const req = this._request(method, url, options, relay);
+        const promise = new Promise((resolve, reject) => {
+
+            relay.callback = (err, res) => {
+
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(res);
+                return;
+            };
+        });
+
+        promise.req = req;
+        return promise;
+    }
+
+    _request(method, url, options, relay, _trace) {
+
+        const uri = {};
+        if (options.socketPath) {
+            uri.socketPath = options.socketPath;
+
+            const parsedUri = new Url.URL(url, `unix://${options.socketPath}`);
+            internals.applyUrlToOptions(uri, {
+                host: '',                               // host must be empty according to https://tools.ietf.org/html/rfc2616#section-14.23
+                protocol: 'http:',
+                hash: parsedUri.hash,
+                search: parsedUri.search,
+                searchParams: parsedUri.searchParams,
+                pathname: parsedUri.pathname,
+                href: parsedUri.href
+            });
+        }
+        else {
+            uri.setHost = false;
+            const parsedUri = new Url.URL(url);
+            internals.applyUrlToOptions(uri, parsedUri);
+        }
+
+        uri.method = method.toUpperCase();
+        uri.headers = Object.assign({}, options.headers);
+
+        const hostHeader = internals.findHeader('host', uri.headers);
+
+        if (!hostHeader) {
+            uri.headers.host = uri.host;
+        }
+
+        const hasContentLength = internals.findHeader('content-length', uri.headers) !== undefined;
+
+        if (options.payload && typeof options.payload === 'object' && !(options.payload instanceof Stream) && !Buffer.isBuffer(options.payload)) {
+            options.payload = JSON.stringify(options.payload);
+            if (!internals.findHeader('content-type', uri.headers)) {
+                uri.headers['content-type'] = 'application/json';
+            }
+        }
+
+        if (options.gunzip &&
+            internals.findHeader('accept-encoding', uri.headers) === undefined) {
+
+            uri.headers['accept-encoding'] = 'gzip';
+        }
+
+        const payloadSupported = uri.method !== 'GET' && uri.method !== 'HEAD' && options.payload !== null && options.payload !== undefined;
+        if (payloadSupported &&
+            (typeof options.payload === 'string' || Buffer.isBuffer(options.payload)) &&
+            !hasContentLength) {
+
+            uri.headers['content-length'] = Buffer.isBuffer(options.payload) ? options.payload.length : Buffer.byteLength(options.payload);
+        }
+
+        let redirects = options.hasOwnProperty('redirects') ? options.redirects : false;        // Needed to allow 0 as valid value when passed recursively
+
+        _trace = _trace || [];
+        _trace.push({ method: uri.method, url });
+
+        const client = uri.protocol === 'https:' ? Https : Http;
+
+        if (options.rejectUnauthorized !== undefined &&
+            uri.protocol === 'https:') {
+
+            uri.agent = options.rejectUnauthorized ? this.agents.https : this.agents.httpsAllowUnauthorized;
+        }
+        else if (options.agent ||
+            options.agent === false) {
+
+            uri.agent = options.agent;
+        }
+        else {
+            uri.agent = uri.protocol === 'https:' ? this.agents.https : this.agents.http;
+        }
+
+        if (options.secureProtocol !== undefined) {
+            uri.secureProtocol = options.secureProtocol;
+        }
+
+        if (options.ciphers !== undefined) {
+            uri.ciphers = options.ciphers;
+        }
+
+        this._emit('preRequest', uri, options);
+
+        const start = Date.now();
+        const req = client.request(uri);
+
+        this._emit('request', req);
+
+        let shadow = null;                                                                      // A copy of the streamed request payload when redirects are enabled
+        let timeoutId;
+
+        const onError = (err) => {
+
+            err.trace = _trace;
+            return finishOnce(Boom.badGateway('Client request error', err));
+        };
+
+        const onAbort = () => {
+
+            if (!req.socket) {
+                // Fake an ECONNRESET error on early abort
+
+                const error = new Error('socket hang up');
+                error.code = 'ECONNRESET';
+                finishOnce(error);
+            }
+        };
+
+        req.once('error', onError);
+
+        const onResponse = (res) => {
+
+            // Pass-through response
+
+            const statusCode = res.statusCode;
+            const redirectMethod = internals.redirectMethod(statusCode, uri.method, options);
+
+            if (redirects === false ||
+                !redirectMethod) {
+
+                return finishOnce(null, res);
+            }
+
+            // Redirection
+
+            res.destroy();
+
+            if (redirects === 0) {
+                return finishOnce(Boom.badGateway('Maximum redirections reached', _trace));
+            }
+
+            let location = res.headers.location;
+            if (!location) {
+                return finishOnce(Boom.badGateway('Received redirection without location', _trace));
+            }
+
+            if (!/^https?:/i.test(location)) {
+                location = Url.resolve(uri.href, location);
+            }
+
+            const redirectOptions = Hoek.clone(options, { shallow: internals.shallowOptions });
+            redirectOptions.payload = shadow || options.payload;                                    // shadow must be ready at this point if set
+            redirectOptions.redirects = --redirects;
+
+            const followRedirect = () => {
+
+                const redirectReq = this._request(redirectMethod, location, redirectOptions, { callback: finishOnce }, _trace);
+                if (options.redirected) {
+                    options.redirected(statusCode, location, redirectReq);
+                }
+            };
+
+            if (!options.beforeRedirect) {
+                return followRedirect();
+            }
+
+            return options.beforeRedirect(redirectMethod, statusCode, location, res.headers, redirectOptions, followRedirect);
+        };
+
+        // Register handlers
+
+        const finish = (err, res) => {
+
+            if (err) {
+                req.abort();
+            }
+
+            req.removeListener('response', onResponse);
+            req.removeListener('error', onError);
+            req.removeListener('abort', onAbort);
+            req.on('error', Hoek.ignore);
+
+            clearTimeout(timeoutId);
+
+            this._emit('response', err, { req, res, start, uri });
+
+            return relay.callback(err, res);
+        };
+
+        const finishOnce = Hoek.once(finish);
+
+        req.once('response', onResponse);
+
+        if (options.timeout) {
+            timeoutId = setTimeout(() => finishOnce(Boom.gatewayTimeout('Client request timeout')), options.timeout);
+            delete options.timeout;
+        }
+
+        req.on('abort', onAbort);
+
+        // Write payload
+
+        if (payloadSupported) {
+            if (options.payload instanceof Stream) {
+                let stream = options.payload;
+
+                if (redirects) {
+                    const collector = new Tap();
+                    collector.once('finish', () => {
+
+                        shadow = collector.collect();
+                    });
+
+                    stream = options.payload.pipe(collector);
+                }
+
+                internals.deferPipeUntilSocketConnects(req, stream);
+                return req;
+            }
+
+            req.write(options.payload);
+        }
+
+        // Finalize request
+
+        req.end();
+        return req;
+    }
+
+    _emit(...args) {
+
+        if (this.events) {
+            this.events.emit(...args);
+        }
+    }
+
+    read(res, options = {}) {
+
+        return new Promise((resolve, reject) => {
+
+            this._read(res, options, (err, payload) => {
+
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(payload);
+                return;
+            });
+        });
+    }
+
+    _read(res, options, callback) {
+
+        options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
+
+        // Finish once
+
+        let clientTimeoutId = null;
+
+        const finish = (err, buffer) => {
+
+            clearTimeout(clientTimeoutId);
+            reader.removeListener('error', onReaderError);
+            reader.removeListener('finish', onReaderFinish);
+            res.removeListener('error', onResError);
+            res.removeListener('close', onResAborted);
+            res.removeListener('aborted', onResAborted);
+            res.on('error', Hoek.ignore);
+
+            if (err) {
+                return callback(err);
+            }
+
+            if (!options.json) {
+                return callback(null, buffer);
+            }
+
+            // Parse JSON
+
+            if (options.json === 'force') {
+                return internals.tryParseBuffer(buffer, callback);
+            }
+
+            // 'strict' or true
+
+            const contentType = res.headers && internals.findHeader('content-type', res.headers) || '';
+            const mime = contentType.split(';')[0].trim().toLowerCase();
+
+            if (!internals.jsonRegex.test(mime)) {
+                if (options.json === 'strict') {
+                    return callback(Boom.notAcceptable('The content-type is not JSON compatible'));
+                }
+
+                return callback(null, buffer);
+            }
+
+            return internals.tryParseBuffer(buffer, callback);
+        };
+
+        const finishOnce = Hoek.once(finish);
+
+        const clientTimeout = options.timeout;
+        if (clientTimeout &&
+            clientTimeout > 0) {
+
+            clientTimeoutId = setTimeout(() => finishOnce(Boom.clientTimeout()), clientTimeout);
+        }
+
+        // Hander errors
+
+        const onResError = (err) => {
+
+            return finishOnce(err.isBoom ? err : Boom.internal('Payload stream error', err));
+        };
+
+        const onResAborted = () => {
+
+            if (!res.complete) {
+                finishOnce(Boom.internal('Payload stream closed prematurely'));
+            }
+        };
+
+        res.once('error', onResError);
+        res.once('close', onResAborted);
+        res.once('aborted', onResAborted);
+
+        // Read payload
+
+        const reader = new Recorder({ maxBytes: options.maxBytes });
+
+        const onReaderError = (err) => {
+
+            if (res.destroy) {                          // GZip stream has no destroy() method
+                res.destroy();
+            }
+
+            return finishOnce(err);
+        };
+
+        reader.once('error', onReaderError);
+
+        const onReaderFinish = () => {
+
+            return finishOnce(null, reader.collect());
+        };
+
+        reader.once('finish', onReaderFinish);
+
+        if (options.gunzip) {
+            const contentEncoding = options.gunzip === 'force' ?
+                'gzip' :
+                res.headers && internals.findHeader('content-encoding', res.headers) || '';
+
+            if (/^(x-)?gzip(\s*,\s*identity)?$/.test(contentEncoding)) {
+                const gunzip = Zlib.createGunzip();
+                gunzip.once('error', onReaderError);
+                res.pipe(gunzip).pipe(reader);
+                return;
+            }
+        }
+
+        res.pipe(reader);
+    }
+
+    toReadableStream(payload, encoding) {
+
+        return new Payload(payload, encoding);
+    }
+
+    parseCacheControl(field) {
+
+        /*
+            Cache-Control   = 1#cache-directive
+            cache-directive = token [ "=" ( token / quoted-string ) ]
+            token           = [^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+
+            quoted-string   = "(?:[^"\\]|\\.)*"
+        */
+
+        //                             1: directive                                        =   2: token                                              3: quoted-string
+        const regex = /(?:^|(?:\s*\,\s*))([^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+)(?:\=(?:([^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+)|(?:\"((?:[^"\\]|\\.)*)\")))?/g;
+
+        const header = {};
+        const error = field.replace(regex, ($0, $1, $2, $3) => {
+
+            const value = $2 || $3;
+            header[$1] = value ? value.toLowerCase() : true;
+            return '';
+        });
+
+        if (header['max-age']) {
+            try {
+                const maxAge = parseInt(header['max-age'], 10);
+                if (isNaN(maxAge)) {
+                    return null;
+                }
+
+                header['max-age'] = maxAge;
+            }
+            catch (err) { }
+        }
+
+        return error ? null : header;
+    }
+
+    // Shortcuts
+
+    get(uri, options) {
+
+        return this._shortcut('GET', uri, options);
+    }
+
+    post(uri, options) {
+
+        return this._shortcut('POST', uri, options);
+    }
+
+    patch(uri, options) {
+
+        return this._shortcut('PATCH', uri, options);
+    }
+
+    put(uri, options) {
+
+        return this._shortcut('PUT', uri, options);
+    }
+
+    delete(uri, options) {
+
+        return this._shortcut('DELETE', uri, options);
+    }
+
+    async _shortcut(method, uri, options = {}) {
+
+        const res = await this.request(method, uri, options);
+
+        let payload;
+        try {
+            payload = await this.read(res, options);
+        }
+        catch (err) {
+            err.data = err.data || {};
+            err.data.res = res;
+            throw err;
+        }
+
+        if (res.statusCode < 400) {
+            return { res, payload };
+        }
+
+        // Response error
+
+        const data = {
+            isResponseError: true,
+            headers: res.headers,
+            res,
+            payload
+        };
+
+        throw new Boom.Boom(`Response Error: ${res.statusCode} ${res.statusMessage}`, { statusCode: res.statusCode, data });
+    }
 };
 
 
 // baseUrl needs to end in a trailing / if it contains paths that need to be preserved
+
 internals.resolveUrl = function (baseUrl, path) {
 
     if (!path) {
@@ -10504,282 +2693,6 @@ internals.resolveUrl = function (baseUrl, path) {
     // Will default to path if it's not a relative URL
     const url = new Url.URL(path, baseUrl);
     return Url.format(url);
-};
-
-
-internals.Client.prototype.request = function (method, url, options = {}) {
-
-    try {
-        options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
-
-        Hoek.assert(options.payload === undefined || typeof options.payload === 'string' || typeof options.payload === 'object', 'options.payload must be a string, a Buffer, a Stream, or an Object');
-        Hoek.assert((options.agent === undefined || options.agent === null) || (typeof options.rejectUnauthorized !== 'boolean'), 'options.agent cannot be set to an Agent at the same time as options.rejectUnauthorized is set');
-        Hoek.assert(options.beforeRedirect === undefined || options.beforeRedirect === null || typeof options.beforeRedirect === 'function', 'options.beforeRedirect must be a function');
-        Hoek.assert(options.redirected === undefined || options.redirected === null || typeof options.redirected === 'function', 'options.redirected must be a function');
-        Hoek.assert(options.gunzip === undefined || typeof options.gunzip === 'boolean' || options.gunzip === 'force', 'options.gunzip must be a boolean or "force"');
-    }
-    catch (err) {
-        return Promise.reject(err);
-    }
-
-    options.beforeRedirect = options.beforeRedirect || ((redirectMethod, statusCode, location, resHeaders, redirectOptions, next) => next());
-
-    if (options.baseUrl) {
-        url = internals.resolveUrl(options.baseUrl, url);
-        delete options.baseUrl;
-    }
-
-    const relay = {};
-    const req = this._request(method, url, options, relay);
-    const promise = new Promise((resolve, reject) => {
-
-        relay.callback = (err, res) => {
-
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(res);
-            return;
-        };
-    });
-
-    promise.req = req;
-    return promise;
-};
-
-
-internals.Client.prototype._request = function (method, url, options, relay, _trace) {
-
-    const uri = {};
-    if (options.socketPath) {
-        uri.socketPath = options.socketPath;
-
-        const parsedUri = new Url.URL(url, `unix://${options.socketPath}`);
-        internals.applyUrlToOptions(uri, {
-            // The host must be empty according to https://tools.ietf.org/html/rfc2616#section-14.23
-            host: '',
-            protocol: 'http:',
-            hash: parsedUri.hash,
-            search: parsedUri.search,
-            searchParams: parsedUri.searchParams,
-            pathname: parsedUri.pathname,
-            href: parsedUri.href
-        });
-    }
-    else {
-        uri.setHost = false;
-        const parsedUri = new Url.URL(url);
-        internals.applyUrlToOptions(uri, parsedUri);
-    }
-
-    uri.method = method.toUpperCase();
-    uri.headers = options.headers || {};
-
-    const hostHeader = internals.findHeader('host', uri.headers);
-
-    if (!hostHeader) {
-        uri.headers.host = uri.host;
-    }
-
-    const hasContentLength = internals.findHeader('content-length', uri.headers) !== undefined;
-
-    if (options.payload && typeof options.payload === 'object' && !(options.payload instanceof Stream) && !Buffer.isBuffer(options.payload)) {
-        options.payload = JSON.stringify(options.payload);
-        if (!internals.findHeader('content-type', uri.headers)) {
-            uri.headers['content-type'] = 'application/json';
-        }
-    }
-
-    if (options.gunzip &&
-        internals.findHeader('accept-encoding', uri.headers) === undefined) {
-
-        uri.headers['accept-encoding'] = 'gzip';
-    }
-
-    const payloadSupported = (uri.method !== 'GET' && uri.method !== 'HEAD' && options.payload !== null && options.payload !== undefined);
-    if (payloadSupported &&
-        (typeof options.payload === 'string' || Buffer.isBuffer(options.payload)) &&
-        (!hasContentLength)) {
-
-        uri.headers = Hoek.clone(uri.headers);
-        uri.headers['content-length'] = Buffer.isBuffer(options.payload) ? options.payload.length : Buffer.byteLength(options.payload);
-    }
-
-    let redirects = (options.hasOwnProperty('redirects') ? options.redirects : false);      // Needed to allow 0 as valid value when passed recursively
-
-    _trace = (_trace || []);
-    _trace.push({ method: uri.method, url });
-
-    const client = (uri.protocol === 'https:' ? Https : Http);
-
-    if (options.rejectUnauthorized !== undefined && uri.protocol === 'https:') {
-        uri.agent = options.rejectUnauthorized ? this.agents.https : this.agents.httpsAllowUnauthorized;
-    }
-    else if (options.agent || options.agent === false) {
-        uri.agent = options.agent;
-    }
-    else {
-        uri.agent = uri.protocol === 'https:' ? this.agents.https : this.agents.http;
-    }
-
-    if (options.secureProtocol !== undefined) {
-        uri.secureProtocol = options.secureProtocol;
-    }
-
-    if (options.ciphers !== undefined) {
-        uri.ciphers = options.ciphers;
-    }
-
-    if (this._emit) {
-        this._emit('preRequest', uri, options);
-    }
-
-    const start = Date.now();
-    const req = client.request(uri);
-
-    if (this._emit) {
-        this._emit('request', req);
-    }
-
-    let shadow = null;                                                                      // A copy of the streamed request payload when redirects are enabled
-    let timeoutId;
-
-    const onError = (err) => {
-
-        err.trace = _trace;
-        return finishOnce(Boom.badGateway('Client request error', err));
-    };
-
-    req.once('error', onError);
-
-    const onResponse = (res) => {
-
-        // Pass-through response
-
-        const statusCode = res.statusCode;
-        const redirectMethod = internals.redirectMethod(statusCode, uri.method, options);
-
-        if (redirects === false ||
-            !redirectMethod) {
-
-            return finishOnce(null, res);
-        }
-
-        // Redirection
-
-        res.destroy();
-
-        if (redirects === 0) {
-            return finishOnce(Boom.badGateway('Maximum redirections reached', _trace));
-        }
-
-        let location = res.headers.location;
-        if (!location) {
-            return finishOnce(Boom.badGateway('Received redirection without location', _trace));
-        }
-
-        if (!/^https?:/i.test(location)) {
-            location = Url.resolve(uri.href, location);
-        }
-
-        const redirectOptions = Hoek.clone(options, { shallow: internals.shallowOptions });
-        redirectOptions.payload = shadow || options.payload;                                    // shadow must be ready at this point if set
-        redirectOptions.redirects = --redirects;
-
-        return options.beforeRedirect(redirectMethod, statusCode, location, res.headers, redirectOptions, () => {
-
-            const redirectReq = this._request(redirectMethod, location, redirectOptions, { callback: finishOnce }, _trace);
-
-            if (options.redirected) {
-                options.redirected(statusCode, location, redirectReq);
-            }
-        });
-    };
-
-    // Register handlers
-
-    const finish = (err, res) => {
-
-        if (err) {
-            req.abort();
-        }
-
-        req.abort = _abort;                             // Restore original function to release memory
-        req.removeListener('response', onResponse);
-        req.removeListener('error', onError);
-        req.on('error', Hoek.ignore);
-
-        clearTimeout(timeoutId);
-
-        if (this._emit) {
-            this._emit('response', err, { req, res, start, uri });
-        }
-
-        return relay.callback(err, res);
-    };
-
-    const finishOnce = Hoek.once(finish);
-
-    req.once('response', onResponse);
-
-    if (options.timeout) {
-        timeoutId = setTimeout(() => {
-
-            return finishOnce(Boom.gatewayTimeout('Client request timeout'));
-        }, options.timeout);
-        delete options.timeout;
-    }
-
-    // Custom abort method to detect early aborts
-
-    const _abort = req.abort;
-    let aborted = false;
-    req.abort = () => {
-
-        if (!aborted && !req.res && !req.socket) {
-            process.nextTick(() => {
-
-                // Fake an ECONNRESET error
-
-                const error = new Error('socket hang up');
-                error.code = 'ECONNRESET';
-                finishOnce(error);
-            });
-        }
-
-        aborted = true;
-        return _abort.call(req);
-    };
-
-    // Write payload
-
-    if (payloadSupported) {
-        if (options.payload instanceof Stream) {
-            let stream = options.payload;
-
-            if (redirects) {
-                const collector = new Tap();
-                collector.once('finish', () => {
-
-                    shadow = collector.collect();
-                });
-
-                stream = options.payload.pipe(collector);
-            }
-
-            internals.deferPipeUntilSocketConnects(req, stream);
-            return req;
-        }
-
-        req.write(options.payload);
-    }
-
-    // Finalize request
-
-    req.end();
-    return req;
 };
 
 
@@ -10833,254 +2746,6 @@ internals.redirectMethod = function (code, method, options) {
 };
 
 
-internals.Client.prototype.read = function (res, options = {}) {
-
-    return new Promise((resolve, reject) => {
-
-        this._read(res, options, (err, payload) => {
-
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(payload);
-            return;
-        });
-    });
-};
-
-
-internals.Client.prototype._read = function (res, options, callback) {
-
-    options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
-
-    // Finish once
-
-    let clientTimeoutId = null;
-
-    const finish = (err, buffer) => {
-
-        clearTimeout(clientTimeoutId);
-        reader.removeListener('error', onReaderError);
-        reader.removeListener('finish', onReaderFinish);
-        res.removeListener('error', onResError);
-        res.removeListener('close', onResAborted);
-        res.removeListener('aborted', onResAborted);
-        res.on('error', Hoek.ignore);
-
-        if (err) {
-            return callback(err);
-        }
-
-        if (!options.json) {
-            return callback(null, buffer);
-        }
-
-        // Parse JSON
-
-        if (options.json === 'force') {
-            return internals.tryParseBuffer(buffer, callback);
-        }
-
-        // mode is "smart", "strict" or true
-
-        const contentType = (res.headers && internals.findHeader('content-type', res.headers)) || '';
-        const mime = contentType.split(';')[0].trim().toLowerCase();
-
-        if (!internals.jsonRegex.test(mime)) {
-            if (options.json === 'strict') {
-                return callback(Boom.notAcceptable('The content-type is not JSON compatible'));
-            }
-
-            return callback(null, buffer);
-        }
-
-        return internals.tryParseBuffer(buffer, callback);
-    };
-
-    const finishOnce = Hoek.once(finish);
-
-    const clientTimeout = options.timeout;
-    if (clientTimeout &&
-        clientTimeout > 0) {
-
-        clientTimeoutId = setTimeout(() => {
-
-            finishOnce(Boom.clientTimeout());
-        }, clientTimeout);
-    }
-
-    // Hander errors
-
-    const onResError = (err) => {
-
-        return finishOnce(err.isBoom ? err : Boom.internal('Payload stream error', err));
-    };
-
-    const onResAborted = () => {
-
-        // Workaround https://github.com/nodejs/node/pull/20611
-        // This is covered in node 10
-        /* $lab:coverage:off$ */
-        if (res.complete) {
-            return;
-        }
-        /* $lab:coverage:on$ */
-
-        return finishOnce(Boom.internal('Payload stream closed prematurely'));
-    };
-
-    res.once('error', onResError);
-    res.once('close', onResAborted);
-    res.once('aborted', onResAborted);
-
-    // Read payload
-
-    const reader = new Recorder({ maxBytes: options.maxBytes });
-
-    const onReaderError = (err) => {
-
-        if (res.destroy) {                          // GZip stream has no destroy() method
-            res.destroy();
-        }
-
-        return finishOnce(err);
-    };
-
-    reader.once('error', onReaderError);
-
-    const onReaderFinish = () => {
-
-        return finishOnce(null, reader.collect());
-    };
-
-    reader.once('finish', onReaderFinish);
-
-    if (options.gunzip) {
-        const contentEncoding = options.gunzip === 'force' ?
-            'gzip' :
-            (res.headers && internals.findHeader('content-encoding', res.headers)) || '';
-
-        if (/^(x-)?gzip(\s*,\s*identity)?$/.test(contentEncoding)) {
-            const gunzip = Zlib.createGunzip();
-
-            gunzip.once('error', onReaderError);
-
-            res.pipe(gunzip).pipe(reader);
-            return;
-        }
-    }
-
-    res.pipe(reader);
-};
-
-
-internals.Client.prototype.toReadableStream = function (payload, encoding) {
-
-    return new Payload(payload, encoding);
-};
-
-
-internals.Client.prototype.parseCacheControl = function (field) {
-
-    /*
-        Cache-Control   = 1#cache-directive
-        cache-directive = token [ "=" ( token / quoted-string ) ]
-        token           = [^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+
-        quoted-string   = "(?:[^"\\]|\\.)*"
-    */
-
-    //                             1: directive                                        =   2: token                                              3: quoted-string
-    const regex = /(?:^|(?:\s*\,\s*))([^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+)(?:\=(?:([^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+)|(?:\"((?:[^"\\]|\\.)*)\")))?/g;
-
-    const header = {};
-    const error = field.replace(regex, ($0, $1, $2, $3) => {
-
-        const value = $2 || $3;
-        header[$1] = value ? value.toLowerCase() : true;
-        return '';
-    });
-
-    if (header['max-age']) {
-        try {
-            const maxAge = parseInt(header['max-age'], 10);
-            if (isNaN(maxAge)) {
-                return null;
-            }
-
-            header['max-age'] = maxAge;
-        }
-        catch (err) { }
-    }
-
-    return (error ? null : header);
-};
-
-
-// Shortcuts
-
-internals.Client.prototype.get = function (uri, options) {
-
-    return this._shortcut('GET', uri, options);
-};
-
-
-internals.Client.prototype.post = function (uri, options) {
-
-    return this._shortcut('POST', uri, options);
-};
-
-
-internals.Client.prototype.patch = function (uri, options) {
-
-    return this._shortcut('PATCH', uri, options);
-};
-
-
-internals.Client.prototype.put = function (uri, options) {
-
-    return this._shortcut('PUT', uri, options);
-};
-
-
-internals.Client.prototype.delete = function (uri, options) {
-
-    return this._shortcut('DELETE', uri, options);
-};
-
-
-internals.Client.prototype._shortcut = async function (method, uri, options = {}) {
-
-    const res = await this.request(method, uri, options);
-
-    let payload;
-    try {
-        payload = await this.read(res, options);
-    }
-    catch (err) {
-        err.data = err.data || {};
-        err.data.res = res;
-        throw err;
-    }
-
-    if (res.statusCode < 400) {
-        return { res, payload };
-    }
-
-    // Response error
-
-    const data = {
-        isResponseError: true,
-        headers: res.headers,
-        res,
-        payload
-    };
-
-    throw new Boom(`Response Error: ${res.statusCode} ${res.statusMessage}`, { statusCode: res.statusCode, data });
-};
-
-
 internals.tryParseBuffer = function (buffer, next) {
 
     if (buffer.length === 0) {
@@ -11101,11 +2766,15 @@ internals.tryParseBuffer = function (buffer, next) {
 
 internals.findHeader = function (headerName, headers) {
 
-    const foundKey = Object.keys(headers)
-        .find((key) => key.toLowerCase() === headerName.toLowerCase());
+    const normalizedName = headerName.toLowerCase();
 
-    return foundKey && headers[foundKey];
+    for (const key of Object.keys(headers)) {
+        if (key.toLowerCase() === normalizedName) {
+            return headers[key];
+        }
+    }
 };
+
 
 internals.applyUrlToOptions = (options, url) => {
 
@@ -11135,8 +2804,8 @@ internals.applyUrlToOptions = (options, url) => {
 
 module.exports = new internals.Client();
 
-}).call(this,require('_process'),require("buffer").Buffer)
-},{"./payload":59,"./recorder":60,"./tap":61,"@hapi/boom":5,"@hapi/bourne":6,"@hapi/hoek":21,"_process":119,"buffer":78,"events":82,"http":174,"https":86,"stream":173,"url":196,"zlib":75}],59:[function(require,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"./payload":29,"./recorder":30,"./tap":31,"@hapi/boom":1,"@hapi/bourne":2,"@hapi/hoek":17,"buffer":48,"events":52,"http":297,"https":56,"stream":296,"url":319,"zlib":45}],29:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -11178,7 +2847,7 @@ module.exports = internals.Payload = class extends Stream.Readable {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":78,"stream":173}],60:[function(require,module,exports){
+},{"buffer":48,"stream":296}],30:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -11222,7 +2891,7 @@ module.exports = internals.Recorder = class extends Stream.Writable {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"@hapi/boom":5,"buffer":78,"stream":173}],61:[function(require,module,exports){
+},{"@hapi/boom":1,"buffer":48,"stream":296}],31:[function(require,module,exports){
 'use strict';
 
 const Stream = require('stream');
@@ -11253,7 +2922,7 @@ module.exports = internals.Tap = class extends Stream.Transform {
     }
 };
 
-},{"./payload":59,"stream":173}],62:[function(require,module,exports){
+},{"./payload":29,"stream":296}],32:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -11763,7 +3432,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":98,"util/":65}],63:[function(require,module,exports){
+},{"object-assign":78,"util/":35}],33:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -11788,14 +3457,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],64:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],65:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -12385,7 +4054,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":64,"_process":119,"inherits":63}],66:[function(require,module,exports){
+},{"./support/isBuffer":34,"_process":156,"inherits":33}],36:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -12418,7 +4087,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":67,"./lib/function_call.js":68,"./lib/strategy/exponential":69,"./lib/strategy/fibonacci":70}],67:[function(require,module,exports){
+},{"./lib/backoff":37,"./lib/function_call.js":38,"./lib/strategy/exponential":39,"./lib/strategy/fibonacci":40}],37:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -12485,7 +4154,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":82,"precond":115,"util":202}],68:[function(require,module,exports){
+},{"events":52,"precond":152,"util":325}],38:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -12677,7 +4346,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":67,"./strategy/fibonacci":70,"events":82,"precond":115,"util":202}],69:[function(require,module,exports){
+},{"./backoff":37,"./strategy/fibonacci":40,"events":52,"precond":152,"util":325}],39:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -12720,7 +4389,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":71,"precond":115,"util":202}],70:[function(require,module,exports){
+},{"./strategy":41,"precond":152,"util":325}],40:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -12750,7 +4419,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":71,"util":202}],71:[function(require,module,exports){
+},{"./strategy":41,"util":325}],41:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -12832,7 +4501,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":82,"util":202}],72:[function(require,module,exports){
+},{"events":52,"util":325}],42:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -12986,9 +4655,9 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],73:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 
-},{}],74:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 /* eslint camelcase: "off" */
@@ -13400,7 +5069,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":119,"assert":62,"buffer":78,"pako/lib/zlib/constants":104,"pako/lib/zlib/deflate.js":106,"pako/lib/zlib/inflate.js":108,"pako/lib/zlib/zstream":112}],75:[function(require,module,exports){
+},{"_process":156,"assert":32,"buffer":48,"pako/lib/zlib/constants":141,"pako/lib/zlib/deflate.js":143,"pako/lib/zlib/inflate.js":145,"pako/lib/zlib/zstream":149}],45:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -14012,9 +5681,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this,require('_process'))
-},{"./binding":74,"_process":119,"assert":62,"buffer":78,"stream":173,"util":202}],76:[function(require,module,exports){
-arguments[4][73][0].apply(exports,arguments)
-},{"dup":73}],77:[function(require,module,exports){
+},{"./binding":44,"_process":156,"assert":32,"buffer":48,"stream":296,"util":325}],46:[function(require,module,exports){
+arguments[4][43][0].apply(exports,arguments)
+},{"dup":43}],47:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -14551,7 +6220,7 @@ arguments[4][73][0].apply(exports,arguments)
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],78:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -16354,7 +8023,7 @@ var hexSliceLookupTable = (function () {
 })()
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":72,"buffer":78,"ieee754":87}],79:[function(require,module,exports){
+},{"base64-js":42,"buffer":48,"ieee754":57}],49:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -16420,7 +8089,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],80:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -16531,7 +8200,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":89}],81:[function(require,module,exports){
+},{"../../is-buffer/index.js":59}],51:[function(require,module,exports){
 /* Copyright (c) 2014-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -16540,10 +8209,10 @@ function objectToString(o) {
 'use strict'
 
 // #### System modules
-var util = require('util')
+const Util = require('util')
 
 // #### External modules
-var _ = require('lodash')
+var Template = require('lodash.template')
 
 // #### Exports
 module.exports = eraro
@@ -16556,7 +8225,7 @@ module.exports = eraro
 //      * _prefix_  : (optional) Boolean/String; If false, then no prefix is used; If not defined, the package name is used
 //      * _module_  : (optional) Object; _module_ object to use as starting point for _require_ calls
 //      * _msgmap_  : (optional) Object; map codes to message templates
-//      * _inspect_ : (optional) Boolean; If true, _util.inspect_ is called on values; default: true.
+//      * _inspect_ : (optional) Boolean; If true, _Util.inspect_ is called on values; default: true.
 //
 // Returns: Function
 //
@@ -16582,9 +8251,9 @@ function eraro(options) {
   var msgprefix =
     false === options.prefix
       ? ''
-      : _.isString(options.prefix)
+      : 'string' === typeof options.prefix
       ? options.prefix
-      : _.isString(options.package)
+      : 'string' === typeof options.package
       ? options.package + ': '
       : ''
 
@@ -16599,35 +8268,39 @@ function eraro(options) {
   if (filename) markers.push(filename)
 
   var errormaker = function(ex, code, msg, details) {
-    var internalex = false
-
-    if (util.isError(ex)) {
+    if (Util.isError(ex)) {
       if (ex.eraro && !options.override) return ex
     } else {
-      internalex = true
       ex = null
       code = arguments[0]
       msg = arguments[1]
       details = arguments[2]
     }
 
-    code = _.isString(code)
-      ? code
-      : ex
-      ? ex.code
+    code =
+      'string' === typeof code
+        ? code
+        : ex
         ? ex.code
-        : ex.message
-        ? ex.message
+          ? ex.code
+          : ex.message
+          ? ex.message
+          : 'unknown'
         : 'unknown'
-      : 'unknown'
 
-    details = _.isObject(details)
-      ? details
-      : _.isObject(msg) && !_.isString(msg)
-      ? msg
-      : {}
+    details =
+      'object' === typeof details
+        ? details
+        : 'object' === typeof msg && 'string' !== typeof msg
+        ? msg
+        : {}
 
-    msg = _.isString(msg) ? msg : null
+    if (ex) {
+      details.errmsg = ex.message
+      details.errline = callpoint(ex, markers)
+    }
+
+    msg = 'string' === typeof msg ? msg : null
     msg = buildmessage(
       options,
       msg,
@@ -16662,7 +8335,7 @@ function eraro(options) {
     err.details = details
 
     err.stack = ex ? ex.stack : err.stack
-    err.callpoint = callpoint(err, markers)
+    err.callpoint = details.errline || callpoint(err, markers)
 
     return err
   }
@@ -16684,14 +8357,13 @@ function eraro(options) {
 //
 // Returns: String; stack trace line, with indent removed
 function callpoint(error, markers) {
-  markers = _.isArray(markers) ? markers : []
+  markers = Array.isArray(markers) ? markers : []
 
   var stack = error ? error.stack : null
   var out = ''
 
   if (stack) {
     var lines = stack.split('\n')
-    var done = false
     var i
 
     line_loop: for (i = 1; i < lines.length; i++) {
@@ -16699,7 +8371,7 @@ function callpoint(error, markers) {
 
       var found = false
       for (var j = 0; j < markers.length; j++) {
-        if (_.isString(markers[j])) {
+        if ('string' === typeof markers[j]) {
           found = -1 != line.indexOf(markers[j])
           if (found) break
         }
@@ -16708,7 +8380,7 @@ function callpoint(error, markers) {
       if (!found) break line_loop
     }
 
-    out = _.isString(lines[i]) ? lines[i].substring(4) : out
+    out = 'string' === typeof lines[i] ? lines[i].substring(4) : out
   }
 
   return out
@@ -16742,24 +8414,27 @@ function buildmessage(
 ) {
   var message =
     msgprefix +
-    (_.isString(msg)
+    ('string' === typeof msg
       ? msg
-      : _.isString(msgmap[code])
+      : 'string' === typeof msgmap[code]
       ? msgmap[code]
       : ex
       ? originalmsg(options.override, ex)
       : code)
 
   // These are the inserts.
-  var valmap = _.extend({}, details, { code: code })
+  var valmap = Object.assign({}, details, { code: code })
 
+  // TODO: is this needed anymore with _ removed?
   // Workaround to prevent underscore blowing up if properties are not
   // found.  Reserved words and undefined need to be suffixed with $
   // in the template interpolates.
 
-  var valstrmap = { util: util, _: _ }
-  _.each(valmap, function(val, key) {
-    /* jshint evil:true */
+  var valstrmap = { util: Util }
+  Object.entries(valmap).forEach(function(entry) {
+    var key = entry[0]
+    var val = entry[1]
+
     try {
       eval('var ' + key + ';')
     } catch (e) {
@@ -16768,13 +8443,14 @@ function buildmessage(
     if ({ undefined: 1, NaN: 1 }[key]) {
       key = key + '$'
     }
-    valstrmap[key] = inspect && !_.isString(val) ? util.inspect(val) : val
+    valstrmap[key] =
+      inspect && 'string' !== typeof val ? Util.inspect(val) : val
   })
 
   var done = false
   while (!done) {
     try {
-      var tm = _.template(message)
+      var tm = Template(message)
       message = tm(valstrmap)
       done = true
     } catch (e) {
@@ -16792,7 +8468,7 @@ function buildmessage(
         message =
           message +
           ' VALUES:' +
-          util.inspect(valmap, { depth: 2 }) +
+          Util.inspect(valmap, { depth: 2 }) +
           ' TEMPLATE ERROR: ' +
           e
       }
@@ -16810,7 +8486,7 @@ function originalmsg(override, ex) {
   return ex.message
 }
 
-},{"lodash":93,"util":202}],82:[function(require,module,exports){
+},{"lodash.template":70,"util":325}],52:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -17335,7 +9011,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],83:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 module.exports = stringify
 stringify.default = stringify
 stringify.stable = deterministicStringify
@@ -17498,7 +9174,7 @@ function replaceGetterValues (replacer) {
   }
 }
 
-},{}],84:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 (function (setImmediate){
 /* Copyright (c) 2014-2019 Richard Rodger, MIT License */
 'use strict'
@@ -17863,31 +9539,25 @@ function GateExecutor(options, instance_counter) {
 module.exports = make_GateExecutor
 
 }).call(this,require("timers").setImmediate)
-},{"assert":62,"timers":195}],85:[function(require,module,exports){
-/* Copyright (c) 2011-2018 Richard Rodger, MIT License */
-/* jshint node:true, asi:true, eqnull:true */
+},{"assert":32,"timers":318}],55:[function(require,module,exports){
+/* Copyright (c) 2011-2019 Richard Rodger, MIT License */
 
+// eslint-disable-next-line
 ;(function() {
   'use strict'
   var root = this
   var previous_gex = root.gex
 
-  var has_require = typeof require !== 'undefined'
-
-  var _ = root._ || (has_require && require('lodash'))
-  if (!_)
-    throw new Error('gex requires underscore, see http://underscorejs.org')
-
   function Gex(gexspec) {
     var self = this
 
     function dodgy(obj) {
-      return _.isNull(obj) || _.isNaN(obj) || _.isUndefined(obj)
+      return null == obj || void 0 == obj || Number.isNaN(obj)
     }
 
     function clean(gexexp) {
       var gexstr = '' + gexexp
-      if (_.isNull(gexexp) || _.isNaN(gexexp) || _.isUndefined(gexexp)) {
+      if (dodgy(gexexp)) {
         gexstr = ''
       }
       return gexstr
@@ -17896,7 +9566,7 @@ module.exports = make_GateExecutor
     function match(str) {
       str = '' + str
       var hasmatch = false
-      var gexstrs = _.keys(gexmap)
+      var gexstrs = Object.keys(gexmap)
 
       for (var i = 0; i < gexstrs.length && !hasmatch; i++) {
         hasmatch = !!gexmap[gexstrs[i]].exec(str)
@@ -17910,15 +9580,16 @@ module.exports = make_GateExecutor
     }
 
     self.on = function(obj) {
+      var typeof_obj = typeof obj
       if (
-        _.isString(obj) ||
-        _.isNumber(obj) ||
-        _.isBoolean(obj) ||
-        _.isDate(obj) ||
-        _.isRegExp(obj)
+        'string' === typeof_obj ||
+        'number' === typeof_obj ||
+        'boolean' === typeof_obj ||
+        obj instanceof Date ||
+        obj instanceof RegExp
       ) {
         return match(obj) ? obj : null
-      } else if (_.isArray(obj) || _.isArguments(obj)) {
+      } else if (Array.isArray(obj)) {
         var out = []
         for (var i = 0; i < obj.length; i++) {
           if (!dodgy(obj[i]) && match(obj[i])) {
@@ -17926,7 +9597,7 @@ module.exports = make_GateExecutor
           }
         }
         return out
-      } else if (_.isObject(obj)) {
+      } else if ('object' === typeof_obj) {
         var outobj = {}
         for (var p in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, p)) {
@@ -17957,15 +9628,15 @@ module.exports = make_GateExecutor
         gs = gs.replace(/\\\?/g, '[\\s\\S]')
 
         // escapes ** and *?
-        gs = gs.replace(/\[\\s\\S\]\*\[\\s\\S\]\*/g, '\\\*')
-        gs = gs.replace(/\[\\s\\S\]\*\[\\s\\S\]/g, '\\\?')
+        gs = gs.replace(/\[\\s\\S\]\*\[\\s\\S\]\*/g, '\\*')
+        gs = gs.replace(/\[\\s\\S\]\*\[\\s\\S\]/g, '\\?')
 
         gs = '^' + gs + '$'
 
         return new RegExp(gs)
       } else {
-        var gexstrs = _.keys(gexmap)
-        return 1 == gexstrs.length ? gexmap[gexstrs[0]] : _.clone(gexmap)
+        var gexstrs = Object.keys(gexmap)
+        return 1 == gexstrs.length ? gexmap[gexstrs[0]] : { ...gexmap }
       }
     }
 
@@ -17976,18 +9647,18 @@ module.exports = make_GateExecutor
     }
 
     self.toString = function() {
-      return desc ? desc : (desc = 'gex[' + _.keys(gexmap) + ']')
+      return desc ? desc : (desc = 'gex[' + Object.keys(gexmap) + ']')
     }
 
     self.inspect = function() {
       return self.toString()
     }
 
-    var gexstrs = _.isArray(gexspec) ? gexspec : [gexspec]
+    var gexstrs = Array.isArray(gexspec) ? gexspec : [gexspec]
     var gexmap = {}
     var desc
 
-    _.each(gexstrs, function(str) {
+    gexstrs.forEach(function(str) {
       str = clean(str)
       var re = self.re(str)
       gexmap[str] = re
@@ -18010,7 +9681,7 @@ module.exports = make_GateExecutor
   }
 }.call(this))
 
-},{"lodash":93}],86:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -18043,7 +9714,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":174,"url":196}],87:[function(require,module,exports){
+},{"http":297,"url":319}],57:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -18129,7 +9800,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],88:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -18158,7 +9829,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],89:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -18181,14 +9852,14 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],90:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],91:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -18217,7 +9888,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],92:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License, https://github.com/rjrodger/jsonic */
 "use strict";
 
@@ -20431,7 +12102,4717 @@ var jsonic_parser = (function() {
 
 
 
-},{}],93:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
+/**
+ * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+
+/** Used to match template delimiters. */
+var reInterpolate = /<%=([\s\S]+?)%>/g;
+
+module.exports = reInterpolate;
+
+},{}],64:[function(require,module,exports){
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]';
+
+/** Used to detect unsigned integer values. */
+var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+/**
+ * A specialized version of `_.forEach` for arrays without support for
+ * iteratee shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns `array`.
+ */
+function arrayEach(array, iteratee) {
+  var index = -1,
+      length = array ? array.length : 0;
+
+  while (++index < length) {
+    if (iteratee(array[index], index, array) === false) {
+      break;
+    }
+  }
+  return array;
+}
+
+/**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function(arg) {
+    return func(transform(arg));
+  };
+}
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Built-in value references. */
+var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeKeys = overArg(Object.keys, Object);
+
+/**
+ * Creates an array of the enumerable property names of the array-like `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @param {boolean} inherited Specify returning inherited property names.
+ * @returns {Array} Returns the array of property names.
+ */
+function arrayLikeKeys(value, inherited) {
+  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
+  // Safari 9 makes `arguments.length` enumerable in strict mode.
+  var result = (isArray(value) || isArguments(value))
+    ? baseTimes(value.length, String)
+    : [];
+
+  var length = result.length,
+      skipIndexes = !!length;
+
+  for (var key in value) {
+    if ((inherited || hasOwnProperty.call(value, key)) &&
+        !(skipIndexes && (key == 'length' || isIndex(key, length)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.forEach` without support for iteratee shorthands.
+ *
+ * @private
+ * @param {Array|Object} collection The collection to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array|Object} Returns `collection`.
+ */
+var baseEach = createBaseEach(baseForOwn);
+
+/**
+ * The base implementation of `baseForOwn` which iterates over `object`
+ * properties returned by `keysFunc` and invokes `iteratee` for each property.
+ * Iteratee functions may exit iteration early by explicitly returning `false`.
+ *
+ * @private
+ * @param {Object} object The object to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @param {Function} keysFunc The function to get the keys of `object`.
+ * @returns {Object} Returns `object`.
+ */
+var baseFor = createBaseFor();
+
+/**
+ * The base implementation of `_.forOwn` without support for iteratee shorthands.
+ *
+ * @private
+ * @param {Object} object The object to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Object} Returns `object`.
+ */
+function baseForOwn(object, iteratee) {
+  return object && baseFor(object, iteratee, keys);
+}
+
+/**
+ * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeys(object) {
+  if (!isPrototype(object)) {
+    return nativeKeys(object);
+  }
+  var result = [];
+  for (var key in Object(object)) {
+    if (hasOwnProperty.call(object, key) && key != 'constructor') {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Creates a `baseEach` or `baseEachRight` function.
+ *
+ * @private
+ * @param {Function} eachFunc The function to iterate over a collection.
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {Function} Returns the new base function.
+ */
+function createBaseEach(eachFunc, fromRight) {
+  return function(collection, iteratee) {
+    if (collection == null) {
+      return collection;
+    }
+    if (!isArrayLike(collection)) {
+      return eachFunc(collection, iteratee);
+    }
+    var length = collection.length,
+        index = fromRight ? length : -1,
+        iterable = Object(collection);
+
+    while ((fromRight ? index-- : ++index < length)) {
+      if (iteratee(iterable[index], index, iterable) === false) {
+        break;
+      }
+    }
+    return collection;
+  };
+}
+
+/**
+ * Creates a base function for methods like `_.forIn` and `_.forOwn`.
+ *
+ * @private
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {Function} Returns the new base function.
+ */
+function createBaseFor(fromRight) {
+  return function(object, iteratee, keysFunc) {
+    var index = -1,
+        iterable = Object(object),
+        props = keysFunc(object),
+        length = props.length;
+
+    while (length--) {
+      var key = props[fromRight ? length : ++index];
+      if (iteratee(iterable[key], key, iterable) === false) {
+        break;
+      }
+    }
+    return object;
+  };
+}
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  length = length == null ? MAX_SAFE_INTEGER : length;
+  return !!length &&
+    (typeof value == 'number' || reIsUint.test(value)) &&
+    (value > -1 && value % 1 == 0 && value < length);
+}
+
+/**
+ * Checks if `value` is likely a prototype object.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+ */
+function isPrototype(value) {
+  var Ctor = value && value.constructor,
+      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
+
+  return value === proto;
+}
+
+/**
+ * Iterates over elements of `collection` and invokes `iteratee` for each element.
+ * The iteratee is invoked with three arguments: (value, index|key, collection).
+ * Iteratee functions may exit iteration early by explicitly returning `false`.
+ *
+ * **Note:** As with other "Collections" methods, objects with a "length"
+ * property are iterated like arrays. To avoid this behavior use `_.forIn`
+ * or `_.forOwn` for object iteration.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @alias each
+ * @category Collection
+ * @param {Array|Object} collection The collection to iterate over.
+ * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+ * @returns {Array|Object} Returns `collection`.
+ * @see _.forEachRight
+ * @example
+ *
+ * _([1, 2]).forEach(function(value) {
+ *   console.log(value);
+ * });
+ * // => Logs `1` then `2`.
+ *
+ * _.forEach({ 'a': 1, 'b': 2 }, function(value, key) {
+ *   console.log(key);
+ * });
+ * // => Logs 'a' then 'b' (iteration order is not guaranteed).
+ */
+function forEach(collection, iteratee) {
+  var func = isArray(collection) ? arrayEach : baseEach;
+  return func(collection, typeof iteratee == 'function' ? iteratee : identity);
+}
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+function isArguments(value) {
+  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
+  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
+    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
+}
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(value.length) && !isFunction(value);
+}
+
+/**
+ * This method is like `_.isArrayLike` except that it also checks if `value`
+ * is an object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array-like object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArrayLikeObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLikeObject(document.body.children);
+ * // => true
+ *
+ * _.isArrayLikeObject('abc');
+ * // => false
+ *
+ * _.isArrayLikeObject(_.noop);
+ * // => false
+ */
+function isArrayLikeObject(value) {
+  return isObjectLike(value) && isArrayLike(value);
+}
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 8-9 which returns 'object' for typed array and other constructors.
+  var tag = isObject(value) ? objectToString.call(value) : '';
+  return tag == funcTag || tag == genTag;
+}
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' &&
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+/**
+ * Creates an array of the own enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects. See the
+ * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * for more details.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keys(new Foo);
+ * // => ['a', 'b'] (iteration order is not guaranteed)
+ *
+ * _.keys('hi');
+ * // => ['0', '1']
+ */
+function keys(object) {
+  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
+}
+
+/**
+ * This method returns the first argument it receives.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Util
+ * @param {*} value Any value.
+ * @returns {*} Returns `value`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ *
+ * console.log(_.identity(object) === object);
+ * // => true
+ */
+function identity(value) {
+  return value;
+}
+
+module.exports = forEach;
+
+},{}],65:[function(require,module,exports){
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Built-in value references. */
+var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+function isArguments(value) {
+  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
+  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
+    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
+}
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(value.length) && !isFunction(value);
+}
+
+/**
+ * This method is like `_.isArrayLike` except that it also checks if `value`
+ * is an object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array-like object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArrayLikeObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLikeObject(document.body.children);
+ * // => true
+ *
+ * _.isArrayLikeObject('abc');
+ * // => false
+ *
+ * _.isArrayLikeObject(_.noop);
+ * // => false
+ */
+function isArrayLikeObject(value) {
+  return isObjectLike(value) && isArrayLike(value);
+}
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 8-9 which returns 'object' for typed array and other constructors.
+  var tag = isObject(value) ? objectToString.call(value) : '';
+  return tag == funcTag || tag == genTag;
+}
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' &&
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+module.exports = isArguments;
+
+},{}],66:[function(require,module,exports){
+(function (global){
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** `Object#toString` result references. */
+var dateTag = '[object Date]';
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `exports`. */
+var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Detect free variable `process` from Node.js. */
+var freeProcess = moduleExports && freeGlobal.process;
+
+/** Used to access faster Node.js helpers. */
+var nodeUtil = (function() {
+  try {
+    return freeProcess && freeProcess.binding('util');
+  } catch (e) {}
+}());
+
+/* Node.js helper references. */
+var nodeIsDate = nodeUtil && nodeUtil.isDate;
+
+/**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function(value) {
+    return func(value);
+  };
+}
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * The base implementation of `_.isDate` without Node.js optimizations.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a date object, else `false`.
+ */
+function baseIsDate(value) {
+  return isObjectLike(value) && objectToString.call(value) == dateTag;
+}
+
+/**
+ * Checks if `value` is classified as a `Date` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a date object, else `false`.
+ * @example
+ *
+ * _.isDate(new Date);
+ * // => true
+ *
+ * _.isDate('Mon April 23 2012');
+ * // => false
+ */
+var isDate = nodeIsDate ? baseUnary(nodeIsDate) : baseIsDate;
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+module.exports = isDate;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],67:[function(require,module,exports){
+/**
+ * lodash 3.0.2 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright 2012-2016 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2016 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+
+/** `Object#toString` result references. */
+var numberTag = '[object Number]';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+/**
+ * Checks if `value` is `NaN`.
+ *
+ * **Note:** This method is not the same as [`isNaN`](https://es5.github.io/#x15.1.2.4)
+ * which returns `true` for `undefined` and other non-numeric values.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
+ * @example
+ *
+ * _.isNaN(NaN);
+ * // => true
+ *
+ * _.isNaN(new Number(NaN));
+ * // => true
+ *
+ * isNaN(undefined);
+ * // => true
+ *
+ * _.isNaN(undefined);
+ * // => false
+ */
+function isNaN(value) {
+  // An `NaN` primitive is the only value that is not equal to itself.
+  // Perform the `toStringTag` check first to avoid errors with some ActiveX objects in IE.
+  return isNumber(value) && value != +value;
+}
+
+/**
+ * Checks if `value` is classified as a `Number` primitive or object.
+ *
+ * **Note:** To exclude `Infinity`, `-Infinity`, and `NaN`, which are classified
+ * as numbers, use the `_.isFinite` method.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+ * @example
+ *
+ * _.isNumber(3);
+ * // => true
+ *
+ * _.isNumber(Number.MIN_VALUE);
+ * // => true
+ *
+ * _.isNumber(Infinity);
+ * // => true
+ *
+ * _.isNumber('3');
+ * // => false
+ */
+function isNumber(value) {
+  return typeof value == 'number' ||
+    (isObjectLike(value) && objectToString.call(value) == numberTag);
+}
+
+module.exports = isNaN;
+
+},{}],68:[function(require,module,exports){
+(function (global){
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** `Object#toString` result references. */
+var regexpTag = '[object RegExp]';
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `exports`. */
+var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Detect free variable `process` from Node.js. */
+var freeProcess = moduleExports && freeGlobal.process;
+
+/** Used to access faster Node.js helpers. */
+var nodeUtil = (function() {
+  try {
+    return freeProcess && freeProcess.binding('util');
+  } catch (e) {}
+}());
+
+/* Node.js helper references. */
+var nodeIsRegExp = nodeUtil && nodeUtil.isRegExp;
+
+/**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function(value) {
+    return func(value);
+  };
+}
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/**
+ * The base implementation of `_.isRegExp` without Node.js optimizations.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a regexp, else `false`.
+ */
+function baseIsRegExp(value) {
+  return isObject(value) && objectToString.call(value) == regexpTag;
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/6.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is classified as a `RegExp` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a regexp, else `false`.
+ * @example
+ *
+ * _.isRegExp(/abc/);
+ * // => true
+ *
+ * _.isRegExp('/abc/');
+ * // => false
+ */
+var isRegExp = nodeIsRegExp ? baseUnary(nodeIsRegExp) : baseIsRegExp;
+
+module.exports = isRegExp;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],69:[function(require,module,exports){
+(function (global){
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/** Used as the size to enable large array optimizations. */
+var LARGE_ARRAY_SIZE = 200;
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0,
+    MAX_SAFE_INTEGER = 9007199254740991;
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]',
+    symbolTag = '[object Symbol]';
+
+/**
+ * Used to match `RegExp`
+ * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
+ */
+var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+/** Used to detect host constructors (Safari). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/** Used to detect unsigned integer values. */
+var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/**
+ * A faster alternative to `Function#apply`, this function invokes `func`
+ * with the `this` binding of `thisArg` and the arguments of `args`.
+ *
+ * @private
+ * @param {Function} func The function to invoke.
+ * @param {*} thisArg The `this` binding of `func`.
+ * @param {Array} args The arguments to invoke `func` with.
+ * @returns {*} Returns the result of `func`.
+ */
+function apply(func, thisArg, args) {
+  switch (args.length) {
+    case 0: return func.call(thisArg);
+    case 1: return func.call(thisArg, args[0]);
+    case 2: return func.call(thisArg, args[0], args[1]);
+    case 3: return func.call(thisArg, args[0], args[1], args[2]);
+  }
+  return func.apply(thisArg, args);
+}
+
+/**
+ * A specialized version of `_.includes` for arrays without support for
+ * specifying an index to search from.
+ *
+ * @private
+ * @param {Array} [array] The array to inspect.
+ * @param {*} target The value to search for.
+ * @returns {boolean} Returns `true` if `target` is found, else `false`.
+ */
+function arrayIncludes(array, value) {
+  var length = array ? array.length : 0;
+  return !!length && baseIndexOf(array, value, 0) > -1;
+}
+
+/**
+ * This function is like `arrayIncludes` except that it accepts a comparator.
+ *
+ * @private
+ * @param {Array} [array] The array to inspect.
+ * @param {*} target The value to search for.
+ * @param {Function} comparator The comparator invoked per element.
+ * @returns {boolean} Returns `true` if `target` is found, else `false`.
+ */
+function arrayIncludesWith(array, value, comparator) {
+  var index = -1,
+      length = array ? array.length : 0;
+
+  while (++index < length) {
+    if (comparator(value, array[index])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array ? array.length : 0,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
+
+/**
+ * Appends the elements of `values` to `array`.
+ *
+ * @private
+ * @param {Array} array The array to modify.
+ * @param {Array} values The values to append.
+ * @returns {Array} Returns `array`.
+ */
+function arrayPush(array, values) {
+  var index = -1,
+      length = values.length,
+      offset = array.length;
+
+  while (++index < length) {
+    array[offset + index] = values[index];
+  }
+  return array;
+}
+
+/**
+ * The base implementation of `_.findIndex` and `_.findLastIndex` without
+ * support for iteratee shorthands.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {Function} predicate The function invoked per iteration.
+ * @param {number} fromIndex The index to search from.
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function baseFindIndex(array, predicate, fromIndex, fromRight) {
+  var length = array.length,
+      index = fromIndex + (fromRight ? 1 : -1);
+
+  while ((fromRight ? index-- : ++index < length)) {
+    if (predicate(array[index], index, array)) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+/**
+ * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {*} value The value to search for.
+ * @param {number} fromIndex The index to search from.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function baseIndexOf(array, value, fromIndex) {
+  if (value !== value) {
+    return baseFindIndex(array, baseIsNaN, fromIndex);
+  }
+  var index = fromIndex - 1,
+      length = array.length;
+
+  while (++index < length) {
+    if (array[index] === value) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+/**
+ * The base implementation of `_.isNaN` without support for number objects.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
+ */
+function baseIsNaN(value) {
+  return value !== value;
+}
+
+/**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function(value) {
+    return func(value);
+  };
+}
+
+/**
+ * Checks if a cache value for `key` exists.
+ *
+ * @private
+ * @param {Object} cache The cache to query.
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function cacheHas(cache, key) {
+  return cache.has(key);
+}
+
+/**
+ * Gets the value at `key` of `object`.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {string} key The key of the property to get.
+ * @returns {*} Returns the property value.
+ */
+function getValue(object, key) {
+  return object == null ? undefined : object[key];
+}
+
+/**
+ * Checks if `value` is a host object in IE < 9.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a host object, else `false`.
+ */
+function isHostObject(value) {
+  // Many host objects are `Object` objects that can coerce to strings
+  // despite having improperly defined `toString` methods.
+  var result = false;
+  if (value != null && typeof value.toString != 'function') {
+    try {
+      result = !!(value + '');
+    } catch (e) {}
+  }
+  return result;
+}
+
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function(arg) {
+    return func(transform(arg));
+  };
+}
+
+/** Used for built-in method references. */
+var arrayProto = Array.prototype,
+    funcProto = Function.prototype,
+    objectProto = Object.prototype;
+
+/** Used to detect overreaching core-js shims. */
+var coreJsData = root['__core-js_shared__'];
+
+/** Used to detect methods masquerading as native. */
+var maskSrcKey = (function() {
+  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+  return uid ? ('Symbol(src)_1.' + uid) : '';
+}());
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' +
+  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
+  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+);
+
+/** Built-in value references. */
+var Symbol = root.Symbol,
+    getPrototype = overArg(Object.getPrototypeOf, Object),
+    propertyIsEnumerable = objectProto.propertyIsEnumerable,
+    splice = arrayProto.splice,
+    spreadableSymbol = Symbol ? Symbol.isConcatSpreadable : undefined;
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeGetSymbols = Object.getOwnPropertySymbols,
+    nativeMax = Math.max;
+
+/* Built-in method references that are verified to be native. */
+var Map = getNative(root, 'Map'),
+    nativeCreate = getNative(Object, 'create');
+
+/**
+ * Creates a hash object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function Hash(entries) {
+  var index = -1,
+      length = entries ? entries.length : 0;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+/**
+ * Removes all key-value entries from the hash.
+ *
+ * @private
+ * @name clear
+ * @memberOf Hash
+ */
+function hashClear() {
+  this.__data__ = nativeCreate ? nativeCreate(null) : {};
+}
+
+/**
+ * Removes `key` and its value from the hash.
+ *
+ * @private
+ * @name delete
+ * @memberOf Hash
+ * @param {Object} hash The hash to modify.
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function hashDelete(key) {
+  return this.has(key) && delete this.__data__[key];
+}
+
+/**
+ * Gets the hash value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf Hash
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function hashGet(key) {
+  var data = this.__data__;
+  if (nativeCreate) {
+    var result = data[key];
+    return result === HASH_UNDEFINED ? undefined : result;
+  }
+  return hasOwnProperty.call(data, key) ? data[key] : undefined;
+}
+
+/**
+ * Checks if a hash value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf Hash
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function hashHas(key) {
+  var data = this.__data__;
+  return nativeCreate ? data[key] !== undefined : hasOwnProperty.call(data, key);
+}
+
+/**
+ * Sets the hash `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf Hash
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the hash instance.
+ */
+function hashSet(key, value) {
+  var data = this.__data__;
+  data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
+  return this;
+}
+
+// Add methods to `Hash`.
+Hash.prototype.clear = hashClear;
+Hash.prototype['delete'] = hashDelete;
+Hash.prototype.get = hashGet;
+Hash.prototype.has = hashHas;
+Hash.prototype.set = hashSet;
+
+/**
+ * Creates an list cache object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function ListCache(entries) {
+  var index = -1,
+      length = entries ? entries.length : 0;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+/**
+ * Removes all key-value entries from the list cache.
+ *
+ * @private
+ * @name clear
+ * @memberOf ListCache
+ */
+function listCacheClear() {
+  this.__data__ = [];
+}
+
+/**
+ * Removes `key` and its value from the list cache.
+ *
+ * @private
+ * @name delete
+ * @memberOf ListCache
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function listCacheDelete(key) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  if (index < 0) {
+    return false;
+  }
+  var lastIndex = data.length - 1;
+  if (index == lastIndex) {
+    data.pop();
+  } else {
+    splice.call(data, index, 1);
+  }
+  return true;
+}
+
+/**
+ * Gets the list cache value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf ListCache
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function listCacheGet(key) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  return index < 0 ? undefined : data[index][1];
+}
+
+/**
+ * Checks if a list cache value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf ListCache
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function listCacheHas(key) {
+  return assocIndexOf(this.__data__, key) > -1;
+}
+
+/**
+ * Sets the list cache `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf ListCache
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the list cache instance.
+ */
+function listCacheSet(key, value) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  if (index < 0) {
+    data.push([key, value]);
+  } else {
+    data[index][1] = value;
+  }
+  return this;
+}
+
+// Add methods to `ListCache`.
+ListCache.prototype.clear = listCacheClear;
+ListCache.prototype['delete'] = listCacheDelete;
+ListCache.prototype.get = listCacheGet;
+ListCache.prototype.has = listCacheHas;
+ListCache.prototype.set = listCacheSet;
+
+/**
+ * Creates a map cache object to store key-value pairs.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function MapCache(entries) {
+  var index = -1,
+      length = entries ? entries.length : 0;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+/**
+ * Removes all key-value entries from the map.
+ *
+ * @private
+ * @name clear
+ * @memberOf MapCache
+ */
+function mapCacheClear() {
+  this.__data__ = {
+    'hash': new Hash,
+    'map': new (Map || ListCache),
+    'string': new Hash
+  };
+}
+
+/**
+ * Removes `key` and its value from the map.
+ *
+ * @private
+ * @name delete
+ * @memberOf MapCache
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function mapCacheDelete(key) {
+  return getMapData(this, key)['delete'](key);
+}
+
+/**
+ * Gets the map value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf MapCache
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function mapCacheGet(key) {
+  return getMapData(this, key).get(key);
+}
+
+/**
+ * Checks if a map value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf MapCache
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function mapCacheHas(key) {
+  return getMapData(this, key).has(key);
+}
+
+/**
+ * Sets the map `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf MapCache
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the map cache instance.
+ */
+function mapCacheSet(key, value) {
+  getMapData(this, key).set(key, value);
+  return this;
+}
+
+// Add methods to `MapCache`.
+MapCache.prototype.clear = mapCacheClear;
+MapCache.prototype['delete'] = mapCacheDelete;
+MapCache.prototype.get = mapCacheGet;
+MapCache.prototype.has = mapCacheHas;
+MapCache.prototype.set = mapCacheSet;
+
+/**
+ *
+ * Creates an array cache object to store unique values.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [values] The values to cache.
+ */
+function SetCache(values) {
+  var index = -1,
+      length = values ? values.length : 0;
+
+  this.__data__ = new MapCache;
+  while (++index < length) {
+    this.add(values[index]);
+  }
+}
+
+/**
+ * Adds `value` to the array cache.
+ *
+ * @private
+ * @name add
+ * @memberOf SetCache
+ * @alias push
+ * @param {*} value The value to cache.
+ * @returns {Object} Returns the cache instance.
+ */
+function setCacheAdd(value) {
+  this.__data__.set(value, HASH_UNDEFINED);
+  return this;
+}
+
+/**
+ * Checks if `value` is in the array cache.
+ *
+ * @private
+ * @name has
+ * @memberOf SetCache
+ * @param {*} value The value to search for.
+ * @returns {number} Returns `true` if `value` is found, else `false`.
+ */
+function setCacheHas(value) {
+  return this.__data__.has(value);
+}
+
+// Add methods to `SetCache`.
+SetCache.prototype.add = SetCache.prototype.push = setCacheAdd;
+SetCache.prototype.has = setCacheHas;
+
+/**
+ * Creates an array of the enumerable property names of the array-like `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @param {boolean} inherited Specify returning inherited property names.
+ * @returns {Array} Returns the array of property names.
+ */
+function arrayLikeKeys(value, inherited) {
+  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
+  // Safari 9 makes `arguments.length` enumerable in strict mode.
+  var result = (isArray(value) || isArguments(value))
+    ? baseTimes(value.length, String)
+    : [];
+
+  var length = result.length,
+      skipIndexes = !!length;
+
+  for (var key in value) {
+    if ((inherited || hasOwnProperty.call(value, key)) &&
+        !(skipIndexes && (key == 'length' || isIndex(key, length)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Gets the index at which the `key` is found in `array` of key-value pairs.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {*} key The key to search for.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function assocIndexOf(array, key) {
+  var length = array.length;
+  while (length--) {
+    if (eq(array[length][0], key)) {
+      return length;
+    }
+  }
+  return -1;
+}
+
+/**
+ * The base implementation of methods like `_.difference` without support
+ * for excluding multiple arrays or iteratee shorthands.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {Array} values The values to exclude.
+ * @param {Function} [iteratee] The iteratee invoked per element.
+ * @param {Function} [comparator] The comparator invoked per element.
+ * @returns {Array} Returns the new array of filtered values.
+ */
+function baseDifference(array, values, iteratee, comparator) {
+  var index = -1,
+      includes = arrayIncludes,
+      isCommon = true,
+      length = array.length,
+      result = [],
+      valuesLength = values.length;
+
+  if (!length) {
+    return result;
+  }
+  if (iteratee) {
+    values = arrayMap(values, baseUnary(iteratee));
+  }
+  if (comparator) {
+    includes = arrayIncludesWith;
+    isCommon = false;
+  }
+  else if (values.length >= LARGE_ARRAY_SIZE) {
+    includes = cacheHas;
+    isCommon = false;
+    values = new SetCache(values);
+  }
+  outer:
+  while (++index < length) {
+    var value = array[index],
+        computed = iteratee ? iteratee(value) : value;
+
+    value = (comparator || value !== 0) ? value : 0;
+    if (isCommon && computed === computed) {
+      var valuesIndex = valuesLength;
+      while (valuesIndex--) {
+        if (values[valuesIndex] === computed) {
+          continue outer;
+        }
+      }
+      result.push(value);
+    }
+    else if (!includes(values, computed, comparator)) {
+      result.push(value);
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.flatten` with support for restricting flattening.
+ *
+ * @private
+ * @param {Array} array The array to flatten.
+ * @param {number} depth The maximum recursion depth.
+ * @param {boolean} [predicate=isFlattenable] The function invoked per iteration.
+ * @param {boolean} [isStrict] Restrict to values that pass `predicate` checks.
+ * @param {Array} [result=[]] The initial result value.
+ * @returns {Array} Returns the new flattened array.
+ */
+function baseFlatten(array, depth, predicate, isStrict, result) {
+  var index = -1,
+      length = array.length;
+
+  predicate || (predicate = isFlattenable);
+  result || (result = []);
+
+  while (++index < length) {
+    var value = array[index];
+    if (depth > 0 && predicate(value)) {
+      if (depth > 1) {
+        // Recursively flatten arrays (susceptible to call stack limits).
+        baseFlatten(value, depth - 1, predicate, isStrict, result);
+      } else {
+        arrayPush(result, value);
+      }
+    } else if (!isStrict) {
+      result[result.length] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
+ * `keysFunc` and `symbolsFunc` to get the enumerable property names and
+ * symbols of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Function} keysFunc The function to get the keys of `object`.
+ * @param {Function} symbolsFunc The function to get the symbols of `object`.
+ * @returns {Array} Returns the array of property names and symbols.
+ */
+function baseGetAllKeys(object, keysFunc, symbolsFunc) {
+  var result = keysFunc(object);
+  return isArray(object) ? result : arrayPush(result, symbolsFunc(object));
+}
+
+/**
+ * The base implementation of `_.isNative` without bad shim checks.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function,
+ *  else `false`.
+ */
+function baseIsNative(value) {
+  if (!isObject(value) || isMasked(value)) {
+    return false;
+  }
+  var pattern = (isFunction(value) || isHostObject(value)) ? reIsNative : reIsHostCtor;
+  return pattern.test(toSource(value));
+}
+
+/**
+ * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeysIn(object) {
+  if (!isObject(object)) {
+    return nativeKeysIn(object);
+  }
+  var isProto = isPrototype(object),
+      result = [];
+
+  for (var key in object) {
+    if (!(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.pick` without support for individual
+ * property identifiers.
+ *
+ * @private
+ * @param {Object} object The source object.
+ * @param {string[]} props The property identifiers to pick.
+ * @returns {Object} Returns the new object.
+ */
+function basePick(object, props) {
+  object = Object(object);
+  return basePickBy(object, props, function(value, key) {
+    return key in object;
+  });
+}
+
+/**
+ * The base implementation of  `_.pickBy` without support for iteratee shorthands.
+ *
+ * @private
+ * @param {Object} object The source object.
+ * @param {string[]} props The property identifiers to pick from.
+ * @param {Function} predicate The function invoked per property.
+ * @returns {Object} Returns the new object.
+ */
+function basePickBy(object, props, predicate) {
+  var index = -1,
+      length = props.length,
+      result = {};
+
+  while (++index < length) {
+    var key = props[index],
+        value = object[key];
+
+    if (predicate(value, key)) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.rest` which doesn't validate or coerce arguments.
+ *
+ * @private
+ * @param {Function} func The function to apply a rest parameter to.
+ * @param {number} [start=func.length-1] The start position of the rest parameter.
+ * @returns {Function} Returns the new function.
+ */
+function baseRest(func, start) {
+  start = nativeMax(start === undefined ? (func.length - 1) : start, 0);
+  return function() {
+    var args = arguments,
+        index = -1,
+        length = nativeMax(args.length - start, 0),
+        array = Array(length);
+
+    while (++index < length) {
+      array[index] = args[start + index];
+    }
+    index = -1;
+    var otherArgs = Array(start + 1);
+    while (++index < start) {
+      otherArgs[index] = args[index];
+    }
+    otherArgs[start] = array;
+    return apply(func, this, otherArgs);
+  };
+}
+
+/**
+ * Creates an array of own and inherited enumerable property names and
+ * symbols of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names and symbols.
+ */
+function getAllKeysIn(object) {
+  return baseGetAllKeys(object, keysIn, getSymbolsIn);
+}
+
+/**
+ * Gets the data for `map`.
+ *
+ * @private
+ * @param {Object} map The map to query.
+ * @param {string} key The reference key.
+ * @returns {*} Returns the map data.
+ */
+function getMapData(map, key) {
+  var data = map.__data__;
+  return isKeyable(key)
+    ? data[typeof key == 'string' ? 'string' : 'hash']
+    : data.map;
+}
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = getValue(object, key);
+  return baseIsNative(value) ? value : undefined;
+}
+
+/**
+ * Creates an array of the own enumerable symbol properties of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of symbols.
+ */
+var getSymbols = nativeGetSymbols ? overArg(nativeGetSymbols, Object) : stubArray;
+
+/**
+ * Creates an array of the own and inherited enumerable symbol properties
+ * of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of symbols.
+ */
+var getSymbolsIn = !nativeGetSymbols ? stubArray : function(object) {
+  var result = [];
+  while (object) {
+    arrayPush(result, getSymbols(object));
+    object = getPrototype(object);
+  }
+  return result;
+};
+
+/**
+ * Checks if `value` is a flattenable `arguments` object or array.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is flattenable, else `false`.
+ */
+function isFlattenable(value) {
+  return isArray(value) || isArguments(value) ||
+    !!(spreadableSymbol && value && value[spreadableSymbol]);
+}
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  length = length == null ? MAX_SAFE_INTEGER : length;
+  return !!length &&
+    (typeof value == 'number' || reIsUint.test(value)) &&
+    (value > -1 && value % 1 == 0 && value < length);
+}
+
+/**
+ * Checks if `value` is suitable for use as unique object key.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
+ */
+function isKeyable(value) {
+  var type = typeof value;
+  return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
+    ? (value !== '__proto__')
+    : (value === null);
+}
+
+/**
+ * Checks if `func` has its source masked.
+ *
+ * @private
+ * @param {Function} func The function to check.
+ * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+ */
+function isMasked(func) {
+  return !!maskSrcKey && (maskSrcKey in func);
+}
+
+/**
+ * Checks if `value` is likely a prototype object.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+ */
+function isPrototype(value) {
+  var Ctor = value && value.constructor,
+      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
+
+  return value === proto;
+}
+
+/**
+ * This function is like
+ * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * except that it includes inherited enumerable properties.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function nativeKeysIn(object) {
+  var result = [];
+  if (object != null) {
+    for (var key in Object(object)) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Converts `value` to a string key if it's not a string or symbol.
+ *
+ * @private
+ * @param {*} value The value to inspect.
+ * @returns {string|symbol} Returns the key.
+ */
+function toKey(value) {
+  if (typeof value == 'string' || isSymbol(value)) {
+    return value;
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+/**
+ * Converts `func` to its source code.
+ *
+ * @private
+ * @param {Function} func The function to process.
+ * @returns {string} Returns the source code.
+ */
+function toSource(func) {
+  if (func != null) {
+    try {
+      return funcToString.call(func);
+    } catch (e) {}
+    try {
+      return (func + '');
+    } catch (e) {}
+  }
+  return '';
+}
+
+/**
+ * Performs a
+ * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+ * comparison between two values to determine if they are equivalent.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ * var other = { 'a': 1 };
+ *
+ * _.eq(object, object);
+ * // => true
+ *
+ * _.eq(object, other);
+ * // => false
+ *
+ * _.eq('a', 'a');
+ * // => true
+ *
+ * _.eq('a', Object('a'));
+ * // => false
+ *
+ * _.eq(NaN, NaN);
+ * // => true
+ */
+function eq(value, other) {
+  return value === other || (value !== value && other !== other);
+}
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+function isArguments(value) {
+  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
+  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
+    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
+}
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(value.length) && !isFunction(value);
+}
+
+/**
+ * This method is like `_.isArrayLike` except that it also checks if `value`
+ * is an object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array-like object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArrayLikeObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLikeObject(document.body.children);
+ * // => true
+ *
+ * _.isArrayLikeObject('abc');
+ * // => false
+ *
+ * _.isArrayLikeObject(_.noop);
+ * // => false
+ */
+function isArrayLikeObject(value) {
+  return isObjectLike(value) && isArrayLike(value);
+}
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 8-9 which returns 'object' for typed array and other constructors.
+  var tag = isObject(value) ? objectToString.call(value) : '';
+  return tag == funcTag || tag == genTag;
+}
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' &&
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && objectToString.call(value) == symbolTag);
+}
+
+/**
+ * Creates an array of the own and inherited enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keysIn(new Foo);
+ * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+ */
+function keysIn(object) {
+  return isArrayLike(object) ? arrayLikeKeys(object, true) : baseKeysIn(object);
+}
+
+/**
+ * The opposite of `_.pick`; this method creates an object composed of the
+ * own and inherited enumerable string keyed properties of `object` that are
+ * not omitted.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The source object.
+ * @param {...(string|string[])} [props] The property identifiers to omit.
+ * @returns {Object} Returns the new object.
+ * @example
+ *
+ * var object = { 'a': 1, 'b': '2', 'c': 3 };
+ *
+ * _.omit(object, ['a', 'c']);
+ * // => { 'b': '2' }
+ */
+var omit = baseRest(function(object, props) {
+  if (object == null) {
+    return {};
+  }
+  props = arrayMap(baseFlatten(props, 1), toKey);
+  return basePick(object, baseDifference(getAllKeysIn(object), props));
+});
+
+/**
+ * This method returns a new empty array.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.13.0
+ * @category Util
+ * @returns {Array} Returns the new empty array.
+ * @example
+ *
+ * var arrays = _.times(2, _.stubArray);
+ *
+ * console.log(arrays);
+ * // => [[], []]
+ *
+ * console.log(arrays[0] === arrays[1]);
+ * // => false
+ */
+function stubArray() {
+  return [];
+}
+
+module.exports = omit;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],70:[function(require,module,exports){
+(function (global){
+/**
+ * Lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+var reInterpolate = require('lodash._reinterpolate'),
+    templateSettings = require('lodash.templatesettings');
+
+/** Used to detect hot functions by number of calls within a span of milliseconds. */
+var HOT_COUNT = 800,
+    HOT_SPAN = 16;
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0,
+    MAX_SAFE_INTEGER = 9007199254740991;
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]',
+    arrayTag = '[object Array]',
+    asyncTag = '[object AsyncFunction]',
+    boolTag = '[object Boolean]',
+    dateTag = '[object Date]',
+    domExcTag = '[object DOMException]',
+    errorTag = '[object Error]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]',
+    mapTag = '[object Map]',
+    numberTag = '[object Number]',
+    nullTag = '[object Null]',
+    objectTag = '[object Object]',
+    proxyTag = '[object Proxy]',
+    regexpTag = '[object RegExp]',
+    setTag = '[object Set]',
+    stringTag = '[object String]',
+    symbolTag = '[object Symbol]',
+    undefinedTag = '[object Undefined]',
+    weakMapTag = '[object WeakMap]';
+
+var arrayBufferTag = '[object ArrayBuffer]',
+    dataViewTag = '[object DataView]',
+    float32Tag = '[object Float32Array]',
+    float64Tag = '[object Float64Array]',
+    int8Tag = '[object Int8Array]',
+    int16Tag = '[object Int16Array]',
+    int32Tag = '[object Int32Array]',
+    uint8Tag = '[object Uint8Array]',
+    uint8ClampedTag = '[object Uint8ClampedArray]',
+    uint16Tag = '[object Uint16Array]',
+    uint32Tag = '[object Uint32Array]';
+
+/** Used to match empty string literals in compiled template source. */
+var reEmptyStringLeading = /\b__p \+= '';/g,
+    reEmptyStringMiddle = /\b(__p \+=) '' \+/g,
+    reEmptyStringTrailing = /(__e\(.*?\)|\b__t\)) \+\n'';/g;
+
+/**
+ * Used to match `RegExp`
+ * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
+ */
+var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+/**
+ * Used to match
+ * [ES template delimiters](http://ecma-international.org/ecma-262/7.0/#sec-template-literal-lexical-components).
+ */
+var reEsTemplate = /\$\{([^\\}]*(?:\\.[^\\}]*)*)\}/g;
+
+/** Used to detect host constructors (Safari). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/** Used to detect unsigned integer values. */
+var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+/** Used to ensure capturing order of template delimiters. */
+var reNoMatch = /($^)/;
+
+/** Used to match unescaped characters in compiled string literals. */
+var reUnescapedString = /['\n\r\u2028\u2029\\]/g;
+
+/** Used to identify `toStringTag` values of typed arrays. */
+var typedArrayTags = {};
+typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
+typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
+typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
+typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
+typedArrayTags[uint32Tag] = true;
+typedArrayTags[argsTag] = typedArrayTags[arrayTag] =
+typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
+typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
+typedArrayTags[errorTag] = typedArrayTags[funcTag] =
+typedArrayTags[mapTag] = typedArrayTags[numberTag] =
+typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
+typedArrayTags[setTag] = typedArrayTags[stringTag] =
+typedArrayTags[weakMapTag] = false;
+
+/** Used to escape characters for inclusion in compiled string literals. */
+var stringEscapes = {
+  '\\': '\\',
+  "'": "'",
+  '\n': 'n',
+  '\r': 'r',
+  '\u2028': 'u2028',
+  '\u2029': 'u2029'
+};
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/** Detect free variable `exports`. */
+var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && typeof module == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Detect free variable `process` from Node.js. */
+var freeProcess = moduleExports && freeGlobal.process;
+
+/** Used to access faster Node.js helpers. */
+var nodeUtil = (function() {
+  try {
+    // Use `util.types` for Node.js 10+.
+    var types = freeModule && freeModule.require && freeModule.require('util').types;
+
+    if (types) {
+      return types;
+    }
+
+    // Legacy `process.binding('util')` for Node.js < 10.
+    return freeProcess && freeProcess.binding && freeProcess.binding('util');
+  } catch (e) {}
+}());
+
+/* Node.js helper references. */
+var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
+
+/**
+ * A faster alternative to `Function#apply`, this function invokes `func`
+ * with the `this` binding of `thisArg` and the arguments of `args`.
+ *
+ * @private
+ * @param {Function} func The function to invoke.
+ * @param {*} thisArg The `this` binding of `func`.
+ * @param {Array} args The arguments to invoke `func` with.
+ * @returns {*} Returns the result of `func`.
+ */
+function apply(func, thisArg, args) {
+  switch (args.length) {
+    case 0: return func.call(thisArg);
+    case 1: return func.call(thisArg, args[0]);
+    case 2: return func.call(thisArg, args[0], args[1]);
+    case 3: return func.call(thisArg, args[0], args[1], args[2]);
+  }
+  return func.apply(thisArg, args);
+}
+
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function(value) {
+    return func(value);
+  };
+}
+
+/**
+ * The base implementation of `_.values` and `_.valuesIn` which creates an
+ * array of `object` property values corresponding to the property names
+ * of `props`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Array} props The property names to get values for.
+ * @returns {Object} Returns the array of property values.
+ */
+function baseValues(object, props) {
+  return arrayMap(props, function(key) {
+    return object[key];
+  });
+}
+
+/**
+ * Used by `_.template` to escape characters for inclusion in compiled string literals.
+ *
+ * @private
+ * @param {string} chr The matched character to escape.
+ * @returns {string} Returns the escaped character.
+ */
+function escapeStringChar(chr) {
+  return '\\' + stringEscapes[chr];
+}
+
+/**
+ * Gets the value at `key` of `object`.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {string} key The key of the property to get.
+ * @returns {*} Returns the property value.
+ */
+function getValue(object, key) {
+  return object == null ? undefined : object[key];
+}
+
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function(arg) {
+    return func(transform(arg));
+  };
+}
+
+/** Used for built-in method references. */
+var funcProto = Function.prototype,
+    objectProto = Object.prototype;
+
+/** Used to detect overreaching core-js shims. */
+var coreJsData = root['__core-js_shared__'];
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Used to detect methods masquerading as native. */
+var maskSrcKey = (function() {
+  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+  return uid ? ('Symbol(src)_1.' + uid) : '';
+}());
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/** Used to infer the `Object` constructor. */
+var objectCtorString = funcToString.call(Object);
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' +
+  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
+  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+);
+
+/** Built-in value references. */
+var Buffer = moduleExports ? root.Buffer : undefined,
+    Symbol = root.Symbol,
+    getPrototype = overArg(Object.getPrototypeOf, Object),
+    propertyIsEnumerable = objectProto.propertyIsEnumerable,
+    symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+var defineProperty = (function() {
+  try {
+    var func = getNative(Object, 'defineProperty');
+    func({}, '', {});
+    return func;
+  } catch (e) {}
+}());
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined,
+    nativeKeys = overArg(Object.keys, Object),
+    nativeMax = Math.max,
+    nativeNow = Date.now;
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolToString = symbolProto ? symbolProto.toString : undefined;
+
+/**
+ * Creates an array of the enumerable property names of the array-like `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @param {boolean} inherited Specify returning inherited property names.
+ * @returns {Array} Returns the array of property names.
+ */
+function arrayLikeKeys(value, inherited) {
+  var isArr = isArray(value),
+      isArg = !isArr && isArguments(value),
+      isBuff = !isArr && !isArg && isBuffer(value),
+      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
+      skipIndexes = isArr || isArg || isBuff || isType,
+      result = skipIndexes ? baseTimes(value.length, String) : [],
+      length = result.length;
+
+  for (var key in value) {
+    if ((inherited || hasOwnProperty.call(value, key)) &&
+        !(skipIndexes && (
+           // Safari 9 has enumerable `arguments.length` in strict mode.
+           key == 'length' ||
+           // Node.js 0.10 has enumerable non-index properties on buffers.
+           (isBuff && (key == 'offset' || key == 'parent')) ||
+           // PhantomJS 2 has enumerable non-index properties on typed arrays.
+           (isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset')) ||
+           // Skip index properties.
+           isIndex(key, length)
+        ))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Assigns `value` to `key` of `object` if the existing value is not equivalent
+ * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+ * for equality comparisons.
+ *
+ * @private
+ * @param {Object} object The object to modify.
+ * @param {string} key The key of the property to assign.
+ * @param {*} value The value to assign.
+ */
+function assignValue(object, key, value) {
+  var objValue = object[key];
+  if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
+      (value === undefined && !(key in object))) {
+    baseAssignValue(object, key, value);
+  }
+}
+
+/**
+ * The base implementation of `assignValue` and `assignMergeValue` without
+ * value checks.
+ *
+ * @private
+ * @param {Object} object The object to modify.
+ * @param {string} key The key of the property to assign.
+ * @param {*} value The value to assign.
+ */
+function baseAssignValue(object, key, value) {
+  if (key == '__proto__' && defineProperty) {
+    defineProperty(object, key, {
+      'configurable': true,
+      'enumerable': true,
+      'value': value,
+      'writable': true
+    });
+  } else {
+    object[key] = value;
+  }
+}
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  return (symToStringTag && symToStringTag in Object(value))
+    ? getRawTag(value)
+    : objectToString(value);
+}
+
+/**
+ * The base implementation of `_.isArguments`.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ */
+function baseIsArguments(value) {
+  return isObjectLike(value) && baseGetTag(value) == argsTag;
+}
+
+/**
+ * The base implementation of `_.isNative` without bad shim checks.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function,
+ *  else `false`.
+ */
+function baseIsNative(value) {
+  if (!isObject(value) || isMasked(value)) {
+    return false;
+  }
+  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
+  return pattern.test(toSource(value));
+}
+
+/**
+ * The base implementation of `_.isTypedArray` without Node.js optimizations.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ */
+function baseIsTypedArray(value) {
+  return isObjectLike(value) &&
+    isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
+}
+
+/**
+ * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeys(object) {
+  if (!isPrototype(object)) {
+    return nativeKeys(object);
+  }
+  var result = [];
+  for (var key in Object(object)) {
+    if (hasOwnProperty.call(object, key) && key != 'constructor') {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeysIn(object) {
+  if (!isObject(object)) {
+    return nativeKeysIn(object);
+  }
+  var isProto = isPrototype(object),
+      result = [];
+
+  for (var key in object) {
+    if (!(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.rest` which doesn't validate or coerce arguments.
+ *
+ * @private
+ * @param {Function} func The function to apply a rest parameter to.
+ * @param {number} [start=func.length-1] The start position of the rest parameter.
+ * @returns {Function} Returns the new function.
+ */
+function baseRest(func, start) {
+  return setToString(overRest(func, start, identity), func + '');
+}
+
+/**
+ * The base implementation of `setToString` without support for hot loop shorting.
+ *
+ * @private
+ * @param {Function} func The function to modify.
+ * @param {Function} string The `toString` result.
+ * @returns {Function} Returns `func`.
+ */
+var baseSetToString = !defineProperty ? identity : function(func, string) {
+  return defineProperty(func, 'toString', {
+    'configurable': true,
+    'enumerable': false,
+    'value': constant(string),
+    'writable': true
+  });
+};
+
+/**
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isArray(value)) {
+    // Recursively convert values (susceptible to call stack limits).
+    return arrayMap(value, baseToString) + '';
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+/**
+ * Copies properties of `source` to `object`.
+ *
+ * @private
+ * @param {Object} source The object to copy properties from.
+ * @param {Array} props The property identifiers to copy.
+ * @param {Object} [object={}] The object to copy properties to.
+ * @param {Function} [customizer] The function to customize copied values.
+ * @returns {Object} Returns `object`.
+ */
+function copyObject(source, props, object, customizer) {
+  var isNew = !object;
+  object || (object = {});
+
+  var index = -1,
+      length = props.length;
+
+  while (++index < length) {
+    var key = props[index];
+
+    var newValue = customizer
+      ? customizer(object[key], source[key], key, object, source)
+      : undefined;
+
+    if (newValue === undefined) {
+      newValue = source[key];
+    }
+    if (isNew) {
+      baseAssignValue(object, key, newValue);
+    } else {
+      assignValue(object, key, newValue);
+    }
+  }
+  return object;
+}
+
+/**
+ * Creates a function like `_.assign`.
+ *
+ * @private
+ * @param {Function} assigner The function to assign values.
+ * @returns {Function} Returns the new assigner function.
+ */
+function createAssigner(assigner) {
+  return baseRest(function(object, sources) {
+    var index = -1,
+        length = sources.length,
+        customizer = length > 1 ? sources[length - 1] : undefined,
+        guard = length > 2 ? sources[2] : undefined;
+
+    customizer = (assigner.length > 3 && typeof customizer == 'function')
+      ? (length--, customizer)
+      : undefined;
+
+    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+      customizer = length < 3 ? undefined : customizer;
+      length = 1;
+    }
+    object = Object(object);
+    while (++index < length) {
+      var source = sources[index];
+      if (source) {
+        assigner(object, source, index, customizer);
+      }
+    }
+    return object;
+  });
+}
+
+/**
+ * Used by `_.defaults` to customize its `_.assignIn` use to assign properties
+ * of source objects to the destination object for all destination properties
+ * that resolve to `undefined`.
+ *
+ * @private
+ * @param {*} objValue The destination value.
+ * @param {*} srcValue The source value.
+ * @param {string} key The key of the property to assign.
+ * @param {Object} object The parent object of `objValue`.
+ * @returns {*} Returns the value to assign.
+ */
+function customDefaultsAssignIn(objValue, srcValue, key, object) {
+  if (objValue === undefined ||
+      (eq(objValue, objectProto[key]) && !hasOwnProperty.call(object, key))) {
+    return srcValue;
+  }
+  return objValue;
+}
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = getValue(object, key);
+  return baseIsNative(value) ? value : undefined;
+}
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty.call(value, symToStringTag),
+      tag = value[symToStringTag];
+
+  try {
+    value[symToStringTag] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag] = tag;
+    } else {
+      delete value[symToStringTag];
+    }
+  }
+  return result;
+}
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  var type = typeof value;
+  length = length == null ? MAX_SAFE_INTEGER : length;
+
+  return !!length &&
+    (type == 'number' ||
+      (type != 'symbol' && reIsUint.test(value))) &&
+        (value > -1 && value % 1 == 0 && value < length);
+}
+
+/**
+ * Checks if the given arguments are from an iteratee call.
+ *
+ * @private
+ * @param {*} value The potential iteratee value argument.
+ * @param {*} index The potential iteratee index or key argument.
+ * @param {*} object The potential iteratee object argument.
+ * @returns {boolean} Returns `true` if the arguments are from an iteratee call,
+ *  else `false`.
+ */
+function isIterateeCall(value, index, object) {
+  if (!isObject(object)) {
+    return false;
+  }
+  var type = typeof index;
+  if (type == 'number'
+        ? (isArrayLike(object) && isIndex(index, object.length))
+        : (type == 'string' && index in object)
+      ) {
+    return eq(object[index], value);
+  }
+  return false;
+}
+
+/**
+ * Checks if `func` has its source masked.
+ *
+ * @private
+ * @param {Function} func The function to check.
+ * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+ */
+function isMasked(func) {
+  return !!maskSrcKey && (maskSrcKey in func);
+}
+
+/**
+ * Checks if `value` is likely a prototype object.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+ */
+function isPrototype(value) {
+  var Ctor = value && value.constructor,
+      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
+
+  return value === proto;
+}
+
+/**
+ * This function is like
+ * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * except that it includes inherited enumerable properties.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function nativeKeysIn(object) {
+  var result = [];
+  if (object != null) {
+    for (var key in Object(object)) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString.call(value);
+}
+
+/**
+ * A specialized version of `baseRest` which transforms the rest array.
+ *
+ * @private
+ * @param {Function} func The function to apply a rest parameter to.
+ * @param {number} [start=func.length-1] The start position of the rest parameter.
+ * @param {Function} transform The rest array transform.
+ * @returns {Function} Returns the new function.
+ */
+function overRest(func, start, transform) {
+  start = nativeMax(start === undefined ? (func.length - 1) : start, 0);
+  return function() {
+    var args = arguments,
+        index = -1,
+        length = nativeMax(args.length - start, 0),
+        array = Array(length);
+
+    while (++index < length) {
+      array[index] = args[start + index];
+    }
+    index = -1;
+    var otherArgs = Array(start + 1);
+    while (++index < start) {
+      otherArgs[index] = args[index];
+    }
+    otherArgs[start] = transform(array);
+    return apply(func, this, otherArgs);
+  };
+}
+
+/**
+ * Sets the `toString` method of `func` to return `string`.
+ *
+ * @private
+ * @param {Function} func The function to modify.
+ * @param {Function} string The `toString` result.
+ * @returns {Function} Returns `func`.
+ */
+var setToString = shortOut(baseSetToString);
+
+/**
+ * Creates a function that'll short out and invoke `identity` instead
+ * of `func` when it's called `HOT_COUNT` or more times in `HOT_SPAN`
+ * milliseconds.
+ *
+ * @private
+ * @param {Function} func The function to restrict.
+ * @returns {Function} Returns the new shortable function.
+ */
+function shortOut(func) {
+  var count = 0,
+      lastCalled = 0;
+
+  return function() {
+    var stamp = nativeNow(),
+        remaining = HOT_SPAN - (stamp - lastCalled);
+
+    lastCalled = stamp;
+    if (remaining > 0) {
+      if (++count >= HOT_COUNT) {
+        return arguments[0];
+      }
+    } else {
+      count = 0;
+    }
+    return func.apply(undefined, arguments);
+  };
+}
+
+/**
+ * Converts `func` to its source code.
+ *
+ * @private
+ * @param {Function} func The function to convert.
+ * @returns {string} Returns the source code.
+ */
+function toSource(func) {
+  if (func != null) {
+    try {
+      return funcToString.call(func);
+    } catch (e) {}
+    try {
+      return (func + '');
+    } catch (e) {}
+  }
+  return '';
+}
+
+/**
+ * Performs a
+ * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+ * comparison between two values to determine if they are equivalent.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ * var other = { 'a': 1 };
+ *
+ * _.eq(object, object);
+ * // => true
+ *
+ * _.eq(object, other);
+ * // => false
+ *
+ * _.eq('a', 'a');
+ * // => true
+ *
+ * _.eq('a', Object('a'));
+ * // => false
+ *
+ * _.eq(NaN, NaN);
+ * // => true
+ */
+function eq(value, other) {
+  return value === other || (value !== value && other !== other);
+}
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsArguments : function(value) {
+  return isObjectLike(value) && hasOwnProperty.call(value, 'callee') &&
+    !propertyIsEnumerable.call(value, 'callee');
+};
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(value.length) && !isFunction(value);
+}
+
+/**
+ * Checks if `value` is a buffer.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.3.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
+ * @example
+ *
+ * _.isBuffer(new Buffer(2));
+ * // => true
+ *
+ * _.isBuffer(new Uint8Array(2));
+ * // => false
+ */
+var isBuffer = nativeIsBuffer || stubFalse;
+
+/**
+ * Checks if `value` is an `Error`, `EvalError`, `RangeError`, `ReferenceError`,
+ * `SyntaxError`, `TypeError`, or `URIError` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an error object, else `false`.
+ * @example
+ *
+ * _.isError(new Error);
+ * // => true
+ *
+ * _.isError(Error);
+ * // => false
+ */
+function isError(value) {
+  if (!isObjectLike(value)) {
+    return false;
+  }
+  var tag = baseGetTag(value);
+  return tag == errorTag || tag == domExcTag ||
+    (typeof value.message == 'string' && typeof value.name == 'string' && !isPlainObject(value));
+}
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  if (!isObject(value)) {
+    return false;
+  }
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 9 which returns 'object' for typed arrays and other constructors.
+  var tag = baseGetTag(value);
+  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+}
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' &&
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return value != null && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return value != null && typeof value == 'object';
+}
+
+/**
+ * Checks if `value` is a plain object, that is, an object created by the
+ * `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.8.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ * }
+ *
+ * _.isPlainObject(new Foo);
+ * // => false
+ *
+ * _.isPlainObject([1, 2, 3]);
+ * // => false
+ *
+ * _.isPlainObject({ 'x': 0, 'y': 0 });
+ * // => true
+ *
+ * _.isPlainObject(Object.create(null));
+ * // => true
+ */
+function isPlainObject(value) {
+  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
+    return false;
+  }
+  var proto = getPrototype(value);
+  if (proto === null) {
+    return true;
+  }
+  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
+  return typeof Ctor == 'function' && Ctor instanceof Ctor &&
+    funcToString.call(Ctor) == objectCtorString;
+}
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && baseGetTag(value) == symbolTag);
+}
+
+/**
+ * Checks if `value` is classified as a typed array.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ * @example
+ *
+ * _.isTypedArray(new Uint8Array);
+ * // => true
+ *
+ * _.isTypedArray([]);
+ * // => false
+ */
+var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+/**
+ * This method is like `_.assignIn` except that it accepts `customizer`
+ * which is invoked to produce the assigned values. If `customizer` returns
+ * `undefined`, assignment is handled by the method instead. The `customizer`
+ * is invoked with five arguments: (objValue, srcValue, key, object, source).
+ *
+ * **Note:** This method mutates `object`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @alias extendWith
+ * @category Object
+ * @param {Object} object The destination object.
+ * @param {...Object} sources The source objects.
+ * @param {Function} [customizer] The function to customize assigned values.
+ * @returns {Object} Returns `object`.
+ * @see _.assignWith
+ * @example
+ *
+ * function customizer(objValue, srcValue) {
+ *   return _.isUndefined(objValue) ? srcValue : objValue;
+ * }
+ *
+ * var defaults = _.partialRight(_.assignInWith, customizer);
+ *
+ * defaults({ 'a': 1 }, { 'b': 2 }, { 'a': 3 });
+ * // => { 'a': 1, 'b': 2 }
+ */
+var assignInWith = createAssigner(function(object, source, srcIndex, customizer) {
+  copyObject(source, keysIn(source), object, customizer);
+});
+
+/**
+ * Creates an array of the own enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects. See the
+ * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * for more details.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keys(new Foo);
+ * // => ['a', 'b'] (iteration order is not guaranteed)
+ *
+ * _.keys('hi');
+ * // => ['0', '1']
+ */
+function keys(object) {
+  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
+}
+
+/**
+ * Creates an array of the own and inherited enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keysIn(new Foo);
+ * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+ */
+function keysIn(object) {
+  return isArrayLike(object) ? arrayLikeKeys(object, true) : baseKeysIn(object);
+}
+
+/**
+ * Creates a compiled template function that can interpolate data properties
+ * in "interpolate" delimiters, HTML-escape interpolated data properties in
+ * "escape" delimiters, and execute JavaScript in "evaluate" delimiters. Data
+ * properties may be accessed as free variables in the template. If a setting
+ * object is given, it takes precedence over `_.templateSettings` values.
+ *
+ * **Note:** In the development build `_.template` utilizes
+ * [sourceURLs](http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/#toc-sourceurl)
+ * for easier debugging.
+ *
+ * For more information on precompiling templates see
+ * [lodash's custom builds documentation](https://lodash.com/custom-builds).
+ *
+ * For more information on Chrome extension sandboxes see
+ * [Chrome's extensions documentation](https://developer.chrome.com/extensions/sandboxingEval).
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category String
+ * @param {string} [string=''] The template string.
+ * @param {Object} [options={}] The options object.
+ * @param {RegExp} [options.escape=_.templateSettings.escape]
+ *  The HTML "escape" delimiter.
+ * @param {RegExp} [options.evaluate=_.templateSettings.evaluate]
+ *  The "evaluate" delimiter.
+ * @param {Object} [options.imports=_.templateSettings.imports]
+ *  An object to import into the template as free variables.
+ * @param {RegExp} [options.interpolate=_.templateSettings.interpolate]
+ *  The "interpolate" delimiter.
+ * @param {string} [options.sourceURL='templateSources[n]']
+ *  The sourceURL of the compiled template.
+ * @param {string} [options.variable='obj']
+ *  The data object variable name.
+ * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
+ * @returns {Function} Returns the compiled template function.
+ * @example
+ *
+ * // Use the "interpolate" delimiter to create a compiled template.
+ * var compiled = _.template('hello <%= user %>!');
+ * compiled({ 'user': 'fred' });
+ * // => 'hello fred!'
+ *
+ * // Use the HTML "escape" delimiter to escape data property values.
+ * var compiled = _.template('<b><%- value %></b>');
+ * compiled({ 'value': '<script>' });
+ * // => '<b>&lt;script&gt;</b>'
+ *
+ * // Use the "evaluate" delimiter to execute JavaScript and generate HTML.
+ * var compiled = _.template('<% _.forEach(users, function(user) { %><li><%- user %></li><% }); %>');
+ * compiled({ 'users': ['fred', 'barney'] });
+ * // => '<li>fred</li><li>barney</li>'
+ *
+ * // Use the internal `print` function in "evaluate" delimiters.
+ * var compiled = _.template('<% print("hello " + user); %>!');
+ * compiled({ 'user': 'barney' });
+ * // => 'hello barney!'
+ *
+ * // Use the ES template literal delimiter as an "interpolate" delimiter.
+ * // Disable support by replacing the "interpolate" delimiter.
+ * var compiled = _.template('hello ${ user }!');
+ * compiled({ 'user': 'pebbles' });
+ * // => 'hello pebbles!'
+ *
+ * // Use backslashes to treat delimiters as plain text.
+ * var compiled = _.template('<%= "\\<%- value %\\>" %>');
+ * compiled({ 'value': 'ignored' });
+ * // => '<%- value %>'
+ *
+ * // Use the `imports` option to import `jQuery` as `jq`.
+ * var text = '<% jq.each(users, function(user) { %><li><%- user %></li><% }); %>';
+ * var compiled = _.template(text, { 'imports': { 'jq': jQuery } });
+ * compiled({ 'users': ['fred', 'barney'] });
+ * // => '<li>fred</li><li>barney</li>'
+ *
+ * // Use the `sourceURL` option to specify a custom sourceURL for the template.
+ * var compiled = _.template('hello <%= user %>!', { 'sourceURL': '/basic/greeting.jst' });
+ * compiled(data);
+ * // => Find the source of "greeting.jst" under the Sources tab or Resources panel of the web inspector.
+ *
+ * // Use the `variable` option to ensure a with-statement isn't used in the compiled template.
+ * var compiled = _.template('hi <%= data.user %>!', { 'variable': 'data' });
+ * compiled.source;
+ * // => function(data) {
+ * //   var __t, __p = '';
+ * //   __p += 'hi ' + ((__t = ( data.user )) == null ? '' : __t) + '!';
+ * //   return __p;
+ * // }
+ *
+ * // Use custom template delimiters.
+ * _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+ * var compiled = _.template('hello {{ user }}!');
+ * compiled({ 'user': 'mustache' });
+ * // => 'hello mustache!'
+ *
+ * // Use the `source` property to inline compiled templates for meaningful
+ * // line numbers in error messages and stack traces.
+ * fs.writeFileSync(path.join(process.cwd(), 'jst.js'), '\
+ *   var JST = {\
+ *     "main": ' + _.template(mainText).source + '\
+ *   };\
+ * ');
+ */
+function template(string, options, guard) {
+  // Based on John Resig's `tmpl` implementation
+  // (http://ejohn.org/blog/javascript-micro-templating/)
+  // and Laura Doktorova's doT.js (https://github.com/olado/doT).
+  var settings = templateSettings.imports._.templateSettings || templateSettings;
+
+  if (guard && isIterateeCall(string, options, guard)) {
+    options = undefined;
+  }
+  string = toString(string);
+  options = assignInWith({}, options, settings, customDefaultsAssignIn);
+
+  var imports = assignInWith({}, options.imports, settings.imports, customDefaultsAssignIn),
+      importsKeys = keys(imports),
+      importsValues = baseValues(imports, importsKeys);
+
+  var isEscaping,
+      isEvaluating,
+      index = 0,
+      interpolate = options.interpolate || reNoMatch,
+      source = "__p += '";
+
+  // Compile the regexp to match each delimiter.
+  var reDelimiters = RegExp(
+    (options.escape || reNoMatch).source + '|' +
+    interpolate.source + '|' +
+    (interpolate === reInterpolate ? reEsTemplate : reNoMatch).source + '|' +
+    (options.evaluate || reNoMatch).source + '|$'
+  , 'g');
+
+  // Use a sourceURL for easier debugging.
+  // The sourceURL gets injected into the source that's eval-ed, so be careful
+  // with lookup (in case of e.g. prototype pollution), and strip newlines if any.
+  // A newline wouldn't be a valid sourceURL anyway, and it'd enable code injection.
+  var sourceURL = hasOwnProperty.call(options, 'sourceURL')
+    ? ('//# sourceURL=' +
+       (options.sourceURL + '').replace(/[\r\n]/g, ' ') +
+       '\n')
+    : '';
+
+  string.replace(reDelimiters, function(match, escapeValue, interpolateValue, esTemplateValue, evaluateValue, offset) {
+    interpolateValue || (interpolateValue = esTemplateValue);
+
+    // Escape characters that can't be included in string literals.
+    source += string.slice(index, offset).replace(reUnescapedString, escapeStringChar);
+
+    // Replace delimiters with snippets.
+    if (escapeValue) {
+      isEscaping = true;
+      source += "' +\n__e(" + escapeValue + ") +\n'";
+    }
+    if (evaluateValue) {
+      isEvaluating = true;
+      source += "';\n" + evaluateValue + ";\n__p += '";
+    }
+    if (interpolateValue) {
+      source += "' +\n((__t = (" + interpolateValue + ")) == null ? '' : __t) +\n'";
+    }
+    index = offset + match.length;
+
+    // The JS engine embedded in Adobe products needs `match` returned in
+    // order to produce the correct `offset` value.
+    return match;
+  });
+
+  source += "';\n";
+
+  // If `variable` is not specified wrap a with-statement around the generated
+  // code to add the data object to the top of the scope chain.
+  // Like with sourceURL, we take care to not check the option's prototype,
+  // as this configuration is a code injection vector.
+  var variable = hasOwnProperty.call(options, 'variable') && options.variable;
+  if (!variable) {
+    source = 'with (obj) {\n' + source + '\n}\n';
+  }
+  // Cleanup code by stripping empty strings.
+  source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
+    .replace(reEmptyStringMiddle, '$1')
+    .replace(reEmptyStringTrailing, '$1;');
+
+  // Frame code as the function body.
+  source = 'function(' + (variable || 'obj') + ') {\n' +
+    (variable
+      ? ''
+      : 'obj || (obj = {});\n'
+    ) +
+    "var __t, __p = ''" +
+    (isEscaping
+       ? ', __e = _.escape'
+       : ''
+    ) +
+    (isEvaluating
+      ? ', __j = Array.prototype.join;\n' +
+        "function print() { __p += __j.call(arguments, '') }\n"
+      : ';\n'
+    ) +
+    source +
+    'return __p\n}';
+
+  var result = attempt(function() {
+    return Function(importsKeys, sourceURL + 'return ' + source)
+      .apply(undefined, importsValues);
+  });
+
+  // Provide the compiled function's source by its `toString` method or
+  // the `source` property as a convenience for inlining compiled templates.
+  result.source = source;
+  if (isError(result)) {
+    throw result;
+  }
+  return result;
+}
+
+/**
+ * Attempts to invoke `func`, returning either the result or the caught error
+ * object. Any additional arguments are provided to `func` when it's invoked.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Util
+ * @param {Function} func The function to attempt.
+ * @param {...*} [args] The arguments to invoke `func` with.
+ * @returns {*} Returns the `func` result or error object.
+ * @example
+ *
+ * // Avoid throwing errors for invalid selectors.
+ * var elements = _.attempt(function(selector) {
+ *   return document.querySelectorAll(selector);
+ * }, '>_>');
+ *
+ * if (_.isError(elements)) {
+ *   elements = [];
+ * }
+ */
+var attempt = baseRest(function(func, args) {
+  try {
+    return apply(func, undefined, args);
+  } catch (e) {
+    return isError(e) ? e : new Error(e);
+  }
+});
+
+/**
+ * Creates a function that returns `value`.
+ *
+ * @static
+ * @memberOf _
+ * @since 2.4.0
+ * @category Util
+ * @param {*} value The value to return from the new function.
+ * @returns {Function} Returns the new constant function.
+ * @example
+ *
+ * var objects = _.times(2, _.constant({ 'a': 1 }));
+ *
+ * console.log(objects);
+ * // => [{ 'a': 1 }, { 'a': 1 }]
+ *
+ * console.log(objects[0] === objects[1]);
+ * // => true
+ */
+function constant(value) {
+  return function() {
+    return value;
+  };
+}
+
+/**
+ * This method returns the first argument it receives.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Util
+ * @param {*} value Any value.
+ * @returns {*} Returns `value`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ *
+ * console.log(_.identity(object) === object);
+ * // => true
+ */
+function identity(value) {
+  return value;
+}
+
+/**
+ * This method returns `false`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.13.0
+ * @category Util
+ * @returns {boolean} Returns `false`.
+ * @example
+ *
+ * _.times(2, _.stubFalse);
+ * // => [false, false]
+ */
+function stubFalse() {
+  return false;
+}
+
+module.exports = template;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"lodash._reinterpolate":63,"lodash.templatesettings":71}],71:[function(require,module,exports){
+(function (global){
+/**
+ * Lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+var reInterpolate = require('lodash._reinterpolate');
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/** `Object#toString` result references. */
+var nullTag = '[object Null]',
+    symbolTag = '[object Symbol]',
+    undefinedTag = '[object Undefined]';
+
+/** Used to match HTML entities and HTML characters. */
+var reUnescapedHtml = /[&<>"']/g,
+    reHasUnescapedHtml = RegExp(reUnescapedHtml.source);
+
+/** Used to match template delimiters. */
+var reEscape = /<%-([\s\S]+?)%>/g,
+    reEvaluate = /<%([\s\S]+?)%>/g;
+
+/** Used to map characters to HTML entities. */
+var htmlEscapes = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+};
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
+
+/**
+ * The base implementation of `_.propertyOf` without support for deep paths.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Function} Returns the new accessor function.
+ */
+function basePropertyOf(object) {
+  return function(key) {
+    return object == null ? undefined : object[key];
+  };
+}
+
+/**
+ * Used by `_.escape` to convert characters to HTML entities.
+ *
+ * @private
+ * @param {string} chr The matched character to escape.
+ * @returns {string} Returns the escaped character.
+ */
+var escapeHtmlChar = basePropertyOf(htmlEscapes);
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/** Built-in value references. */
+var Symbol = root.Symbol,
+    symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolToString = symbolProto ? symbolProto.toString : undefined;
+
+/**
+ * By default, the template delimiters used by lodash are like those in
+ * embedded Ruby (ERB) as well as ES2015 template strings. Change the
+ * following template settings to use alternative delimiters.
+ *
+ * @static
+ * @memberOf _
+ * @type {Object}
+ */
+var templateSettings = {
+
+  /**
+   * Used to detect `data` property values to be HTML-escaped.
+   *
+   * @memberOf _.templateSettings
+   * @type {RegExp}
+   */
+  'escape': reEscape,
+
+  /**
+   * Used to detect code to be evaluated.
+   *
+   * @memberOf _.templateSettings
+   * @type {RegExp}
+   */
+  'evaluate': reEvaluate,
+
+  /**
+   * Used to detect `data` property values to inject.
+   *
+   * @memberOf _.templateSettings
+   * @type {RegExp}
+   */
+  'interpolate': reInterpolate,
+
+  /**
+   * Used to reference the data object in the template text.
+   *
+   * @memberOf _.templateSettings
+   * @type {string}
+   */
+  'variable': '',
+
+  /**
+   * Used to import variables into the compiled template.
+   *
+   * @memberOf _.templateSettings
+   * @type {Object}
+   */
+  'imports': {
+
+    /**
+     * A reference to the `lodash` function.
+     *
+     * @memberOf _.templateSettings.imports
+     * @type {Function}
+     */
+    '_': { 'escape': escape }
+  }
+};
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  return (symToStringTag && symToStringTag in Object(value))
+    ? getRawTag(value)
+    : objectToString(value);
+}
+
+/**
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isArray(value)) {
+    // Recursively convert values (susceptible to call stack limits).
+    return arrayMap(value, baseToString) + '';
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty.call(value, symToStringTag),
+      tag = value[symToStringTag];
+
+  try {
+    value[symToStringTag] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag] = tag;
+    } else {
+      delete value[symToStringTag];
+    }
+  }
+  return result;
+}
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString.call(value);
+}
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return value != null && typeof value == 'object';
+}
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && baseGetTag(value) == symbolTag);
+}
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+/**
+ * Converts the characters "&", "<", ">", '"', and "'" in `string` to their
+ * corresponding HTML entities.
+ *
+ * **Note:** No other characters are escaped. To escape additional
+ * characters use a third-party library like [_he_](https://mths.be/he).
+ *
+ * Though the ">" character is escaped for symmetry, characters like
+ * ">" and "/" don't need escaping in HTML and have no special meaning
+ * unless they're part of a tag or unquoted attribute value. See
+ * [Mathias Bynens's article](https://mathiasbynens.be/notes/ambiguous-ampersands)
+ * (under "semi-related fun fact") for more details.
+ *
+ * When working with HTML you should always
+ * [quote attribute values](http://wonko.com/post/html-escaping) to reduce
+ * XSS vectors.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category String
+ * @param {string} [string=''] The string to escape.
+ * @returns {string} Returns the escaped string.
+ * @example
+ *
+ * _.escape('fred, barney, & pebbles');
+ * // => 'fred, barney, &amp; pebbles'
+ */
+function escape(string) {
+  string = toString(string);
+  return (string && reHasUnescapedHtml.test(string))
+    ? string.replace(reUnescapedHtml, escapeHtmlChar)
+    : string;
+}
+
+module.exports = templateSettings;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"lodash._reinterpolate":63}],72:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -37547,7 +33928,343 @@ var jsonic_parser = (function() {
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],94:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
+'use strict'
+
+// A linked list to keep track of recently-used-ness
+const Yallist = require('yallist')
+
+const MAX = Symbol('max')
+const LENGTH = Symbol('length')
+const LENGTH_CALCULATOR = Symbol('lengthCalculator')
+const ALLOW_STALE = Symbol('allowStale')
+const MAX_AGE = Symbol('maxAge')
+const DISPOSE = Symbol('dispose')
+const NO_DISPOSE_ON_SET = Symbol('noDisposeOnSet')
+const LRU_LIST = Symbol('lruList')
+const CACHE = Symbol('cache')
+const UPDATE_AGE_ON_GET = Symbol('updateAgeOnGet')
+
+const naiveLength = () => 1
+
+// lruList is a yallist where the head is the youngest
+// item, and the tail is the oldest.  the list contains the Hit
+// objects as the entries.
+// Each Hit object has a reference to its Yallist.Node.  This
+// never changes.
+//
+// cache is a Map (or PseudoMap) that matches the keys to
+// the Yallist.Node object.
+class LRUCache {
+  constructor (options) {
+    if (typeof options === 'number')
+      options = { max: options }
+
+    if (!options)
+      options = {}
+
+    if (options.max && (typeof options.max !== 'number' || options.max < 0))
+      throw new TypeError('max must be a non-negative number')
+    // Kind of weird to have a default max of Infinity, but oh well.
+    const max = this[MAX] = options.max || Infinity
+
+    const lc = options.length || naiveLength
+    this[LENGTH_CALCULATOR] = (typeof lc !== 'function') ? naiveLength : lc
+    this[ALLOW_STALE] = options.stale || false
+    if (options.maxAge && typeof options.maxAge !== 'number')
+      throw new TypeError('maxAge must be a number')
+    this[MAX_AGE] = options.maxAge || 0
+    this[DISPOSE] = options.dispose
+    this[NO_DISPOSE_ON_SET] = options.noDisposeOnSet || false
+    this[UPDATE_AGE_ON_GET] = options.updateAgeOnGet || false
+    this.reset()
+  }
+
+  // resize the cache when the max changes.
+  set max (mL) {
+    if (typeof mL !== 'number' || mL < 0)
+      throw new TypeError('max must be a non-negative number')
+
+    this[MAX] = mL || Infinity
+    trim(this)
+  }
+  get max () {
+    return this[MAX]
+  }
+
+  set allowStale (allowStale) {
+    this[ALLOW_STALE] = !!allowStale
+  }
+  get allowStale () {
+    return this[ALLOW_STALE]
+  }
+
+  set maxAge (mA) {
+    if (typeof mA !== 'number')
+      throw new TypeError('maxAge must be a non-negative number')
+
+    this[MAX_AGE] = mA
+    trim(this)
+  }
+  get maxAge () {
+    return this[MAX_AGE]
+  }
+
+  // resize the cache when the lengthCalculator changes.
+  set lengthCalculator (lC) {
+    if (typeof lC !== 'function')
+      lC = naiveLength
+
+    if (lC !== this[LENGTH_CALCULATOR]) {
+      this[LENGTH_CALCULATOR] = lC
+      this[LENGTH] = 0
+      this[LRU_LIST].forEach(hit => {
+        hit.length = this[LENGTH_CALCULATOR](hit.value, hit.key)
+        this[LENGTH] += hit.length
+      })
+    }
+    trim(this)
+  }
+  get lengthCalculator () { return this[LENGTH_CALCULATOR] }
+
+  get length () { return this[LENGTH] }
+  get itemCount () { return this[LRU_LIST].length }
+
+  rforEach (fn, thisp) {
+    thisp = thisp || this
+    for (let walker = this[LRU_LIST].tail; walker !== null;) {
+      const prev = walker.prev
+      forEachStep(this, fn, walker, thisp)
+      walker = prev
+    }
+  }
+
+  forEach (fn, thisp) {
+    thisp = thisp || this
+    for (let walker = this[LRU_LIST].head; walker !== null;) {
+      const next = walker.next
+      forEachStep(this, fn, walker, thisp)
+      walker = next
+    }
+  }
+
+  keys () {
+    return this[LRU_LIST].toArray().map(k => k.key)
+  }
+
+  values () {
+    return this[LRU_LIST].toArray().map(k => k.value)
+  }
+
+  reset () {
+    if (this[DISPOSE] &&
+        this[LRU_LIST] &&
+        this[LRU_LIST].length) {
+      this[LRU_LIST].forEach(hit => this[DISPOSE](hit.key, hit.value))
+    }
+
+    this[CACHE] = new Map() // hash of items by key
+    this[LRU_LIST] = new Yallist() // list of items in order of use recency
+    this[LENGTH] = 0 // length of items in the list
+  }
+
+  dump () {
+    return this[LRU_LIST].map(hit =>
+      isStale(this, hit) ? false : {
+        k: hit.key,
+        v: hit.value,
+        e: hit.now + (hit.maxAge || 0)
+      }).toArray().filter(h => h)
+  }
+
+  dumpLru () {
+    return this[LRU_LIST]
+  }
+
+  set (key, value, maxAge) {
+    maxAge = maxAge || this[MAX_AGE]
+
+    if (maxAge && typeof maxAge !== 'number')
+      throw new TypeError('maxAge must be a number')
+
+    const now = maxAge ? Date.now() : 0
+    const len = this[LENGTH_CALCULATOR](value, key)
+
+    if (this[CACHE].has(key)) {
+      if (len > this[MAX]) {
+        del(this, this[CACHE].get(key))
+        return false
+      }
+
+      const node = this[CACHE].get(key)
+      const item = node.value
+
+      // dispose of the old one before overwriting
+      // split out into 2 ifs for better coverage tracking
+      if (this[DISPOSE]) {
+        if (!this[NO_DISPOSE_ON_SET])
+          this[DISPOSE](key, item.value)
+      }
+
+      item.now = now
+      item.maxAge = maxAge
+      item.value = value
+      this[LENGTH] += len - item.length
+      item.length = len
+      this.get(key)
+      trim(this)
+      return true
+    }
+
+    const hit = new Entry(key, value, len, now, maxAge)
+
+    // oversized objects fall out of cache automatically.
+    if (hit.length > this[MAX]) {
+      if (this[DISPOSE])
+        this[DISPOSE](key, value)
+
+      return false
+    }
+
+    this[LENGTH] += hit.length
+    this[LRU_LIST].unshift(hit)
+    this[CACHE].set(key, this[LRU_LIST].head)
+    trim(this)
+    return true
+  }
+
+  has (key) {
+    if (!this[CACHE].has(key)) return false
+    const hit = this[CACHE].get(key).value
+    return !isStale(this, hit)
+  }
+
+  get (key) {
+    return get(this, key, true)
+  }
+
+  peek (key) {
+    return get(this, key, false)
+  }
+
+  pop () {
+    const node = this[LRU_LIST].tail
+    if (!node)
+      return null
+
+    del(this, node)
+    return node.value
+  }
+
+  del (key) {
+    del(this, this[CACHE].get(key))
+  }
+
+  load (arr) {
+    // reset the cache
+    this.reset()
+
+    const now = Date.now()
+    // A previous serialized cache has the most recent items first
+    for (let l = arr.length - 1; l >= 0; l--) {
+      const hit = arr[l]
+      const expiresAt = hit.e || 0
+      if (expiresAt === 0)
+        // the item was created without expiration in a non aged cache
+        this.set(hit.k, hit.v)
+      else {
+        const maxAge = expiresAt - now
+        // dont add already expired items
+        if (maxAge > 0) {
+          this.set(hit.k, hit.v, maxAge)
+        }
+      }
+    }
+  }
+
+  prune () {
+    this[CACHE].forEach((value, key) => get(this, key, false))
+  }
+}
+
+const get = (self, key, doUse) => {
+  const node = self[CACHE].get(key)
+  if (node) {
+    const hit = node.value
+    if (isStale(self, hit)) {
+      del(self, node)
+      if (!self[ALLOW_STALE])
+        return undefined
+    } else {
+      if (doUse) {
+        if (self[UPDATE_AGE_ON_GET])
+          node.value.now = Date.now()
+        self[LRU_LIST].unshiftNode(node)
+      }
+    }
+    return hit.value
+  }
+}
+
+const isStale = (self, hit) => {
+  if (!hit || (!hit.maxAge && !self[MAX_AGE]))
+    return false
+
+  const diff = Date.now() - hit.now
+  return hit.maxAge ? diff > hit.maxAge
+    : self[MAX_AGE] && (diff > self[MAX_AGE])
+}
+
+const trim = self => {
+  if (self[LENGTH] > self[MAX]) {
+    for (let walker = self[LRU_LIST].tail;
+      self[LENGTH] > self[MAX] && walker !== null;) {
+      // We know that we're about to delete this one, and also
+      // what the next least recently used key will be, so just
+      // go ahead and set it now.
+      const prev = walker.prev
+      del(self, walker)
+      walker = prev
+    }
+  }
+}
+
+const del = (self, node) => {
+  if (node) {
+    const hit = node.value
+    if (self[DISPOSE])
+      self[DISPOSE](hit.key, hit.value)
+
+    self[LENGTH] -= hit.length
+    self[CACHE].delete(hit.key)
+    self[LRU_LIST].removeNode(node)
+  }
+}
+
+class Entry {
+  constructor (key, value, length, now, maxAge) {
+    this.key = key
+    this.value = value
+    this.length = length
+    this.now = now
+    this.maxAge = maxAge || 0
+  }
+}
+
+const forEachStep = (self, fn, node, thisp) => {
+  let hit = node.value
+  if (isStale(self, hit)) {
+    del(self, node)
+    if (!self[ALLOW_STALE])
+      hit = undefined
+  }
+  if (hit)
+    fn.call(thisp, hit.value, hit.key, self)
+}
+
+module.exports = LRUCache
+
+},{"yallist":328}],74:[function(require,module,exports){
 var through = require('through2')
 var split = require('split2')
 var EOL = require('os').EOL
@@ -37580,7 +34297,7 @@ function serialize (opts) {
   })
 }
 
-},{"json-stringify-safe":91,"os":101,"split2":172,"through2":194}],95:[function(require,module,exports){
+},{"json-stringify-safe":61,"os":138,"split2":295,"through2":317}],75:[function(require,module,exports){
 /* Copyright (c) 2013 Richard Rodger, MIT License */
 "use strict";
 
@@ -37728,7 +34445,7 @@ nid.__defaults = defaults
 
 module.exports = nid
 
-},{}],96:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -38917,64 +35634,62 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],97:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 /* Copyright (c) 2014-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
-"use strict";
-
+'use strict'
 
 // TODO: allow _ and $ in named args !!! doh!
-
 
 // #### System modules
 var util = require('util')
 
-
 // #### External modules
-var _     = require('lodash')
-var error = require('eraro')({package:'norma'})
+var _ = {}
+_.isNaN = require('lodash.isnan')
+_.isRegExp = require('lodash.isregexp')
+_.isDate = require('lodash.isdate')
+_.isArguments = require('lodash.isarguments')
 
+var error = require('eraro')({ package: 'norma' })
 
 // #### Internal modules
 var parser = require('./norma-parser')
 
-
 // Default options.
 var defopts = {
-  onfail:'throw',
-  desclen:33
+  onfail: 'throw',
+  desclen: 33
 }
-
 
 // Cache of previously seen type specs.
 var specmap = {}
 
-
 // #### Compile type spec into a regexp
-function compile( spec ) {
-  if( null == spec ) throw error('no_spec', 'no argument specification');
+function compile(spec) {
+  if (null == spec) throw error('no_spec', 'no argument specification')
 
   var specdef = specmap[spec]
-  if( null != specdef ) return specdef;
+  if (null != specdef) return specdef
 
-  var respec = parse_spec( spec )
+  var respec = parse_spec(spec)
 
   // Build regex.
   var reindex = []
-  var index   = 1
+  var index = 1
   var restr = ['^']
   var i = 0
-  respec.forEach(function(entry){
+  respec.forEach(function(entry) {
     restr.push('(')
 
-    if( entry.type.or && 0 < entry.type.or.length ) {
+    if (entry.type.or && 0 < entry.type.or.length) {
       var count = 1
 
       restr.push('(')
       restr.push(entry.type.mark)
       restr.push(')')
 
-      entry.type.or.forEach(function(or){
+      entry.type.or.forEach(function(or) {
         restr.push('|')
         restr.push('(')
         restr.push(or[1])
@@ -38982,24 +35697,21 @@ function compile( spec ) {
         restr.push(')')
       })
 
-      if( '?' == entry.mod ) {
+      if ('?' == entry.mod) {
         restr.push('|[UNA]?')
       }
 
-      reindex[i]={index:index}
+      reindex[i] = { index: index }
       index += count
-    }
-
-    else {
-      if( '?' == entry.mod ) {
-        restr.push('[UNA'+entry.type.mark+']?')
-      }
-      else {
-        restr.push(entry.type.mark);
+    } else {
+      if ('?' == entry.mod) {
+        restr.push('[UNA' + entry.type.mark + ']?')
+      } else {
+        restr.push(entry.type.mark)
         restr.push(entry.mod || '')
       }
 
-      reindex[i]={index:index}
+      reindex[i] = { index: index }
     }
 
     reindex[i].mod = entry.mod
@@ -39010,105 +35722,121 @@ function compile( spec ) {
   restr.push('$')
 
   var re = new RegExp(restr.join(''))
-  specdef = specmap[spec] = {re:re,spec:spec,respec:respec,reindex:reindex}
+  specdef = specmap[spec] = {
+    re: re,
+    spec: spec,
+    respec: respec,
+    reindex: reindex
+  }
 
-  return specdef;
+  return specdef
 }
 
-
-function parse_spec( spec ) {
+function parse_spec(spec) {
   try {
-    return parser.parse( spec )
-  }
-  catch(e) {
-    throw error('parse', e.message+'; spec:"'+spec+
-                '", col:'+e.location.start.column+', line:'+e.location.start.line)
+    return parser.parse(spec)
+  } catch (e) {
+    throw error(
+      'parse',
+      e.message +
+        '; spec:"' +
+        spec +
+        '", col:' +
+        e.location.start.column +
+        ', line:' +
+        e.location.start.line
+    )
   }
 }
-
 
 // #### Create output array or object with organised argument values.
-function processargs( specdef, options, rawargs ) {
-  var args = Array.prototype.slice.call(rawargs||[])
-  var argdesc = describe( args )
+function processargs(specdef, options, rawargs) {
+  var args = Array.prototype.slice.call(rawargs || [])
+  var argdesc = describe(args)
 
   // Match the spec regexp against the argument types regexp.
   var outslots = specdef.re.exec(argdesc)
-  if( !outslots ) {
-    if( 'throw' == options.onfail ) {
+  if (!outslots) {
+    if ('throw' == options.onfail) {
       throw error(
-        'invalid_arguments', 
-        'invalid arguments; expected: "'+specdef.spec+
-          '", was: ['+argdesc+']; values: '+descargs(args,options),
-        {args:args,specdef:specdef,options:options})
-    }
-    else return null;
+        'invalid_arguments',
+        'invalid arguments; expected: "' +
+          specdef.spec +
+          '", was: [' +
+          argdesc +
+          ']; values: ' +
+          descargs(args, options),
+        { args: args, specdef: specdef, options: options }
+      )
+    } else return null
   }
 
   // Build the organised output.
   // Need to do some index housekeeping as regexp has additional groups.
   var out = specdef.respec.object ? {} : []
-  for(var i = 0, j = 0, k = 0; i < specdef.reindex.length; i++ ) {
+  for (var i = 0, j = 0, k = 0; i < specdef.reindex.length; i++) {
     var indexspec = specdef.reindex[i]
     var val = void 0
 
-    if( !specdef.respec.object ) {
+    if (!specdef.respec.object) {
       out[k] = val
     }
-    
-    if( null != indexspec.index) {
+
+    if (null != indexspec.index) {
       var m = outslots[indexspec.index]
-      var found = ('' !== m)
-      if( found ) {
+      var found = '' !== m
+      if (found) {
         var iname = specdef.respec[i].name
         var istar = '*' === specdef.respec[i].mod
         var iplus = '+' === specdef.respec[i].mod
 
-        if( 0 === m.length && iplus ) {
+        if (0 === m.length && iplus) {
           throw error(
-            'invalid_arguments', 
-            'invalid arguments; expected: "'+specdef.spec+
-              '", was: ['+argdesc+']; values: '+descargs(args,options),
-            {args:args,specdef:specdef,options:options})
+            'invalid_arguments',
+            'invalid arguments; expected: "' +
+              specdef.spec +
+              '", was: [' +
+              argdesc +
+              ']; values: ' +
+              descargs(args, options),
+            { args: args, specdef: specdef, options: options }
+          )
         }
-        if( 1 == m.length ) {
+        if (1 == m.length) {
           val = args[j]
           j++
 
-          if( !specdef.respec.object ) {
+          if (!specdef.respec.object) {
             out[k] = val
           }
 
-          if( null != iname ) {
-            if( istar || iplus ) {
-              (out[iname] = (out[iname] || [])).push(val)
-            }
-            else {
+          if (null != iname) {
+            if (istar || iplus) {
+              ;(out[iname] = out[iname] || []).push(val)
+            } else {
               out[specdef.respec[i].name] = val
             }
           }
 
           k++
-        }
-        else if( 1 < m.length ) {
-          for( var mI = 0; mI < m.length; mI++ ) {
+        } else if (1 < m.length) {
+          for (var mI = 0; mI < m.length; mI++) {
             val = args[j]
             j++
 
-            if( !specdef.respec.object ) {
+            if (!specdef.respec.object) {
               out[k] = val
             }
 
-            if( null != iname ) {
-              (out[iname] = (out[iname] || [])).push(val)
+            if (null != iname) {
+              ;(out[iname] = out[iname] || []).push(val)
             }
 
             k++
           }
         }
-      }
-      else {
-        if( !specdef.respec.object ) {
+      } else {
+        if (!specdef.respec.object) {
           out[k] = void 0
         }
         k++
@@ -39116,66 +35844,50 @@ function processargs( specdef, options, rawargs ) {
     }
   }
 
-  return out;
+  return out
 }
-
-
 
 // #### Create a type description of the arguments array
 // Example: ["a",1] => "si".
 function describe(args) {
   var desc = []
 
-  args.forEach(function(arg){
-
-    if( _.isString(arg) ) {
+  args.forEach(function(arg) {
+    if ('string' === typeof arg) {
       desc.push('s')
     }
 
     // Need to check for integer first.
-    else if( (!isNaN(arg) && ((arg | 0) === parseFloat(arg))) ) {
+    else if (!isNaN(arg) && (arg | 0) === parseFloat(arg)) {
       desc.push('i')
-    }
-    else if( _.isNaN(arg) ) {
+    } else if (_.isNaN(arg)) {
       desc.push('A')
-    }
-    else if( Infinity === arg ) {
+    } else if (Infinity === arg) {
       desc.push('Y')
-    }
-    else if( _.isNumber(arg) ) {
+    } else if ('number' === typeof arg) {
       desc.push('n')
-    }
-    else if( _.isBoolean(arg) ) {
+    } else if ('boolean' === typeof arg) {
       desc.push('b')
-    }
-    else if( _.isFunction(arg) ) {
+    } else if ('function' === typeof arg) {
       desc.push('f')
-    }
-    else if( _.isArray(arg) ) {
+    } else if (Array.isArray(arg)) {
       desc.push('a')
-    }
-    else if( _.isRegExp(arg) ) {
+    } else if (_.isRegExp(arg)) {
       desc.push('r')
-    }
-    else if( _.isDate(arg) ) {
+    } else if (_.isDate(arg)) {
       desc.push('d')
-    }
-    else if( _.isArguments(arg) ) {
+    } else if (_.isArguments(arg)) {
       desc.push('g')
     }
 
     // Use standard Node.js API for _isError_ test.
-    else if( util.isError(arg) ) {
+    else if (util.isError(arg)) {
       desc.push('e')
-    }
-
-    else if( _.isNull(arg) ) {
+    } else if (null === arg) {
       desc.push('N')
-    }
-    else if( _.isUndefined(arg) ) {
+    } else if (undefined === arg) {
       desc.push('U')
-    }
-    else if( _.isObject(arg) ) {
+    } else if ('object' === typeof arg) {
       desc.push('o')
     }
 
@@ -39188,68 +35900,59 @@ function describe(args) {
   return desc.join('')
 }
 
-
 // #### Describe arguments array for error message
 // Avoids over long messages.
-function descargs( args, options ) {
+function descargs(args, options) {
   var desc = []
-  
-  _.each(args,function(arg){
-    var str = util.inspect(arg).substring(0,options.desclen)
+
+  args.forEach(function(arg) {
+    var str = util.inspect(arg).substring(0, options.desclen)
     desc.push(str)
   })
 
   return desc
 }
 
-
-
 // #### Perform the actual organisation.
 // Options are ... optional.
-function handle( specdef, options, rawargs ) {
-  if( _.isArguments(options) || _.isArray(options ) ) {
+function handle(specdef, options, rawargs) {
+  if (_.isArguments(options) || Array.isArray(options)) {
     rawargs = options
     options = null
   }
-  options = null == options ? defopts : _.extend({},defopts,options)
+  options = null == options ? defopts : Object.assign({}, defopts, options)
 
-  if( null == rawargs ) {
+  if (null == rawargs) {
     throw error(
-      'init', 
-      'no arguments variable; expected norma( "...", arguments ), '+
+      'init',
+      'no arguments variable; expected norma( "...", arguments ), ' +
         'or <compiled>( arguments )',
-      {arguments:arguments}
+      { arguments: arguments }
     )
-  }
-  else return processargs(specdef, options, rawargs)
+  } else return processargs(specdef, options, rawargs)
 }
-
-
 
 // #### Primary API
-module.exports = function( spec, options, rawargs ) {
-  var specdef = compile( spec )
-  return handle( specdef, options, rawargs )
+module.exports = function(spec, options, rawargs) {
+  var specdef = compile(spec)
+  return handle(specdef, options, rawargs)
 }
-
-
 
 // #### Compile spec for later use
 // _toString_ shows you the constructed regexp (for debugging).
-module.exports.compile = function( spec ) {
-  var specdef = compile( spec )
+module.exports.compile = function(spec) {
+  var specdef = compile(spec)
 
-  var out = function( options, rawargs ) {
-    return handle( specdef, options, rawargs )
+  var out = function(options, rawargs) {
+    return handle(specdef, options, rawargs)
   }
   out.toString = function() {
-    return util.inspect({spec:specdef.spec, re:''+specdef.re})
+    return util.inspect({ spec: specdef.spec, re: '' + specdef.re })
   }
   return out
 }
 
-
-},{"./norma-parser":96,"eraro":81,"lodash":93,"util":202}],98:[function(require,module,exports){
+},{"./norma-parser":76,"eraro":51,"lodash.isarguments":65,"lodash.isdate":66,"lodash.isnan":67,"lodash.isregexp":68,"util":325}],78:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -39341,7 +36044,8876 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],99:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
+'use strict';
+
+const Url = require('url');
+
+
+const internals = {
+    minDomainSegments: 2,
+    nonAsciiRx: /[^\x00-\x7f]/,
+    domainControlRx: /[\x00-\x20@\:\/]/,                                                // Control + space + separators
+    tldSegmentRx: /^[a-zA-Z](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
+    domainSegmentRx: /^[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
+    URL: Url.URL || URL                                                                 // $lab:coverage:ignore$
+};
+
+
+exports.analyze = function (domain, options = {}) {
+
+    if (typeof domain !== 'string') {
+        throw new Error('Invalid input: domain must be a string');
+    }
+
+    if (!domain) {
+        return { error: 'Domain must be a non-empty string' };
+    }
+
+    if (domain.length > 256) {
+        return { error: 'Domain too long' };
+    }
+
+    const ascii = !internals.nonAsciiRx.test(domain);
+    if (!ascii) {
+        if (options.allowUnicode === false) {                                           // Defaults to true
+            return { error: 'Domain contains forbidden Unicode characters' };
+        }
+
+        domain = domain.normalize('NFC');
+    }
+
+    if (internals.domainControlRx.test(domain)) {
+        return { error: 'Domain contains invalid character' };
+    }
+
+    domain = internals.punycode(domain);
+
+    // https://tools.ietf.org/html/rfc1035 section 2.3.1
+
+    const minDomainSegments = options.minDomainSegments || internals.minDomainSegments;
+
+    const segments = domain.split('.');
+    if (segments.length < minDomainSegments) {
+        return { error: 'Domain lacks the minimum required number of segments' };
+    }
+
+    const tlds = options.tlds;
+    if (tlds) {
+        const tld = segments[segments.length - 1].toLowerCase();
+        if (tlds.deny && tlds.deny.has(tld) ||
+            tlds.allow && !tlds.allow.has(tld)) {
+
+            return { error: 'Domain uses forbidden TLD' };
+        }
+    }
+
+    for (let i = 0; i < segments.length; ++i) {
+        const segment = segments[i];
+
+        if (!segment.length) {
+            return { error: 'Domain contains empty dot-separated segment' };
+        }
+
+        if (segment.length > 63) {
+            return { error: 'Domain contains dot-separated segment that is too long' };
+        }
+
+        if (i < segments.length - 1) {
+            if (!internals.domainSegmentRx.test(segment)) {
+                return { error: 'Domain contains invalid character' };
+            }
+        }
+        else {
+            if (!internals.tldSegmentRx.test(segment)) {
+                return { error: 'Domain contains invalid tld character' };
+            }
+        }
+    }
+};
+
+
+exports.isValid = function (domain, options) {
+
+    return !exports.analyze(domain, options);
+};
+
+
+internals.punycode = function (domain) {
+
+    try {
+        return new internals.URL(`http://${domain}`).host;
+    }
+    catch (err) {
+        return domain;
+    }
+};
+
+},{"url":319}],80:[function(require,module,exports){
+'use strict';
+
+const Util = require('util');
+
+const Domain = require('./domain');
+
+
+const internals = {
+    nonAsciiRx: /[^\x00-\x7f]/,
+    encoder: new (Util.TextEncoder || TextEncoder)()                                            // $lab:coverage:ignore$
+};
+
+
+exports.analyze = function (email, options) {
+
+    return internals.email(email, options);
+};
+
+
+exports.isValid = function (email, options) {
+
+    return !internals.email(email, options);
+};
+
+
+internals.email = function (email, options = {}) {
+
+    if (typeof email !== 'string') {
+        throw new Error('Invalid input: email must be a string');
+    }
+
+    if (!email) {
+        return { error: 'Address must be a non-empty string' };
+    }
+
+    // Unicode
+
+    const ascii = !internals.nonAsciiRx.test(email);
+    if (!ascii) {
+        if (options.allowUnicode === false) {                                                   // Defaults to true
+            return { error: 'Address contains forbidden Unicode characters' };
+        }
+
+        email = email.normalize('NFC');
+    }
+
+    // Basic structure
+
+    const parts = email.split('@');
+    if (parts.length !== 2) {
+        return { error: parts.length > 2 ? 'Address cannot contain more than one @ character' : 'Address must contain one @ character' };
+    }
+
+    const [local, domain] = parts;
+
+    if (!local) {
+        return { error: 'Address local part cannot be empty' };
+    }
+
+    if (!options.ignoreLength) {
+        if (email.length > 254) {                                           // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.3
+            return { error: 'Address too long' };
+        }
+
+        if (internals.encoder.encode(local).length > 64) {                  // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.1
+            return { error: 'Address local part too long' };
+        }
+    }
+
+    // Validate parts
+
+    return internals.local(local, ascii) || Domain.analyze(domain, options);
+};
+
+
+internals.local = function (local, ascii) {
+
+    const segments = local.split('.');
+    for (const segment of segments) {
+        if (!segment.length) {
+            return { error: 'Address local part contains empty dot-separated segment' };
+        }
+
+        if (ascii) {
+            if (!internals.atextRx.test(segment)) {
+                return { error: 'Address local part contains invalid character' };
+            }
+
+            continue;
+        }
+
+        for (const char of segment) {
+            if (internals.atextRx.test(char)) {
+                continue;
+            }
+
+            const binary = internals.binary(char);
+            if (!internals.atomRx.test(binary)) {
+                return { error: 'Address local part contains invalid character' };
+            }
+        }
+    }
+};
+
+
+internals.binary = function (char) {
+
+    return Array.from(internals.encoder.encode(char)).map((v) => String.fromCharCode(v)).join('');
+};
+
+
+/*
+    From RFC 5321:
+
+        Mailbox         =   Local-part "@" ( Domain / address-literal )
+
+        Local-part      =   Dot-string / Quoted-string
+        Dot-string      =   Atom *("."  Atom)
+        Atom            =   1*atext
+        atext           =   ALPHA / DIGIT / "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
+
+        Domain          =   sub-domain *("." sub-domain)
+        sub-domain      =   Let-dig [Ldh-str]
+        Let-dig         =   ALPHA / DIGIT
+        Ldh-str         =   *( ALPHA / DIGIT / "-" ) Let-dig
+
+        ALPHA           =   %x41-5A / %x61-7A        ; a-z, A-Z
+        DIGIT           =   %x30-39                  ; 0-9
+
+    From RFC 6531:
+
+        sub-domain      =/  U-label
+        atext           =/  UTF8-non-ascii
+
+        UTF8-non-ascii  =   UTF8-2 / UTF8-3 / UTF8-4
+
+        UTF8-2          =   %xC2-DF UTF8-tail
+        UTF8-3          =   %xE0 %xA0-BF UTF8-tail /
+                            %xE1-EC 2( UTF8-tail ) /
+                            %xED %x80-9F UTF8-tail /
+                            %xEE-EF 2( UTF8-tail )
+        UTF8-4          =   %xF0 %x90-BF 2( UTF8-tail ) /
+                            %xF1-F3 3( UTF8-tail ) /
+                            %xF4 %x80-8F 2( UTF8-tail )
+
+        UTF8-tail       =   %x80-BF
+
+    Note: The following are not supported:
+
+        RFC 5321: address-literal, Quoted-string
+        RFC 5322: obs-*, CFWS
+*/
+
+
+internals.atextRx = /^[\w!#\$%&'\*\+\-/=\?\^`\{\|\}~]+$/;               // _ included in \w
+
+
+internals.atomRx = new RegExp([
+
+    //  %xC2-DF UTF8-tail
+    '(?:[\\xc2-\\xdf][\\x80-\\xbf])',
+
+    //  %xE0 %xA0-BF UTF8-tail              %xE1-EC 2( UTF8-tail )            %xED %x80-9F UTF8-tail              %xEE-EF 2( UTF8-tail )
+    '(?:\\xe0[\\xa0-\\xbf][\\x80-\\xbf])|(?:[\\xe1-\\xec][\\x80-\\xbf]{2})|(?:\\xed[\\x80-\\x9f][\\x80-\\xbf])|(?:[\\xee-\\xef][\\x80-\\xbf]{2})',
+
+    //  %xF0 %x90-BF 2( UTF8-tail )            %xF1-F3 3( UTF8-tail )            %xF4 %x80-8F 2( UTF8-tail )
+    '(?:\\xf0[\\x90-\\xbf][\\x80-\\xbf]{2})|(?:[\\xf1-\\xf3][\\x80-\\xbf]{3})|(?:\\xf4[\\x80-\\x8f][\\x80-\\xbf]{2})'
+
+].join('|'));
+
+},{"./domain":79,"util":325}],81:[function(require,module,exports){
+'use strict';
+
+const Domain = require('./domain');
+const Email = require('./email');
+const Tlds = require('./tlds');
+
+
+const internals = {
+    defaultTlds: { allow: Tlds, deny: null }
+};
+
+
+module.exports = {
+    domain: {
+        analyze(domain, options) {
+
+            options = internals.options(options);
+            return Domain.analyze(domain, options);
+        },
+
+        isValid(domain, options) {
+
+            options = internals.options(options);
+            return Domain.isValid(domain, options);
+        }
+    },
+    email: {
+        analyze(email, options) {
+
+            options = internals.options(options);
+            return Email.analyze(email, options);
+        },
+
+        isValid(email, options) {
+
+            options = internals.options(options);
+            return Email.isValid(email, options);
+        }
+    }
+};
+
+
+internals.options = function (options) {
+
+    if (!options) {
+        return { tlds: internals.defaultTlds };
+    }
+
+    if (options.tlds === false) {                // Defaults to true
+        return options;
+    }
+
+    if (!options.tlds ||
+        options.tlds === true) {
+
+        return Object.assign({}, options, { tlds: internals.defaultTlds });
+    }
+
+    if (typeof options.tlds !== 'object') {
+        throw new Error('Invalid options: tlds must be a boolean or an object');
+    }
+
+    if (options.tlds.deny) {
+        if (options.tlds.deny instanceof Set === false) {
+            throw new Error('Invalid options: tlds.deny must be a Set object');
+        }
+
+        if (options.tlds.allow) {
+            throw new Error('Invalid options: cannot specify both tlds.allow and tlds.deny lists');
+        }
+
+        return options;
+    }
+
+    if (options.tlds.allow === true) {
+        return Object.assign({}, options, { tlds: internals.defaultTlds });
+    }
+
+    if (options.tlds.allow instanceof Set === false) {
+        throw new Error('Invalid options: tlds.allow must be a Set object or true');
+    }
+
+    return options;
+};
+
+},{"./domain":79,"./email":80,"./tlds":82}],82:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+// http://data.iana.org/TLD/tlds-alpha-by-domain.txt
+// # Version 2019091902, Last Updated Fri Sep 20 07: 07: 02 2019 UTC
+
+
+internals.tlds = [
+    'AAA',
+    'AARP',
+    'ABARTH',
+    'ABB',
+    'ABBOTT',
+    'ABBVIE',
+    'ABC',
+    'ABLE',
+    'ABOGADO',
+    'ABUDHABI',
+    'AC',
+    'ACADEMY',
+    'ACCENTURE',
+    'ACCOUNTANT',
+    'ACCOUNTANTS',
+    'ACO',
+    'ACTOR',
+    'AD',
+    'ADAC',
+    'ADS',
+    'ADULT',
+    'AE',
+    'AEG',
+    'AERO',
+    'AETNA',
+    'AF',
+    'AFAMILYCOMPANY',
+    'AFL',
+    'AFRICA',
+    'AG',
+    'AGAKHAN',
+    'AGENCY',
+    'AI',
+    'AIG',
+    'AIGO',
+    'AIRBUS',
+    'AIRFORCE',
+    'AIRTEL',
+    'AKDN',
+    'AL',
+    'ALFAROMEO',
+    'ALIBABA',
+    'ALIPAY',
+    'ALLFINANZ',
+    'ALLSTATE',
+    'ALLY',
+    'ALSACE',
+    'ALSTOM',
+    'AM',
+    'AMERICANEXPRESS',
+    'AMERICANFAMILY',
+    'AMEX',
+    'AMFAM',
+    'AMICA',
+    'AMSTERDAM',
+    'ANALYTICS',
+    'ANDROID',
+    'ANQUAN',
+    'ANZ',
+    'AO',
+    'AOL',
+    'APARTMENTS',
+    'APP',
+    'APPLE',
+    'AQ',
+    'AQUARELLE',
+    'AR',
+    'ARAB',
+    'ARAMCO',
+    'ARCHI',
+    'ARMY',
+    'ARPA',
+    'ART',
+    'ARTE',
+    'AS',
+    'ASDA',
+    'ASIA',
+    'ASSOCIATES',
+    'AT',
+    'ATHLETA',
+    'ATTORNEY',
+    'AU',
+    'AUCTION',
+    'AUDI',
+    'AUDIBLE',
+    'AUDIO',
+    'AUSPOST',
+    'AUTHOR',
+    'AUTO',
+    'AUTOS',
+    'AVIANCA',
+    'AW',
+    'AWS',
+    'AX',
+    'AXA',
+    'AZ',
+    'AZURE',
+    'BA',
+    'BABY',
+    'BAIDU',
+    'BANAMEX',
+    'BANANAREPUBLIC',
+    'BAND',
+    'BANK',
+    'BAR',
+    'BARCELONA',
+    'BARCLAYCARD',
+    'BARCLAYS',
+    'BAREFOOT',
+    'BARGAINS',
+    'BASEBALL',
+    'BASKETBALL',
+    'BAUHAUS',
+    'BAYERN',
+    'BB',
+    'BBC',
+    'BBT',
+    'BBVA',
+    'BCG',
+    'BCN',
+    'BD',
+    'BE',
+    'BEATS',
+    'BEAUTY',
+    'BEER',
+    'BENTLEY',
+    'BERLIN',
+    'BEST',
+    'BESTBUY',
+    'BET',
+    'BF',
+    'BG',
+    'BH',
+    'BHARTI',
+    'BI',
+    'BIBLE',
+    'BID',
+    'BIKE',
+    'BING',
+    'BINGO',
+    'BIO',
+    'BIZ',
+    'BJ',
+    'BLACK',
+    'BLACKFRIDAY',
+    'BLOCKBUSTER',
+    'BLOG',
+    'BLOOMBERG',
+    'BLUE',
+    'BM',
+    'BMS',
+    'BMW',
+    'BN',
+    'BNPPARIBAS',
+    'BO',
+    'BOATS',
+    'BOEHRINGER',
+    'BOFA',
+    'BOM',
+    'BOND',
+    'BOO',
+    'BOOK',
+    'BOOKING',
+    'BOSCH',
+    'BOSTIK',
+    'BOSTON',
+    'BOT',
+    'BOUTIQUE',
+    'BOX',
+    'BR',
+    'BRADESCO',
+    'BRIDGESTONE',
+    'BROADWAY',
+    'BROKER',
+    'BROTHER',
+    'BRUSSELS',
+    'BS',
+    'BT',
+    'BUDAPEST',
+    'BUGATTI',
+    'BUILD',
+    'BUILDERS',
+    'BUSINESS',
+    'BUY',
+    'BUZZ',
+    'BV',
+    'BW',
+    'BY',
+    'BZ',
+    'BZH',
+    'CA',
+    'CAB',
+    'CAFE',
+    'CAL',
+    'CALL',
+    'CALVINKLEIN',
+    'CAM',
+    'CAMERA',
+    'CAMP',
+    'CANCERRESEARCH',
+    'CANON',
+    'CAPETOWN',
+    'CAPITAL',
+    'CAPITALONE',
+    'CAR',
+    'CARAVAN',
+    'CARDS',
+    'CARE',
+    'CAREER',
+    'CAREERS',
+    'CARS',
+    'CARTIER',
+    'CASA',
+    'CASE',
+    'CASEIH',
+    'CASH',
+    'CASINO',
+    'CAT',
+    'CATERING',
+    'CATHOLIC',
+    'CBA',
+    'CBN',
+    'CBRE',
+    'CBS',
+    'CC',
+    'CD',
+    'CEB',
+    'CENTER',
+    'CEO',
+    'CERN',
+    'CF',
+    'CFA',
+    'CFD',
+    'CG',
+    'CH',
+    'CHANEL',
+    'CHANNEL',
+    'CHARITY',
+    'CHASE',
+    'CHAT',
+    'CHEAP',
+    'CHINTAI',
+    'CHRISTMAS',
+    'CHROME',
+    'CHRYSLER',
+    'CHURCH',
+    'CI',
+    'CIPRIANI',
+    'CIRCLE',
+    'CISCO',
+    'CITADEL',
+    'CITI',
+    'CITIC',
+    'CITY',
+    'CITYEATS',
+    'CK',
+    'CL',
+    'CLAIMS',
+    'CLEANING',
+    'CLICK',
+    'CLINIC',
+    'CLINIQUE',
+    'CLOTHING',
+    'CLOUD',
+    'CLUB',
+    'CLUBMED',
+    'CM',
+    'CN',
+    'CO',
+    'COACH',
+    'CODES',
+    'COFFEE',
+    'COLLEGE',
+    'COLOGNE',
+    'COM',
+    'COMCAST',
+    'COMMBANK',
+    'COMMUNITY',
+    'COMPANY',
+    'COMPARE',
+    'COMPUTER',
+    'COMSEC',
+    'CONDOS',
+    'CONSTRUCTION',
+    'CONSULTING',
+    'CONTACT',
+    'CONTRACTORS',
+    'COOKING',
+    'COOKINGCHANNEL',
+    'COOL',
+    'COOP',
+    'CORSICA',
+    'COUNTRY',
+    'COUPON',
+    'COUPONS',
+    'COURSES',
+    'CR',
+    'CREDIT',
+    'CREDITCARD',
+    'CREDITUNION',
+    'CRICKET',
+    'CROWN',
+    'CRS',
+    'CRUISE',
+    'CRUISES',
+    'CSC',
+    'CU',
+    'CUISINELLA',
+    'CV',
+    'CW',
+    'CX',
+    'CY',
+    'CYMRU',
+    'CYOU',
+    'CZ',
+    'DABUR',
+    'DAD',
+    'DANCE',
+    'DATA',
+    'DATE',
+    'DATING',
+    'DATSUN',
+    'DAY',
+    'DCLK',
+    'DDS',
+    'DE',
+    'DEAL',
+    'DEALER',
+    'DEALS',
+    'DEGREE',
+    'DELIVERY',
+    'DELL',
+    'DELOITTE',
+    'DELTA',
+    'DEMOCRAT',
+    'DENTAL',
+    'DENTIST',
+    'DESI',
+    'DESIGN',
+    'DEV',
+    'DHL',
+    'DIAMONDS',
+    'DIET',
+    'DIGITAL',
+    'DIRECT',
+    'DIRECTORY',
+    'DISCOUNT',
+    'DISCOVER',
+    'DISH',
+    'DIY',
+    'DJ',
+    'DK',
+    'DM',
+    'DNP',
+    'DO',
+    'DOCS',
+    'DOCTOR',
+    'DODGE',
+    'DOG',
+    'DOMAINS',
+    'DOT',
+    'DOWNLOAD',
+    'DRIVE',
+    'DTV',
+    'DUBAI',
+    'DUCK',
+    'DUNLOP',
+    'DUPONT',
+    'DURBAN',
+    'DVAG',
+    'DVR',
+    'DZ',
+    'EARTH',
+    'EAT',
+    'EC',
+    'ECO',
+    'EDEKA',
+    'EDU',
+    'EDUCATION',
+    'EE',
+    'EG',
+    'EMAIL',
+    'EMERCK',
+    'ENERGY',
+    'ENGINEER',
+    'ENGINEERING',
+    'ENTERPRISES',
+    'EPSON',
+    'EQUIPMENT',
+    'ER',
+    'ERICSSON',
+    'ERNI',
+    'ES',
+    'ESQ',
+    'ESTATE',
+    'ESURANCE',
+    'ET',
+    'ETISALAT',
+    'EU',
+    'EUROVISION',
+    'EUS',
+    'EVENTS',
+    'EVERBANK',
+    'EXCHANGE',
+    'EXPERT',
+    'EXPOSED',
+    'EXPRESS',
+    'EXTRASPACE',
+    'FAGE',
+    'FAIL',
+    'FAIRWINDS',
+    'FAITH',
+    'FAMILY',
+    'FAN',
+    'FANS',
+    'FARM',
+    'FARMERS',
+    'FASHION',
+    'FAST',
+    'FEDEX',
+    'FEEDBACK',
+    'FERRARI',
+    'FERRERO',
+    'FI',
+    'FIAT',
+    'FIDELITY',
+    'FIDO',
+    'FILM',
+    'FINAL',
+    'FINANCE',
+    'FINANCIAL',
+    'FIRE',
+    'FIRESTONE',
+    'FIRMDALE',
+    'FISH',
+    'FISHING',
+    'FIT',
+    'FITNESS',
+    'FJ',
+    'FK',
+    'FLICKR',
+    'FLIGHTS',
+    'FLIR',
+    'FLORIST',
+    'FLOWERS',
+    'FLY',
+    'FM',
+    'FO',
+    'FOO',
+    'FOOD',
+    'FOODNETWORK',
+    'FOOTBALL',
+    'FORD',
+    'FOREX',
+    'FORSALE',
+    'FORUM',
+    'FOUNDATION',
+    'FOX',
+    'FR',
+    'FREE',
+    'FRESENIUS',
+    'FRL',
+    'FROGANS',
+    'FRONTDOOR',
+    'FRONTIER',
+    'FTR',
+    'FUJITSU',
+    'FUJIXEROX',
+    'FUN',
+    'FUND',
+    'FURNITURE',
+    'FUTBOL',
+    'FYI',
+    'GA',
+    'GAL',
+    'GALLERY',
+    'GALLO',
+    'GALLUP',
+    'GAME',
+    'GAMES',
+    'GAP',
+    'GARDEN',
+    'GAY',
+    'GB',
+    'GBIZ',
+    'GD',
+    'GDN',
+    'GE',
+    'GEA',
+    'GENT',
+    'GENTING',
+    'GEORGE',
+    'GF',
+    'GG',
+    'GGEE',
+    'GH',
+    'GI',
+    'GIFT',
+    'GIFTS',
+    'GIVES',
+    'GIVING',
+    'GL',
+    'GLADE',
+    'GLASS',
+    'GLE',
+    'GLOBAL',
+    'GLOBO',
+    'GM',
+    'GMAIL',
+    'GMBH',
+    'GMO',
+    'GMX',
+    'GN',
+    'GODADDY',
+    'GOLD',
+    'GOLDPOINT',
+    'GOLF',
+    'GOO',
+    'GOODYEAR',
+    'GOOG',
+    'GOOGLE',
+    'GOP',
+    'GOT',
+    'GOV',
+    'GP',
+    'GQ',
+    'GR',
+    'GRAINGER',
+    'GRAPHICS',
+    'GRATIS',
+    'GREEN',
+    'GRIPE',
+    'GROCERY',
+    'GROUP',
+    'GS',
+    'GT',
+    'GU',
+    'GUARDIAN',
+    'GUCCI',
+    'GUGE',
+    'GUIDE',
+    'GUITARS',
+    'GURU',
+    'GW',
+    'GY',
+    'HAIR',
+    'HAMBURG',
+    'HANGOUT',
+    'HAUS',
+    'HBO',
+    'HDFC',
+    'HDFCBANK',
+    'HEALTH',
+    'HEALTHCARE',
+    'HELP',
+    'HELSINKI',
+    'HERE',
+    'HERMES',
+    'HGTV',
+    'HIPHOP',
+    'HISAMITSU',
+    'HITACHI',
+    'HIV',
+    'HK',
+    'HKT',
+    'HM',
+    'HN',
+    'HOCKEY',
+    'HOLDINGS',
+    'HOLIDAY',
+    'HOMEDEPOT',
+    'HOMEGOODS',
+    'HOMES',
+    'HOMESENSE',
+    'HONDA',
+    'HORSE',
+    'HOSPITAL',
+    'HOST',
+    'HOSTING',
+    'HOT',
+    'HOTELES',
+    'HOTELS',
+    'HOTMAIL',
+    'HOUSE',
+    'HOW',
+    'HR',
+    'HSBC',
+    'HT',
+    'HU',
+    'HUGHES',
+    'HYATT',
+    'HYUNDAI',
+    'IBM',
+    'ICBC',
+    'ICE',
+    'ICU',
+    'ID',
+    'IE',
+    'IEEE',
+    'IFM',
+    'IKANO',
+    'IL',
+    'IM',
+    'IMAMAT',
+    'IMDB',
+    'IMMO',
+    'IMMOBILIEN',
+    'IN',
+    'INC',
+    'INDUSTRIES',
+    'INFINITI',
+    'INFO',
+    'ING',
+    'INK',
+    'INSTITUTE',
+    'INSURANCE',
+    'INSURE',
+    'INT',
+    'INTEL',
+    'INTERNATIONAL',
+    'INTUIT',
+    'INVESTMENTS',
+    'IO',
+    'IPIRANGA',
+    'IQ',
+    'IR',
+    'IRISH',
+    'IS',
+    'ISMAILI',
+    'IST',
+    'ISTANBUL',
+    'IT',
+    'ITAU',
+    'ITV',
+    'IVECO',
+    'JAGUAR',
+    'JAVA',
+    'JCB',
+    'JCP',
+    'JE',
+    'JEEP',
+    'JETZT',
+    'JEWELRY',
+    'JIO',
+    'JLL',
+    'JM',
+    'JMP',
+    'JNJ',
+    'JO',
+    'JOBS',
+    'JOBURG',
+    'JOT',
+    'JOY',
+    'JP',
+    'JPMORGAN',
+    'JPRS',
+    'JUEGOS',
+    'JUNIPER',
+    'KAUFEN',
+    'KDDI',
+    'KE',
+    'KERRYHOTELS',
+    'KERRYLOGISTICS',
+    'KERRYPROPERTIES',
+    'KFH',
+    'KG',
+    'KH',
+    'KI',
+    'KIA',
+    'KIM',
+    'KINDER',
+    'KINDLE',
+    'KITCHEN',
+    'KIWI',
+    'KM',
+    'KN',
+    'KOELN',
+    'KOMATSU',
+    'KOSHER',
+    'KP',
+    'KPMG',
+    'KPN',
+    'KR',
+    'KRD',
+    'KRED',
+    'KUOKGROUP',
+    'KW',
+    'KY',
+    'KYOTO',
+    'KZ',
+    'LA',
+    'LACAIXA',
+    'LADBROKES',
+    'LAMBORGHINI',
+    'LAMER',
+    'LANCASTER',
+    'LANCIA',
+    'LANCOME',
+    'LAND',
+    'LANDROVER',
+    'LANXESS',
+    'LASALLE',
+    'LAT',
+    'LATINO',
+    'LATROBE',
+    'LAW',
+    'LAWYER',
+    'LB',
+    'LC',
+    'LDS',
+    'LEASE',
+    'LECLERC',
+    'LEFRAK',
+    'LEGAL',
+    'LEGO',
+    'LEXUS',
+    'LGBT',
+    'LI',
+    'LIAISON',
+    'LIDL',
+    'LIFE',
+    'LIFEINSURANCE',
+    'LIFESTYLE',
+    'LIGHTING',
+    'LIKE',
+    'LILLY',
+    'LIMITED',
+    'LIMO',
+    'LINCOLN',
+    'LINDE',
+    'LINK',
+    'LIPSY',
+    'LIVE',
+    'LIVING',
+    'LIXIL',
+    'LK',
+    'LLC',
+    'LOAN',
+    'LOANS',
+    'LOCKER',
+    'LOCUS',
+    'LOFT',
+    'LOL',
+    'LONDON',
+    'LOTTE',
+    'LOTTO',
+    'LOVE',
+    'LPL',
+    'LPLFINANCIAL',
+    'LR',
+    'LS',
+    'LT',
+    'LTD',
+    'LTDA',
+    'LU',
+    'LUNDBECK',
+    'LUPIN',
+    'LUXE',
+    'LUXURY',
+    'LV',
+    'LY',
+    'MA',
+    'MACYS',
+    'MADRID',
+    'MAIF',
+    'MAISON',
+    'MAKEUP',
+    'MAN',
+    'MANAGEMENT',
+    'MANGO',
+    'MAP',
+    'MARKET',
+    'MARKETING',
+    'MARKETS',
+    'MARRIOTT',
+    'MARSHALLS',
+    'MASERATI',
+    'MATTEL',
+    'MBA',
+    'MC',
+    'MCKINSEY',
+    'MD',
+    'ME',
+    'MED',
+    'MEDIA',
+    'MEET',
+    'MELBOURNE',
+    'MEME',
+    'MEMORIAL',
+    'MEN',
+    'MENU',
+    'MERCKMSD',
+    'METLIFE',
+    'MG',
+    'MH',
+    'MIAMI',
+    'MICROSOFT',
+    'MIL',
+    'MINI',
+    'MINT',
+    'MIT',
+    'MITSUBISHI',
+    'MK',
+    'ML',
+    'MLB',
+    'MLS',
+    'MM',
+    'MMA',
+    'MN',
+    'MO',
+    'MOBI',
+    'MOBILE',
+    'MODA',
+    'MOE',
+    'MOI',
+    'MOM',
+    'MONASH',
+    'MONEY',
+    'MONSTER',
+    'MOPAR',
+    'MORMON',
+    'MORTGAGE',
+    'MOSCOW',
+    'MOTO',
+    'MOTORCYCLES',
+    'MOV',
+    'MOVIE',
+    'MOVISTAR',
+    'MP',
+    'MQ',
+    'MR',
+    'MS',
+    'MSD',
+    'MT',
+    'MTN',
+    'MTR',
+    'MU',
+    'MUSEUM',
+    'MUTUAL',
+    'MV',
+    'MW',
+    'MX',
+    'MY',
+    'MZ',
+    'NA',
+    'NAB',
+    'NADEX',
+    'NAGOYA',
+    'NAME',
+    'NATIONWIDE',
+    'NATURA',
+    'NAVY',
+    'NBA',
+    'NC',
+    'NE',
+    'NEC',
+    'NET',
+    'NETBANK',
+    'NETFLIX',
+    'NETWORK',
+    'NEUSTAR',
+    'NEW',
+    'NEWHOLLAND',
+    'NEWS',
+    'NEXT',
+    'NEXTDIRECT',
+    'NEXUS',
+    'NF',
+    'NFL',
+    'NG',
+    'NGO',
+    'NHK',
+    'NI',
+    'NICO',
+    'NIKE',
+    'NIKON',
+    'NINJA',
+    'NISSAN',
+    'NISSAY',
+    'NL',
+    'NO',
+    'NOKIA',
+    'NORTHWESTERNMUTUAL',
+    'NORTON',
+    'NOW',
+    'NOWRUZ',
+    'NOWTV',
+    'NP',
+    'NR',
+    'NRA',
+    'NRW',
+    'NTT',
+    'NU',
+    'NYC',
+    'NZ',
+    'OBI',
+    'OBSERVER',
+    'OFF',
+    'OFFICE',
+    'OKINAWA',
+    'OLAYAN',
+    'OLAYANGROUP',
+    'OLDNAVY',
+    'OLLO',
+    'OM',
+    'OMEGA',
+    'ONE',
+    'ONG',
+    'ONL',
+    'ONLINE',
+    'ONYOURSIDE',
+    'OOO',
+    'OPEN',
+    'ORACLE',
+    'ORANGE',
+    'ORG',
+    'ORGANIC',
+    'ORIGINS',
+    'OSAKA',
+    'OTSUKA',
+    'OTT',
+    'OVH',
+    'PA',
+    'PAGE',
+    'PANASONIC',
+    'PARIS',
+    'PARS',
+    'PARTNERS',
+    'PARTS',
+    'PARTY',
+    'PASSAGENS',
+    'PAY',
+    'PCCW',
+    'PE',
+    'PET',
+    'PF',
+    'PFIZER',
+    'PG',
+    'PH',
+    'PHARMACY',
+    'PHD',
+    'PHILIPS',
+    'PHONE',
+    'PHOTO',
+    'PHOTOGRAPHY',
+    'PHOTOS',
+    'PHYSIO',
+    'PIAGET',
+    'PICS',
+    'PICTET',
+    'PICTURES',
+    'PID',
+    'PIN',
+    'PING',
+    'PINK',
+    'PIONEER',
+    'PIZZA',
+    'PK',
+    'PL',
+    'PLACE',
+    'PLAY',
+    'PLAYSTATION',
+    'PLUMBING',
+    'PLUS',
+    'PM',
+    'PN',
+    'PNC',
+    'POHL',
+    'POKER',
+    'POLITIE',
+    'PORN',
+    'POST',
+    'PR',
+    'PRAMERICA',
+    'PRAXI',
+    'PRESS',
+    'PRIME',
+    'PRO',
+    'PROD',
+    'PRODUCTIONS',
+    'PROF',
+    'PROGRESSIVE',
+    'PROMO',
+    'PROPERTIES',
+    'PROPERTY',
+    'PROTECTION',
+    'PRU',
+    'PRUDENTIAL',
+    'PS',
+    'PT',
+    'PUB',
+    'PW',
+    'PWC',
+    'PY',
+    'QA',
+    'QPON',
+    'QUEBEC',
+    'QUEST',
+    'QVC',
+    'RACING',
+    'RADIO',
+    'RAID',
+    'RE',
+    'READ',
+    'REALESTATE',
+    'REALTOR',
+    'REALTY',
+    'RECIPES',
+    'RED',
+    'REDSTONE',
+    'REDUMBRELLA',
+    'REHAB',
+    'REISE',
+    'REISEN',
+    'REIT',
+    'RELIANCE',
+    'REN',
+    'RENT',
+    'RENTALS',
+    'REPAIR',
+    'REPORT',
+    'REPUBLICAN',
+    'REST',
+    'RESTAURANT',
+    'REVIEW',
+    'REVIEWS',
+    'REXROTH',
+    'RICH',
+    'RICHARDLI',
+    'RICOH',
+    'RIGHTATHOME',
+    'RIL',
+    'RIO',
+    'RIP',
+    'RMIT',
+    'RO',
+    'ROCHER',
+    'ROCKS',
+    'RODEO',
+    'ROGERS',
+    'ROOM',
+    'RS',
+    'RSVP',
+    'RU',
+    'RUGBY',
+    'RUHR',
+    'RUN',
+    'RW',
+    'RWE',
+    'RYUKYU',
+    'SA',
+    'SAARLAND',
+    'SAFE',
+    'SAFETY',
+    'SAKURA',
+    'SALE',
+    'SALON',
+    'SAMSCLUB',
+    'SAMSUNG',
+    'SANDVIK',
+    'SANDVIKCOROMANT',
+    'SANOFI',
+    'SAP',
+    'SARL',
+    'SAS',
+    'SAVE',
+    'SAXO',
+    'SB',
+    'SBI',
+    'SBS',
+    'SC',
+    'SCA',
+    'SCB',
+    'SCHAEFFLER',
+    'SCHMIDT',
+    'SCHOLARSHIPS',
+    'SCHOOL',
+    'SCHULE',
+    'SCHWARZ',
+    'SCIENCE',
+    'SCJOHNSON',
+    'SCOR',
+    'SCOT',
+    'SD',
+    'SE',
+    'SEARCH',
+    'SEAT',
+    'SECURE',
+    'SECURITY',
+    'SEEK',
+    'SELECT',
+    'SENER',
+    'SERVICES',
+    'SES',
+    'SEVEN',
+    'SEW',
+    'SEX',
+    'SEXY',
+    'SFR',
+    'SG',
+    'SH',
+    'SHANGRILA',
+    'SHARP',
+    'SHAW',
+    'SHELL',
+    'SHIA',
+    'SHIKSHA',
+    'SHOES',
+    'SHOP',
+    'SHOPPING',
+    'SHOUJI',
+    'SHOW',
+    'SHOWTIME',
+    'SHRIRAM',
+    'SI',
+    'SILK',
+    'SINA',
+    'SINGLES',
+    'SITE',
+    'SJ',
+    'SK',
+    'SKI',
+    'SKIN',
+    'SKY',
+    'SKYPE',
+    'SL',
+    'SLING',
+    'SM',
+    'SMART',
+    'SMILE',
+    'SN',
+    'SNCF',
+    'SO',
+    'SOCCER',
+    'SOCIAL',
+    'SOFTBANK',
+    'SOFTWARE',
+    'SOHU',
+    'SOLAR',
+    'SOLUTIONS',
+    'SONG',
+    'SONY',
+    'SOY',
+    'SPACE',
+    'SPORT',
+    'SPOT',
+    'SPREADBETTING',
+    'SR',
+    'SRL',
+    'SRT',
+    'SS',
+    'ST',
+    'STADA',
+    'STAPLES',
+    'STAR',
+    'STATEBANK',
+    'STATEFARM',
+    'STC',
+    'STCGROUP',
+    'STOCKHOLM',
+    'STORAGE',
+    'STORE',
+    'STREAM',
+    'STUDIO',
+    'STUDY',
+    'STYLE',
+    'SU',
+    'SUCKS',
+    'SUPPLIES',
+    'SUPPLY',
+    'SUPPORT',
+    'SURF',
+    'SURGERY',
+    'SUZUKI',
+    'SV',
+    'SWATCH',
+    'SWIFTCOVER',
+    'SWISS',
+    'SX',
+    'SY',
+    'SYDNEY',
+    'SYMANTEC',
+    'SYSTEMS',
+    'SZ',
+    'TAB',
+    'TAIPEI',
+    'TALK',
+    'TAOBAO',
+    'TARGET',
+    'TATAMOTORS',
+    'TATAR',
+    'TATTOO',
+    'TAX',
+    'TAXI',
+    'TC',
+    'TCI',
+    'TD',
+    'TDK',
+    'TEAM',
+    'TECH',
+    'TECHNOLOGY',
+    'TEL',
+    'TELEFONICA',
+    'TEMASEK',
+    'TENNIS',
+    'TEVA',
+    'TF',
+    'TG',
+    'TH',
+    'THD',
+    'THEATER',
+    'THEATRE',
+    'TIAA',
+    'TICKETS',
+    'TIENDA',
+    'TIFFANY',
+    'TIPS',
+    'TIRES',
+    'TIROL',
+    'TJ',
+    'TJMAXX',
+    'TJX',
+    'TK',
+    'TKMAXX',
+    'TL',
+    'TM',
+    'TMALL',
+    'TN',
+    'TO',
+    'TODAY',
+    'TOKYO',
+    'TOOLS',
+    'TOP',
+    'TORAY',
+    'TOSHIBA',
+    'TOTAL',
+    'TOURS',
+    'TOWN',
+    'TOYOTA',
+    'TOYS',
+    'TR',
+    'TRADE',
+    'TRADING',
+    'TRAINING',
+    'TRAVEL',
+    'TRAVELCHANNEL',
+    'TRAVELERS',
+    'TRAVELERSINSURANCE',
+    'TRUST',
+    'TRV',
+    'TT',
+    'TUBE',
+    'TUI',
+    'TUNES',
+    'TUSHU',
+    'TV',
+    'TVS',
+    'TW',
+    'TZ',
+    'UA',
+    'UBANK',
+    'UBS',
+    'UCONNECT',
+    'UG',
+    'UK',
+    'UNICOM',
+    'UNIVERSITY',
+    'UNO',
+    'UOL',
+    'UPS',
+    'US',
+    'UY',
+    'UZ',
+    'VA',
+    'VACATIONS',
+    'VANA',
+    'VANGUARD',
+    'VC',
+    'VE',
+    'VEGAS',
+    'VENTURES',
+    'VERISIGN',
+    'VERSICHERUNG',
+    'VET',
+    'VG',
+    'VI',
+    'VIAJES',
+    'VIDEO',
+    'VIG',
+    'VIKING',
+    'VILLAS',
+    'VIN',
+    'VIP',
+    'VIRGIN',
+    'VISA',
+    'VISION',
+    'VISTAPRINT',
+    'VIVA',
+    'VIVO',
+    'VLAANDEREN',
+    'VN',
+    'VODKA',
+    'VOLKSWAGEN',
+    'VOLVO',
+    'VOTE',
+    'VOTING',
+    'VOTO',
+    'VOYAGE',
+    'VU',
+    'VUELOS',
+    'WALES',
+    'WALMART',
+    'WALTER',
+    'WANG',
+    'WANGGOU',
+    'WARMAN',
+    'WATCH',
+    'WATCHES',
+    'WEATHER',
+    'WEATHERCHANNEL',
+    'WEBCAM',
+    'WEBER',
+    'WEBSITE',
+    'WED',
+    'WEDDING',
+    'WEIBO',
+    'WEIR',
+    'WF',
+    'WHOSWHO',
+    'WIEN',
+    'WIKI',
+    'WILLIAMHILL',
+    'WIN',
+    'WINDOWS',
+    'WINE',
+    'WINNERS',
+    'WME',
+    'WOLTERSKLUWER',
+    'WOODSIDE',
+    'WORK',
+    'WORKS',
+    'WORLD',
+    'WOW',
+    'WS',
+    'WTC',
+    'WTF',
+    'XBOX',
+    'XEROX',
+    'XFINITY',
+    'XIHUAN',
+    'XIN',
+    'XN--11B4C3D',
+    'XN--1CK2E1B',
+    'XN--1QQW23A',
+    'XN--2SCRJ9C',
+    'XN--30RR7Y',
+    'XN--3BST00M',
+    'XN--3DS443G',
+    'XN--3E0B707E',
+    'XN--3HCRJ9C',
+    'XN--3OQ18VL8PN36A',
+    'XN--3PXU8K',
+    'XN--42C2D9A',
+    'XN--45BR5CYL',
+    'XN--45BRJ9C',
+    'XN--45Q11C',
+    'XN--4GBRIM',
+    'XN--54B7FTA0CC',
+    'XN--55QW42G',
+    'XN--55QX5D',
+    'XN--5SU34J936BGSG',
+    'XN--5TZM5G',
+    'XN--6FRZ82G',
+    'XN--6QQ986B3XL',
+    'XN--80ADXHKS',
+    'XN--80AO21A',
+    'XN--80AQECDR1A',
+    'XN--80ASEHDB',
+    'XN--80ASWG',
+    'XN--8Y0A063A',
+    'XN--90A3AC',
+    'XN--90AE',
+    'XN--90AIS',
+    'XN--9DBQ2A',
+    'XN--9ET52U',
+    'XN--9KRT00A',
+    'XN--B4W605FERD',
+    'XN--BCK1B9A5DRE4C',
+    'XN--C1AVG',
+    'XN--C2BR7G',
+    'XN--CCK2B3B',
+    'XN--CG4BKI',
+    'XN--CLCHC0EA0B2G2A9GCD',
+    'XN--CZR694B',
+    'XN--CZRS0T',
+    'XN--CZRU2D',
+    'XN--D1ACJ3B',
+    'XN--D1ALF',
+    'XN--E1A4C',
+    'XN--ECKVDTC9D',
+    'XN--EFVY88H',
+    'XN--ESTV75G',
+    'XN--FCT429K',
+    'XN--FHBEI',
+    'XN--FIQ228C5HS',
+    'XN--FIQ64B',
+    'XN--FIQS8S',
+    'XN--FIQZ9S',
+    'XN--FJQ720A',
+    'XN--FLW351E',
+    'XN--FPCRJ9C3D',
+    'XN--FZC2C9E2C',
+    'XN--FZYS8D69UVGM',
+    'XN--G2XX48C',
+    'XN--GCKR3F0F',
+    'XN--GECRJ9C',
+    'XN--GK3AT1E',
+    'XN--H2BREG3EVE',
+    'XN--H2BRJ9C',
+    'XN--H2BRJ9C8C',
+    'XN--HXT814E',
+    'XN--I1B6B1A6A2E',
+    'XN--IMR513N',
+    'XN--IO0A7I',
+    'XN--J1AEF',
+    'XN--J1AMH',
+    'XN--J6W193G',
+    'XN--JLQ61U9W7B',
+    'XN--JVR189M',
+    'XN--KCRX77D1X4A',
+    'XN--KPRW13D',
+    'XN--KPRY57D',
+    'XN--KPU716F',
+    'XN--KPUT3I',
+    'XN--L1ACC',
+    'XN--LGBBAT1AD8J',
+    'XN--MGB9AWBF',
+    'XN--MGBA3A3EJT',
+    'XN--MGBA3A4F16A',
+    'XN--MGBA7C0BBN0A',
+    'XN--MGBAAKC7DVF',
+    'XN--MGBAAM7A8H',
+    'XN--MGBAB2BD',
+    'XN--MGBAH1A3HJKRD',
+    'XN--MGBAI9AZGQP6J',
+    'XN--MGBAYH7GPA',
+    'XN--MGBBH1A',
+    'XN--MGBBH1A71E',
+    'XN--MGBC0A9AZCG',
+    'XN--MGBCA7DZDO',
+    'XN--MGBERP4A5D4AR',
+    'XN--MGBGU82A',
+    'XN--MGBI4ECEXP',
+    'XN--MGBPL2FH',
+    'XN--MGBT3DHD',
+    'XN--MGBTX2B',
+    'XN--MGBX4CD0AB',
+    'XN--MIX891F',
+    'XN--MK1BU44C',
+    'XN--MXTQ1M',
+    'XN--NGBC5AZD',
+    'XN--NGBE9E0A',
+    'XN--NGBRX',
+    'XN--NODE',
+    'XN--NQV7F',
+    'XN--NQV7FS00EMA',
+    'XN--NYQY26A',
+    'XN--O3CW4H',
+    'XN--OGBPF8FL',
+    'XN--OTU796D',
+    'XN--P1ACF',
+    'XN--P1AI',
+    'XN--PBT977C',
+    'XN--PGBS0DH',
+    'XN--PSSY2U',
+    'XN--Q9JYB4C',
+    'XN--QCKA1PMC',
+    'XN--QXA6A',
+    'XN--QXAM',
+    'XN--RHQV96G',
+    'XN--ROVU88B',
+    'XN--RVC1E0AM3E',
+    'XN--S9BRJ9C',
+    'XN--SES554G',
+    'XN--T60B56A',
+    'XN--TCKWE',
+    'XN--TIQ49XQYJ',
+    'XN--UNUP4Y',
+    'XN--VERMGENSBERATER-CTB',
+    'XN--VERMGENSBERATUNG-PWB',
+    'XN--VHQUV',
+    'XN--VUQ861B',
+    'XN--W4R85EL8FHU5DNRA',
+    'XN--W4RS40L',
+    'XN--WGBH1C',
+    'XN--WGBL6A',
+    'XN--XHQ521B',
+    'XN--XKC2AL3HYE2A',
+    'XN--XKC2DL3A5EE0H',
+    'XN--Y9A3AQ',
+    'XN--YFRO4I67O',
+    'XN--YGBI2AMMX',
+    'XN--ZFR164B',
+    'XXX',
+    'XYZ',
+    'YACHTS',
+    'YAHOO',
+    'YAMAXUN',
+    'YANDEX',
+    'YE',
+    'YODOBASHI',
+    'YOGA',
+    'YOKOHAMA',
+    'YOU',
+    'YOUTUBE',
+    'YT',
+    'YUN',
+    'ZA',
+    'ZAPPOS',
+    'ZARA',
+    'ZERO',
+    'ZIP',
+    'ZM',
+    'ZONE',
+    'ZUERICH',
+    'ZW'
+];
+
+
+// Keep as upper-case to make updating from source easier
+
+module.exports = new Set(internals.tlds.map((tld) => tld.toLowerCase()));
+
+},{}],83:[function(require,module,exports){
+'use strict';
+
+
+const internals = {
+    suspectRx: /"(?:_|\\u005[Ff])(?:_|\\u005[Ff])(?:p|\\u0070)(?:r|\\u0072)(?:o|\\u006[Ff])(?:t|\\u0074)(?:o|\\u006[Ff])(?:_|\\u005[Ff])(?:_|\\u005[Ff])"\s*\:/
+};
+
+
+exports.parse = function (text, reviver, options) {
+
+    // Normalize arguments
+
+    if (!options) {
+        if (reviver &&
+            typeof reviver === 'object') {
+
+            options = reviver;
+            reviver = undefined;
+        }
+        else {
+            options = {};
+        }
+    }
+
+    // Parse normally, allowing exceptions
+
+    const obj = JSON.parse(text, reviver);
+
+    // options.protoAction: 'error' (default) / 'remove' / 'ignore'
+
+    if (options.protoAction === 'ignore') {
+        return obj;
+    }
+
+    // Ignore null and non-objects
+
+    if (!obj ||
+        typeof obj !== 'object') {
+
+        return obj;
+    }
+
+    // Check original string for potential exploit
+
+    if (!text.match(internals.suspectRx)) {
+        return obj;
+    }
+
+    // Scan result for proto keys
+
+    exports.scan(obj, options);
+
+    return obj;
+};
+
+
+exports.scan = function (obj, options) {
+
+    options = options || {};
+
+    let next = [obj];
+
+    while (next.length) {
+        const nodes = next;
+        next = [];
+
+        for (const node of nodes) {
+            if (Object.prototype.hasOwnProperty.call(node, '__proto__')) {      // Avoid calling node.hasOwnProperty directly
+                if (options.protoAction !== 'remove') {
+                    throw new SyntaxError('Object contains forbidden prototype property');
+                }
+
+                delete node.__proto__;
+            }
+
+            for (const key in node) {
+                const value = node[key];
+                if (value &&
+                    typeof value === 'object') {
+
+                    next.push(node[key]);
+                }
+            }
+        }
+    }
+};
+
+
+exports.safeParse = function (text, reviver) {
+
+    try {
+        return exports.parse(text, reviver);
+    }
+    catch (ignoreError) {
+        return null;
+    }
+};
+
+},{}],84:[function(require,module,exports){
+'use strict';
+
+const Assert = require('./assert');
+const Clone = require('./clone');
+const Merge = require('./merge');
+const Utils = require('./utils');
+
+
+const internals = {};
+
+
+module.exports = function (defaults, source, options = {}) {
+
+    Assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
+    Assert(!source || source === true || typeof source === 'object', 'Invalid source value: must be true, falsy or an object');
+    Assert(typeof options === 'object', 'Invalid options: must be an object');
+
+    if (!source) {                                                  // If no source, return null
+        return null;
+    }
+
+    if (options.shallow) {
+        return internals.applyToDefaultsWithShallow(defaults, source, options);
+    }
+
+    const copy = Clone(defaults);
+
+    if (source === true) {                                          // If source is set to true, use defaults
+        return copy;
+    }
+
+    const nullOverride = options.nullOverride !== undefined ? options.nullOverride : false;
+    return Merge(copy, source, { nullOverride, mergeArrays: false });
+};
+
+
+internals.applyToDefaultsWithShallow = function (defaults, source, options) {
+
+    const keys = options.shallow;
+    Assert(Array.isArray(keys), 'Invalid keys');
+
+    options = Object.assign({}, options);
+    options.shallow = false;
+
+    const copy = Clone(defaults, { shallow: keys });
+
+    if (source === true) {                                                      // If source is set to true, use defaults
+        return copy;
+    }
+
+    const storage = Utils.store(source, keys);                              // Move shallow copy items to storage
+    Merge(copy, source, { mergeArrays: false, nullOverride: false });   // Deep copy the rest
+    Utils.restore(copy, source, storage);                                   // Shallow copy the stored items and restore
+    return copy;
+};
+
+},{"./assert":85,"./clone":88,"./merge":101,"./utils":107}],85:[function(require,module,exports){
+arguments[4][4][0].apply(exports,arguments)
+},{"./error":91,"dup":4}],86:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"_process":156,"dup":5}],87:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"./ignore":97,"dup":6}],88:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Types = require('./types');
+const Utils = require('./utils');
+
+
+const internals = {
+    needsProtoHack: new Set([Types.set, Types.map, Types.weakSet, Types.weakMap])
+};
+
+
+module.exports = internals.clone = function (obj, options = {}, _seen = null) {
+
+    if (typeof obj !== 'object' ||
+        obj === null) {
+
+        return obj;
+    }
+
+    let clone = internals.clone;
+    let seen = _seen;
+
+    if (options.shallow) {
+        if (options.shallow !== true) {
+            return internals.cloneWithShallow(obj, options);
+        }
+
+        clone = (value) => value;
+    }
+    else {
+        seen = seen || new Map();
+
+        const lookup = seen.get(obj);
+        if (lookup) {
+            return lookup;
+        }
+    }
+
+    // Built-in object types
+
+    const baseProto = Types.getInternalProto(obj);
+    if (baseProto === Types.buffer) {
+        return Buffer && Buffer.from(obj);              // $lab:coverage:ignore$
+    }
+
+    if (baseProto === Types.date) {
+        return new Date(obj.getTime());
+    }
+
+    if (baseProto === Types.regex) {
+        return new RegExp(obj);
+    }
+
+    // Generic objects
+
+    const newObj = internals.base(obj, baseProto, options);
+    if (newObj === obj) {
+        return obj;
+    }
+
+    if (seen) {
+        seen.set(obj, newObj);                              // Set seen, since obj could recurse
+    }
+
+    if (baseProto === Types.set) {
+        for (const value of obj) {
+            newObj.add(clone(value, options, seen));
+        }
+    }
+    else if (baseProto === Types.map) {
+        for (const [key, value] of obj) {
+            newObj.set(key, clone(value, options, seen));
+        }
+    }
+
+    const keys = Utils.keys(obj, options);
+    for (const key of keys) {
+        if (baseProto === Types.array &&
+            key === 'length') {
+
+            newObj.length = obj.length;
+            continue;
+        }
+
+        const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+        if (descriptor) {
+            if (descriptor.get ||
+                descriptor.set) {
+
+                Object.defineProperty(newObj, key, descriptor);
+            }
+            else if (descriptor.enumerable) {
+                newObj[key] = clone(obj[key], options, seen);
+            }
+            else {
+                Object.defineProperty(newObj, key, { enumerable: false, writable: true, configurable: true, value: clone(obj[key], options, seen) });
+            }
+        }
+        else {
+            Object.defineProperty(newObj, key, {
+                enumerable: true,
+                writable: true,
+                configurable: true,
+                value: clone(obj[key], options, seen)
+            });
+        }
+    }
+
+    return newObj;
+};
+
+
+internals.cloneWithShallow = function (source, options) {
+
+    const keys = options.shallow;
+    options = Object.assign({}, options);
+    options.shallow = false;
+
+    const storage = Utils.store(source, keys);    // Move shallow copy items to storage
+    const copy = internals.clone(source, options);      // Deep copy the rest
+    Utils.restore(copy, source, storage);         // Shallow copy the stored items and restore
+    return copy;
+};
+
+
+internals.base = function (obj, baseProto, options) {
+
+    if (baseProto === Types.array) {
+        return [];
+    }
+
+    if (options.prototype === false) {                  // Defaults to true
+        if (internals.needsProtoHack.has(baseProto)) {
+            return new baseProto.constructor();
+        }
+
+        return {};
+    }
+
+    const proto = Object.getPrototypeOf(obj);
+    if (proto &&
+        proto.isImmutable) {
+
+        return obj;
+    }
+
+    if (internals.needsProtoHack.has(baseProto)) {
+        const newObj = new proto.constructor();
+        if (proto !== baseProto) {
+            Object.setPrototypeOf(newObj, proto);
+        }
+
+        return newObj;
+    }
+
+    return Object.create(proto);
+};
+
+}).call(this,require("buffer").Buffer)
+},{"./types":106,"./utils":107,"buffer":48}],89:[function(require,module,exports){
+arguments[4][8][0].apply(exports,arguments)
+},{"./assert":85,"./deepEqual":90,"./escapeRegex":95,"./utils":107,"dup":8}],90:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"./types":106,"buffer":48,"dup":9}],91:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"./stringify":105,"dup":10}],92:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"./assert":85,"dup":11}],93:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],94:[function(require,module,exports){
+arguments[4][13][0].apply(exports,arguments)
+},{"dup":13}],95:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"dup":14}],96:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],97:[function(require,module,exports){
+arguments[4][16][0].apply(exports,arguments)
+},{"dup":16}],98:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"./applyToDefaults":84,"./assert":85,"./bench":86,"./block":87,"./clone":88,"./contain":89,"./deepEqual":90,"./error":91,"./escapeHeaderAttribute":92,"./escapeHtml":93,"./escapeJson":94,"./escapeRegex":95,"./flatten":96,"./ignore":97,"./intersect":99,"./isPromise":100,"./merge":101,"./once":102,"./reach":103,"./reachTemplate":104,"./stringify":105,"./wait":108,"dup":17}],99:[function(require,module,exports){
+arguments[4][18][0].apply(exports,arguments)
+},{"dup":18}],100:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19}],101:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Assert = require('./assert');
+const Clone = require('./clone');
+const Utils = require('./utils');
+
+
+const internals = {};
+
+
+module.exports = internals.merge = function (target, source, options) {
+
+    Assert(target && typeof target === 'object', 'Invalid target value: must be an object');
+    Assert(source === null || source === undefined || typeof source === 'object', 'Invalid source value: must be null, undefined, or an object');
+
+    if (!source) {
+        return target;
+    }
+
+    options = Object.assign({ nullOverride: true, mergeArrays: true }, options);
+
+    if (Array.isArray(source)) {
+        Assert(Array.isArray(target), 'Cannot merge array onto an object');
+        if (!options.mergeArrays) {
+            target.length = 0;                                                          // Must not change target assignment
+        }
+
+        for (let i = 0; i < source.length; ++i) {
+            target.push(Clone(source[i], { symbols: options.symbols }));
+        }
+
+        return target;
+    }
+
+    const keys = Utils.keys(source, options);
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        if (key === '__proto__' ||
+            !Object.prototype.propertyIsEnumerable.call(source, key)) {
+
+            continue;
+        }
+
+        const value = source[key];
+        if (value &&
+            typeof value === 'object') {
+
+            if (!target[key] ||
+                typeof target[key] !== 'object' ||
+                (Array.isArray(target[key]) !== Array.isArray(value)) ||
+                value instanceof Date ||
+                (Buffer && Buffer.isBuffer(value)) ||               // $lab:coverage:ignore$
+                value instanceof RegExp) {
+
+                target[key] = Clone(value, { symbols: options.symbols });
+            }
+            else {
+                internals.merge(target[key], value, options);
+            }
+        }
+        else {
+            if (value !== null &&
+                value !== undefined) {                              // Explicit to preserve empty strings
+
+                target[key] = value;
+            }
+            else if (options.nullOverride) {
+                target[key] = value;
+            }
+        }
+    }
+
+    return target;
+};
+
+}).call(this,require("buffer").Buffer)
+},{"./assert":85,"./clone":88,"./utils":107,"buffer":48}],102:[function(require,module,exports){
+arguments[4][21][0].apply(exports,arguments)
+},{"dup":21}],103:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"./assert":85,"dup":22}],104:[function(require,module,exports){
+arguments[4][23][0].apply(exports,arguments)
+},{"./reach":103,"dup":23}],105:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"dup":24}],106:[function(require,module,exports){
+arguments[4][25][0].apply(exports,arguments)
+},{"buffer":48,"dup":25}],107:[function(require,module,exports){
+'use strict';
+
+const Reach = require('./reach');
+
+
+const internals = {};
+
+
+exports.keys = function (obj, options = {}) {
+
+    return options.symbols !== false ? Reflect.ownKeys(obj) : Object.getOwnPropertyNames(obj);  // Defaults to true
+};
+
+
+exports.store = function (source, keys) {
+
+    const storage = new Map();
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        const value = Reach(source, key);
+        if (typeof value === 'object' ||
+            typeof value === 'function') {
+
+            storage.set(key, value);
+            internals.reachSet(source, key, undefined);
+        }
+    }
+
+    return storage;
+};
+
+
+exports.restore = function (copy, source, storage) {
+
+    for (const [key, value] of storage) {
+        internals.reachSet(copy, key, value);
+        internals.reachSet(source, key, value);
+    }
+};
+
+
+internals.reachSet = function (obj, key, value) {
+
+    const path = Array.isArray(key) ? key : key.split('.');
+    let ref = obj;
+    for (let i = 0; i < path.length; ++i) {
+        const segment = path[i];
+        if (i + 1 === path.length) {
+            ref[segment] = value;
+        }
+
+        ref = ref[segment];
+    }
+};
+
+},{"./reach":103}],108:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"dup":27}],109:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Ref = require('./ref');
+
+
+const internals = {};
+
+
+exports.schema = function (Joi, config) {
+
+    if (config !== undefined && config !== null && typeof config === 'object') {
+
+        if (config.isJoi) {
+            return config;
+        }
+
+        if (Array.isArray(config)) {
+            return Joi.alternatives().try(config);
+        }
+
+        if (config instanceof RegExp) {
+            return Joi.string().regex(config);
+        }
+
+        if (config instanceof Date) {
+            return Joi.date().valid(config);
+        }
+
+        return Joi.object().keys(config);
+    }
+
+    if (typeof config === 'string') {
+        return Joi.string().valid(config);
+    }
+
+    if (typeof config === 'number') {
+        return Joi.number().valid(config);
+    }
+
+    if (typeof config === 'boolean') {
+        return Joi.boolean().valid(config);
+    }
+
+    if (Ref.isRef(config)) {
+        return Joi.valid(config);
+    }
+
+    Hoek.assert(config === null, 'Invalid schema content:', config);
+
+    return Joi.valid(null);
+};
+
+
+exports.ref = function (id) {
+
+    return Ref.isRef(id) ? id : Ref.create(id);
+};
+
+},{"./ref":113,"@hapi/hoek":98}],110:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Language = require('./language');
+
+
+const internals = {
+    annotations: Symbol('joi-annotations')
+};
+
+
+internals.stringify = function (value, wrapArrays) {
+
+    const type = typeof value;
+
+    if (value === null) {
+        return 'null';
+    }
+
+    if (type === 'string') {
+        return value;
+    }
+
+    if (value instanceof exports.Err || type === 'function' || type === 'symbol') {
+        return value.toString();
+    }
+
+    if (type === 'object') {
+        if (Array.isArray(value)) {
+            let partial = '';
+
+            for (let i = 0; i < value.length; ++i) {
+                partial = partial + (partial.length ? ', ' : '') + internals.stringify(value[i], wrapArrays);
+            }
+
+            return wrapArrays ? '[' + partial + ']' : partial;
+        }
+
+        return value.toString();
+    }
+
+    return JSON.stringify(value);
+};
+
+
+exports.Err = class {
+
+    constructor(type, context, state, options, flags, message, template) {
+
+        this.isJoi = true;
+        this.type = type;
+        this.context = context || {};
+        this.context.key = state.path[state.path.length - 1];
+        this.context.label = state.key;
+        this.path = state.path;
+        this.options = options;
+        this.flags = flags;
+        this.message = message;
+        this.template = template;
+
+        const localized = this.options.language;
+
+        if (this.flags.label) {
+            this.context.label = this.flags.label;
+        }
+        else if (localized &&                   // language can be null for arrays exclusion check
+            (this.context.label === '' ||
+            this.context.label === null)) {
+            this.context.label = localized.root || Language.errors.root;
+        }
+    }
+
+    toString() {
+
+        if (this.message) {
+            return this.message;
+        }
+
+        let format;
+
+        if (this.template) {
+            format = this.template;
+        }
+
+        const localized = this.options.language;
+
+        format = format || Hoek.reach(localized, this.type) || Hoek.reach(Language.errors, this.type);
+
+        if (format === undefined) {
+            return `Error code "${this.type}" is not defined, your custom type is missing the correct language definition`;
+        }
+
+        let wrapArrays = Hoek.reach(localized, 'messages.wrapArrays');
+        if (typeof wrapArrays !== 'boolean') {
+            wrapArrays = Language.errors.messages.wrapArrays;
+        }
+
+        if (format === null) {
+            const childrenString = internals.stringify(this.context.reason, wrapArrays);
+            if (wrapArrays) {
+                return childrenString.slice(1, -1);
+            }
+
+            return childrenString;
+        }
+
+        const hasKey = /{{!?label}}/.test(format);
+        const skipKey = format.length > 2 && format[0] === '!' && format[1] === '!';
+
+        if (skipKey) {
+            format = format.slice(2);
+        }
+
+        if (!hasKey && !skipKey) {
+            const localizedKey = Hoek.reach(localized, 'key');
+            if (typeof localizedKey === 'string') {
+                format = localizedKey + format;
+            }
+            else {
+                format = Hoek.reach(Language.errors, 'key') + format;
+            }
+        }
+
+        const message =  format.replace(/{{(!?)([^}]+)}}/g, ($0, isSecure, name) => {
+
+            const value = Hoek.reach(this.context, name);
+            const normalized = internals.stringify(value, wrapArrays);
+            return (isSecure && this.options.escapeHtml ? Hoek.escapeHtml(normalized) : normalized);
+        });
+
+        this.toString = () => message;  // Persist result of last toString call, it won't change
+
+        return message;
+    }
+
+};
+
+
+exports.create = function (type, context, state, options, flags, message, template) {
+
+    return new exports.Err(type, context, state, options, flags, message, template);
+};
+
+
+exports.process = function (errors, object) {
+
+    if (!errors) {
+        return null;
+    }
+
+    // Construct error
+
+    let message = '';
+    const details = [];
+
+    const processErrors = function (localErrors, parent, overrideMessage) {
+
+        for (let i = 0; i < localErrors.length; ++i) {
+            const item = localErrors[i];
+
+            if (item instanceof Error) {
+                return item;
+            }
+
+            if (item.flags.error && typeof item.flags.error !== 'function') {
+                if (!item.flags.selfError || !item.context.reason) {
+                    return item.flags.error;
+                }
+            }
+
+            let itemMessage;
+            if (parent === undefined) {
+                itemMessage = item.toString();
+                message = message + (message ? '. ' : '') + itemMessage;
+            }
+
+            // Do not push intermediate errors, we're only interested in leafs
+
+            if (item.context.reason) {
+                const override = processErrors(item.context.reason, item.path, item.type === 'override' ? item.message : null);
+                if (override) {
+                    return override;
+                }
+            }
+            else {
+                details.push({
+                    message: overrideMessage || itemMessage || item.toString(),
+                    path: item.path,
+                    type: item.type,
+                    context: item.context
+                });
+            }
+        }
+    };
+
+    const override = processErrors(errors);
+    if (override) {
+        return override;
+    }
+
+    const error = new Error(message);
+    error.isJoi = true;
+    error.name = 'ValidationError';
+    error.details = details;
+    error._object = object;
+    error.annotate = internals.annotate;
+    return error;
+};
+
+
+// Inspired by json-stringify-safe
+
+internals.safeStringify = function (obj, spaces) {
+
+    return JSON.stringify(obj, internals.serializer(), spaces);
+};
+
+
+internals.serializer = function () {
+
+    const keys = [];
+    const stack = [];
+
+    const cycleReplacer = (key, value) => {
+
+        if (stack[0] === value) {
+            return '[Circular ~]';
+        }
+
+        return '[Circular ~.' + keys.slice(0, stack.indexOf(value)).join('.') + ']';
+    };
+
+    return function (key, value) {
+
+        if (stack.length > 0) {
+            const thisPos = stack.indexOf(this);
+            if (~thisPos) {
+                stack.length = thisPos + 1;
+                keys.length = thisPos + 1;
+                keys[thisPos] = key;
+            }
+            else {
+                stack.push(this);
+                keys.push(key);
+            }
+
+            if (~stack.indexOf(value)) {
+                value = cycleReplacer.call(this, key, value);
+            }
+        }
+        else {
+            stack.push(value);
+        }
+
+        if (value) {
+            const annotations = value[internals.annotations];
+            if (annotations) {
+                if (Array.isArray(value)) {
+                    const annotated = [];
+
+                    for (let i = 0; i < value.length; ++i) {
+                        if (annotations.errors[i]) {
+                            annotated.push(`_$idx$_${annotations.errors[i].sort().join(', ')}_$end$_`);
+                        }
+
+                        annotated.push(value[i]);
+                    }
+
+                    value = annotated;
+                }
+                else {
+                    const errorKeys = Object.keys(annotations.errors);
+                    for (let i = 0; i < errorKeys.length; ++i) {
+                        const errorKey = errorKeys[i];
+                        value[`${errorKey}_$key$_${annotations.errors[errorKey].sort().join(', ')}_$end$_`] = value[errorKey];
+                        value[errorKey] = undefined;
+                    }
+
+                    const missingKeys = Object.keys(annotations.missing);
+                    for (let i = 0; i < missingKeys.length; ++i) {
+                        const missingKey = missingKeys[i];
+                        value[`_$miss$_${missingKey}|${annotations.missing[missingKey]}_$end$_`] = '__missing__';
+                    }
+                }
+
+                return value;
+            }
+        }
+
+        if (value === Infinity || value === -Infinity || Number.isNaN(value) ||
+            typeof value === 'function' || typeof value === 'symbol') {
+            return '[' + value.toString() + ']';
+        }
+
+        return value;
+    };
+};
+
+
+internals.annotate = function (stripColorCodes) {
+
+    const redFgEscape = stripColorCodes ? '' : '\u001b[31m';
+    const redBgEscape = stripColorCodes ? '' : '\u001b[41m';
+    const endColor = stripColorCodes ? '' : '\u001b[0m';
+
+    if (typeof this._object !== 'object') {
+        return this.details[0].message;
+    }
+
+    const obj = Hoek.clone(this._object || {});
+
+    for (let i = this.details.length - 1; i >= 0; --i) {        // Reverse order to process deepest child first
+        const pos = i + 1;
+        const error = this.details[i];
+        const path = error.path;
+        let ref = obj;
+        for (let j = 0; ; ++j) {
+            const seg = path[j];
+
+            if (ref.isImmutable) {
+                ref = ref.clone();                              // joi schemas are not cloned by hoek, we have to take this extra step
+            }
+
+            if (j + 1 < path.length &&
+                ref[seg] &&
+                typeof ref[seg] !== 'string') {
+
+                ref = ref[seg];
+            }
+            else {
+                const refAnnotations = ref[internals.annotations] = ref[internals.annotations] || { errors: {}, missing: {} };
+                const value = ref[seg];
+                const cacheKey = seg || error.context.label;
+
+                if (value !== undefined) {
+                    refAnnotations.errors[cacheKey] = refAnnotations.errors[cacheKey] || [];
+                    refAnnotations.errors[cacheKey].push(pos);
+                }
+                else {
+                    refAnnotations.missing[cacheKey] = pos;
+                }
+
+                break;
+            }
+        }
+    }
+
+    const replacers = {
+        key: /_\$key\$_([, \d]+)_\$end\$_"/g,
+        missing: /"_\$miss\$_([^|]+)\|(\d+)_\$end\$_": "__missing__"/g,
+        arrayIndex: /\s*"_\$idx\$_([, \d]+)_\$end\$_",?\n(.*)/g,
+        specials: /"\[(NaN|Symbol.*|-?Infinity|function.*|\(.*)]"/g
+    };
+
+    let message = internals.safeStringify(obj, 2)
+        .replace(replacers.key, ($0, $1) => `" ${redFgEscape}[${$1}]${endColor}`)
+        .replace(replacers.missing, ($0, $1, $2) => `${redBgEscape}"${$1}"${endColor}${redFgEscape} [${$2}]: -- missing --${endColor}`)
+        .replace(replacers.arrayIndex, ($0, $1, $2) => `\n${$2} ${redFgEscape}[${$1}]${endColor}`)
+        .replace(replacers.specials, ($0, $1) => $1);
+
+    message = `${message}\n${redFgEscape}`;
+
+    for (let i = 0; i < this.details.length; ++i) {
+        const pos = i + 1;
+        message = `${message}\n[${pos}] ${this.details[i].message}`;
+    }
+
+    message = message + endColor;
+
+    return message;
+};
+
+},{"./language":112,"@hapi/hoek":98}],111:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('./types/any');
+const Cast = require('./cast');
+const Errors = require('./errors');
+const Lazy = require('./types/lazy');
+const Ref = require('./ref');
+
+
+const internals = {
+    alternatives: require('./types/alternatives'),
+    array: require('./types/array'),
+    boolean: require('./types/boolean'),
+    binary: require('./types/binary'),
+    date: require('./types/date'),
+    func: require('./types/func'),
+    number: require('./types/number'),
+    object: require('./types/object'),
+    string: require('./types/string'),
+    symbol: require('./types/symbol')
+};
+
+
+internals.callWithDefaults = function (schema, args) {
+
+    Hoek.assert(this, 'Must be invoked on a Joi instance.');
+
+    if (this._defaults) {
+        schema = this._defaults(schema);
+    }
+
+    schema._currentJoi = this;
+
+    return schema._init(...args);
+};
+
+
+internals.root = function () {
+
+    const any = new Any();
+
+    const root = any.clone();
+    Any.prototype._currentJoi = root;
+    root._currentJoi = root;
+    root._binds = new Set(['any', 'alternatives', 'alt', 'array', 'bool', 'boolean', 'binary', 'date', 'func', 'number', 'object', 'string', 'symbol', 'validate', 'describe', 'compile', 'assert', 'attempt', 'lazy', 'defaults', 'extend', 'allow', 'valid', 'only', 'equal', 'invalid', 'disallow', 'not', 'required', 'exist', 'optional', 'forbidden', 'strip', 'when', 'empty', 'default']);
+
+    root.any = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.any() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, any, args);
+    };
+
+    root.alternatives = root.alt = function (...args) {
+
+        return internals.callWithDefaults.call(this, internals.alternatives, args);
+    };
+
+    root.array = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.array() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.array, args);
+    };
+
+    root.boolean = root.bool = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.boolean() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.boolean, args);
+    };
+
+    root.binary = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.binary() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.binary, args);
+    };
+
+    root.date = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.date() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.date, args);
+    };
+
+    root.func = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.func() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.func, args);
+    };
+
+    root.number = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.number() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.number, args);
+    };
+
+    root.object = function (...args) {
+
+        return internals.callWithDefaults.call(this, internals.object, args);
+    };
+
+    root.string = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.string() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.string, args);
+    };
+
+    root.symbol = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.symbol() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.symbol, args);
+    };
+
+    root.ref = function (...args) {
+
+        return Ref.create(...args);
+    };
+
+    root.isRef = function (ref) {
+
+        return Ref.isRef(ref);
+    };
+
+    root.validate = function (value, ...args /*, [schema], [options], callback */) {
+
+        const last = args[args.length - 1];
+        const callback = typeof last === 'function' ? last : null;
+
+        const count = args.length - (callback ? 1 : 0);
+        if (count === 0) {
+            return any.validate(value, callback);
+        }
+
+        const options = count === 2 ? args[1] : undefined;
+        const schema = this.compile(args[0]);
+
+        return schema._validateWithOptions(value, options, callback);
+    };
+
+    root.describe = function (...args) {
+
+        const schema = args.length ? this.compile(args[0]) : any;
+        return schema.describe();
+    };
+
+    root.compile = function (schema) {
+
+        try {
+            return Cast.schema(this, schema);
+        }
+        catch (err) {
+            if (err.hasOwnProperty('path')) {
+                err.message = err.message + '(' + err.path + ')';
+            }
+
+            throw err;
+        }
+    };
+
+    root.assert = function (value, schema, message) {
+
+        this.attempt(value, schema, message);
+    };
+
+    root.attempt = function (value, schema, message) {
+
+        const result = this.validate(value, schema);
+        const error = result.error;
+        if (error) {
+            if (!message) {
+                if (typeof error.annotate === 'function') {
+                    error.message = error.annotate();
+                }
+
+                throw error;
+            }
+
+            if (!(message instanceof Error)) {
+                if (typeof error.annotate === 'function') {
+                    error.message = `${message} ${error.annotate()}`;
+                }
+
+                throw error;
+            }
+
+            throw message;
+        }
+
+        return result.value;
+    };
+
+    root.reach = function (schema, path) {
+
+        Hoek.assert(schema && schema instanceof Any, 'you must provide a joi schema');
+        Hoek.assert(Array.isArray(path) || typeof path === 'string', 'path must be a string or an array of strings');
+
+        const reach = (sourceSchema, schemaPath) => {
+
+            if (!schemaPath.length) {
+                return sourceSchema;
+            }
+
+            const children = sourceSchema._inner.children;
+            if (!children) {
+                return;
+            }
+
+            const key = schemaPath.shift();
+            for (let i = 0; i < children.length; ++i) {
+                const child = children[i];
+                if (child.key === key) {
+                    return reach(child.schema, schemaPath);
+                }
+            }
+        };
+
+        const schemaPath = typeof path === 'string' ? (path ? path.split('.') : []) : path.slice();
+
+        return reach(schema, schemaPath);
+    };
+
+    root.lazy = function (...args) {
+
+        return internals.callWithDefaults.call(this, Lazy, args);
+    };
+
+    root.defaults = function (fn) {
+
+        Hoek.assert(typeof fn === 'function', 'Defaults must be a function');
+
+        let joi = Object.create(this.any());
+        joi = fn(joi);
+
+        Hoek.assert(joi && joi instanceof this.constructor, 'defaults() must return a schema');
+
+        Object.assign(joi, this, joi.clone()); // Re-add the types from `this` but also keep the settings from joi's potential new defaults
+
+        joi._defaults = (schema) => {
+
+            if (this._defaults) {
+                schema = this._defaults(schema);
+                Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
+            }
+
+            schema = fn(schema);
+            Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
+            return schema;
+        };
+
+        return joi;
+    };
+
+    root.bind = function () {
+
+        const joi = Object.create(this);
+
+        joi._binds.forEach((bind) => {
+
+            joi[bind] = joi[bind].bind(joi);
+        });
+
+        return joi;
+    };
+
+    root.extend = function (...args) {
+
+        const extensions = Hoek.flatten(args);
+        Hoek.assert(extensions.length > 0, 'You need to provide at least one extension');
+
+        this.assert(extensions, root.extensionsSchema);
+
+        const joi = Object.create(this.any());
+        Object.assign(joi, this);
+        joi._currentJoi = joi;
+        joi._binds = new Set(joi._binds);
+
+        for (let i = 0; i < extensions.length; ++i) {
+            let extension = extensions[i];
+
+            if (typeof extension === 'function') {
+                extension = extension(joi);
+            }
+
+            this.assert(extension, root.extensionSchema);
+
+            const base = (extension.base || this.any()).clone(); // Cloning because we're going to override language afterwards
+            const ctor = base.constructor;
+            const type = class extends ctor { // eslint-disable-line no-loop-func
+
+                constructor() {
+
+                    super();
+                    if (extension.base) {
+                        Object.assign(this, base);
+                    }
+
+                    this._type = extension.name;
+                }
+
+            };
+
+            if (extension.language) {
+                const lang = {
+                    [extension.name]: extension.language
+                };
+                type.prototype._language = Hoek.applyToDefaults(type.prototype._language || (base._settings && base._settings.language) || {}, lang);
+            }
+
+
+            if (extension.coerce) {
+                type.prototype._coerce = function (value, state, options) {
+
+                    if (ctor.prototype._coerce) {
+                        const baseRet = ctor.prototype._coerce.call(this, value, state, options);
+
+                        if (baseRet.errors) {
+                            return baseRet;
+                        }
+
+                        value = baseRet.value;
+                    }
+
+                    const ret = extension.coerce.call(this, value, state, options);
+                    if (ret instanceof Errors.Err) {
+                        return { value, errors: ret };
+                    }
+
+                    return { value: ret };
+                };
+            }
+
+            if (extension.pre) {
+                type.prototype._base = function (value, state, options) {
+
+                    if (ctor.prototype._base) {
+                        const baseRet = ctor.prototype._base.call(this, value, state, options);
+
+                        if (baseRet.errors) {
+                            return baseRet;
+                        }
+
+                        value = baseRet.value;
+                    }
+
+                    const ret = extension.pre.call(this, value, state, options);
+                    if (ret instanceof Errors.Err) {
+                        return { value, errors: ret };
+                    }
+
+                    return { value: ret };
+                };
+            }
+
+            if (extension.rules) {
+                for (let j = 0; j < extension.rules.length; ++j) {
+                    const rule = extension.rules[j];
+                    const ruleArgs = rule.params ?
+                        (rule.params instanceof Any ? rule.params._inner.children.map((k) => k.key) : Object.keys(rule.params)) :
+                        [];
+                    const validateArgs = rule.params ? Cast.schema(this, rule.params) : null;
+
+                    type.prototype[rule.name] = function (...rArgs) { // eslint-disable-line no-loop-func
+
+                        if (rArgs.length > ruleArgs.length) {
+                            throw new Error('Unexpected number of arguments');
+                        }
+
+                        let hasRef = false;
+                        let arg = {};
+
+                        for (let k = 0; k < ruleArgs.length; ++k) {
+                            arg[ruleArgs[k]] = rArgs[k];
+                            if (!hasRef && Ref.isRef(rArgs[k])) {
+                                hasRef = true;
+                            }
+                        }
+
+                        if (validateArgs) {
+                            arg = joi.attempt(arg, validateArgs);
+                        }
+
+                        let schema;
+                        if (rule.validate && !rule.setup) {
+                            const validate = function (value, state, options) {
+
+                                return rule.validate.call(this, arg, value, state, options);
+                            };
+
+                            schema = this._test(rule.name, arg, validate, {
+                                description: rule.description,
+                                hasRef
+                            });
+                        }
+                        else {
+                            schema = this.clone();
+                        }
+
+                        if (rule.setup) {
+                            const newSchema = rule.setup.call(schema, arg);
+                            if (newSchema !== undefined) {
+                                Hoek.assert(newSchema instanceof Any, `Setup of extension Joi.${this._type}().${rule.name}() must return undefined or a Joi object`);
+                                schema = newSchema;
+                            }
+
+                            if (rule.validate) {
+                                const validate = function (value, state, options) {
+
+                                    return rule.validate.call(this, arg, value, state, options);
+                                };
+
+                                schema = schema._test(rule.name, arg, validate, {
+                                    description: rule.description,
+                                    hasRef
+                                });
+                            }
+                        }
+
+                        return schema;
+                    };
+                }
+            }
+
+            if (extension.describe) {
+                type.prototype.describe = function () {
+
+                    const description = ctor.prototype.describe.call(this);
+                    return extension.describe.call(this, description);
+                };
+            }
+
+            const instance = new type();
+            joi[extension.name] = function (...extArgs) {
+
+                return internals.callWithDefaults.call(this, instance, extArgs);
+            };
+
+            joi._binds.add(extension.name);
+        }
+
+        return joi;
+    };
+
+    root.extensionSchema = internals.object.keys({
+        base: internals.object.type(Any, 'Joi object'),
+        name: internals.string.required(),
+        coerce: internals.func.arity(3),
+        pre: internals.func.arity(3),
+        language: internals.object,
+        describe: internals.func.arity(1),
+        rules: internals.array.items(internals.object.keys({
+            name: internals.string.required(),
+            setup: internals.func.arity(1),
+            validate: internals.func.arity(4),
+            params: [
+                internals.object.pattern(/.*/, internals.object.type(Any, 'Joi object')),
+                internals.object.type(internals.object.constructor, 'Joi object')
+            ],
+            description: [internals.string, internals.func.arity(1)]
+        }).or('setup', 'validate'))
+    }).strict();
+
+    root.extensionsSchema = internals.array.items([internals.object, internals.func.arity(1)]).strict();
+
+    root.version = require('../package.json').version;
+
+    return root;
+};
+
+
+module.exports = internals.root();
+
+},{"../package.json":134,"./cast":109,"./errors":110,"./ref":113,"./types/alternatives":116,"./types/any":117,"./types/array":119,"./types/binary":120,"./types/boolean":121,"./types/date":122,"./types/func":123,"./types/lazy":124,"./types/number":125,"./types/object":126,"./types/string":128,"./types/symbol":132,"@hapi/hoek":98}],112:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+exports.errors = {
+    root: 'value',
+    key: '"{{!label}}" ',
+    messages: {
+        wrapArrays: true
+    },
+    any: {
+        unknown: 'is not allowed',
+        invalid: 'contains an invalid value',
+        empty: 'is not allowed to be empty',
+        required: 'is required',
+        allowOnly: 'must be one of {{valids}}',
+        default: 'threw an error when running default method'
+    },
+    alternatives: {
+        base: 'not matching any of the allowed alternatives',
+        child: null
+    },
+    array: {
+        base: 'must be an array',
+        includes: 'at position {{pos}} does not match any of the allowed types',
+        includesSingle: 'single value of "{{!label}}" does not match any of the allowed types',
+        includesOne: 'at position {{pos}} fails because {{reason}}',
+        includesOneSingle: 'single value of "{{!label}}" fails because {{reason}}',
+        includesRequiredUnknowns: 'does not contain {{unknownMisses}} required value(s)',
+        includesRequiredKnowns: 'does not contain {{knownMisses}}',
+        includesRequiredBoth: 'does not contain {{knownMisses}} and {{unknownMisses}} other required value(s)',
+        excludes: 'at position {{pos}} contains an excluded value',
+        excludesSingle: 'single value of "{{!label}}" contains an excluded value',
+        hasKnown: 'does not contain at least one required match for type "{{!patternLabel}}"',
+        hasUnknown: 'does not contain at least one required match',
+        min: 'must contain at least {{limit}} items',
+        max: 'must contain less than or equal to {{limit}} items',
+        length: 'must contain {{limit}} items',
+        ordered: 'at position {{pos}} fails because {{reason}}',
+        orderedLength: 'at position {{pos}} fails because array must contain at most {{limit}} items',
+        ref: 'references "{{ref}}" which is not a positive integer',
+        sparse: 'must not be a sparse array',
+        unique: 'position {{pos}} contains a duplicate value'
+    },
+    boolean: {
+        base: 'must be a boolean'
+    },
+    binary: {
+        base: 'must be a buffer or a string',
+        min: 'must be at least {{limit}} bytes',
+        max: 'must be less than or equal to {{limit}} bytes',
+        length: 'must be {{limit}} bytes'
+    },
+    date: {
+        base: 'must be a number of milliseconds or valid date string',
+        strict: 'must be a valid date',
+        min: 'must be larger than or equal to "{{limit}}"',
+        max: 'must be less than or equal to "{{limit}}"',
+        less: 'must be less than "{{limit}}"',
+        greater: 'must be greater than "{{limit}}"',
+        isoDate: 'must be a valid ISO 8601 date',
+        timestamp: {
+            javascript: 'must be a valid timestamp or number of milliseconds',
+            unix: 'must be a valid timestamp or number of seconds'
+        },
+        ref: 'references "{{ref}}" which is not a date'
+    },
+    function: {
+        base: 'must be a Function',
+        arity: 'must have an arity of {{n}}',
+        minArity: 'must have an arity greater or equal to {{n}}',
+        maxArity: 'must have an arity lesser or equal to {{n}}',
+        ref: 'must be a Joi reference',
+        class: 'must be a class'
+    },
+    lazy: {
+        base: '!!schema error: lazy schema must be set',
+        schema: '!!schema error: lazy schema function must return a schema'
+    },
+    object: {
+        base: 'must be an object',
+        child: '!!child "{{!child}}" fails because {{reason}}',
+        min: 'must have at least {{limit}} children',
+        max: 'must have less than or equal to {{limit}} children',
+        length: 'must have {{limit}} children',
+        allowUnknown: '!!"{{!child}}" is not allowed',
+        with: '!!"{{mainWithLabel}}" missing required peer "{{peerWithLabel}}"',
+        without: '!!"{{mainWithLabel}}" conflict with forbidden peer "{{peerWithLabel}}"',
+        missing: 'must contain at least one of {{peersWithLabels}}',
+        xor: 'contains a conflict between exclusive peers {{peersWithLabels}}',
+        oxor: 'contains a conflict between optional exclusive peers {{peersWithLabels}}',
+        and: 'contains {{presentWithLabels}} without its required peers {{missingWithLabels}}',
+        nand: '!!"{{mainWithLabel}}" must not exist simultaneously with {{peersWithLabels}}',
+        assert: '!!"{{ref}}" validation failed because "{{ref}}" failed to {{message}}',
+        rename: {
+            multiple: 'cannot rename child "{{from}}" because multiple renames are disabled and another key was already renamed to "{{to}}"',
+            override: 'cannot rename child "{{from}}" because override is disabled and target "{{to}}" exists',
+            regex: {
+                multiple: 'cannot rename children {{from}} because multiple renames are disabled and another key was already renamed to "{{to}}"',
+                override: 'cannot rename children {{from}} because override is disabled and target "{{to}}" exists'
+            }
+        },
+        type: 'must be an instance of "{{type}}"',
+        schema: 'must be a Joi instance'
+    },
+    number: {
+        base: 'must be a number',
+        unsafe: 'must be a safe number',
+        min: 'must be larger than or equal to {{limit}}',
+        max: 'must be less than or equal to {{limit}}',
+        less: 'must be less than {{limit}}',
+        greater: 'must be greater than {{limit}}',
+        integer: 'must be an integer',
+        negative: 'must be a negative number',
+        positive: 'must be a positive number',
+        precision: 'must have no more than {{limit}} decimal places',
+        ref: 'references "{{ref}}" which is not a number',
+        multiple: 'must be a multiple of {{multiple}}',
+        port: 'must be a valid port'
+    },
+    string: {
+        base: 'must be a string',
+        min: 'length must be at least {{limit}} characters long',
+        max: 'length must be less than or equal to {{limit}} characters long',
+        length: 'length must be {{limit}} characters long',
+        alphanum: 'must only contain alpha-numeric characters',
+        token: 'must only contain alpha-numeric and underscore characters',
+        regex: {
+            base: 'with value "{{!value}}" fails to match the required pattern: {{pattern}}',
+            name: 'with value "{{!value}}" fails to match the {{name}} pattern',
+            invert: {
+                base: 'with value "{{!value}}" matches the inverted pattern: {{pattern}}',
+                name: 'with value "{{!value}}" matches the inverted {{name}} pattern'
+            }
+        },
+        email: 'must be a valid email',
+        uri: 'must be a valid uri',
+        uriRelativeOnly: 'must be a valid relative uri',
+        uriCustomScheme: 'must be a valid uri with a scheme matching the {{scheme}} pattern',
+        isoDate: 'must be a valid ISO 8601 date',
+        guid: 'must be a valid GUID',
+        hex: 'must only contain hexadecimal characters',
+        hexAlign: 'hex decoded representation must be byte aligned',
+        base64: 'must be a valid base64 string',
+        dataUri: 'must be a valid dataUri string',
+        hostname: 'must be a valid hostname',
+        normalize: 'must be unicode normalized in the {{form}} form',
+        lowercase: 'must only contain lowercase characters',
+        uppercase: 'must only contain uppercase characters',
+        trim: 'must not have leading or trailing whitespace',
+        creditCard: 'must be a credit card',
+        ref: 'references "{{ref}}" which is not a number',
+        ip: 'must be a valid ip address with a {{cidr}} CIDR',
+        ipVersion: 'must be a valid ip address of one of the following versions {{version}} with a {{cidr}} CIDR'
+    },
+    symbol: {
+        base: 'must be a symbol',
+        map: 'must be one of {{map}}'
+    }
+};
+
+},{}],113:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+
+const internals = {};
+
+
+exports.create = function (key, options) {
+
+    Hoek.assert(typeof key === 'string', 'Invalid reference key:', key);
+
+    const settings = Hoek.clone(options);         // options can be reused and modified
+
+    const ref = function (value, validationOptions) {
+
+        return Hoek.reach(ref.isContext ? validationOptions.context : value, ref.key, settings);
+    };
+
+    ref.isContext = (key[0] === ((settings && settings.contextPrefix) || '$'));
+    ref.key = (ref.isContext ? key.slice(1) : key);
+    ref.path = ref.key.split((settings && settings.separator) || '.');
+    ref.depth = ref.path.length;
+    ref.root = ref.path[0];
+    ref.isJoi = true;
+
+    ref.toString = function () {
+
+        return (ref.isContext ? 'context:' : 'ref:') + ref.key;
+    };
+
+    return ref;
+};
+
+
+exports.isRef = function (ref) {
+
+    return typeof ref === 'function' && ref.isJoi;
+};
+
+
+exports.push = function (array, ref) {
+
+    if (exports.isRef(ref) &&
+        !ref.isContext) {
+
+        array.push(ref.root);
+    }
+};
+
+},{"@hapi/hoek":98}],114:[function(require,module,exports){
+'use strict';
+
+const Joi = require('./index');
+
+
+const internals = {};
+
+
+exports.options = Joi.object({
+    abortEarly: Joi.boolean(),
+    convert: Joi.boolean(),
+    allowUnknown: Joi.boolean(),
+    skipFunctions: Joi.boolean(),
+    stripUnknown: [Joi.boolean(), Joi.object({ arrays: Joi.boolean(), objects: Joi.boolean() }).or('arrays', 'objects')],
+    language: Joi.object(),
+    presence: Joi.string().only('required', 'optional', 'forbidden', 'ignore'),
+    context: Joi.object(),
+    noDefaults: Joi.boolean(),
+    escapeHtml: Joi.boolean()
+}).strict();
+
+},{"./index":111}],115:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Ref = require('./ref');
+
+
+const internals = {};
+
+
+internals.extendedCheckForValue = function (value, insensitive) {
+
+    const valueType = typeof value;
+
+    if (valueType === 'object') {
+        if (value instanceof Date) {
+            return (item) => {
+
+                return item instanceof Date && value.getTime() === item.getTime();
+            };
+        }
+
+        if (Buffer.isBuffer(value)) {
+            return (item) => {
+
+                return Buffer.isBuffer(item) && value.length === item.length && value.toString('binary') === item.toString('binary');
+            };
+        }
+    }
+    else if (insensitive && valueType === 'string') {
+        const lowercaseValue = value.toLowerCase();
+        return (item) => {
+
+            return typeof item === 'string' && lowercaseValue === item.toLowerCase();
+        };
+    }
+
+    return null;
+};
+
+
+module.exports = class InternalSet {
+
+    constructor(from) {
+
+        this._set = new Set(from);
+        this._hasRef = false;
+    }
+
+    add(value, refs) {
+
+        const isRef = Ref.isRef(value);
+        if (!isRef && this.has(value, null, null, false)) {
+
+            return this;
+        }
+
+        if (refs !== undefined) { // If it's a merge, we don't have any refs
+            Ref.push(refs, value);
+        }
+
+        this._set.add(value);
+
+        this._hasRef |= isRef;
+
+        return this;
+    }
+
+    merge(add, remove) {
+
+        for (const item of add._set) {
+            this.add(item);
+        }
+
+        for (const item of remove._set) {
+            this.remove(item);
+        }
+
+        return this;
+    }
+
+    remove(value) {
+
+        this._set.delete(value);
+        return this;
+    }
+
+    has(value, state, options, insensitive) {
+
+        return !!this.get(value, state, options, insensitive);
+    }
+
+    get(value, state, options, insensitive) {
+
+        if (!this._set.size) {
+            return false;
+        }
+
+        const hasValue = this._set.has(value);
+        if (hasValue) {
+            return { value };
+        }
+
+        const extendedCheck = internals.extendedCheckForValue(value, insensitive);
+        if (!extendedCheck) {
+            if (state && this._hasRef) {
+                for (let item of this._set) {
+                    if (Ref.isRef(item)) {
+                        item = [].concat(item(state.reference || state.parent, options));
+                        const found = item.indexOf(value);
+                        if (found >= 0) {
+                            return { value: item[found] };
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        return this._has(value, state, options, extendedCheck);
+    }
+
+    _has(value, state, options, check) {
+
+        const checkRef = !!(state && this._hasRef);
+
+        const isReallyEqual = function (item) {
+
+            if (value === item) {
+                return true;
+            }
+
+            return check(item);
+        };
+
+        for (let item of this._set) {
+            if (checkRef && Ref.isRef(item)) { // Only resolve references if there is a state, otherwise it's a merge
+                item = item(state.reference || state.parent, options);
+
+                if (Array.isArray(item)) {
+                    const found = item.findIndex(isReallyEqual);
+                    if (found >= 0) {
+                        return {
+                            value: item[found]
+                        };
+                    }
+
+                    continue;
+                }
+            }
+
+            if (isReallyEqual(item)) {
+                return {
+                    value: item
+                };
+            }
+        }
+
+        return false;
+    }
+
+    values(options) {
+
+        if (options && options.stripUndefined) {
+            const values = [];
+
+            for (const item of this._set) {
+                if (item !== undefined) {
+                    values.push(item);
+                }
+            }
+
+            return values;
+        }
+
+        return Array.from(this._set);
+    }
+
+    slice() {
+
+        const set = new InternalSet(this._set);
+        set._hasRef = this._hasRef;
+        return set;
+    }
+
+    concat(source) {
+
+        const set = new InternalSet([...this._set, ...source._set]);
+        set._hasRef = !!(this._hasRef | source._hasRef);
+        return set;
+    }
+};
+
+}).call(this,{"isBuffer":require("../../../../../is-buffer/index.js")})
+},{"../../../../../is-buffer/index.js":59,"./ref":113}],116:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Cast = require('../../cast');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+
+internals.Alternatives = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'alternatives';
+        this._invalids.remove(null);
+        this._inner.matches = [];
+    }
+
+    _init(...args) {
+
+        return args.length ? this.try(...args) : this;
+    }
+
+    _base(value, state, options) {
+
+        const errors = [];
+        const il = this._inner.matches.length;
+        const baseType = this._baseType;
+
+        for (let i = 0; i < il; ++i) {
+            const item = this._inner.matches[i];
+            if (!item.schema) {
+                const schema = item.peek || item.is;
+                const input = item.is ? item.ref(state.reference || state.parent, options) : value;
+                const failed = schema._validate(input, null, options, state.parent).errors;
+
+                if (failed) {
+                    if (item.otherwise) {
+                        return item.otherwise._validate(value, state, options);
+                    }
+                }
+                else if (item.then) {
+                    return item.then._validate(value, state, options);
+                }
+
+                if (i === (il - 1) && baseType) {
+                    return baseType._validate(value, state, options);
+                }
+
+                continue;
+            }
+
+            const result = item.schema._validate(value, state, options);
+            if (!result.errors) {     // Found a valid match
+                return result;
+            }
+
+            errors.push(...result.errors);
+        }
+
+        if (errors.length) {
+            return { errors: this.createError('alternatives.child', { reason: errors }, state, options) };
+        }
+
+        return { errors: this.createError('alternatives.base', null, state, options) };
+    }
+
+    try(...schemas) {
+
+        schemas = Hoek.flatten(schemas);
+        Hoek.assert(schemas.length, 'Cannot add other alternatives without at least one schema');
+
+        const obj = this.clone();
+
+        for (let i = 0; i < schemas.length; ++i) {
+            const cast = Cast.schema(this._currentJoi, schemas[i]);
+            if (cast._refs.length) {
+                obj._refs.push(...cast._refs);
+            }
+
+            obj._inner.matches.push({ schema: cast });
+        }
+
+        return obj;
+    }
+
+    when(condition, options) {
+
+        let schemaCondition = false;
+        Hoek.assert(Ref.isRef(condition) || typeof condition === 'string' || (schemaCondition = condition instanceof Any), 'Invalid condition:', condition);
+        Hoek.assert(options, 'Missing options');
+        Hoek.assert(typeof options === 'object', 'Invalid options');
+        if (schemaCondition) {
+            Hoek.assert(!options.hasOwnProperty('is'), '"is" can not be used with a schema condition');
+        }
+        else {
+            Hoek.assert(options.hasOwnProperty('is'), 'Missing "is" directive');
+        }
+
+        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
+
+        const obj = this.clone();
+        let is;
+        if (!schemaCondition) {
+            is = Cast.schema(this._currentJoi, options.is);
+
+            if (options.is === null || !(Ref.isRef(options.is) || options.is instanceof Any)) {
+
+                // Only apply required if this wasn't already a schema or a ref, we'll suppose people know what they're doing
+                is = is.required();
+            }
+        }
+
+        const item = {
+            ref: schemaCondition ? null : Cast.ref(condition),
+            peek: schemaCondition ? condition : null,
+            is,
+            then: options.then !== undefined ? Cast.schema(this._currentJoi, options.then) : undefined,
+            otherwise: options.otherwise !== undefined ? Cast.schema(this._currentJoi, options.otherwise) : undefined
+        };
+
+        if (obj._baseType) {
+
+            item.then = item.then && obj._baseType.concat(item.then);
+            item.otherwise = item.otherwise && obj._baseType.concat(item.otherwise);
+        }
+
+        if (!schemaCondition) {
+            Ref.push(obj._refs, item.ref);
+            obj._refs.push(...item.is._refs);
+        }
+
+        if (item.then && item.then._refs.length) {
+            obj._refs.push(...item.then._refs);
+        }
+
+        if (item.otherwise && item.otherwise._refs.length) {
+            obj._refs.push(...item.otherwise._refs);
+        }
+
+        obj._inner.matches.push(item);
+
+        return obj;
+    }
+
+    label(name) {
+
+        const obj = super.label(name);
+        obj._inner.matches = obj._inner.matches.map((match) => {
+
+            if (match.schema) {
+                return { schema: match.schema.label(name) };
+            }
+
+            match = Object.assign({}, match);
+            if (match.then) {
+                match.then = match.then.label(name);
+            }
+
+            if (match.otherwise) {
+                match.otherwise = match.otherwise.label(name);
+            }
+
+            return match;
+        });
+        return obj;
+    }
+
+    describe() {
+
+        const description = super.describe();
+        const alternatives = [];
+        for (let i = 0; i < this._inner.matches.length; ++i) {
+            const item = this._inner.matches[i];
+            if (item.schema) {
+
+                // try()
+
+                alternatives.push(item.schema.describe());
+            }
+            else {
+
+                // when()
+
+                const when = item.is ? {
+                    ref: item.ref.toString(),
+                    is: item.is.describe()
+                } : {
+                    peek: item.peek.describe()
+                };
+
+                if (item.then) {
+                    when.then = item.then.describe();
+                }
+
+                if (item.otherwise) {
+                    when.otherwise = item.otherwise.describe();
+                }
+
+                alternatives.push(when);
+            }
+        }
+
+        description.alternatives = alternatives;
+        return description;
+    }
+
+};
+
+
+module.exports = new internals.Alternatives();
+
+},{"../../cast":109,"../../ref":113,"../any":117,"@hapi/hoek":98}],117:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Cast = require('../../cast');
+const Settings = require('./settings');
+const Ref = require('../../ref');
+const Errors = require('../../errors');
+const State = require('../state');
+const Symbols = require('../symbols');
+
+const Pkg = require('../../../package.json');
+
+let Alternatives = null;                            // Delay-loaded to prevent circular dependencies
+let Schemas = null;
+
+
+const internals = {
+    Set: require('../../set'),
+    symbol: Symbol.for('@hapi/joi/schema')
+};
+
+
+internals.defaults = {
+    abortEarly: true,
+    convert: true,
+    allowUnknown: false,
+    skipFunctions: false,
+    stripUnknown: false,
+    language: {},
+    presence: 'optional',
+    noDefaults: false,
+    escapeHtml: false
+
+    // context: null
+};
+
+
+module.exports = internals.Any = class {
+
+    constructor() {
+
+        this.isJoi = true;
+        this._type = 'any';
+        this._settings = null;
+        this._valids = new internals.Set();
+        this._invalids = new internals.Set();
+        this._tests = [];
+        this._refs = [];
+        this._flags = {
+            /*
+             presence: 'optional',                   // optional, required, forbidden, ignore
+             allowOnly: false,
+             allowUnknown: undefined,
+             default: undefined,
+             forbidden: false,
+             encoding: undefined,
+             insensitive: false,
+             trim: false,
+             normalize: undefined,                   // NFC, NFD, NFKC, NFKD
+             case: undefined,                        // upper, lower
+             empty: undefined,
+             func: false,
+             raw: false
+             */
+        };
+
+        this._description = null;
+        this._unit = null;
+        this._notes = [];
+        this._tags = [];
+        this._examples = [];
+        this._meta = [];
+
+        this._inner = {};                           // Hash of arrays of immutable objects
+    }
+
+    _init() {
+
+        return this;
+    }
+
+    get schemaType() {
+
+        return this._type;
+    }
+
+    createError(type, context, state, options, flags = this._flags) {
+
+        return Errors.create(type, context, state, options, flags);
+    }
+
+    createOverrideError(type, context, state, options, message, template) {
+
+        return Errors.create(type, context, state, options, this._flags, message, template);
+    }
+
+    checkOptions(options) {
+
+        Schemas = Schemas || require('../../schemas');
+
+        const result = Schemas.options.validate(options);
+
+        if (result.error) {
+            throw new Error(result.error.details[0].message);
+        }
+    }
+
+    clone() {
+
+        const obj = Object.create(Object.getPrototypeOf(this));
+
+        obj.isJoi = true;
+        obj._currentJoi = this._currentJoi;
+        obj._type = this._type;
+        obj._settings = this._settings;
+        obj._baseType = this._baseType;
+        obj._valids = this._valids.slice();
+        obj._invalids = this._invalids.slice();
+        obj._tests = this._tests.slice();
+        obj._refs = this._refs.slice();
+        obj._flags = Hoek.clone(this._flags);
+
+        obj._description = this._description;
+        obj._unit = this._unit;
+        obj._notes = this._notes.slice();
+        obj._tags = this._tags.slice();
+        obj._examples = this._examples.slice();
+        obj._meta = this._meta.slice();
+
+        obj._inner = {};
+        const inners = Object.keys(this._inner);
+        for (let i = 0; i < inners.length; ++i) {
+            const key = inners[i];
+            obj._inner[key] = this._inner[key] ? this._inner[key].slice() : null;
+        }
+
+        return obj;
+    }
+
+    concat(schema) {
+
+        Hoek.assert(schema instanceof internals.Any, 'Invalid schema object');
+        Hoek.assert(this._type === 'any' || schema._type === 'any' || schema._type === this._type, 'Cannot merge type', this._type, 'with another type:', schema._type);
+
+        let obj = this.clone();
+
+        if (this._type === 'any' && schema._type !== 'any') {
+
+            // Reset values as if we were "this"
+            const tmpObj = schema.clone();
+            const keysToRestore = ['_settings', '_valids', '_invalids', '_tests', '_refs', '_flags', '_description', '_unit',
+                '_notes', '_tags', '_examples', '_meta', '_inner'];
+
+            for (let i = 0; i < keysToRestore.length; ++i) {
+                tmpObj[keysToRestore[i]] = obj[keysToRestore[i]];
+            }
+
+            obj = tmpObj;
+        }
+
+        obj._settings = obj._settings ? Settings.concat(obj._settings, schema._settings) : schema._settings;
+        obj._valids.merge(schema._valids, schema._invalids);
+        obj._invalids.merge(schema._invalids, schema._valids);
+        obj._tests.push(...schema._tests);
+        obj._refs.push(...schema._refs);
+        if (obj._flags.empty && schema._flags.empty) {
+            obj._flags.empty = obj._flags.empty.concat(schema._flags.empty);
+            const flags = Object.assign({}, schema._flags);
+            delete flags.empty;
+            Hoek.merge(obj._flags, flags);
+        }
+        else if (schema._flags.empty) {
+            obj._flags.empty = schema._flags.empty;
+            const flags = Object.assign({}, schema._flags);
+            delete flags.empty;
+            Hoek.merge(obj._flags, flags);
+        }
+        else {
+            Hoek.merge(obj._flags, schema._flags);
+        }
+
+        obj._description = schema._description || obj._description;
+        obj._unit = schema._unit || obj._unit;
+        obj._notes.push(...schema._notes);
+        obj._tags.push(...schema._tags);
+        obj._examples.push(...schema._examples);
+        obj._meta.push(...schema._meta);
+
+        const inners = Object.keys(schema._inner);
+        const isObject = obj._type === 'object';
+        for (let i = 0; i < inners.length; ++i) {
+            const key = inners[i];
+            const source = schema._inner[key];
+            if (source) {
+                const target = obj._inner[key];
+                if (target) {
+                    if (isObject && key === 'children') {
+                        const keys = {};
+
+                        for (let j = 0; j < target.length; ++j) {
+                            keys[target[j].key] = j;
+                        }
+
+                        for (let j = 0; j < source.length; ++j) {
+                            const sourceKey = source[j].key;
+                            if (keys[sourceKey] >= 0) {
+                                target[keys[sourceKey]] = {
+                                    key: sourceKey,
+                                    schema: target[keys[sourceKey]].schema.concat(source[j].schema)
+                                };
+                            }
+                            else {
+                                target.push(source[j]);
+                            }
+                        }
+                    }
+                    else {
+                        obj._inner[key] = obj._inner[key].concat(source);
+                    }
+                }
+                else {
+                    obj._inner[key] = source.slice();
+                }
+            }
+        }
+
+        return obj;
+    }
+
+    _test(name, arg, func, options) {
+
+        const obj = this.clone();
+        obj._tests.push({ func, name, arg, options });
+        return obj;
+    }
+
+    _testUnique(name, arg, func, options) {
+
+        const obj = this.clone();
+        obj._tests = obj._tests.filter((test) => test.name !== name);
+        obj._tests.push({ func, name, arg, options });
+        return obj;
+    }
+
+    options(options) {
+
+        Hoek.assert(!options.context, 'Cannot override context');
+        this.checkOptions(options);
+
+        const obj = this.clone();
+        obj._settings = Settings.concat(obj._settings, options);
+        return obj;
+    }
+
+    strict(isStrict) {
+
+        const obj = this.clone();
+
+        const convert = isStrict === undefined ? false : !isStrict;
+        obj._settings = Settings.concat(obj._settings, { convert });
+        return obj;
+    }
+
+    raw(isRaw) {
+
+        const value = isRaw === undefined ? true : isRaw;
+
+        if (this._flags.raw === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.raw = value;
+        return obj;
+    }
+
+    error(err, options = { self: false }) {
+
+        Hoek.assert(err && (err instanceof Error || typeof err === 'function'), 'Must provide a valid Error object or a function');
+
+        const unknownKeys = Object.keys(options).filter((k) => !['self'].includes(k));
+        Hoek.assert(unknownKeys.length === 0, `Options ${unknownKeys} are unknown`);
+
+        const obj = this.clone();
+        obj._flags.error = err;
+
+        if (options.self) {
+            obj._flags.selfError = true;
+        }
+
+        return obj;
+    }
+
+    allow(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
+            obj._invalids.remove(value);
+            obj._valids.add(value, obj._refs);
+        }
+
+        return obj;
+    }
+
+    valid(...values) {
+
+        const obj = this.allow(...values);
+        obj._flags.allowOnly = true;
+        return obj;
+    }
+
+    invalid(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
+            obj._valids.remove(value);
+            obj._invalids.add(value, obj._refs);
+        }
+
+        return obj;
+    }
+
+    required() {
+
+        if (this._flags.presence === 'required') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'required';
+        return obj;
+    }
+
+    optional() {
+
+        if (this._flags.presence === 'optional') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'optional';
+        return obj;
+    }
+
+
+    forbidden() {
+
+        if (this._flags.presence === 'forbidden') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'forbidden';
+        return obj;
+    }
+
+
+    strip() {
+
+        if (this._flags.strip) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.strip = true;
+        return obj;
+    }
+
+    applyFunctionToChildren(children, fn, args = [], root) {
+
+        children = [].concat(children);
+
+        if (children.length !== 1 || children[0] !== '') {
+            root = root ? (root + '.') : '';
+
+            const extraChildren = (children[0] === '' ? children.slice(1) : children).map((child) => {
+
+                return root + child;
+            });
+
+            throw new Error('unknown key(s) ' + extraChildren.join(', '));
+        }
+
+        return this[fn](...args);
+    }
+
+    default(value, description) {
+
+        if (typeof value === 'function' &&
+            !Ref.isRef(value)) {
+
+            if (!value.description &&
+                description) {
+
+                value.description = description;
+            }
+
+            if (!this._flags.func) {
+                Hoek.assert(typeof value.description === 'string' && value.description.length > 0, 'description must be provided when default value is a function');
+            }
+        }
+
+        const obj = this.clone();
+        obj._flags.default = value;
+        Ref.push(obj._refs, value);
+        return obj;
+    }
+
+    empty(schema) {
+
+        const obj = this.clone();
+        if (schema === undefined) {
+            delete obj._flags.empty;
+        }
+        else {
+            obj._flags.empty = Cast.schema(this._currentJoi, schema);
+        }
+
+        return obj;
+    }
+
+    when(condition, options) {
+
+        Hoek.assert(options && typeof options === 'object', 'Invalid options');
+        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
+
+        const then = options.hasOwnProperty('then') ? this.concat(Cast.schema(this._currentJoi, options.then)) : undefined;
+        const otherwise = options.hasOwnProperty('otherwise') ? this.concat(Cast.schema(this._currentJoi, options.otherwise)) : undefined;
+
+        Alternatives = Alternatives || require('../alternatives');
+
+        const alternativeOptions = { then, otherwise };
+        if (Object.prototype.hasOwnProperty.call(options, 'is')) {
+            alternativeOptions.is = options.is;
+        }
+
+        const obj = Alternatives.when(condition, alternativeOptions);
+        obj._flags.presence = 'ignore';
+        obj._baseType = this;
+
+        return obj;
+    }
+
+    description(desc) {
+
+        Hoek.assert(desc && typeof desc === 'string', 'Description must be a non-empty string');
+
+        const obj = this.clone();
+        obj._description = desc;
+        return obj;
+    }
+
+    notes(notes) {
+
+        Hoek.assert(notes && (typeof notes === 'string' || Array.isArray(notes)), 'Notes must be a non-empty string or array');
+
+        const obj = this.clone();
+        obj._notes = obj._notes.concat(notes);
+        return obj;
+    }
+
+    tags(tags) {
+
+        Hoek.assert(tags && (typeof tags === 'string' || Array.isArray(tags)), 'Tags must be a non-empty string or array');
+
+        const obj = this.clone();
+        obj._tags = obj._tags.concat(tags);
+        return obj;
+    }
+
+    meta(meta) {
+
+        Hoek.assert(meta !== undefined, 'Meta cannot be undefined');
+
+        const obj = this.clone();
+        obj._meta = obj._meta.concat(meta);
+        return obj;
+    }
+
+    example(...examples) {
+
+        Hoek.assert(examples.length > 0, 'Missing examples');
+
+        const processed = [];
+        for (let i = 0; i < examples.length; ++i) {
+            const example = [].concat(examples[i]);
+            Hoek.assert(example.length <= 2, `Bad example format at index ${i}`);
+
+            const value = example[0];
+            let options = example[1];
+            if (options !== undefined) {
+                Hoek.assert(options && typeof options === 'object', `Options for example at index ${i} must be an object`);
+                const unknownOptions = Object.keys(options).filter((option) => !['parent', 'context'].includes(option));
+                Hoek.assert(unknownOptions.length === 0, `Unknown example options ${unknownOptions} at index ${i}`);
+            }
+            else {
+                options = {};
+            }
+
+            const localState = new State('', [], options.parent || null);
+            const result = this._validate(value, localState, Settings.concat(internals.defaults, options.context ? { context: options.context } : null));
+            Hoek.assert(!result.errors, `Bad example at index ${i}:`, result.errors && Errors.process(result.errors, value));
+
+            const ex = { value };
+            if (Object.keys(options).length) {
+                ex.options = options;
+            }
+
+            processed.push(ex);
+        }
+
+        const obj = this.clone();
+        obj._examples = processed;
+        return obj;
+    }
+
+    unit(name) {
+
+        Hoek.assert(name && typeof name === 'string', 'Unit name must be a non-empty string');
+
+        const obj = this.clone();
+        obj._unit = name;
+        return obj;
+    }
+
+    _prepareEmptyValue(value) {
+
+        if (typeof value === 'string' && this._flags.trim) {
+            return value.trim();
+        }
+
+        return value;
+    }
+
+    _validate(value, state, options, reference) {
+
+        const originalValue = value;
+
+        // Setup state and settings
+
+        state = state || new State('', [], null, reference);
+
+        if (this._settings) {
+            const isDefaultOptions = options === internals.defaults;
+            if (isDefaultOptions && this._settings[Symbols.settingsCache]) {
+                options = this._settings[Symbols.settingsCache];
+            }
+            else {
+                options = Settings.concat(this._language ? Settings.concat({ language: this._language }, options) : options, this._settings);
+                if (isDefaultOptions) {
+                    this._settings[Symbols.settingsCache] = options;
+                }
+            }
+        }
+        else if (this._language) {
+            options = Settings.concat({ language: this._language }, options);
+        }
+
+        let errors = [];
+
+        if (this._coerce) {
+            const coerced = this._coerce(value, state, options);
+            if (coerced.errors) {
+                value = coerced.value;
+                errors = errors.concat(coerced.errors);
+                return this._finalizeValue(value, originalValue, errors, state, options);                            // Coerced error always aborts early
+            }
+
+            value = coerced.value;
+        }
+
+        if (this._flags.empty && !this._flags.empty._validate(this._prepareEmptyValue(value), null, internals.defaults).errors) {
+            value = undefined;
+        }
+
+        // Check presence requirements
+
+        const presence = this._flags.presence || options.presence;
+        if (presence === 'optional') {
+            if (value === undefined) {
+                const isDeepDefault = this._flags.hasOwnProperty('default') && this._flags.default === undefined;
+                if (isDeepDefault && this._type === 'object') {
+                    value = {};
+                }
+                else {
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+            }
+        }
+        else if (presence === 'required' &&
+            value === undefined) {
+
+            errors.push(this.createError('any.required', null, state, options));
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+        else if (presence === 'forbidden') {
+            if (value === undefined) {
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+
+            errors.push(this.createError('any.unknown', null, state, options));
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+
+        // Check allowed and denied values using the original value
+
+        let match = this._valids.get(value, state, options, this._flags.insensitive);
+        if (match) {
+            if (options.convert) {
+                value = match.value;
+            }
+
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+
+        if (this._invalids.has(value, state, options, this._flags.insensitive)) {
+            errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
+            if (options.abortEarly) {
+
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+        }
+
+        // Convert value and validate type
+
+        if (this._base) {
+            const base = this._base(value, state, options);
+            if (base.errors) {
+                value = base.value;
+                errors = errors.concat(base.errors);
+                return this._finalizeValue(value, originalValue, errors, state, options);                            // Base error always aborts early
+            }
+
+            if (base.value !== value) {
+                value = base.value;
+
+                // Check allowed and denied values using the converted value
+
+                match = this._valids.get(value, state, options, this._flags.insensitive);
+                if (match) {
+                    value = match.value;
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+
+                if (this._invalids.has(value, state, options, this._flags.insensitive)) {
+                    errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
+                    if (options.abortEarly) {
+                        return this._finalizeValue(value, originalValue, errors, state, options);
+                    }
+                }
+            }
+        }
+
+        // Required values did not match
+
+        if (this._flags.allowOnly) {
+            errors.push(this.createError('any.allowOnly', { value, valids: this._valids.values({ stripUndefined: true }) }, state, options));
+            if (options.abortEarly) {
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+        }
+
+        // Validate tests
+
+        for (let i = 0; i < this._tests.length; ++i) {
+            const test = this._tests[i];
+            const ret = test.func.call(this, value, state, options);
+            if (ret instanceof Errors.Err) {
+                errors.push(ret);
+                if (options.abortEarly) {
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+            }
+            else {
+                value = ret;
+            }
+        }
+
+        return this._finalizeValue(value, originalValue, errors, state, options);
+    }
+
+    _finalizeValue(value, originalValue, errors, state, options) {
+
+        let finalValue;
+
+        if (value !== undefined) {
+            finalValue = this._flags.raw ? originalValue : value;
+        }
+        else if (options.noDefaults) {
+            finalValue = value;
+        }
+        else if (Ref.isRef(this._flags.default)) {
+            finalValue = this._flags.default(state.parent, options);
+        }
+        else if (typeof this._flags.default === 'function' &&
+            !(this._flags.func && !this._flags.default.description)) {
+
+            let args;
+
+            if (state.parent !== null &&
+                this._flags.default.length > 0) {
+
+                args = [Hoek.clone(state.parent), options];
+            }
+
+            const defaultValue = internals._try(this._flags.default, args);
+            finalValue = defaultValue.value;
+            if (defaultValue.error) {
+                errors.push(this.createError('any.default', { error: defaultValue.error }, state, options));
+            }
+        }
+        else {
+            finalValue = Hoek.clone(this._flags.default);
+        }
+
+        if (errors.length &&
+            typeof this._flags.error === 'function' &&
+            (
+                !this._flags.selfError ||
+                errors.some((e) => state.path.length === e.path.length)
+            )
+        ) {
+            const change = this._flags.error.call(this, errors);
+
+            if (typeof change === 'string') {
+                errors = [this.createOverrideError('override', { reason: errors }, state, options, change)];
+            }
+            else {
+                errors = [].concat(change)
+                    .map((err) => {
+
+                        return err instanceof Error ?
+                            err :
+                            this.createOverrideError(err.type || 'override', err.context, state, options, err.message, err.template);
+                    });
+            }
+        }
+
+        return {
+            value: this._flags.strip ? undefined : finalValue,
+            finalValue,
+            errors: errors.length ? errors : null
+        };
+    }
+
+    _validateWithOptions(value, options, callback) {
+
+        if (options) {
+            this.checkOptions(options);
+        }
+
+        const settings = Settings.concat(internals.defaults, options);
+        const result = this._validate(value, null, settings);
+        const errors = Errors.process(result.errors, value);
+
+        if (callback) {
+            return callback(errors, result.value);
+        }
+
+        return {
+            error: errors,
+            value: result.value,
+            then(resolve, reject) {
+
+                if (errors) {
+                    return Promise.reject(errors).catch(reject);
+                }
+
+                return Promise.resolve(result.value).then(resolve);
+            },
+            catch(reject) {
+
+                if (errors) {
+                    return Promise.reject(errors).catch(reject);
+                }
+
+                return Promise.resolve(result.value);
+            }
+        };
+    }
+
+    validate(value, options, callback) {
+
+        if (typeof options === 'function') {
+            return this._validateWithOptions(value, null, options);
+        }
+
+        return this._validateWithOptions(value, options, callback);
+    }
+
+    describe() {
+
+        const description = {
+            type: this._type
+        };
+
+        const flags = Object.keys(this._flags);
+        if (flags.length) {
+            if (['empty', 'default', 'lazy', 'label'].some((flag) => this._flags.hasOwnProperty(flag))) {
+                description.flags = {};
+                for (let i = 0; i < flags.length; ++i) {
+                    const flag = flags[i];
+                    if (flag === 'empty') {
+                        description.flags[flag] = this._flags[flag].describe();
+                    }
+                    else if (flag === 'default') {
+                        if (Ref.isRef(this._flags[flag])) {
+                            description.flags[flag] = this._flags[flag].toString();
+                        }
+                        else if (typeof this._flags[flag] === 'function') {
+                            description.flags[flag] = {
+                                description: this._flags[flag].description,
+                                function   : this._flags[flag]
+                            };
+                        }
+                        else {
+                            description.flags[flag] = this._flags[flag];
+                        }
+                    }
+                    else if (flag === 'lazy' || flag === 'label') {
+                        // We don't want it in the description
+                    }
+                    else {
+                        description.flags[flag] = this._flags[flag];
+                    }
+                }
+            }
+            else {
+                description.flags = this._flags;
+            }
+        }
+
+        if (this._settings) {
+            description.options = Hoek.clone(this._settings);
+        }
+
+        if (this._baseType) {
+            description.base = this._baseType.describe();
+        }
+
+        if (this._description) {
+            description.description = this._description;
+        }
+
+        if (this._notes.length) {
+            description.notes = this._notes;
+        }
+
+        if (this._tags.length) {
+            description.tags = this._tags;
+        }
+
+        if (this._meta.length) {
+            description.meta = this._meta;
+        }
+
+        if (this._examples.length) {
+            description.examples = this._examples;
+        }
+
+        if (this._unit) {
+            description.unit = this._unit;
+        }
+
+        const valids = this._valids.values();
+        if (valids.length) {
+            description.valids = valids.map((v) => {
+
+                return Ref.isRef(v) ? v.toString() : v;
+            });
+        }
+
+        const invalids = this._invalids.values();
+        if (invalids.length) {
+            description.invalids = invalids.map((v) => {
+
+                return Ref.isRef(v) ? v.toString() : v;
+            });
+        }
+
+        description.rules = [];
+
+        for (let i = 0; i < this._tests.length; ++i) {
+            const validator = this._tests[i];
+            const item = { name: validator.name };
+
+            if (validator.arg !== void 0) {
+                item.arg = Ref.isRef(validator.arg) ? validator.arg.toString() : validator.arg;
+            }
+
+            const options = validator.options;
+            if (options) {
+                if (options.hasRef) {
+                    item.arg = {};
+                    const keys = Object.keys(validator.arg);
+                    for (let j = 0; j < keys.length; ++j) {
+                        const key = keys[j];
+                        const value = validator.arg[key];
+                        item.arg[key] = Ref.isRef(value) ? value.toString() : value;
+                    }
+                }
+
+                if (typeof options.description === 'string') {
+                    item.description = options.description;
+                }
+                else if (typeof options.description === 'function') {
+                    item.description = options.description(item.arg);
+                }
+            }
+
+            description.rules.push(item);
+        }
+
+        if (!description.rules.length) {
+            delete description.rules;
+        }
+
+        const label = this._getLabel();
+        if (label) {
+            description.label = label;
+        }
+
+        return description;
+    }
+
+    label(name) {
+
+        Hoek.assert(name && typeof name === 'string', 'Label name must be a non-empty string');
+
+        const obj = this.clone();
+        obj._flags.label = name;
+        return obj;
+    }
+
+    _getLabel(def) {
+
+        return this._flags.label || def;
+    }
+
+};
+
+
+internals.Any.prototype.isImmutable = true;     // Prevents Hoek from deep cloning schema objects
+
+// Aliases
+
+internals.Any.prototype.only = internals.Any.prototype.equal = internals.Any.prototype.valid;
+internals.Any.prototype.disallow = internals.Any.prototype.not = internals.Any.prototype.invalid;
+internals.Any.prototype.exist = internals.Any.prototype.required;
+
+
+internals.Any.prototype[internals.symbol] = {
+    version: Pkg.version,
+    compile: Cast.schema,
+    root: '_currentJoi'
+};
+
+
+internals._try = function (fn, args = []) {
+
+    let err;
+    let result;
+
+    try {
+        result = fn(...args);
+    }
+    catch (e) {
+        err = e;
+    }
+
+    return {
+        value: result,
+        error: err
+    };
+};
+
+},{"../../../package.json":134,"../../cast":109,"../../errors":110,"../../ref":113,"../../schemas":114,"../../set":115,"../alternatives":116,"../state":127,"../symbols":133,"./settings":118,"@hapi/hoek":98}],118:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Symbols = require('../symbols');
+
+
+const internals = {};
+
+
+exports.concat = function (target, source) {
+
+    if (!source) {
+        return target;
+    }
+
+    const obj = Object.assign({}, target);
+
+    const language = source.language;
+
+    Object.assign(obj, source);
+
+    if (language && target && target.language) {
+        obj.language = Hoek.applyToDefaults(target.language, language);
+    }
+
+    if (obj[Symbols.settingsCache]) {
+        delete obj[Symbols.settingsCache];
+    }
+
+    return obj;
+};
+
+},{"../symbols":133,"@hapi/hoek":98}],119:[function(require,module,exports){
+'use strict';
+
+const Bourne = require('@hapi/bourne');
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Cast = require('../../cast');
+const Ref = require('../../ref');
+const State = require('../state');
+
+
+const internals = {};
+
+
+internals.fastSplice = function (arr, i) {
+
+    let pos = i;
+    while (pos < arr.length) {
+        arr[pos++] = arr[pos];
+    }
+
+    --arr.length;
+};
+
+
+internals.Array = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'array';
+        this._inner.items = [];
+        this._inner.ordereds = [];
+        this._inner.inclusions = [];
+        this._inner.exclusions = [];
+        this._inner.requireds = [];
+        this._flags.sparse = false;
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (value.length > 1 &&
+                (value[0] === '[' || /^\s*\[/.test(value))) {
+
+                try {
+                    result.value = Bourne.parse(value);
+                }
+                catch (e) { }
+            }
+        }
+
+        let isArray = Array.isArray(result.value);
+        const wasArray = isArray;
+        if (options.convert && this._flags.single && !isArray) {
+            result.value = [result.value];
+            isArray = true;
+        }
+
+        if (!isArray) {
+            result.errors = this.createError('array.base', null, state, options);
+            return result;
+        }
+
+        if (this._inner.inclusions.length ||
+            this._inner.exclusions.length ||
+            this._inner.requireds.length ||
+            this._inner.ordereds.length ||
+            !this._flags.sparse) {
+
+            // Clone the array so that we don't modify the original
+            if (wasArray) {
+                result.value = result.value.slice(0);
+            }
+
+            result.errors = this._checkItems(result.value, wasArray, state, options);
+
+            if (result.errors && wasArray && options.convert && this._flags.single) {
+
+                // Attempt a 2nd pass by putting the array inside one.
+                const previousErrors = result.errors;
+
+                result.value = [result.value];
+                result.errors = this._checkItems(result.value, wasArray, state, options);
+
+                if (result.errors) {
+
+                    // Restore previous errors and value since this didn't validate either.
+                    result.errors = previousErrors;
+                    result.value = result.value[0];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    _checkItems(items, wasArray, state, options) {
+
+        const errors = [];
+        let errored;
+
+        const requireds = this._inner.requireds.slice();
+        const ordereds = this._inner.ordereds.slice();
+        const inclusions = [...this._inner.inclusions, ...requireds];
+
+        let il = items.length;
+        for (let i = 0; i < il; ++i) {
+            errored = false;
+            const item = items[i];
+            let isValid = false;
+            const key = wasArray ? i : state.key;
+            const path = wasArray ? [...state.path, i] : state.path;
+            const localState = new State(key, path, state.parent, state.reference);
+            let res;
+
+            // Sparse
+
+            if (!this._flags.sparse && item === undefined) {
+                errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                if (options.abortEarly) {
+                    return errors;
+                }
+
+                ordereds.shift();
+
+                continue;
+            }
+
+            // Exclusions
+
+            for (let j = 0; j < this._inner.exclusions.length; ++j) {
+                res = this._inner.exclusions[j]._validate(item, localState, {});                // Not passing options to use defaults
+
+                if (!res.errors) {
+                    errors.push(this.createError(wasArray ? 'array.excludes' : 'array.excludesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
+                    errored = true;
+
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    ordereds.shift();
+
+                    break;
+                }
+            }
+
+            if (errored) {
+                continue;
+            }
+
+            // Ordered
+            if (this._inner.ordereds.length) {
+                if (ordereds.length > 0) {
+                    const ordered = ordereds.shift();
+                    res = ordered._validate(item, localState, options);
+                    if (!res.errors) {
+                        if (ordered._flags.strip) {
+                            internals.fastSplice(items, i);
+                            --i;
+                            --il;
+                        }
+                        else if (!this._flags.sparse && res.value === undefined) {
+                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                            if (options.abortEarly) {
+                                return errors;
+                            }
+
+                            continue;
+                        }
+                        else {
+                            items[i] = res.value;
+                        }
+                    }
+                    else {
+                        errors.push(this.createError('array.ordered', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
+                        if (options.abortEarly) {
+                            return errors;
+                        }
+                    }
+
+                    continue;
+                }
+                else if (!this._inner.items.length) {
+                    errors.push(this.createError('array.orderedLength', { pos: i, limit: this._inner.ordereds.length }, { key: state.key, path: localState.path }, options));
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    continue;
+                }
+            }
+
+            // Requireds
+
+            const requiredChecks = [];
+            let jl = requireds.length;
+            for (let j = 0; j < jl; ++j) {
+                res = requiredChecks[j] = requireds[j]._validate(item, localState, options);
+                if (!res.errors) {
+                    items[i] = res.value;
+                    isValid = true;
+                    internals.fastSplice(requireds, j);
+                    --j;
+                    --jl;
+
+                    if (!this._flags.sparse && res.value === undefined) {
+                        errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                        if (options.abortEarly) {
+                            return errors;
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            if (isValid) {
+                continue;
+            }
+
+            // Inclusions
+
+            const stripUnknown = options.stripUnknown && !!options.stripUnknown.arrays || false;
+
+            jl = inclusions.length;
+            for (let j = 0; j < jl; ++j) {
+                const inclusion = inclusions[j];
+
+                // Avoid re-running requireds that already didn't match in the previous loop
+                const previousCheck = requireds.indexOf(inclusion);
+                if (previousCheck !== -1) {
+                    res = requiredChecks[previousCheck];
+                }
+                else {
+                    res = inclusion._validate(item, localState, options);
+
+                    if (!res.errors) {
+                        if (inclusion._flags.strip) {
+                            internals.fastSplice(items, i);
+                            --i;
+                            --il;
+                        }
+                        else if (!this._flags.sparse && res.value === undefined) {
+                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+                            errored = true;
+                        }
+                        else {
+                            items[i] = res.value;
+                        }
+
+                        isValid = true;
+                        break;
+                    }
+                }
+
+                // Return the actual error if only one inclusion defined
+                if (jl === 1) {
+                    if (stripUnknown) {
+                        internals.fastSplice(items, i);
+                        --i;
+                        --il;
+                        isValid = true;
+                        break;
+                    }
+
+                    errors.push(this.createError(wasArray ? 'array.includesOne' : 'array.includesOneSingle', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
+                    errored = true;
+
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    break;
+                }
+            }
+
+            if (errored) {
+                continue;
+            }
+
+            if (this._inner.inclusions.length && !isValid) {
+                if (stripUnknown) {
+                    internals.fastSplice(items, i);
+                    --i;
+                    --il;
+                    continue;
+                }
+
+                errors.push(this.createError(wasArray ? 'array.includes' : 'array.includesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
+
+                if (options.abortEarly) {
+                    return errors;
+                }
+            }
+        }
+
+        if (requireds.length) {
+            this._fillMissedErrors(errors, requireds, state, options);
+        }
+
+        if (ordereds.length) {
+            this._fillOrderedErrors(errors, ordereds, state, options);
+        }
+
+        return errors.length ? errors : null;
+    }
+
+    describe() {
+
+        const description = super.describe();
+
+        if (this._inner.ordereds.length) {
+            description.orderedItems = [];
+
+            for (let i = 0; i < this._inner.ordereds.length; ++i) {
+                description.orderedItems.push(this._inner.ordereds[i].describe());
+            }
+        }
+
+        if (this._inner.items.length) {
+            description.items = [];
+
+            for (let i = 0; i < this._inner.items.length; ++i) {
+                description.items.push(this._inner.items[i].describe());
+            }
+        }
+
+        if (description.rules) {
+            for (let i = 0; i < description.rules.length; ++i) {
+                const rule = description.rules[i];
+                if (rule.name === 'has') {
+                    rule.arg = rule.arg.describe();
+                }
+            }
+        }
+
+        return description;
+    }
+
+    items(...schemas) {
+
+        const obj = this.clone();
+
+        Hoek.flatten(schemas).forEach((type, index) => {
+
+            try {
+                type = Cast.schema(this._currentJoi, type);
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = index + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = index;
+                }
+
+                castErr.message = `${castErr.message}(${castErr.path})`;
+                throw castErr;
+            }
+
+            obj._inner.items.push(type);
+
+            if (type._flags.presence === 'required') {
+                obj._inner.requireds.push(type);
+            }
+            else if (type._flags.presence === 'forbidden') {
+                obj._inner.exclusions.push(type.optional());
+            }
+            else {
+                obj._inner.inclusions.push(type);
+            }
+        });
+
+        return obj;
+    }
+
+    ordered(...schemas) {
+
+        const obj = this.clone();
+
+        Hoek.flatten(schemas).forEach((type, index) => {
+
+            try {
+                type = Cast.schema(this._currentJoi, type);
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = index + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = index;
+                }
+
+                castErr.message = `${castErr.message}(${castErr.path})`;
+                throw castErr;
+            }
+
+            obj._inner.ordereds.push(type);
+        });
+
+        return obj;
+    }
+
+    min(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('min', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit, value: compareTo }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length >= compareTo) {
+                return value;
+            }
+
+            return this.createError('array.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('max', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length <= compareTo) {
+                return value;
+            }
+
+            return this.createError('array.max', { limit, value }, state, options);
+        });
+    }
+
+    length(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('length', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length === compareTo) {
+                return value;
+            }
+
+            return this.createError('array.length', { limit, value }, state, options);
+        });
+    }
+
+    has(schema) {
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        return this._test('has', schema, function (value, state, options) {
+
+            const isValid = value.some((item, idx) => {
+
+                const localState = new State(idx, [...state.path, idx], state.key, state.reference);
+                return !schema._validate(item, localState, options).errors;
+            });
+
+            if (isValid) {
+                return value;
+            }
+
+            const patternLabel = schema._getLabel();
+            if (patternLabel) {
+                return this.createError('array.hasKnown', { patternLabel }, state, options);
+            }
+
+            return this.createError('array.hasUnknown', null, state, options);
+        });
+    }
+
+    unique(comparator, configs) {
+
+        Hoek.assert(comparator === undefined ||
+            typeof comparator === 'function' ||
+            typeof comparator === 'string', 'comparator must be a function or a string');
+
+        Hoek.assert(configs === undefined ||
+            typeof configs === 'object', 'configs must be an object');
+
+        const settings = {
+            ignoreUndefined: (configs && configs.ignoreUndefined) || false
+        };
+
+
+        if (typeof comparator === 'string') {
+            settings.path = comparator;
+        }
+        else if (typeof comparator === 'function') {
+            settings.comparator = comparator;
+        }
+
+        return this._test('unique', settings, function (value, state, options) {
+
+            const found = {
+                string: Object.create(null),
+                number: Object.create(null),
+                undefined: Object.create(null),
+                boolean: Object.create(null),
+                object: new Map(),
+                function: new Map(),
+                custom: new Map()
+            };
+
+            const compare = settings.comparator || Hoek.deepEqual;
+            const ignoreUndefined = settings.ignoreUndefined;
+
+            for (let i = 0; i < value.length; ++i) {
+                const item = settings.path ? Hoek.reach(value[i], settings.path) : value[i];
+                const records = settings.comparator ? found.custom : found[typeof item];
+
+                // All available types are supported, so it's not possible to reach 100% coverage without ignoring this line.
+                // I still want to keep the test for future js versions with new types (eg. Symbol).
+                if (/* $lab:coverage:off$ */ records /* $lab:coverage:on$ */) {
+                    if (records instanceof Map) {
+                        const entries = records.entries();
+                        let current;
+                        while (!(current = entries.next()).done) {
+                            if (compare(current.value[0], item)) {
+                                const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
+                                const context = {
+                                    pos: i,
+                                    value: value[i],
+                                    dupePos: current.value[1],
+                                    dupeValue: value[current.value[1]]
+                                };
+
+                                if (settings.path) {
+                                    context.path = settings.path;
+                                }
+
+                                return this.createError('array.unique', context, localState, options);
+                            }
+                        }
+
+                        records.set(item, i);
+                    }
+                    else {
+                        if ((!ignoreUndefined || item !== undefined) && records[item] !== undefined) {
+                            const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
+
+                            const context = {
+                                pos: i,
+                                value: value[i],
+                                dupePos: records[item],
+                                dupeValue: value[records[item]]
+                            };
+
+                            if (settings.path) {
+                                context.path = settings.path;
+                            }
+
+                            return this.createError('array.unique', context, localState, options);
+                        }
+
+                        records[item] = i;
+                    }
+                }
+            }
+
+            return value;
+        });
+    }
+
+    sparse(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.sparse === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.sparse = value;
+        return obj;
+    }
+
+    single(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.single === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.single = value;
+        return obj;
+    }
+
+    _fillMissedErrors(errors, requireds, state, options) {
+
+        const knownMisses = [];
+        let unknownMisses = 0;
+        for (let i = 0; i < requireds.length; ++i) {
+            const label = requireds[i]._getLabel();
+            if (label) {
+                knownMisses.push(label);
+            }
+            else {
+                ++unknownMisses;
+            }
+        }
+
+        if (knownMisses.length) {
+            if (unknownMisses) {
+                errors.push(this.createError('array.includesRequiredBoth', { knownMisses, unknownMisses }, { key: state.key, path: state.path }, options));
+            }
+            else {
+                errors.push(this.createError('array.includesRequiredKnowns', { knownMisses }, { key: state.key, path: state.path }, options));
+            }
+        }
+        else {
+            errors.push(this.createError('array.includesRequiredUnknowns', { unknownMisses }, { key: state.key, path: state.path }, options));
+        }
+    }
+
+
+    _fillOrderedErrors(errors, ordereds, state, options) {
+
+        const requiredOrdereds = [];
+
+        for (let i = 0; i < ordereds.length; ++i) {
+            const presence = Hoek.reach(ordereds[i], '_flags.presence');
+            if (presence === 'required') {
+                requiredOrdereds.push(ordereds[i]);
+            }
+        }
+
+        if (requiredOrdereds.length) {
+            this._fillMissedErrors(errors, requiredOrdereds, state, options);
+        }
+    }
+
+};
+
+
+module.exports = new internals.Array();
+
+},{"../../cast":109,"../../ref":113,"../any":117,"../state":127,"@hapi/bourne":83,"@hapi/hoek":98}],120:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Binary = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'binary';
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            try {
+                result.value = Buffer.from(value, this._flags.encoding);
+            }
+            catch (e) { }
+        }
+
+        result.errors = Buffer.isBuffer(result.value) ? null : this.createError('binary.base', null, state, options);
+        return result;
+    }
+
+    encoding(encoding) {
+
+        Hoek.assert(Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
+
+        if (this._flags.encoding === encoding) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.encoding = encoding;
+        return obj;
+    }
+
+    min(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('min', limit, function (value, state, options) {
+
+            if (value.length >= limit) {
+                return value;
+            }
+
+            return this.createError('binary.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('max', limit, function (value, state, options) {
+
+            if (value.length <= limit) {
+                return value;
+            }
+
+            return this.createError('binary.max', { limit, value }, state, options);
+        });
+    }
+
+    length(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('length', limit, function (value, state, options) {
+
+            if (value.length === limit) {
+                return value;
+            }
+
+            return this.createError('binary.length', { limit, value }, state, options);
+        });
+    }
+
+};
+
+
+module.exports = new internals.Binary();
+
+}).call(this,require("buffer").Buffer)
+},{"../any":117,"@hapi/hoek":98,"buffer":48}],121:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {
+    Set: require('../../set')
+};
+
+
+internals.Boolean = class extends Any {
+    constructor() {
+
+        super();
+        this._type = 'boolean';
+        this._flags.insensitive = true;
+        this._inner.truthySet = new internals.Set();
+        this._inner.falsySet = new internals.Set();
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            const normalized = this._flags.insensitive ? value.toLowerCase() : value;
+            result.value = (normalized === 'true' ? true
+                : (normalized === 'false' ? false : value));
+        }
+
+        if (typeof result.value !== 'boolean') {
+            result.value = (this._inner.truthySet.has(value, null, null, this._flags.insensitive) ? true
+                : (this._inner.falsySet.has(value, null, null, this._flags.insensitive) ? false : value));
+        }
+
+        result.errors = (typeof result.value === 'boolean') ? null : this.createError('boolean.base', { value }, state, options);
+        return result;
+    }
+
+    truthy(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call truthy with undefined');
+            obj._inner.truthySet.add(value);
+        }
+
+        return obj;
+    }
+
+    falsy(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call falsy with undefined');
+            obj._inner.falsySet.add(value);
+        }
+
+        return obj;
+    }
+
+    insensitive(enabled) {
+
+        const insensitive = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.insensitive === insensitive) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.insensitive = insensitive;
+        return obj;
+    }
+
+    describe() {
+
+        const description = super.describe();
+        description.truthy = [true, ...this._inner.truthySet.values()];
+        description.falsy = [false, ...this._inner.falsySet.values()];
+        return description;
+    }
+};
+
+
+module.exports = new internals.Boolean();
+
+},{"../../set":115,"../any":117,"@hapi/hoek":98}],122:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+internals.isoDate = /^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/;
+internals.invalidDate = new Date('');
+internals.isIsoDate = (() => {
+
+    const isoString = internals.isoDate.toString();
+
+    return (date) => {
+
+        return date && (date.toString() === isoString);
+    };
+})();
+
+internals.Date = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'date';
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value: (options.convert && internals.Date.toDate(value, this._flags.format, this._flags.timestamp, this._flags.multiplier)) || value
+        };
+
+        if (result.value instanceof Date && !isNaN(result.value.getTime())) {
+            result.errors = null;
+        }
+        else if (!options.convert) {
+            result.errors = this.createError('date.strict', { value }, state, options);
+        }
+        else {
+            let type;
+            if (internals.isIsoDate(this._flags.format)) {
+                type = 'isoDate';
+            }
+            else if (this._flags.timestamp) {
+                type = `timestamp.${this._flags.timestamp}`;
+            }
+            else {
+                type = 'base';
+            }
+
+            result.errors = this.createError(`date.${type}`, { value }, state, options);
+        }
+
+        return result;
+    }
+
+    static toDate(value, format, timestamp, multiplier) {
+
+        if (value instanceof Date) {
+            return value;
+        }
+
+        if (typeof value === 'string' ||
+            (typeof value === 'number' && !isNaN(value) && isFinite(value))) {
+
+            const isIsoDate = format && internals.isIsoDate(format);
+            if (!isIsoDate &&
+                typeof value === 'string' &&
+                /^[+-]?\d+(\.\d+)?$/.test(value)) {
+
+                value = parseFloat(value);
+            }
+
+            let date;
+            if (isIsoDate) {
+                date = format.test(value) ? new Date(value.toString()) : internals.invalidDate;
+            }
+            else if (timestamp) {
+                date = /^\s*$/.test(value) ? internals.invalidDate : new Date(value * multiplier);
+            }
+            else {
+                date = new Date(value);
+            }
+
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+        }
+
+        return null;
+    }
+
+    iso() {
+
+        if (this._flags.format === internals.isoDate) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.format = internals.isoDate;
+        return obj;
+    }
+
+    timestamp(type = 'javascript') {
+
+        const allowed = ['javascript', 'unix'];
+        Hoek.assert(allowed.includes(type), '"type" must be one of "' + allowed.join('", "') + '"');
+
+        if (this._flags.timestamp === type) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.timestamp = type;
+        obj._flags.multiplier = type === 'unix' ? 1000 : 1;
+        return obj;
+    }
+
+    _isIsoDate(value) {
+
+        return internals.isoDate.test(value);
+    }
+
+};
+
+internals.compare = function (type, compare) {
+
+    return function (date) {
+
+        const isNow = date === 'now';
+        const isRef = Ref.isRef(date);
+
+        if (!isNow && !isRef) {
+            date = internals.Date.toDate(date);
+        }
+
+        Hoek.assert(date, 'Invalid date format');
+
+        return this._test(type, date, function (value, state, options) {
+
+            let compareTo;
+            if (isNow) {
+                compareTo = Date.now();
+            }
+            else if (isRef) {
+                const refValue = date(state.reference || state.parent, options);
+                compareTo = internals.Date.toDate(refValue);
+
+                if (!compareTo) {
+                    return this.createError('date.ref', { ref: date, value: refValue }, state, options);
+                }
+
+                compareTo = compareTo.getTime();
+            }
+            else {
+                compareTo = date.getTime();
+            }
+
+            if (compare(value.getTime(), compareTo)) {
+                return value;
+            }
+
+            return this.createError('date.' + type, { limit: new Date(compareTo), value }, state, options);
+        });
+    };
+};
+
+
+internals.Date.prototype.min = internals.compare('min', (value, date) => value >= date);
+internals.Date.prototype.max = internals.compare('max', (value, date) => value <= date);
+internals.Date.prototype.greater = internals.compare('greater', (value, date) => value > date);
+internals.Date.prototype.less = internals.compare('less', (value, date) => value < date);
+
+
+module.exports = new internals.Date();
+
+},{"../../ref":113,"../any":117,"@hapi/hoek":98}],123:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const ObjectType = require('../object');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+
+internals.Func = class extends ObjectType.constructor {
+
+    constructor() {
+
+        super();
+        this._flags.func = true;
+    }
+
+    arity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
+
+        return this._test('arity', n, function (value, state, options) {
+
+            if (value.length === n) {
+                return value;
+            }
+
+            return this.createError('function.arity', { n }, state, options);
+        });
+    }
+
+    minArity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n > 0, 'n must be a strict positive integer');
+
+        return this._test('minArity', n, function (value, state, options) {
+
+            if (value.length >= n) {
+                return value;
+            }
+
+            return this.createError('function.minArity', { n }, state, options);
+        });
+    }
+
+    maxArity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
+
+        return this._test('maxArity', n, function (value, state, options) {
+
+            if (value.length <= n) {
+                return value;
+            }
+
+            return this.createError('function.maxArity', { n }, state, options);
+        });
+    }
+
+    ref() {
+
+        return this._test('ref', null, function (value, state, options) {
+
+            if (Ref.isRef(value)) {
+                return value;
+            }
+
+            return this.createError('function.ref', { value }, state, options);
+        });
+    }
+
+    class() {
+
+        return this._test('class', null, function (value, state, options) {
+
+            if ((/^\s*class\s/).test(value.toString())) {
+                return value;
+            }
+
+            return this.createError('function.class', { value }, state, options);
+        });
+    }
+};
+
+module.exports = new internals.Func();
+
+},{"../../ref":113,"../object":126,"@hapi/hoek":98}],124:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Lazy = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'lazy';
+        this._flags.once = true;
+        this._cache = null;
+    }
+
+    _init(fn, options) {
+
+        return this.set(fn, options);
+    }
+
+    _base(value, state, options) {
+
+        let schema;
+        if (this._cache) {
+            schema = this._cache;
+        }
+        else {
+            const result = { value };
+            const lazy = this._flags.lazy;
+
+            if (!lazy) {
+                result.errors = this.createError('lazy.base', null, state, options);
+                return result;
+            }
+
+            schema = lazy();
+
+            if (!(schema instanceof Any)) {
+                result.errors = this.createError('lazy.schema', { schema }, state, options);
+                return result;
+            }
+
+            if (this._flags.once) {
+                this._cache = schema;
+            }
+        }
+
+        return schema._validate(value, state, options);
+    }
+
+    set(fn, options) {
+
+        Hoek.assert(typeof fn === 'function', 'You must provide a function as first argument');
+        Hoek.assert(options === undefined || (options && typeof options === 'object' && !Array.isArray(options)), `Options must be an object`);
+
+        if (options) {
+            const unknownOptions = Object.keys(options).filter((key) => !['once'].includes(key));
+            Hoek.assert(unknownOptions.length === 0, `Options contain unknown keys: ${unknownOptions}`);
+            Hoek.assert(options.once === undefined || typeof options.once === 'boolean', 'Option "once" must be a boolean');
+        }
+
+        const obj = this.clone();
+        obj._flags.lazy = fn;
+
+        if (options && options.once !== obj._flags.once) {
+            obj._flags.once = options.once;
+        }
+
+        return obj;
+    }
+
+};
+
+module.exports = new internals.Lazy();
+
+},{"../any":117,"@hapi/hoek":98}],125:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+
+
+const internals = {
+    precisionRx: /(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/,
+    normalizeExponent(str) {
+
+        return str
+            .replace(/\.?0+e/, 'e')
+            .replace(/e\+/, 'e')
+            .replace(/^\+/, '')
+            .replace(/^(-?)0+([1-9])/, '$1$2');
+    },
+    normalizeDecimal(str) {
+
+        str = str
+            .replace(/^\+/, '')
+            .replace(/\.0+$/, '')
+            .replace(/^(-?)0+([1-9])/, '$1$2');
+
+        if (str.includes('.') && str.endsWith('0')) {
+            str = str.replace(/0+$/, '');
+        }
+
+        return str;
+    }
+};
+
+
+internals.Number = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'number';
+        this._flags.unsafe = false;
+        this._invalids.add(Infinity);
+        this._invalids.add(-Infinity);
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            errors: null,
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            const matches = value.match(/^\s*[+-]?\d+(?:\.\d+)?(?:e([+-]?\d+))?\s*$/i);
+            if (matches) {
+
+                value = value.trim();
+                result.value = parseFloat(value);
+
+                if (!this._flags.unsafe) {
+                    if (value.includes('e')) {
+                        if (internals.normalizeExponent(`${result.value / Math.pow(10, matches[1])}e${matches[1]}`) !== internals.normalizeExponent(value)) {
+                            result.errors = this.createError('number.unsafe', { value }, state, options);
+                            return result;
+                        }
+                    }
+                    else {
+                        if (result.value.toString() !== internals.normalizeDecimal(value)) {
+                            result.errors = this.createError('number.unsafe', { value }, state, options);
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        const isNumber = typeof result.value === 'number' && !isNaN(result.value);
+
+        if (options.convert && 'precision' in this._flags && isNumber) {
+
+            // This is conceptually equivalent to using toFixed but it should be much faster
+            const precision = Math.pow(10, this._flags.precision);
+            result.value = Math.round(result.value * precision) / precision;
+        }
+
+        if (isNumber) {
+            if (!this._flags.unsafe &&
+                (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) {
+                result.errors = this.createError('number.unsafe', { value }, state, options);
+            }
+        }
+        else {
+            result.errors = this.createError('number.base', { value }, state, options);
+        }
+
+        return result;
+    }
+
+    multiple(base) {
+
+        const isRef = Ref.isRef(base);
+
+        if (!isRef) {
+            Hoek.assert(typeof base === 'number' && isFinite(base), 'multiple must be a number');
+            Hoek.assert(base > 0, 'multiple must be greater than 0');
+        }
+
+        return this._test('multiple', base, function (value, state, options) {
+
+            const divisor = isRef ? base(state.reference || state.parent, options) : base;
+
+            if (isRef && (typeof divisor !== 'number' || !isFinite(divisor))) {
+                return this.createError('number.ref', { ref: base.key }, state, options);
+            }
+
+            if (value % divisor === 0) {
+                return value;
+            }
+
+            return this.createError('number.multiple', { multiple: base, value }, state, options);
+        });
+    }
+
+    integer() {
+
+        return this._test('integer', undefined, function (value, state, options) {
+
+            return Math.trunc(value) - value === 0 ? value : this.createError('number.integer', { value }, state, options);
+        });
+    }
+
+    unsafe(enabled = true) {
+
+        Hoek.assert(typeof enabled === 'boolean', 'enabled must be a boolean');
+
+        if (this._flags.unsafe === enabled) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.unsafe = enabled;
+        return obj;
+    }
+
+    negative() {
+
+        return this._test('negative', undefined, function (value, state, options) {
+
+            if (value < 0) {
+                return value;
+            }
+
+            return this.createError('number.negative', { value }, state, options);
+        });
+    }
+
+    positive() {
+
+        return this._test('positive', undefined, function (value, state, options) {
+
+            if (value > 0) {
+                return value;
+            }
+
+            return this.createError('number.positive', { value }, state, options);
+        });
+    }
+
+    precision(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit), 'limit must be an integer');
+        Hoek.assert(!('precision' in this._flags), 'precision already set');
+
+        const obj = this._test('precision', limit, function (value, state, options) {
+
+            const places = value.toString().match(internals.precisionRx);
+            const decimals = Math.max((places[1] ? places[1].length : 0) - (places[2] ? parseInt(places[2], 10) : 0), 0);
+            if (decimals <= limit) {
+                return value;
+            }
+
+            return this.createError('number.precision', { limit, value }, state, options);
+        });
+
+        obj._flags.precision = limit;
+        return obj;
+    }
+
+    port() {
+
+        return this._test('port', undefined, function (value, state, options) {
+
+            if (!Number.isSafeInteger(value) || value < 0 || value > 65535) {
+                return this.createError('number.port', { value }, state, options);
+            }
+
+            return value;
+        });
+    }
+
+};
+
+
+internals.compare = function (type, compare) {
+
+    return function (limit) {
+
+        const isRef = Ref.isRef(limit);
+        const isNumber = typeof limit === 'number' && !isNaN(limit);
+
+        Hoek.assert(isNumber || isRef, 'limit must be a number or reference');
+
+        return this._test(type, limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(typeof compareTo === 'number' && !isNaN(compareTo))) {
+                    return this.createError('number.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (compare(value, compareTo)) {
+                return value;
+            }
+
+            return this.createError('number.' + type, { limit: compareTo, value }, state, options);
+        });
+    };
+};
+
+
+internals.Number.prototype.min = internals.compare('min', (value, limit) => value >= limit);
+internals.Number.prototype.max = internals.compare('max', (value, limit) => value <= limit);
+internals.Number.prototype.greater = internals.compare('greater', (value, limit) => value > limit);
+internals.Number.prototype.less = internals.compare('less', (value, limit) => value < limit);
+
+
+module.exports = new internals.Number();
+
+},{"../../ref":113,"../any":117,"@hapi/hoek":98}],126:[function(require,module,exports){
+'use strict';
+
+const Bourne = require('@hapi/bourne');
+const Hoek = require('@hapi/hoek');
+const Topo = require('@hapi/topo');
+
+const Any = require('../any');
+const Errors = require('../../errors');
+const Cast = require('../../cast');
+const State = require('../state');
+
+
+const internals = {};
+
+
+internals.Object = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'object';
+        this._inner.children = null;
+        this._inner.renames = [];
+        this._inner.dependencies = [];
+        this._inner.patterns = [];
+    }
+
+    _init(...args) {
+
+        return args.length ? this.keys(...args) : this;
+    }
+
+    _base(value, state, options) {
+
+        let target = value;
+        const errors = [];
+        const finish = () => {
+
+            return {
+                value: target,
+                errors: errors.length ? errors : null
+            };
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (value.length > 1 &&
+                (value[0] === '{' || /^\s*\{/.test(value))) {
+
+                try {
+                    value = Bourne.parse(value);
+                }
+                catch (e) { }
+            }
+        }
+
+        const type = this._flags.func ? 'function' : 'object';
+        if (!value ||
+            typeof value !== type ||
+            Array.isArray(value)) {
+
+            errors.push(this.createError(type + '.base', { value }, state, options));
+            return finish();
+        }
+
+        // Skip if there are no other rules to test
+
+        if (!this._inner.renames.length &&
+            !this._inner.dependencies.length &&
+            !this._inner.children &&                    // null allows any keys
+            !this._inner.patterns.length) {
+
+            target = value;
+            return finish();
+        }
+
+        // Ensure target is a local copy (parsed) or shallow copy
+
+        if (target === value) {
+            if (type === 'object') {
+                target = Object.create(Object.getPrototypeOf(value));
+            }
+            else {
+                target = function (...args) {
+
+                    return value.apply(this, args);
+                };
+
+                target.prototype = Hoek.clone(value.prototype);
+            }
+
+            const valueKeys = Object.keys(value);
+            for (let i = 0; i < valueKeys.length; ++i) {
+                target[valueKeys[i]] = value[valueKeys[i]];
+            }
+        }
+        else {
+            target = value;
+        }
+
+        // Rename keys
+
+        const renamed = {};
+        for (let i = 0; i < this._inner.renames.length; ++i) {
+            const rename = this._inner.renames[i];
+
+            if (rename.isRegExp) {
+                const targetKeys = Object.keys(target);
+                const matchedTargetKeys = [];
+
+                for (let j = 0; j < targetKeys.length; ++j) {
+                    if (rename.from.test(targetKeys[j])) {
+                        matchedTargetKeys.push(targetKeys[j]);
+                    }
+                }
+
+                const allUndefined = matchedTargetKeys.every((key) => target[key] === undefined);
+                if (rename.options.ignoreUndefined && allUndefined) {
+                    continue;
+                }
+
+                if (!rename.options.multiple &&
+                    renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.regex.multiple', { from: matchedTargetKeys, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
+                    !rename.options.override &&
+                    !renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.regex.override', { from: matchedTargetKeys, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (allUndefined) {
+                    delete target[rename.to];
+                }
+                else {
+                    target[rename.to] = target[matchedTargetKeys[matchedTargetKeys.length - 1]];
+                }
+
+                renamed[rename.to] = true;
+
+                if (!rename.options.alias) {
+                    for (let j = 0; j < matchedTargetKeys.length; ++j) {
+                        delete target[matchedTargetKeys[j]];
+                    }
+                }
+            }
+            else {
+                if (rename.options.ignoreUndefined && target[rename.from] === undefined) {
+                    continue;
+                }
+
+                if (!rename.options.multiple &&
+                    renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.multiple', { from: rename.from, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
+                    !rename.options.override &&
+                    !renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.override', { from: rename.from, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (target[rename.from] === undefined) {
+                    delete target[rename.to];
+                }
+                else {
+                    target[rename.to] = target[rename.from];
+                }
+
+                renamed[rename.to] = true;
+
+                if (!rename.options.alias) {
+                    delete target[rename.from];
+                }
+            }
+        }
+
+        // Validate schema
+
+        if (!this._inner.children &&            // null allows any keys
+            !this._inner.patterns.length &&
+            !this._inner.dependencies.length) {
+
+            return finish();
+        }
+
+        const unprocessed = new Set(Object.keys(target));
+
+        if (this._inner.children) {
+            const stripProps = [];
+
+            for (let i = 0; i < this._inner.children.length; ++i) {
+                const child = this._inner.children[i];
+                const key = child.key;
+                const item = target[key];
+
+                unprocessed.delete(key);
+
+                const localState = new State(key, [...state.path, key], target, state.reference);
+                const result = child.schema._validate(item, localState, options);
+                if (result.errors) {
+                    errors.push(this.createError('object.child', { key, child: child.schema._getLabel(key), reason: result.errors }, localState, options));
+
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+                else {
+                    if (child.schema._flags.strip || (result.value === undefined && result.value !== item)) {
+                        stripProps.push(key);
+                        target[key] = result.finalValue;
+                    }
+                    else if (result.value !== undefined) {
+                        target[key] = result.value;
+                    }
+                }
+            }
+
+            for (let i = 0; i < stripProps.length; ++i) {
+                delete target[stripProps[i]];
+            }
+        }
+
+        // Unknown keys
+
+        if (unprocessed.size && this._inner.patterns.length) {
+
+            for (const key of unprocessed) {
+                const localState = new State(key, [...state.path, key], target, state.reference);
+                const item = target[key];
+
+                for (let i = 0; i < this._inner.patterns.length; ++i) {
+                    const pattern = this._inner.patterns[i];
+
+                    if (pattern.regex ?
+                        pattern.regex.test(key) :
+                        !pattern.schema._validate(key, state, { ...options, abortEarly:true }).errors) {
+
+                        unprocessed.delete(key);
+
+                        const result = pattern.rule._validate(item, localState, options);
+                        if (result.errors) {
+                            errors.push(this.createError('object.child', {
+                                key,
+                                child: pattern.rule._getLabel(key),
+                                reason: result.errors
+                            }, localState, options));
+
+                            if (options.abortEarly) {
+                                return finish();
+                            }
+                        }
+
+                        target[key] = result.value;
+                    }
+                }
+            }
+        }
+
+        if (unprocessed.size && (this._inner.children || this._inner.patterns.length)) {
+            if ((options.stripUnknown && this._flags.allowUnknown !== true) ||
+                options.skipFunctions) {
+
+                const stripUnknown = options.stripUnknown
+                    ? (options.stripUnknown === true ? true : !!options.stripUnknown.objects)
+                    : false;
+
+
+                for (const key of unprocessed) {
+                    if (stripUnknown) {
+                        delete target[key];
+                        unprocessed.delete(key);
+                    }
+                    else if (typeof target[key] === 'function') {
+                        unprocessed.delete(key);
+                    }
+                }
+            }
+
+            if ((this._flags.allowUnknown !== undefined ? !this._flags.allowUnknown : !options.allowUnknown)) {
+
+                for (const unprocessedKey of unprocessed) {
+                    errors.push(this.createError('object.allowUnknown', { child: unprocessedKey, value: target[unprocessedKey] }, {
+                        key: unprocessedKey,
+                        path: [...state.path, unprocessedKey]
+                    }, options, {}));
+                }
+            }
+        }
+
+        // Validate dependencies
+
+        for (let i = 0; i < this._inner.dependencies.length; ++i) {
+            const dep = this._inner.dependencies[i];
+            const hasKey = dep.key !== null;
+            const splitKey = hasKey && dep.key.split('.');
+            const localState = hasKey ? new State(splitKey[splitKey.length - 1], [...state.path, ...splitKey]) : new State(null, state.path);
+            const err = internals[dep.type].call(this, dep.key, hasKey && Hoek.reach(target, dep.key, { functions: true }), dep.peers, target, localState, options);
+            if (err instanceof Errors.Err) {
+                errors.push(err);
+                if (options.abortEarly) {
+                    return finish();
+                }
+            }
+        }
+
+        return finish();
+    }
+
+    keys(schema) {
+
+        Hoek.assert(schema === null || schema === undefined || typeof schema === 'object', 'Object schema must be a valid object');
+        Hoek.assert(!schema || !(schema instanceof Any), 'Object schema cannot be a joi schema');
+
+        const obj = this.clone();
+
+        if (!schema) {
+            obj._inner.children = null;
+            return obj;
+        }
+
+        const children = Object.keys(schema);
+
+        if (!children.length) {
+            obj._inner.children = [];
+            return obj;
+        }
+
+        const topo = new Topo();
+        if (obj._inner.children) {
+            for (let i = 0; i < obj._inner.children.length; ++i) {
+                const child = obj._inner.children[i];
+
+                // Only add the key if we are not going to replace it later
+                if (!children.includes(child.key)) {
+                    topo.add(child, { after: child._refs, group: child.key });
+                }
+            }
+        }
+
+        for (let i = 0; i < children.length; ++i) {
+            const key = children[i];
+            const child = schema[key];
+            try {
+                const cast = Cast.schema(this._currentJoi, child);
+                topo.add({ key, schema: cast }, { after: cast._refs, group: key });
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = key + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = key;
+                }
+
+                throw castErr;
+            }
+        }
+
+        obj._inner.children = topo.nodes;
+
+        return obj;
+    }
+
+    append(schema) {
+        // Skip any changes
+        if (schema === null || schema === undefined || Object.keys(schema).length === 0) {
+            return this;
+        }
+
+        return this.keys(schema);
+    }
+
+    unknown(allow) {
+
+        const value = allow !== false;
+
+        if (this._flags.allowUnknown === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.allowUnknown = value;
+        return obj;
+    }
+
+    length(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('length', limit, function (value, state, options) {
+
+            if (Object.keys(value).length === limit) {
+                return value;
+            }
+
+            return this.createError('object.length', { limit, value }, state, options);
+        });
+    }
+
+    min(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('min', limit, function (value, state, options) {
+
+            if (Object.keys(value).length >= limit) {
+                return value;
+            }
+
+            return this.createError('object.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('max', limit, function (value, state, options) {
+
+            if (Object.keys(value).length <= limit) {
+                return value;
+            }
+
+            return this.createError('object.max', { limit, value }, state, options);
+        });
+    }
+
+    pattern(pattern, schema) {
+
+        const isRegExp = pattern instanceof RegExp;
+        Hoek.assert(isRegExp || pattern instanceof Any, 'pattern must be a regex or schema');
+        Hoek.assert(schema !== undefined, 'Invalid rule');
+
+        if (isRegExp) {
+            Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
+        }
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        const obj = this.clone();
+        if (isRegExp) {
+            obj._inner.patterns.push({ regex: pattern, rule: schema });
+        }
+        else {
+            obj._inner.patterns.push({ schema: pattern, rule: schema });
+        }
+
+        return obj;
+    }
+
+    schema() {
+
+        return this._test('schema', null, function (value, state, options) {
+
+            if (value instanceof Any) {
+                return value;
+            }
+
+            return this.createError('object.schema', null, state, options);
+        });
+    }
+
+    with(key, peers) {
+
+        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
+
+        return this._dependency('with', key, peers);
+    }
+
+    without(key, peers) {
+
+        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
+
+        return this._dependency('without', key, peers);
+    }
+
+    xor(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('xor', null, peers);
+    }
+
+    oxor(...peers) {
+
+        return this._dependency('oxor', null, peers);
+    }
+
+    or(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('or', null, peers);
+    }
+
+    and(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('and', null, peers);
+    }
+
+    nand(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('nand', null, peers);
+    }
+
+    requiredKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'required');
+    }
+
+    optionalKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'optional');
+    }
+
+    forbiddenKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'forbidden');
+    }
+
+    rename(from, to, options) {
+
+        Hoek.assert(typeof from === 'string' || from instanceof RegExp, 'Rename missing the from argument');
+        Hoek.assert(typeof to === 'string', 'Rename missing the to argument');
+        Hoek.assert(to !== from, 'Cannot rename key to same name:', from);
+
+        for (let i = 0; i < this._inner.renames.length; ++i) {
+            Hoek.assert(this._inner.renames[i].from !== from, 'Cannot rename the same key multiple times');
+        }
+
+        const obj = this.clone();
+
+        obj._inner.renames.push({
+            from,
+            to,
+            options: Hoek.applyToDefaults(internals.renameDefaults, options || {}),
+            isRegExp: from instanceof RegExp
+        });
+
+        return obj;
+    }
+
+    applyFunctionToChildren(children, fn, args = [], root) {
+
+        children = [].concat(children);
+        Hoek.assert(children.length > 0, 'expected at least one children');
+
+        const groupedChildren = internals.groupChildren(children);
+        let obj;
+
+        if ('' in groupedChildren) {
+            obj = this[fn](...args);
+            delete groupedChildren[''];
+        }
+        else {
+            obj = this.clone();
+        }
+
+        if (obj._inner.children) {
+            root = root ? (root + '.') : '';
+
+            for (let i = 0; i < obj._inner.children.length; ++i) {
+                const child = obj._inner.children[i];
+                const group = groupedChildren[child.key];
+
+                if (group) {
+                    obj._inner.children[i] = {
+                        key: child.key,
+                        _refs: child._refs,
+                        schema: child.schema.applyFunctionToChildren(group, fn, args, root + child.key)
+                    };
+
+                    delete groupedChildren[child.key];
+                }
+            }
+        }
+
+        const remaining = Object.keys(groupedChildren);
+        Hoek.assert(remaining.length === 0, 'unknown key(s)', remaining.join(', '));
+
+        return obj;
+    }
+
+    _dependency(type, key, peers) {
+
+        peers = [].concat(peers);
+        for (let i = 0; i < peers.length; ++i) {
+            Hoek.assert(typeof peers[i] === 'string', type, 'peers must be a string or array of strings');
+        }
+
+        const obj = this.clone();
+        obj._inner.dependencies.push({ type, key, peers });
+        return obj;
+    }
+
+    describe(shallow) {
+
+        const description = super.describe();
+
+        if (description.rules) {
+            for (let i = 0; i < description.rules.length; ++i) {
+                const rule = description.rules[i];
+                // Coverage off for future-proof descriptions, only object().assert() is use right now
+                if (/* $lab:coverage:off$ */rule.arg &&
+                    typeof rule.arg === 'object' &&
+                    rule.arg.schema &&
+                    rule.arg.ref /* $lab:coverage:on$ */) {
+                    rule.arg = {
+                        schema: rule.arg.schema.describe(),
+                        ref: rule.arg.ref.toString()
+                    };
+                }
+            }
+        }
+
+        if (this._inner.children &&
+            !shallow) {
+
+            description.children = {};
+            for (let i = 0; i < this._inner.children.length; ++i) {
+                const child = this._inner.children[i];
+                description.children[child.key] = child.schema.describe();
+            }
+        }
+
+        if (this._inner.dependencies.length) {
+            description.dependencies = Hoek.clone(this._inner.dependencies);
+        }
+
+        if (this._inner.patterns.length) {
+            description.patterns = [];
+
+            for (let i = 0; i < this._inner.patterns.length; ++i) {
+                const pattern = this._inner.patterns[i];
+                if (pattern.regex) {
+                    description.patterns.push({ regex: pattern.regex.toString(), rule: pattern.rule.describe() });
+                }
+                else {
+                    description.patterns.push({ schema: pattern.schema.describe(), rule: pattern.rule.describe() });
+                }
+            }
+        }
+
+        if (this._inner.renames.length > 0) {
+            description.renames = Hoek.clone(this._inner.renames);
+        }
+
+        return description;
+    }
+
+    assert(ref, schema, message) {
+
+        ref = Cast.ref(ref);
+        Hoek.assert(ref.isContext || ref.depth > 1, 'Cannot use assertions for root level references - use direct key rules instead');
+        message = message || 'pass the assertion test';
+        Hoek.assert(typeof message === 'string', 'Message must be a string');
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        const key = ref.path[ref.path.length - 1];
+        const path = ref.path.join('.');
+
+        return this._test('assert', { schema, ref }, function (value, state, options) {
+
+            const result = schema._validate(ref(value), null, options, value);
+            if (!result.errors) {
+                return value;
+            }
+
+            const localState = new State(key, ref.path, state.parent, state.reference);
+            return this.createError('object.assert', { ref: path, message }, localState, options);
+        });
+    }
+
+    type(constructor, name = constructor.name) {
+
+        Hoek.assert(typeof constructor === 'function', 'type must be a constructor function');
+        const typeData = {
+            name,
+            ctor: constructor
+        };
+
+        return this._test('type', typeData, function (value, state, options) {
+
+            if (value instanceof constructor) {
+                return value;
+            }
+
+            return this.createError('object.type', { type: typeData.name, value }, state, options);
+        });
+    }
+};
+
+
+internals.renameDefaults = {
+    alias: false,                   // Keep old value in place
+    multiple: false,                // Allow renaming multiple keys into the same target
+    override: false                 // Overrides an existing key
+};
+
+
+internals.groupChildren = function (children) {
+
+    children.sort();
+
+    const grouped = {};
+
+    for (let i = 0; i < children.length; ++i) {
+        const child = children[i];
+        Hoek.assert(typeof child === 'string', 'children must be strings');
+        const group = child.split('.')[0];
+        const childGroup = grouped[group] = (grouped[group] || []);
+        childGroup.push(child.substring(group.length + 1));
+    }
+
+    return grouped;
+};
+
+
+internals.keysToLabels = function (schema, keys) {
+
+    const children = schema._inner.children;
+
+    if (!children) {
+        return keys;
+    }
+
+    const findLabel = function (key) {
+
+        const matchingChild = schema._currentJoi.reach(schema, key);
+        return matchingChild ? matchingChild._getLabel(key) : key;
+    };
+
+    if (Array.isArray(keys)) {
+        return keys.map(findLabel);
+    }
+
+    return findLabel(keys);
+};
+
+
+internals.with = function (key, value, peers, parent, state, options) {
+
+    if (value === undefined) {
+        return;
+    }
+
+    for (let i = 0; i < peers.length; ++i) {
+
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist === undefined) {
+
+            return this.createError('object.with', {
+                main: key,
+                mainWithLabel: internals.keysToLabels(this, key),
+                peer,
+                peerWithLabel: internals.keysToLabels(this, peer)
+            }, state, options);
+        }
+    }
+};
+
+
+internals.without = function (key, value, peers, parent, state, options) {
+
+    if (value === undefined) {
+        return;
+    }
+
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+
+            return this.createError('object.without', {
+                main: key,
+                mainWithLabel: internals.keysToLabels(this, key),
+                peer,
+                peerWithLabel: internals.keysToLabels(this, peer)
+            }, state, options);
+        }
+    }
+};
+
+
+internals.xor = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            present.push(peer);
+        }
+    }
+
+    if (present.length === 1) {
+        return;
+    }
+
+    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
+
+    if (present.length === 0) {
+        return this.createError('object.missing', context, state, options);
+    }
+
+    context.present = present;
+    context.presentWithLabels = internals.keysToLabels(this, present);
+
+    return this.createError('object.xor', context, state, options);
+};
+
+
+internals.oxor = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            present.push(peer);
+        }
+    }
+
+    if (!present.length ||
+        present.length === 1) {
+
+        return;
+    }
+
+    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
+    context.present = present;
+    context.presentWithLabels = internals.keysToLabels(this, present);
+
+    return this.createError('object.oxor', context, state, options);
+};
+
+
+internals.or = function (key, value, peers, parent, state, options) {
+
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            return;
+        }
+    }
+
+    return this.createError('object.missing', {
+        peers,
+        peersWithLabels: internals.keysToLabels(this, peers)
+    }, state, options);
+};
+
+
+internals.and = function (key, value, peers, parent, state, options) {
+
+    const missing = [];
+    const present = [];
+    const count = peers.length;
+    for (let i = 0; i < count; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist === undefined) {
+
+            missing.push(peer);
+        }
+        else {
+            present.push(peer);
+        }
+    }
+
+    const aon = (missing.length === count || present.length === count);
+
+    if (!aon) {
+
+        return this.createError('object.and', {
+            present,
+            presentWithLabels: internals.keysToLabels(this, present),
+            missing,
+            missingWithLabels: internals.keysToLabels(this, missing)
+        }, state, options);
+    }
+};
+
+
+internals.nand = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+
+            present.push(peer);
+        }
+    }
+
+    const main = peers[0];
+    const values = peers.slice(1);
+    const allPresent = (present.length === peers.length);
+    return allPresent ? this.createError('object.nand', {
+        main,
+        mainWithLabel: internals.keysToLabels(this, main),
+        peers: values,
+        peersWithLabels: internals.keysToLabels(this, values)
+    }, state, options) : null;
+};
+
+
+module.exports = new internals.Object();
+
+},{"../../cast":109,"../../errors":110,"../any":117,"../state":127,"@hapi/bourne":83,"@hapi/hoek":98,"@hapi/topo":135}],127:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = class {
+    constructor(key, path, parent, reference) {
+
+        this.key = key;
+        this.path = path;
+        this.parent = parent;
+        this.reference = reference;
+    }
+};
+
+},{}],128:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Net = require('net');
+
+const Address = require('@hapi/address');
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+const JoiDate = require('../date');
+
+const Uri = require('./uri');
+const Ip = require('./ip');
+
+
+const internals = {
+    uriRegex: Uri.createUriRegex(),
+    ipRegex: Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], 'optional'),
+    guidBrackets: {
+        '{': '}', '[': ']', '(': ')', '': ''
+    },
+    guidVersions: {
+        uuidv1: '1',
+        uuidv2: '2',
+        uuidv3: '3',
+        uuidv4: '4',
+        uuidv5: '5'
+    },
+    cidrPresences: ['required', 'optional', 'forbidden'],
+    normalizationForms: ['NFC', 'NFD', 'NFKC', 'NFKD']
+};
+
+
+internals.String = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'string';
+        this._invalids.add('');
+    }
+
+    _base(value, state, options) {
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (this._flags.normalize) {
+                value = value.normalize(this._flags.normalize);
+            }
+
+            if (this._flags.case) {
+                value = (this._flags.case === 'upper' ? value.toLocaleUpperCase() : value.toLocaleLowerCase());
+            }
+
+            if (this._flags.trim) {
+                value = value.trim();
+            }
+
+            if (this._inner.replacements) {
+
+                for (let i = 0; i < this._inner.replacements.length; ++i) {
+                    const replacement = this._inner.replacements[i];
+                    value = value.replace(replacement.pattern, replacement.replacement);
+                }
+            }
+
+            if (this._flags.truncate) {
+                for (let i = 0; i < this._tests.length; ++i) {
+                    const test = this._tests[i];
+                    if (test.name === 'max') {
+                        value = value.slice(0, test.arg);
+                        break;
+                    }
+                }
+            }
+
+            if (this._flags.byteAligned && value.length % 2 !== 0) {
+                value = `0${value}`;
+            }
+        }
+
+        return {
+            value,
+            errors: (typeof value === 'string') ? null : this.createError('string.base', { value }, state, options)
+        };
+    }
+
+    insensitive() {
+
+        if (this._flags.insensitive) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.insensitive = true;
+        return obj;
+    }
+
+    creditCard() {
+
+        return this._test('creditCard', undefined, function (value, state, options) {
+
+            let i = value.length;
+            let sum = 0;
+            let mul = 1;
+
+            while (i--) {
+                const char = value.charAt(i) * mul;
+                sum = sum + (char - (char > 9) * 9);
+                mul = mul ^ 3;
+            }
+
+            const check = (sum % 10 === 0) && (sum > 0);
+            return check ? value : this.createError('string.creditCard', { value }, state, options);
+        });
+    }
+
+    regex(pattern, patternOptions) {
+
+        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
+        Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
+
+        const patternObject = { pattern };
+
+        if (typeof patternOptions === 'string') {
+            patternObject.name = patternOptions;
+        }
+        else if (typeof patternOptions === 'object') {
+            patternObject.invert = !!patternOptions.invert;
+
+            if (patternOptions.name) {
+                patternObject.name = patternOptions.name;
+            }
+        }
+
+        const errorCode = ['string.regex', patternObject.invert ? '.invert' : '', patternObject.name ? '.name' : '.base'].join('');
+
+        return this._test('regex', patternObject, function (value, state, options) {
+
+            const patternMatch = patternObject.pattern.test(value);
+
+            if (patternMatch ^ patternObject.invert) {
+                return value;
+            }
+
+            return this.createError(errorCode, { name: patternObject.name, pattern: patternObject.pattern, value }, state, options);
+        });
+    }
+
+    alphanum() {
+
+        return this._test('alphanum', undefined, function (value, state, options) {
+
+            if (/^[a-zA-Z0-9]+$/.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.alphanum', { value }, state, options);
+        });
+    }
+
+    token() {
+
+        return this._test('token', undefined, function (value, state, options) {
+
+            if (/^\w+$/.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.token', { value }, state, options);
+        });
+    }
+
+    email(validationOptions) {
+
+        if (validationOptions) {
+            Hoek.assert(typeof validationOptions === 'object', 'email options must be an object');
+
+            // Migration validation for unsupported options
+
+            Hoek.assert(validationOptions.checkDNS === undefined, 'checkDNS option is not supported');
+            Hoek.assert(validationOptions.errorLevel === undefined, 'errorLevel option is not supported');
+            Hoek.assert(validationOptions.minDomainAtoms === undefined, 'minDomainAtoms option is not supported, use minDomainSegments instead');
+            Hoek.assert(validationOptions.tldBlacklist === undefined, 'tldBlacklist option is not supported, use tlds.deny instead');
+            Hoek.assert(validationOptions.tldWhitelist === undefined, 'tldWhitelist option is not supported, use tlds.allow instead');
+
+            // Validate options
+
+            if (validationOptions.tlds &&
+                typeof validationOptions.tlds === 'object') {
+
+                Hoek.assert(validationOptions.tlds.allow === undefined ||
+                    validationOptions.tlds.allow === false ||
+                    validationOptions.tlds.allow === true ||
+                    Array.isArray(validationOptions.tlds.allow) ||
+                    validationOptions.tlds.allow instanceof Set, 'tlds.allow must be an array, Set, or boolean');
+
+                Hoek.assert(validationOptions.tlds.deny === undefined ||
+                    Array.isArray(validationOptions.tlds.deny) ||
+                    validationOptions.tlds.deny instanceof Set, 'tlds.deny must be an array or Set');
+
+                const normalizeTable = (table) => {
+
+                    if (table === undefined ||
+                        typeof table === 'boolean' ||
+                        table instanceof Set) {
+
+                        return table;
+                    }
+
+                    return new Set(table);
+                };
+
+                validationOptions = Object.assign({}, validationOptions);       // Shallow cloned
+                validationOptions.tlds = {
+                    allow: normalizeTable(validationOptions.tlds.allow),
+                    deny: normalizeTable(validationOptions.tlds.deny)
+                };
+            }
+
+            Hoek.assert(validationOptions.minDomainSegments === undefined ||
+                Number.isSafeInteger(validationOptions.minDomainSegments) && validationOptions.minDomainSegments > 0, 'minDomainSegments must be a positive integer');
+        }
+
+        return this._test('email', validationOptions, function (value, state, options) {
+
+            if (Address.email.isValid(value, validationOptions)) {
+                return value;
+            }
+
+            return this.createError('string.email', { value }, state, options);
+        });
+    }
+
+    ip(ipOptions = {}) {
+
+        let regex = internals.ipRegex;
+        Hoek.assert(typeof ipOptions === 'object', 'options must be an object');
+
+        if (ipOptions.cidr) {
+            Hoek.assert(typeof ipOptions.cidr === 'string', 'cidr must be a string');
+            ipOptions.cidr = ipOptions.cidr.toLowerCase();
+
+            Hoek.assert(Hoek.contain(internals.cidrPresences, ipOptions.cidr), 'cidr must be one of ' + internals.cidrPresences.join(', '));
+
+            // If we only received a `cidr` setting, create a regex for it. But we don't need to create one if `cidr` is "optional" since that is the default
+            if (!ipOptions.version && ipOptions.cidr !== 'optional') {
+                regex = Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], ipOptions.cidr);
+            }
+        }
+        else {
+
+            // Set our default cidr strategy
+            ipOptions.cidr = 'optional';
+        }
+
+        let versions;
+        if (ipOptions.version) {
+            if (!Array.isArray(ipOptions.version)) {
+                ipOptions.version = [ipOptions.version];
+            }
+
+            Hoek.assert(ipOptions.version.length >= 1, 'version must have at least 1 version specified');
+
+            versions = [];
+            for (let i = 0; i < ipOptions.version.length; ++i) {
+                let version = ipOptions.version[i];
+                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
+                version = version.toLowerCase();
+                Hoek.assert(Ip.versions[version], 'version at position ' + i + ' must be one of ' + Object.keys(Ip.versions).join(', '));
+                versions.push(version);
+            }
+
+            // Make sure we have a set of versions
+            versions = Array.from(new Set(versions));
+
+            regex = Ip.createIpRegex(versions, ipOptions.cidr);
+        }
+
+        return this._test('ip', ipOptions, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            if (versions) {
+                return this.createError('string.ipVersion', { value, cidr: ipOptions.cidr, version: versions }, state, options);
+            }
+
+            return this.createError('string.ip', { value, cidr: ipOptions.cidr }, state, options);
+        });
+    }
+
+    uri(uriOptions) {
+
+        let customScheme = '';
+        let allowRelative = false;
+        let relativeOnly = false;
+        let allowQuerySquareBrackets = false;
+        let regex = internals.uriRegex;
+
+        if (uriOptions) {
+            Hoek.assert(typeof uriOptions === 'object', 'options must be an object');
+
+            const unknownOptions = Object.keys(uriOptions).filter((key) => !['scheme', 'allowRelative', 'relativeOnly', 'allowQuerySquareBrackets'].includes(key));
+            Hoek.assert(unknownOptions.length === 0, `options contain unknown keys: ${unknownOptions}`);
+
+            if (uriOptions.scheme) {
+                Hoek.assert(uriOptions.scheme instanceof RegExp || typeof uriOptions.scheme === 'string' || Array.isArray(uriOptions.scheme), 'scheme must be a RegExp, String, or Array');
+
+                if (!Array.isArray(uriOptions.scheme)) {
+                    uriOptions.scheme = [uriOptions.scheme];
+                }
+
+                Hoek.assert(uriOptions.scheme.length >= 1, 'scheme must have at least 1 scheme specified');
+
+                // Flatten the array into a string to be used to match the schemes.
+                for (let i = 0; i < uriOptions.scheme.length; ++i) {
+                    const scheme = uriOptions.scheme[i];
+                    Hoek.assert(scheme instanceof RegExp || typeof scheme === 'string', 'scheme at position ' + i + ' must be a RegExp or String');
+
+                    // Add OR separators if a value already exists
+                    customScheme = customScheme + (customScheme ? '|' : '');
+
+                    // If someone wants to match HTTP or HTTPS for example then we need to support both RegExp and String so we don't escape their pattern unknowingly.
+                    if (scheme instanceof RegExp) {
+                        customScheme = customScheme + scheme.source;
+                    }
+                    else {
+                        Hoek.assert(/[a-zA-Z][a-zA-Z0-9+-\.]*/.test(scheme), 'scheme at position ' + i + ' must be a valid scheme');
+                        customScheme = customScheme + Hoek.escapeRegex(scheme);
+                    }
+                }
+            }
+
+            if (uriOptions.allowRelative) {
+                allowRelative = true;
+            }
+
+            if (uriOptions.relativeOnly) {
+                relativeOnly = true;
+            }
+
+            if (uriOptions.allowQuerySquareBrackets) {
+                allowQuerySquareBrackets = true;
+            }
+        }
+
+        if (customScheme || allowRelative || relativeOnly || allowQuerySquareBrackets) {
+            regex = Uri.createUriRegex(customScheme, allowRelative, relativeOnly, allowQuerySquareBrackets);
+        }
+
+        return this._test('uri', uriOptions, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            if (relativeOnly) {
+                return this.createError('string.uriRelativeOnly', { value }, state, options);
+            }
+
+            if (customScheme) {
+                return this.createError('string.uriCustomScheme', { scheme: customScheme, value }, state, options);
+            }
+
+            return this.createError('string.uri', { value }, state, options);
+        });
+    }
+
+    isoDate() {
+
+        return this._test('isoDate', undefined, function (value, state, options) {
+
+            if (JoiDate._isIsoDate(value)) {
+                if (!options.convert) {
+                    return value;
+                }
+
+                const d = new Date(value);
+                if (!isNaN(d.getTime())) {
+                    return d.toISOString();
+                }
+            }
+
+            return this.createError('string.isoDate', { value }, state, options);
+        });
+    }
+
+    guid(guidOptions) {
+
+        let versionNumbers = '';
+
+        if (guidOptions && guidOptions.version) {
+            if (!Array.isArray(guidOptions.version)) {
+                guidOptions.version = [guidOptions.version];
+            }
+
+            Hoek.assert(guidOptions.version.length >= 1, 'version must have at least 1 valid version specified');
+            const versions = new Set();
+
+            for (let i = 0; i < guidOptions.version.length; ++i) {
+                let version = guidOptions.version[i];
+                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
+                version = version.toLowerCase();
+                const versionNumber = internals.guidVersions[version];
+                Hoek.assert(versionNumber, 'version at position ' + i + ' must be one of ' + Object.keys(internals.guidVersions).join(', '));
+                Hoek.assert(!(versions.has(versionNumber)), 'version at position ' + i + ' must not be a duplicate.');
+
+                versionNumbers += versionNumber;
+                versions.add(versionNumber);
+            }
+        }
+
+        const guidRegex = new RegExp(`^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[${versionNumbers || '0-9A-F'}][0-9A-F]{3}\\2?[${versionNumbers ? '89AB' : '0-9A-F'}][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$`, 'i');
+
+        return this._test('guid', guidOptions, function (value, state, options) {
+
+            const results = guidRegex.exec(value);
+
+            if (!results) {
+                return this.createError('string.guid', { value }, state, options);
+            }
+
+            // Matching braces
+            if (internals.guidBrackets[results[1]] !== results[results.length - 1]) {
+                return this.createError('string.guid', { value }, state, options);
+            }
+
+            return value;
+        });
+    }
+
+    hex(hexOptions = {}) {
+
+        Hoek.assert(typeof hexOptions === 'object', 'hex options must be an object');
+        Hoek.assert(typeof hexOptions.byteAligned === 'undefined' || typeof hexOptions.byteAligned === 'boolean',
+            'byteAligned must be boolean');
+
+        const byteAligned = hexOptions.byteAligned === true;
+        const regex = /^[a-f0-9]+$/i;
+
+        const obj = this._test('hex', regex, function (value, state, options) {
+
+            if (regex.test(value)) {
+                if (byteAligned && value.length % 2 !== 0) {
+                    return this.createError('string.hexAlign', { value }, state, options);
+                }
+
+                return value;
+            }
+
+            return this.createError('string.hex', { value }, state, options);
+        });
+
+        if (byteAligned) {
+            obj._flags.byteAligned = true;
+        }
+
+        return obj;
+    }
+
+    base64(base64Options = {}) {
+
+        // Validation.
+        Hoek.assert(typeof base64Options === 'object', 'base64 options must be an object');
+        Hoek.assert(typeof base64Options.paddingRequired === 'undefined' || typeof base64Options.paddingRequired === 'boolean',
+            'paddingRequired must be boolean');
+
+        // Determine if padding is required.
+        const paddingRequired = base64Options.paddingRequired === false ?
+            base64Options.paddingRequired
+            : base64Options.paddingRequired || true;
+
+        // Set validation based on preference.
+        const regex = paddingRequired ?
+            // Padding is required.
+            /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+            // Padding is optional.
+            : /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
+
+        return this._test('base64', regex, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.base64', { value }, state, options);
+        });
+    }
+
+    dataUri(dataUriOptions = {}) {
+
+        const regex = /^data:[\w+.-]+\/[\w+.-]+;((charset=[\w-]+|base64),)?(.*)$/;
+
+        // Determine if padding is required.
+        const paddingRequired = dataUriOptions.paddingRequired === false ?
+            dataUriOptions.paddingRequired
+            : dataUriOptions.paddingRequired || true;
+
+        const base64regex = paddingRequired ?
+            /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+            : /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
+
+        return this._test('dataUri', regex, function (value, state, options) {
+
+            const matches = value.match(regex);
+
+            if (matches) {
+                if (!matches[2]) {
+                    return value;
+                }
+
+                if (matches[2] !== 'base64') {
+                    return value;
+                }
+
+                if (base64regex.test(matches[3])) {
+                    return value;
+                }
+            }
+
+            return this.createError('string.dataUri', { value }, state, options);
+        });
+    }
+
+    hostname() {
+
+        const regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+
+        return this._test('hostname', undefined, function (value, state, options) {
+
+            if ((value.length <= 255 && regex.test(value)) ||
+                Net.isIPv6(value)) {
+
+                return value;
+            }
+
+            return this.createError('string.hostname', { value }, state, options);
+        });
+    }
+
+    normalize(form = 'NFC') {
+
+        Hoek.assert(Hoek.contain(internals.normalizationForms, form), 'normalization form must be one of ' + internals.normalizationForms.join(', '));
+
+        const obj = this._test('normalize', form, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.normalize(form)) {
+
+                return value;
+            }
+
+            return this.createError('string.normalize', { value, form }, state, options);
+        });
+
+        obj._flags.normalize = form;
+        return obj;
+    }
+
+    lowercase() {
+
+        const obj = this._test('lowercase', undefined, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.toLocaleLowerCase()) {
+
+                return value;
+            }
+
+            return this.createError('string.lowercase', { value }, state, options);
+        });
+
+        obj._flags.case = 'lower';
+        return obj;
+    }
+
+    uppercase() {
+
+        const obj = this._test('uppercase', undefined, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.toLocaleUpperCase()) {
+
+                return value;
+            }
+
+            return this.createError('string.uppercase', { value }, state, options);
+        });
+
+        obj._flags.case = 'upper';
+        return obj;
+    }
+
+    trim(enabled = true) {
+
+        Hoek.assert(typeof enabled === 'boolean', 'option must be a boolean');
+
+        if ((this._flags.trim && enabled) || (!this._flags.trim && !enabled)) {
+            return this;
+        }
+
+        let obj;
+        if (enabled) {
+            obj = this._test('trim', undefined, function (value, state, options) {
+
+                if (options.convert ||
+                    value === value.trim()) {
+
+                    return value;
+                }
+
+                return this.createError('string.trim', { value }, state, options);
+            });
+        }
+        else {
+            obj = this.clone();
+            obj._tests = obj._tests.filter((test) => test.name !== 'trim');
+        }
+
+        obj._flags.trim = enabled;
+        return obj;
+    }
+
+    replace(pattern, replacement) {
+
+        if (typeof pattern === 'string') {
+            pattern = new RegExp(Hoek.escapeRegex(pattern), 'g');
+        }
+
+        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
+        Hoek.assert(typeof replacement === 'string', 'replacement must be a String');
+
+        // This can not be considere a test like trim, we can't "reject"
+        // anything from this rule, so just clone the current object
+        const obj = this.clone();
+
+        if (!obj._inner.replacements) {
+            obj._inner.replacements = [];
+        }
+
+        obj._inner.replacements.push({
+            pattern,
+            replacement
+        });
+
+        return obj;
+    }
+
+    truncate(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.truncate === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.truncate = value;
+        return obj;
+    }
+
+};
+
+internals.compare = function (type, compare) {
+
+    return function (limit, encoding) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+        Hoek.assert(!encoding || Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
+
+        return this._test(type, limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!Number.isSafeInteger(compareTo)) {
+                    return this.createError('string.ref', { ref: limit, value: compareTo }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (compare(value, compareTo, encoding)) {
+                return value;
+            }
+
+            return this.createError('string.' + type, { limit: compareTo, value, encoding }, state, options);
+        });
+    };
+};
+
+
+internals.String.prototype.min = internals.compare('min', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length >= limit;
+});
+
+
+internals.String.prototype.max = internals.compare('max', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length <= limit;
+});
+
+
+internals.String.prototype.length = internals.compare('length', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length === limit;
+});
+
+// Aliases
+
+internals.String.prototype.uuid = internals.String.prototype.guid;
+
+module.exports = new internals.String();
+
+}).call(this,require("buffer").Buffer)
+},{"../../ref":113,"../any":117,"../date":122,"./ip":129,"./uri":131,"@hapi/address":81,"@hapi/hoek":98,"buffer":48,"net":46}],129:[function(require,module,exports){
+'use strict';
+
+const RFC3986 = require('./rfc3986');
+
+
+const internals = {
+    Ip: {
+        cidrs: {
+            ipv4: {
+                required: '\\/(?:' + RFC3986.ipv4Cidr + ')',
+                optional: '(?:\\/(?:' + RFC3986.ipv4Cidr + '))?',
+                forbidden: ''
+            },
+            ipv6: {
+                required: '\\/' + RFC3986.ipv6Cidr,
+                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
+                forbidden: ''
+            },
+            ipvfuture: {
+                required: '\\/' + RFC3986.ipv6Cidr,
+                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
+                forbidden: ''
+            }
+        },
+        versions: {
+            ipv4: RFC3986.IPv4address,
+            ipv6: RFC3986.IPv6address,
+            ipvfuture: RFC3986.IPvFuture
+        }
+    }
+};
+
+
+internals.Ip.createIpRegex = function (versions, cidr) {
+
+    let regex;
+    for (let i = 0; i < versions.length; ++i) {
+        const version = versions[i];
+        if (!regex) {
+            regex = '^(?:' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
+        }
+        else {
+            regex += '|' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
+        }
+    }
+
+    return new RegExp(regex + ')$');
+};
+
+module.exports = internals.Ip;
+
+},{"./rfc3986":130}],130:[function(require,module,exports){
+'use strict';
+
+const internals = {
+    rfc3986: {}
+};
+
+
+internals.generate = function () {
+
+    /**
+     * elements separated by forward slash ("/") are alternatives.
+     */
+    const or = '|';
+
+    /**
+     * Rule to support zero-padded addresses.
+     */
+    const zeroPad = '0?';
+
+    /**
+     * DIGIT = %x30-39 ; 0-9
+     */
+    const digit = '0-9';
+    const digitOnly = '[' + digit + ']';
+
+    /**
+     * ALPHA = %x41-5A / %x61-7A   ; A-Z / a-z
+     */
+    const alpha = 'a-zA-Z';
+    const alphaOnly = '[' + alpha + ']';
+
+    /**
+     * IPv4
+     * cidr       = DIGIT                ; 0-9
+     *            / %x31-32 DIGIT         ; 10-29
+     *            / "3" %x30-32           ; 30-32
+     */
+    internals.rfc3986.ipv4Cidr = digitOnly + or + '[1-2]' + digitOnly + or + '3' + '[0-2]';
+
+    /**
+     * IPv6
+     * cidr       = DIGIT                 ; 0-9
+     *            / %x31-39 DIGIT         ; 10-99
+     *            / "1" %x0-1 DIGIT       ; 100-119
+     *            / "12" %x0-8            ; 120-128
+     */
+    internals.rfc3986.ipv6Cidr = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + '[01]' + digitOnly + or + '12[0-8])';
+
+    /**
+     * HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+     */
+    const hexDigit = digit + 'A-Fa-f';
+    const hexDigitOnly = '[' + hexDigit + ']';
+
+    /**
+     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+     */
+    const unreserved = alpha + digit + '-\\._~';
+
+    /**
+     * sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+     */
+    const subDelims = '!\\$&\'\\(\\)\\*\\+,;=';
+
+    /**
+     * pct-encoded = "%" HEXDIG HEXDIG
+     */
+    const pctEncoded = '%' + hexDigit;
+
+    /**
+     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+     */
+    const pchar = unreserved + pctEncoded + subDelims + ':@';
+    const pcharOnly = '[' + pchar + ']';
+
+    /**
+     * squareBrackets example: []
+     */
+    const squareBrackets = '\\[\\]';
+
+    /**
+     * dec-octet   = DIGIT                 ; 0-9
+     *            / %x31-39 DIGIT         ; 10-99
+     *            / "1" 2DIGIT            ; 100-199
+     *            / "2" %x30-34 DIGIT     ; 200-249
+     *            / "25" %x30-35          ; 250-255
+     */
+    const decOctect = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + digitOnly + digitOnly + or + '2' + '[0-4]' + digitOnly + or + '25' + '[0-5])';
+
+    /**
+     * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+     */
+    internals.rfc3986.IPv4address = '(?:' + decOctect + '\\.){3}' + decOctect;
+
+    /**
+     * h16 = 1*4HEXDIG ; 16 bits of address represented in hexadecimal
+     * ls32 = ( h16 ":" h16 ) / IPv4address ; least-significant 32 bits of address
+     * IPv6address =                            6( h16 ":" ) ls32
+     *             /                       "::" 5( h16 ":" ) ls32
+     *             / [               h16 ] "::" 4( h16 ":" ) ls32
+     *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+     *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+     *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
+     *             / [ *4( h16 ":" ) h16 ] "::"              ls32
+     *             / [ *5( h16 ":" ) h16 ] "::"              h16
+     *             / [ *6( h16 ":" ) h16 ] "::"
+     */
+    const h16 = hexDigitOnly + '{1,4}';
+    const ls32 = '(?:' + h16 + ':' + h16 + '|' + internals.rfc3986.IPv4address + ')';
+    const IPv6SixHex = '(?:' + h16 + ':){6}' + ls32;
+    const IPv6FiveHex = '::(?:' + h16 + ':){5}' + ls32;
+    const IPv6FourHex = '(?:' + h16 + ')?::(?:' + h16 + ':){4}' + ls32;
+    const IPv6ThreeHex = '(?:(?:' + h16 + ':){0,1}' + h16 + ')?::(?:' + h16 + ':){3}' + ls32;
+    const IPv6TwoHex = '(?:(?:' + h16 + ':){0,2}' + h16 + ')?::(?:' + h16 + ':){2}' + ls32;
+    const IPv6OneHex = '(?:(?:' + h16 + ':){0,3}' + h16 + ')?::' + h16 + ':' + ls32;
+    const IPv6NoneHex = '(?:(?:' + h16 + ':){0,4}' + h16 + ')?::' + ls32;
+    const IPv6NoneHex2 = '(?:(?:' + h16 + ':){0,5}' + h16 + ')?::' + h16;
+    const IPv6NoneHex3 = '(?:(?:' + h16 + ':){0,6}' + h16 + ')?::';
+    internals.rfc3986.IPv6address = '(?:' + IPv6SixHex + or + IPv6FiveHex + or + IPv6FourHex + or + IPv6ThreeHex + or + IPv6TwoHex + or + IPv6OneHex + or + IPv6NoneHex + or + IPv6NoneHex2 + or + IPv6NoneHex3 + ')';
+
+    /**
+     * IPvFuture = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+     */
+    internals.rfc3986.IPvFuture = 'v' + hexDigitOnly + '+\\.[' + unreserved + subDelims + ':]+';
+
+    /**
+     * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+     */
+    internals.rfc3986.scheme = alphaOnly + '[' + alpha + digit + '+-\\.]*';
+
+    /**
+     * userinfo = *( unreserved / pct-encoded / sub-delims / ":" )
+     */
+    const userinfo = '[' + unreserved + pctEncoded + subDelims + ':]*';
+
+    /**
+     * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+     */
+    const IPLiteral = '\\[(?:' + internals.rfc3986.IPv6address + or + internals.rfc3986.IPvFuture + ')\\]';
+
+    /**
+     * reg-name = *( unreserved / pct-encoded / sub-delims )
+     */
+    const regName = '[' + unreserved + pctEncoded + subDelims + ']{0,255}';
+
+    /**
+     * host = IP-literal / IPv4address / reg-name
+     */
+    const host = '(?:' + IPLiteral + or + internals.rfc3986.IPv4address + or + regName + ')';
+
+    /**
+     * port = *DIGIT
+     */
+    const port = digitOnly + '*';
+
+    /**
+     * authority   = [ userinfo "@" ] host [ ":" port ]
+     */
+    const authority = '(?:' + userinfo + '@)?' + host + '(?::' + port + ')?';
+
+    /**
+     * segment       = *pchar
+     * segment-nz    = 1*pchar
+     * path          = path-abempty    ; begins with "/" or is empty
+     *               / path-absolute   ; begins with "/" but not "//"
+     *               / path-noscheme   ; begins with a non-colon segment
+     *               / path-rootless   ; begins with a segment
+     *               / path-empty      ; zero characters
+     * path-abempty  = *( "/" segment )
+     * path-absolute = "/" [ segment-nz *( "/" segment ) ]
+     * path-rootless = segment-nz *( "/" segment )
+     */
+    const segment = pcharOnly + '*';
+    const segmentNz = pcharOnly + '+';
+    const segmentNzNc = '[' + unreserved + pctEncoded + subDelims + '@' + ']+';
+    const pathEmpty = '';
+    const pathAbEmpty = '(?:\\/' + segment + ')*';
+    const pathAbsolute = '\\/(?:' + segmentNz + pathAbEmpty + ')?';
+    const pathRootless = segmentNz + pathAbEmpty;
+    const pathNoScheme = segmentNzNc + pathAbEmpty;
+
+    /**
+     * hier-part = "//" authority path
+     */
+    internals.rfc3986.hierPart = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty + ')' + or + pathAbsolute + or + pathRootless + ')';
+
+    /**
+     * relative-part = "//" authority path-abempty
+     *                 / path-absolute
+     *                 / path-noscheme
+     *                 / path-empty
+     */
+    internals.rfc3986.relativeRef = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty  + ')' + or + pathAbsolute + or + pathNoScheme + or + pathEmpty + ')';
+
+    /**
+     * query = *( pchar / "/" / "?" )
+     */
+    internals.rfc3986.query = '[' + pchar + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
+
+    /**
+     * query = *( pchar / "[" / "]" / "/" / "?" )
+     */
+    internals.rfc3986.queryWithSquareBrackets = '[' + pchar + squareBrackets + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
+
+    /**
+     * fragment = *( pchar / "/" / "?" )
+     */
+    internals.rfc3986.fragment = '[' + pchar + '\\/\\?]*';
+};
+
+
+internals.generate();
+
+module.exports = internals.rfc3986;
+
+},{}],131:[function(require,module,exports){
+'use strict';
+
+const RFC3986 = require('./rfc3986');
+
+
+const internals = {
+    Uri: {
+        createUriRegex: function (optionalScheme, allowRelative, relativeOnly, allowQuerySquareBrackets) {
+
+            let scheme = RFC3986.scheme;
+            let prefix;
+
+            if (relativeOnly) {
+                prefix = '(?:' + RFC3986.relativeRef + ')';
+            }
+            else {
+                // If we were passed a scheme, use it instead of the generic one
+                if (optionalScheme) {
+
+                    // Have to put this in a non-capturing group to handle the OR statements
+                    scheme = '(?:' + optionalScheme + ')';
+                }
+
+                const withScheme = '(?:' + scheme + ':' + RFC3986.hierPart + ')';
+
+                prefix = allowRelative ? '(?:' + withScheme + '|' + RFC3986.relativeRef + ')' : withScheme;
+            }
+
+            /**
+             * URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+             *
+             * OR
+             *
+             * relative-ref = relative-part [ "?" query ] [ "#" fragment ]
+             */
+            return new RegExp('^' + prefix + '(?:\\?' + (allowQuerySquareBrackets ? RFC3986.queryWithSquareBrackets : RFC3986.query) + ')?' + '(?:#' + RFC3986.fragment + ')?$');
+        }
+    }
+};
+
+module.exports = internals.Uri;
+
+},{"./rfc3986":130}],132:[function(require,module,exports){
+'use strict';
+
+const Util = require('util');
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Map = class extends Map {
+
+    slice() {
+
+        return new internals.Map(this);
+    }
+
+    toString() {
+
+        return Util.inspect(this);
+    }
+};
+
+
+internals.Symbol = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'symbol';
+        this._inner.map = new internals.Map();
+    }
+
+    _base(value, state, options) {
+
+        if (options.convert) {
+            const lookup = this._inner.map.get(value);
+            if (lookup) {
+                value = lookup;
+            }
+
+            if (this._flags.allowOnly) {
+                return {
+                    value,
+                    errors: (typeof value === 'symbol') ? null : this.createError('symbol.map', { value, map: this._inner.map }, state, options)
+                };
+            }
+        }
+
+        return {
+            value,
+            errors: (typeof value === 'symbol') ? null : this.createError('symbol.base', { value }, state, options)
+        };
+    }
+
+    map(iterable) {
+
+        if (iterable && !iterable[Symbol.iterator] && typeof iterable === 'object') {
+            iterable = Object.entries(iterable);
+        }
+
+        Hoek.assert(iterable && iterable[Symbol.iterator], 'Iterable must be an iterable or object');
+        const obj = this.clone();
+
+        const symbols = [];
+        for (const entry of iterable) {
+            Hoek.assert(entry && entry[Symbol.iterator], 'Entry must be an iterable');
+            const [key, value] = entry;
+
+            Hoek.assert(typeof key !== 'object' && typeof key !== 'function' && typeof key !== 'symbol', 'Key must not be an object, function, or Symbol');
+            Hoek.assert(typeof value === 'symbol', 'Value must be a Symbol');
+            obj._inner.map.set(key, value);
+            symbols.push(value);
+        }
+
+        return obj.valid(...symbols);
+    }
+
+    describe() {
+
+        const description = super.describe();
+        description.map = new Map(this._inner.map);
+        return description;
+    }
+};
+
+
+module.exports = new internals.Symbol();
+
+},{"../any":117,"@hapi/hoek":98,"util":325}],133:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = {
+    settingsCache: Symbol('settingsCache')
+};
+
+},{}],134:[function(require,module,exports){
+module.exports={
+  "_from": "@hapi/joi@^15.1.1",
+  "_id": "@hapi/joi@15.1.1",
+  "_inBundle": false,
+  "_integrity": "sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==",
+  "_location": "/optioner/@hapi/joi",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "@hapi/joi@^15.1.1",
+    "name": "@hapi/joi",
+    "escapedName": "@hapi%2fjoi",
+    "scope": "@hapi",
+    "rawSpec": "^15.1.1",
+    "saveSpec": null,
+    "fetchSpec": "^15.1.1"
+  },
+  "_requiredBy": [
+    "/optioner"
+  ],
+  "_resolved": "http://localhost:4873/@hapi%2fjoi/-/joi-15.1.1.tgz",
+  "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
+  "_spec": "@hapi/joi@^15.1.1",
+  "_where": "/Users/richard/Projects/seneca/browser/node_modules/optioner",
+  "bugs": {
+    "url": "https://github.com/hapijs/joi/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "@hapi/address": "2.x.x",
+    "@hapi/bourne": "1.x.x",
+    "@hapi/hoek": "8.x.x",
+    "@hapi/topo": "3.x.x"
+  },
+  "deprecated": false,
+  "description": "Object schema validation",
+  "devDependencies": {
+    "@hapi/code": "6.x.x",
+    "@hapi/lab": "20.x.x"
+  },
+  "homepage": "https://github.com/hapijs/joi",
+  "keywords": [
+    "schema",
+    "validation"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "lib/index.js",
+  "name": "@hapi/joi",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hapijs/joi.git"
+  },
+  "scripts": {
+    "test": "lab -t 100 -a @hapi/code -L",
+    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code"
+  },
+  "version": "15.1.1"
+}
+
+},{}],135:[function(require,module,exports){
+'use strict';
+
+const Assert = require('@hapi/hoek/lib/assert');
+
+
+const internals = {};
+
+
+module.exports = class Topo {
+
+    constructor() {
+
+        this._items = [];
+        this.nodes = [];
+    }
+
+    add(nodes, options) {
+
+        options = options || {};
+
+        // Validate rules
+
+        const before = [].concat(options.before || []);
+        const after = [].concat(options.after || []);
+        const group = options.group || '?';
+        const sort = options.sort || 0;                   // Used for merging only
+
+        Assert(!before.includes(group), `Item cannot come before itself: ${group}`);
+        Assert(!before.includes('?'), 'Item cannot come before unassociated items');
+        Assert(!after.includes(group), `Item cannot come after itself: ${group}`);
+        Assert(!after.includes('?'), 'Item cannot come after unassociated items');
+
+        if (!Array.isArray(nodes)) {
+            nodes = [nodes];
+        }
+
+        for (const node of nodes) {
+            const item = {
+                seq: this._items.length,
+                sort,
+                before,
+                after,
+                group,
+                node
+            };
+
+            this._items.push(item);
+        }
+
+        // Insert event
+
+        const valid = this._sort();
+        Assert(valid, 'item', group !== '?' ? `added into group ${group}` : '', 'created a dependencies error');
+
+        return this.nodes;
+    }
+
+    merge(others) {
+
+        if (!Array.isArray(others)) {
+            others = [others];
+        }
+
+        for (const other of others) {
+            if (other) {
+                for (const item of other._items) {
+                    this._items.push(Object.assign({}, item));      // Shallow cloned
+                }
+            }
+        }
+
+        // Sort items
+
+        this._items.sort(internals.mergeSort);
+        for (let i = 0; i < this._items.length; ++i) {
+            this._items[i].seq = i;
+        }
+
+        const valid = this._sort();
+        Assert(valid, 'merge created a dependencies error');
+
+        return this.nodes;
+    }
+
+    _sort() {
+
+        // Construct graph
+
+        const graph = {};
+        const graphAfters = Object.create(null);            // A prototype can bungle lookups w/ false positives
+        const groups = Object.create(null);
+
+        for (const item of this._items) {
+            const seq = item.seq;                           // Unique across all items
+            const group = item.group;
+
+            // Determine Groups
+
+            groups[group] = groups[group] || [];
+            groups[group].push(seq);
+
+            // Build intermediary graph using 'before'
+
+            graph[seq] = item.before;
+
+            // Build second intermediary graph with 'after'
+
+            for (const after of item.after) {
+                graphAfters[after] = graphAfters[after] || [];
+                graphAfters[after].push(seq);
+            }
+        }
+
+        // Expand intermediary graph
+
+        for (const node in graph) {
+            const expandedGroups = [];
+
+            for (const graphNodeItem in graph[node]) {
+                const group = graph[node][graphNodeItem];
+                groups[group] = groups[group] || [];
+                expandedGroups.push(...groups[group]);
+            }
+
+            graph[node] = expandedGroups;
+        }
+
+        // Merge intermediary graph using graphAfters into final graph
+
+        for (const group in graphAfters) {
+            if (groups[group]) {
+                for (const node of groups[group]) {
+                    graph[node].push(...graphAfters[group]);
+                }
+            }
+        }
+
+        // Compile ancestors
+
+        const ancestors = {};
+        for (const node in graph) {
+            const children = graph[node];
+            for (const child of children) {
+                ancestors[child] = ancestors[child] || [];
+                ancestors[child].push(node);
+            }
+        }
+
+        // Topo sort
+
+        const visited = {};
+        const sorted = [];
+
+        for (let i = 0; i < this._items.length; ++i) {          // Looping through item.seq values out of order
+            let next = i;
+
+            if (ancestors[i]) {
+                next = null;
+                for (let j = 0; j < this._items.length; ++j) {  // As above, these are item.seq values
+                    if (visited[j] === true) {
+                        continue;
+                    }
+
+                    if (!ancestors[j]) {
+                        ancestors[j] = [];
+                    }
+
+                    const shouldSeeCount = ancestors[j].length;
+                    let seenCount = 0;
+                    for (let k = 0; k < shouldSeeCount; ++k) {
+                        if (visited[ancestors[j][k]]) {
+                            ++seenCount;
+                        }
+                    }
+
+                    if (seenCount === shouldSeeCount) {
+                        next = j;
+                        break;
+                    }
+                }
+            }
+
+            if (next !== null) {
+                visited[next] = true;
+                sorted.push(next);
+            }
+        }
+
+        if (sorted.length !== this._items.length) {
+            return false;
+        }
+
+        const seqIndex = {};
+        for (const item of this._items) {
+            seqIndex[item.seq] = item;
+        }
+
+        this._items = [];
+        this.nodes = [];
+
+        for (const value of sorted) {
+            const sortedItem = seqIndex[value];
+            this.nodes.push(sortedItem.node);
+            this._items.push(sortedItem);
+        }
+
+        return true;
+    }
+};
+
+
+internals.mergeSort = (a, b) => {
+
+    return a.sort === b.sort ? 0 : (a.sort < b.sort ? -1 : 1);
+};
+
+},{"@hapi/hoek/lib/assert":85}],136:[function(require,module,exports){
 /* Copyright (c) 2017-2019 Richard Rodger and other contributors, MIT License */
 'use strict'
 
@@ -39528,7 +45100,7 @@ function obj2arr(work, ctxt) {
   return work
 }
 
-},{"@hapi/hoek":21,"@hapi/joi":33,"util":202}],100:[function(require,module,exports){
+},{"@hapi/hoek":98,"@hapi/joi":111,"util":325}],137:[function(require,module,exports){
 /* Copyright (c) 2016 Richard Rodger and other contributors, MIT License */
 'use strict'
 
@@ -39661,7 +45233,7 @@ function contains (all, some) {
   return true
 }
 
-},{"assert":62}],101:[function(require,module,exports){
+},{"assert":32}],138:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -39712,7 +45284,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],102:[function(require,module,exports){
+},{}],139:[function(require,module,exports){
 'use strict';
 
 
@@ -39819,7 +45391,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],103:[function(require,module,exports){
+},{}],140:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -39872,7 +45444,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],104:[function(require,module,exports){
+},{}],141:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -39942,7 +45514,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],105:[function(require,module,exports){
+},{}],142:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -40003,7 +45575,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],106:[function(require,module,exports){
+},{}],143:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -41879,7 +47451,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":102,"./adler32":103,"./crc32":105,"./messages":110,"./trees":111}],107:[function(require,module,exports){
+},{"../utils/common":139,"./adler32":140,"./crc32":142,"./messages":147,"./trees":148}],144:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -42226,7 +47798,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],108:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -43784,7 +49356,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":102,"./adler32":103,"./crc32":105,"./inffast":107,"./inftrees":109}],109:[function(require,module,exports){
+},{"../utils/common":139,"./adler32":140,"./crc32":142,"./inffast":144,"./inftrees":146}],146:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -44129,7 +49701,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":102}],110:[function(require,module,exports){
+},{"../utils/common":139}],147:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -44163,7 +49735,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],111:[function(require,module,exports){
+},{}],148:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -45387,7 +50959,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":102}],112:[function(require,module,exports){
+},{"../utils/common":139}],149:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -45436,7 +51008,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],113:[function(require,module,exports){
+},{}],150:[function(require,module,exports){
 (function (process){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -45742,19 +51314,18 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":119}],114:[function(require,module,exports){
-/* Copyright (c) 2013-2019 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
+},{"_process":156}],151:[function(require,module,exports){
+/* Copyright (c) 2013-2020 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
 
 ;(function() {
-  /* jshint node:true, asi:true, eqnull:true */
   'use strict'
   var root = this
   var previous_patrun = root.patrun
   var has_require = typeof require !== 'undefined'
 
-  var _ = root._ || (has_require && require('lodash'))
-  if (!_)
-    throw new Error('patrun requires underscore, see http://underscorejs.org')
+  //var _ = root._ || (has_require && require('lodash'))
+  //if (!_)
+  //  throw new Error('patrun requires underscore, see http://underscorejs.org')
 
   var gex = root.gex || (has_require && require('gex'))
   if (!gex)
@@ -45779,8 +51350,6 @@ var substr = 'ab'.substr(-1) === 'b'
     self.add = function(pat, data) {
       pat = { ...pat }
 
-      var PS = JSON.stringify(pat).replace(/ /g, '')
-
       var customizer =
         'function' === typeof custom ? custom.call(self, pat, data) : null
 
@@ -45794,7 +51363,7 @@ var substr = 'ab'.substr(-1) === 'b'
 
         val = String(val)
         pat[key] = val
-        ;(custom.gex && val.match(/[\*\?]/) ? gexers : plains).push(key)
+        ;(custom.gex && val.match(/[*?]/) ? gexers : plains).push(key)
       })
 
       plains = plains.sort()
@@ -45806,13 +51375,12 @@ var substr = 'ab'.substr(-1) === 'b'
       var valmap
 
       // Partial matches return next wider match - see partial-match test
-      //var last_data
 
       for (var i = 0; i < keys.length; i++) {
         var key = keys[i]
         var val = pat[key]
 
-        var gexer = custom.gex && val.match(/[\*\?]/) ? gex(val) : null
+        var gexer = custom.gex && val.match(/[*?]/) ? gex(val) : null
         if (gexer) gexer.val$ = val
 
         var sort_prefix = (gexer ? '1' : '0') + '~'
@@ -45821,21 +51389,15 @@ var substr = 'ab'.substr(-1) === 'b'
         valmap = keymap.v
 
         if (valmap && sort_key == keymap.sk) {
-          // console.log('ADD A', PS, sort_key, keymap.d)
-          //last_data = null == keymap.d ? last_data : keymap.d
           add_gexer(keymap, key, gexer)
           keymap = valmap[val] || (valmap[val] = {})
         } else if (!keymap.k) {
-          // console.log('ADD B', PS, sort_key, keymap.d)
-          //last_data = null == keymap.d ? last_data : keymap.d
           add_gexer(keymap, key, gexer)
           keymap.k = key
           keymap.sk = sort_key
           keymap.v = {}
-          // keymap.d = null == keymap.d ? last_data : keymap.d
           keymap = keymap.v[val] = {}
         } else if (sort_key < keymap.sk) {
-          // console.log('ADD C', PS, sort_key, keymap.d)
           var s = keymap.s,
             g = keymap.g
           keymap.s = { k: keymap.k, sk: keymap.sk, v: keymap.v }
@@ -45851,7 +51413,6 @@ var substr = 'ab'.substr(-1) === 'b'
 
           keymap = keymap.v[val] = {}
         } else {
-          // console.log('ADD D', PS, sort_key, keymap.d)
           valmap = keymap.v
           keymap = keymap.s || (keymap.s = {})
           i--
@@ -45886,7 +51447,7 @@ var substr = 'ab'.substr(-1) === 'b'
       return self.find(pat, true)
     }
 
-    self.find = function(pat, exact) {
+    self.find = function(pat, exact, collect) {
       if (null == pat) return null
 
       var keymap = top
@@ -45896,6 +51457,11 @@ var substr = 'ab'.substr(-1) === 'b'
       var stars = []
       var foundkeys = {}
       var patlen = Object.keys(pat).length
+      var collection = []
+
+      if (void 0 !== top.d) {
+        collection.push(top.d)
+      }
 
       do {
         key = keymap.k
@@ -45917,20 +51483,36 @@ var substr = 'ab'.substr(-1) === 'b'
           if (nextkeymap) {
             foundkeys[key] = true
 
+            // follow separate trail without keys seen so far
+            if (collect && !exact) {
+              var remainkeys = Object.keys(pat).filter(k => !foundkeys[k])
+              var remainpat = {}
+              remainkeys.forEach(rk => (remainpat[rk] = pat[rk]))
+              var remaincollection = self.find(remainpat, false, true)
+
+              // omit first entry if top defined to avoid top duplicates
+              collection = collection.concat(
+                void 0 !== top.d ? remaincollection.slice(1) : remaincollection
+              )
+            }
+
             if (keymap.s) {
               stars.push(keymap.s)
             }
 
             data =
               void 0 === nextkeymap.d ? (exact ? null : data) : nextkeymap.d
-            //data = void 0 === nextkeymap.d ? null : nextkeymap.d
+
+            if (collect && void 0 !== nextkeymap.d) {
+              collection.push(nextkeymap.d)
+            }
 
             finalfind = nextkeymap.f
             keymap = nextkeymap
-          } else {
-            // last data
-            // data = (exact || void 0 === keymap.d) ? data : keymap.d
+          }
 
+          // no match found for this value, follow star trail
+          else {
             keymap = keymap.s
           }
         } else {
@@ -45957,7 +51539,7 @@ var substr = 'ab'.substr(-1) === 'b'
         data = finalfind.call(self, pat, data)
       }
 
-      return data
+      return collect ? collection : data
     }
 
     self.remove = function(pat) {
@@ -45996,6 +51578,8 @@ var substr = 'ab'.substr(-1) === 'b'
 
     // values can be verbatim, glob, or array of globs
     self.list = function(pat, exact) {
+      pat = pat || {}
+
       function descend(keymap, match, missing, acc) {
         if (keymap.v) {
           var key = keymap.k
@@ -46007,7 +51591,11 @@ var substr = 'ab'.substr(-1) === 'b'
           var nextkeymap
 
           for (var val in keymap.v) {
-            if (gexval.on(val)) {
+            if (
+              val === pat[key] ||
+              (!exact && null == pat[key]) ||
+              gexval.on(val)
+            ) {
               var valitermatch = { ...itermatch }
               valitermatch[key] = val
 
@@ -46028,7 +51616,7 @@ var substr = 'ab'.substr(-1) === 'b'
                 })
               }
 
-              if (nextkeymap && nextkeymap.v) {
+              if (nextkeymap && null != nextkeymap.v) {
                 descend(
                   nextkeymap,
                   { ...valitermatch },
@@ -46097,10 +51685,10 @@ var substr = 'ab'.substr(-1) === 'b'
           d++
           var pa = Object.keys(n.v)
           var pal = pa.filter(function(x) {
-            return !x.match(/[\*\?]/)
+            return !x.match(/[*?]/)
           })
           var pas = pa.filter(function(x) {
-            return x.match(/[\*\?]/)
+            return x.match(/[*?]/)
           })
           pal.sort()
           pas.sort()
@@ -46160,14 +51748,14 @@ var substr = 'ab'.substr(-1) === 'b'
   }
 }.call(this))
 
-},{"gex":85,"lodash":93}],115:[function(require,module,exports){
+},{"gex":55}],152:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
 module.exports = require('./lib/checks');
-},{"./lib/checks":116}],116:[function(require,module,exports){
+},{"./lib/checks":153}],153:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -46263,7 +51851,7 @@ module.exports.checkIsBoolean = typeCheck('boolean');
 module.exports.checkIsFunction = typeCheck('function');
 module.exports.checkIsObject = typeCheck('object');
 
-},{"./errors":117,"util":202}],117:[function(require,module,exports){
+},{"./errors":154,"util":325}],154:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -46289,7 +51877,7 @@ IllegalStateError.prototype.name = 'IllegalStateError';
 
 module.exports.IllegalStateError = IllegalStateError;
 module.exports.IllegalArgumentError = IllegalArgumentError;
-},{"util":202}],118:[function(require,module,exports){
+},{"util":325}],155:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -46338,7 +51926,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this,require('_process'))
-},{"_process":119}],119:[function(require,module,exports){
+},{"_process":156}],156:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -46524,7 +52112,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],120:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 'use strict';
 
 var replace = String.prototype.replace;
@@ -46552,7 +52140,7 @@ module.exports = util.assign(
     Format
 );
 
-},{"./utils":124}],121:[function(require,module,exports){
+},{"./utils":161}],158:[function(require,module,exports){
 'use strict';
 
 var stringify = require('./stringify');
@@ -46565,12 +52153,13 @@ module.exports = {
     stringify: stringify
 };
 
-},{"./formats":120,"./parse":122,"./stringify":123}],122:[function(require,module,exports){
+},{"./formats":157,"./parse":159,"./stringify":160}],159:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
 
 var has = Object.prototype.hasOwnProperty;
+var isArray = Array.isArray;
 
 var defaults = {
     allowDots: false,
@@ -46651,8 +52240,12 @@ var parseValues = function parseQueryStringValues(str, options) {
             val = interpretNumericEntities(val);
         }
 
-        if (val && options.comma && val.indexOf(',') > -1) {
+        if (val && typeof val === 'string' && options.comma && val.indexOf(',') > -1) {
             val = val.split(',');
+        }
+
+        if (part.indexOf('[]=') > -1) {
+            val = isArray(val) ? [val] : val;
         }
 
         if (has.call(obj, key)) {
@@ -46810,7 +52403,7 @@ module.exports = function (str, opts) {
     return utils.compact(obj);
 };
 
-},{"./utils":124}],123:[function(require,module,exports){
+},{"./utils":161}],160:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -47091,7 +52684,7 @@ module.exports = function (object, opts) {
     return joined.length > 0 ? prefix + joined : '';
 };
 
-},{"./formats":120,"./utils":124}],124:[function(require,module,exports){
+},{"./formats":157,"./utils":161}],161:[function(require,module,exports){
 'use strict';
 
 var has = Object.prototype.hasOwnProperty;
@@ -47137,6 +52730,7 @@ var arrayToObject = function arrayToObject(source, options) {
 };
 
 var merge = function merge(target, source, options) {
+    /* eslint no-param-reassign: 0 */
     if (!source) {
         return target;
     }
@@ -47328,7 +52922,7 @@ module.exports = {
     merge: merge
 };
 
-},{}],125:[function(require,module,exports){
+},{}],162:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -47414,7 +53008,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],126:[function(require,module,exports){
+},{}],163:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -47501,16 +53095,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],127:[function(require,module,exports){
+},{}],164:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":125,"./encode":126}],128:[function(require,module,exports){
+},{"./decode":162,"./encode":163}],165:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":129}],129:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":166}],166:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -47556,7 +53150,7 @@ var objectKeys = Object.keys || function (obj) {
 module.exports = Duplex;
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -47642,7 +53236,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":131,"./_stream_writable":133,"core-util-is":80,"inherits":88,"process-nextick-args":118}],130:[function(require,module,exports){
+},{"./_stream_readable":168,"./_stream_writable":170,"core-util-is":50,"inherits":58,"process-nextick-args":155}],167:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -47675,7 +53269,7 @@ module.exports = PassThrough;
 var Transform = require('./_stream_transform');
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -47690,7 +53284,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":132,"core-util-is":80,"inherits":88}],131:[function(require,module,exports){
+},{"./_stream_transform":169,"core-util-is":50,"inherits":58}],168:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -47758,7 +53352,7 @@ function _isUint8Array(obj) {
 /*</replacement>*/
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -48712,7 +54306,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":129,"./internal/streams/BufferList":134,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":119,"core-util-is":80,"events":82,"inherits":88,"isarray":90,"process-nextick-args":118,"safe-buffer":137,"string_decoder/":138,"util":73}],132:[function(require,module,exports){
+},{"./_stream_duplex":166,"./internal/streams/BufferList":171,"./internal/streams/destroy":172,"./internal/streams/stream":173,"_process":156,"core-util-is":50,"events":52,"inherits":58,"isarray":60,"process-nextick-args":155,"safe-buffer":174,"string_decoder/":175,"util":43}],169:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48783,7 +54377,7 @@ module.exports = Transform;
 var Duplex = require('./_stream_duplex');
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -48927,7 +54521,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":129,"core-util-is":80,"inherits":88}],133:[function(require,module,exports){
+},{"./_stream_duplex":166,"core-util-is":50,"inherits":58}],170:[function(require,module,exports){
 (function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -48995,7 +54589,7 @@ var Duplex;
 Writable.WritableState = WritableState;
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -49617,7 +55211,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":129,"./internal/streams/destroy":135,"./internal/streams/stream":136,"_process":119,"core-util-is":80,"inherits":88,"process-nextick-args":118,"safe-buffer":137,"timers":195,"util-deprecate":199}],134:[function(require,module,exports){
+},{"./_stream_duplex":166,"./internal/streams/destroy":172,"./internal/streams/stream":173,"_process":156,"core-util-is":50,"inherits":58,"process-nextick-args":155,"safe-buffer":174,"timers":318,"util-deprecate":322}],171:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -49697,7 +55291,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":137,"util":73}],135:[function(require,module,exports){
+},{"safe-buffer":174,"util":43}],172:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -49772,10 +55366,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":118}],136:[function(require,module,exports){
+},{"process-nextick-args":155}],173:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":82}],137:[function(require,module,exports){
+},{"events":52}],174:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -49839,7 +55433,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":78}],138:[function(require,module,exports){
+},{"buffer":48}],175:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -50136,10 +55730,10 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":137}],139:[function(require,module,exports){
+},{"safe-buffer":174}],176:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":140}],140:[function(require,module,exports){
+},{"./readable":177}],177:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -50148,13 +55742,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":129,"./lib/_stream_passthrough.js":130,"./lib/_stream_readable.js":131,"./lib/_stream_transform.js":132,"./lib/_stream_writable.js":133}],141:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":166,"./lib/_stream_passthrough.js":167,"./lib/_stream_readable.js":168,"./lib/_stream_transform.js":169,"./lib/_stream_writable.js":170}],178:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":140}],142:[function(require,module,exports){
+},{"./readable":177}],179:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":133}],143:[function(require,module,exports){
+},{"./lib/_stream_writable.js":170}],180:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -50289,7 +55883,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":66,"events":82}],144:[function(require,module,exports){
+},{"backoff":36,"events":52}],181:[function(require,module,exports){
 /* Copyright (c) 2013-2014 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 "use strict";
@@ -50460,7 +56054,7 @@ module.exports = function( size, duration, clock ) {
 module.exports.Stats      = Stats
 module.exports.NamedStats = NamedStats
 
-},{}],145:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -50526,7 +56120,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":78}],146:[function(require,module,exports){
+},{"buffer":48}],183:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -50537,9 +56131,9 @@ var Http = require('http')
 var Https = require('https')
 var Qs = require('qs')
 var Url = require('url')
-var _ = require('lodash')
 var Jsonic = require('jsonic')
 var Wreck = require('@hapi/wreck')
+var Omit = require('lodash.omit')
 
 // Declare internals
 var internals = {}
@@ -50557,7 +56151,7 @@ exports.listen = function(options, transportUtil) {
 
     var listener
     var listenAttempts = 0
-    var listen_details = _.clone(msg)
+    var listen_details = seneca.util.deep(msg)
 
     server.on('request', function(req, res) {
       internals.timeout(listenOptions, req, res)
@@ -50633,7 +56227,7 @@ exports.client = function(options, transportUtil) {
 
     // these are seneca internal, users are not allowed to change them
     if (options[msg.type].headers) {
-      defaultHeaders = _.omit(options[msg.type].headers, [
+      defaultHeaders = Omit(options[msg.type].headers, [
         'Accept',
         'Content-Type',
         'Content-Length',
@@ -50687,7 +56281,7 @@ exports.client = function(options, transportUtil) {
         }
 
         if (defaultHeaders) {
-          _.assign(headers, defaultHeaders)
+          headers = Object.assign(headers, defaultHeaders)
         }
 
         var requestOptions = {
@@ -50710,7 +56304,7 @@ exports.client = function(options, transportUtil) {
         function handle_post(err, res, payload) {
           var response = {
             kind: 'res',
-            res: payload && _.isObject(payload) ? payload : null,
+            res: payload && 'object' === typeof payload ? payload : null,
             error: err,
             sync: (msg.meta$ || meta).sync
           }
@@ -50769,7 +56363,7 @@ internals.setBody = function(seneca, transportUtil, req, res, next) {
         return
       }
 
-      req.body = _.extend(
+      req.body = Object.assign(
         {},
         bodydata,
 
@@ -50889,7 +56483,7 @@ internals.timeout = function(listenOptions, req, res) {
   res.socket.once('data', clearTimeoutId)
 }
 
-},{"@hapi/wreck":58,"buffer":78,"http":174,"https":86,"jsonic":92,"lodash":93,"qs":121,"url":196}],147:[function(require,module,exports){
+},{"@hapi/wreck":213,"buffer":48,"http":297,"https":56,"jsonic":62,"lodash.omit":69,"qs":158,"url":319}],184:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -51158,17 +56752,18 @@ internals.reconnect = Reconnect(function() {
   return Net.connect.apply(null, args)
 })
 
-},{"ndjson":94,"net":76,"reconnect-core":143,"stream":173}],148:[function(require,module,exports){
+},{"ndjson":74,"net":46,"reconnect-core":180,"stream":296}],185:[function(require,module,exports){
 /* Copyright (c) 2015-2017 Richard Rodger, MIT License */
 'use strict'
 
 var Util = require('util')
 
-var _ = require('lodash')
+//var _ = require('lodash')
 var Nid = require('nid')
 var Patrun = require('patrun')
 var Jsonic = require('jsonic')
 var Eraro = require('eraro')
+var Each = require('lodash.foreach')
 
 // Declare internals
 var internals = {
@@ -51236,7 +56831,7 @@ internals.Utils.prototype.handle_response = function(
   if (data.error) {
     err = new Error(data.error.message)
 
-    _.each(data.error, function(value, key) {
+    Each(data.error, function(value, key) {
       err[key] = value
     })
 
@@ -51311,7 +56906,8 @@ internals.Utils.prototype.prepare_request = function(seneca, args, done, meta) {
 
   var callmeta = {
     args: args,
-    done: _.bind(done, seneca),
+    //done: _.bind(done, seneca),
+    done: done.bind(seneca),
     when: Date.now()
   }
 
@@ -51332,7 +56928,7 @@ internals.Utils.prototype.prepare_request = function(seneca, args, done, meta) {
 
   var track = []
   if (args.transport$) {
-    track = _.clone(args.transport$.track || [])
+    track = seneca.util.deep(args.transport$.track || [])
   }
   track.push(seneca.id)
 
@@ -51567,7 +57163,7 @@ internals.Utils.prototype.resolve_pins = function(opts) {
   }
 
   if (pins) {
-    pins = _.map(pins, function(pin) {
+    pins = pins.map(function(pin) {
       return typeof pin === 'string' ? Jsonic(pin) : pin
     })
   }
@@ -51578,7 +57174,7 @@ internals.Utils.prototype.resolve_pins = function(opts) {
 internals.Utils.prototype.make_argspatrun = function(pins) {
   var argspatrun = Patrun({ gex: true })
 
-  _.each(pins, function(pin) {
+  Each(pins, function(pin) {
     var spec = { pin: pin }
     argspatrun.add(pin, spec)
   })
@@ -51621,15 +57217,15 @@ internals.Utils.prototype.resolve_topic = function(opts, spec, args) {
     }
   }
 
-  var topicpin = _.clone(spec.pin)
+  var topicpin = Object.assign({}, spec.pin)
 
   var topicargs = {}
-  _.each(topicpin, function(v, k) {
+  Each(topicpin, function(v, k) {
     topicargs[k] = args[k]
   })
 
   var sb = []
-  _.each(_.keys(topicargs).sort(), function(k) {
+  Each(Object.keys(topicargs).sort(), function(k) {
     sb.push(k)
     sb.push('=')
     sb.push(topicargs[k])
@@ -51652,9 +57248,9 @@ internals.Utils.prototype.listen_topics = function(
   var pins = this.resolve_pins(args)
 
   if (pins) {
-    _.each(this._context.seneca.findpins(pins), function(pin) {
+    Each(this._context.seneca.findpins(pins), function(pin) {
       var sb = []
-      _.each(_.keys(pin).sort(), function(k) {
+      Each(Object.keys(pin).sort(), function(k) {
         sb.push(k)
         sb.push('=')
         sb.push(pin[k])
@@ -51685,7 +57281,7 @@ internals.Utils.prototype.update_output = function(input, output, err, out) {
   output.res = out
 
   if (err) {
-    var errobj = _.extend({}, err)
+    var errobj = Object.assign({}, err)
     errobj.message = err.message
     errobj.name = err.name || 'Error'
 
@@ -51736,14 +57332,14 @@ internals.Utils.prototype.handle_entity = function(seneca, raw) {
     return raw
   }
 
-  raw = _.isObject(raw) ? raw : {}
+  raw = 'object' === typeof raw && null != raw ? raw : {}
 
   if (raw.entity$) {
     return seneca.make$(raw)
   }
 
-  _.each(raw, function(value, key) {
-    if (_.isObject(value) && value.entity$) {
+  Each(raw, function(value, key) {
+    if ('object' === typeof value && null != value && value.entity$) {
       raw[key] = seneca.make$(value)
     }
   })
@@ -51797,350 +57393,1205 @@ internals.Utils.prototype.parseJSON = function(seneca, note, str) {
 }
 
 internals.Utils.prototype.resolveDynamicValue = function(value, options) {
-  if (_.isFunction(value)) {
+  if ('function' == typeof value) {
     return value(options)
   }
   return value
 }
 
-},{"eraro":81,"jsonic":92,"lodash":93,"nid":95,"patrun":150,"util":202}],149:[function(require,module,exports){
-'use strict'
+},{"eraro":51,"jsonic":62,"lodash.foreach":64,"nid":75,"patrun":217,"util":325}],186:[function(require,module,exports){
+'use strict';
 
-// A linked list to keep track of recently-used-ness
-const Yallist = require('yallist')
+const Hoek = require('@hapi/hoek');
 
-const MAX = Symbol('max')
-const LENGTH = Symbol('length')
-const LENGTH_CALCULATOR = Symbol('lengthCalculator')
-const ALLOW_STALE = Symbol('allowStale')
-const MAX_AGE = Symbol('maxAge')
-const DISPOSE = Symbol('dispose')
-const NO_DISPOSE_ON_SET = Symbol('noDisposeOnSet')
-const LRU_LIST = Symbol('lruList')
-const CACHE = Symbol('cache')
-const UPDATE_AGE_ON_GET = Symbol('updateAgeOnGet')
 
-const naiveLength = () => 1
+const internals = {
+    codes: new Map([
+        [100, 'Continue'],
+        [101, 'Switching Protocols'],
+        [102, 'Processing'],
+        [200, 'OK'],
+        [201, 'Created'],
+        [202, 'Accepted'],
+        [203, 'Non-Authoritative Information'],
+        [204, 'No Content'],
+        [205, 'Reset Content'],
+        [206, 'Partial Content'],
+        [207, 'Multi-Status'],
+        [300, 'Multiple Choices'],
+        [301, 'Moved Permanently'],
+        [302, 'Moved Temporarily'],
+        [303, 'See Other'],
+        [304, 'Not Modified'],
+        [305, 'Use Proxy'],
+        [307, 'Temporary Redirect'],
+        [400, 'Bad Request'],
+        [401, 'Unauthorized'],
+        [402, 'Payment Required'],
+        [403, 'Forbidden'],
+        [404, 'Not Found'],
+        [405, 'Method Not Allowed'],
+        [406, 'Not Acceptable'],
+        [407, 'Proxy Authentication Required'],
+        [408, 'Request Time-out'],
+        [409, 'Conflict'],
+        [410, 'Gone'],
+        [411, 'Length Required'],
+        [412, 'Precondition Failed'],
+        [413, 'Request Entity Too Large'],
+        [414, 'Request-URI Too Large'],
+        [415, 'Unsupported Media Type'],
+        [416, 'Requested Range Not Satisfiable'],
+        [417, 'Expectation Failed'],
+        [418, 'I\'m a teapot'],
+        [422, 'Unprocessable Entity'],
+        [423, 'Locked'],
+        [424, 'Failed Dependency'],
+        [425, 'Unordered Collection'],
+        [426, 'Upgrade Required'],
+        [428, 'Precondition Required'],
+        [429, 'Too Many Requests'],
+        [431, 'Request Header Fields Too Large'],
+        [451, 'Unavailable For Legal Reasons'],
+        [500, 'Internal Server Error'],
+        [501, 'Not Implemented'],
+        [502, 'Bad Gateway'],
+        [503, 'Service Unavailable'],
+        [504, 'Gateway Time-out'],
+        [505, 'HTTP Version Not Supported'],
+        [506, 'Variant Also Negotiates'],
+        [507, 'Insufficient Storage'],
+        [509, 'Bandwidth Limit Exceeded'],
+        [510, 'Not Extended'],
+        [511, 'Network Authentication Required']
+    ])
+};
 
-// lruList is a yallist where the head is the youngest
-// item, and the tail is the oldest.  the list contains the Hit
-// objects as the entries.
-// Each Hit object has a reference to its Yallist.Node.  This
-// never changes.
-//
-// cache is a Map (or PseudoMap) that matches the keys to
-// the Yallist.Node object.
-class LRUCache {
-  constructor (options) {
-    if (typeof options === 'number')
-      options = { max: options }
 
-    if (!options)
-      options = {}
+module.exports = internals.Boom = class extends Error {
 
-    if (options.max && (typeof options.max !== 'number' || options.max < 0))
-      throw new TypeError('max must be a non-negative number')
-    // Kind of weird to have a default max of Infinity, but oh well.
-    const max = this[MAX] = options.max || Infinity
+    constructor(message, options = {}) {
 
-    const lc = options.length || naiveLength
-    this[LENGTH_CALCULATOR] = (typeof lc !== 'function') ? naiveLength : lc
-    this[ALLOW_STALE] = options.stale || false
-    if (options.maxAge && typeof options.maxAge !== 'number')
-      throw new TypeError('maxAge must be a number')
-    this[MAX_AGE] = options.maxAge || 0
-    this[DISPOSE] = options.dispose
-    this[NO_DISPOSE_ON_SET] = options.noDisposeOnSet || false
-    this[UPDATE_AGE_ON_GET] = options.updateAgeOnGet || false
-    this.reset()
-  }
-
-  // resize the cache when the max changes.
-  set max (mL) {
-    if (typeof mL !== 'number' || mL < 0)
-      throw new TypeError('max must be a non-negative number')
-
-    this[MAX] = mL || Infinity
-    trim(this)
-  }
-  get max () {
-    return this[MAX]
-  }
-
-  set allowStale (allowStale) {
-    this[ALLOW_STALE] = !!allowStale
-  }
-  get allowStale () {
-    return this[ALLOW_STALE]
-  }
-
-  set maxAge (mA) {
-    if (typeof mA !== 'number')
-      throw new TypeError('maxAge must be a non-negative number')
-
-    this[MAX_AGE] = mA
-    trim(this)
-  }
-  get maxAge () {
-    return this[MAX_AGE]
-  }
-
-  // resize the cache when the lengthCalculator changes.
-  set lengthCalculator (lC) {
-    if (typeof lC !== 'function')
-      lC = naiveLength
-
-    if (lC !== this[LENGTH_CALCULATOR]) {
-      this[LENGTH_CALCULATOR] = lC
-      this[LENGTH] = 0
-      this[LRU_LIST].forEach(hit => {
-        hit.length = this[LENGTH_CALCULATOR](hit.value, hit.key)
-        this[LENGTH] += hit.length
-      })
-    }
-    trim(this)
-  }
-  get lengthCalculator () { return this[LENGTH_CALCULATOR] }
-
-  get length () { return this[LENGTH] }
-  get itemCount () { return this[LRU_LIST].length }
-
-  rforEach (fn, thisp) {
-    thisp = thisp || this
-    for (let walker = this[LRU_LIST].tail; walker !== null;) {
-      const prev = walker.prev
-      forEachStep(this, fn, walker, thisp)
-      walker = prev
-    }
-  }
-
-  forEach (fn, thisp) {
-    thisp = thisp || this
-    for (let walker = this[LRU_LIST].head; walker !== null;) {
-      const next = walker.next
-      forEachStep(this, fn, walker, thisp)
-      walker = next
-    }
-  }
-
-  keys () {
-    return this[LRU_LIST].toArray().map(k => k.key)
-  }
-
-  values () {
-    return this[LRU_LIST].toArray().map(k => k.value)
-  }
-
-  reset () {
-    if (this[DISPOSE] &&
-        this[LRU_LIST] &&
-        this[LRU_LIST].length) {
-      this[LRU_LIST].forEach(hit => this[DISPOSE](hit.key, hit.value))
-    }
-
-    this[CACHE] = new Map() // hash of items by key
-    this[LRU_LIST] = new Yallist() // list of items in order of use recency
-    this[LENGTH] = 0 // length of items in the list
-  }
-
-  dump () {
-    return this[LRU_LIST].map(hit =>
-      isStale(this, hit) ? false : {
-        k: hit.key,
-        v: hit.value,
-        e: hit.now + (hit.maxAge || 0)
-      }).toArray().filter(h => h)
-  }
-
-  dumpLru () {
-    return this[LRU_LIST]
-  }
-
-  set (key, value, maxAge) {
-    maxAge = maxAge || this[MAX_AGE]
-
-    if (maxAge && typeof maxAge !== 'number')
-      throw new TypeError('maxAge must be a number')
-
-    const now = maxAge ? Date.now() : 0
-    const len = this[LENGTH_CALCULATOR](value, key)
-
-    if (this[CACHE].has(key)) {
-      if (len > this[MAX]) {
-        del(this, this[CACHE].get(key))
-        return false
-      }
-
-      const node = this[CACHE].get(key)
-      const item = node.value
-
-      // dispose of the old one before overwriting
-      // split out into 2 ifs for better coverage tracking
-      if (this[DISPOSE]) {
-        if (!this[NO_DISPOSE_ON_SET])
-          this[DISPOSE](key, item.value)
-      }
-
-      item.now = now
-      item.maxAge = maxAge
-      item.value = value
-      this[LENGTH] += len - item.length
-      item.length = len
-      this.get(key)
-      trim(this)
-      return true
-    }
-
-    const hit = new Entry(key, value, len, now, maxAge)
-
-    // oversized objects fall out of cache automatically.
-    if (hit.length > this[MAX]) {
-      if (this[DISPOSE])
-        this[DISPOSE](key, value)
-
-      return false
-    }
-
-    this[LENGTH] += hit.length
-    this[LRU_LIST].unshift(hit)
-    this[CACHE].set(key, this[LRU_LIST].head)
-    trim(this)
-    return true
-  }
-
-  has (key) {
-    if (!this[CACHE].has(key)) return false
-    const hit = this[CACHE].get(key).value
-    return !isStale(this, hit)
-  }
-
-  get (key) {
-    return get(this, key, true)
-  }
-
-  peek (key) {
-    return get(this, key, false)
-  }
-
-  pop () {
-    const node = this[LRU_LIST].tail
-    if (!node)
-      return null
-
-    del(this, node)
-    return node.value
-  }
-
-  del (key) {
-    del(this, this[CACHE].get(key))
-  }
-
-  load (arr) {
-    // reset the cache
-    this.reset()
-
-    const now = Date.now()
-    // A previous serialized cache has the most recent items first
-    for (let l = arr.length - 1; l >= 0; l--) {
-      const hit = arr[l]
-      const expiresAt = hit.e || 0
-      if (expiresAt === 0)
-        // the item was created without expiration in a non aged cache
-        this.set(hit.k, hit.v)
-      else {
-        const maxAge = expiresAt - now
-        // dont add already expired items
-        if (maxAge > 0) {
-          this.set(hit.k, hit.v, maxAge)
+        if (message instanceof Error) {
+            return internals.Boom.boomify(Hoek.clone(message), options);
         }
-      }
+
+        const { statusCode = 500, data = null, ctor = internals.Boom } = options;
+        const error = new Error(message ? message : undefined);         // Avoids settings null message
+        Error.captureStackTrace(error, ctor);                           // Filter the stack to our external API
+        error.data = data;
+        const boom = internals.initialize(error, statusCode);
+
+        Object.defineProperty(boom, 'typeof', { value: ctor });
+
+        if (options.decorate) {
+            Object.assign(boom, options.decorate);
+        }
+
+        return boom;
     }
-  }
 
-  prune () {
-    this[CACHE].forEach((value, key) => get(this, key, false))
-  }
-}
+    static [Symbol.hasInstance](instance) {
 
-const get = (self, key, doUse) => {
-  const node = self[CACHE].get(key)
-  if (node) {
-    const hit = node.value
-    if (isStale(self, hit)) {
-      del(self, node)
-      if (!self[ALLOW_STALE])
-        return undefined
-    } else {
-      if (doUse) {
-        if (self[UPDATE_AGE_ON_GET])
-          node.value.now = Date.now()
-        self[LRU_LIST].unshiftNode(node)
-      }
+        return internals.Boom.isBoom(instance);
     }
-    return hit.value
-  }
-}
 
-const isStale = (self, hit) => {
-  if (!hit || (!hit.maxAge && !self[MAX_AGE]))
-    return false
+    static isBoom(err) {
 
-  const diff = Date.now() - hit.now
-  return hit.maxAge ? diff > hit.maxAge
-    : self[MAX_AGE] && (diff > self[MAX_AGE])
-}
-
-const trim = self => {
-  if (self[LENGTH] > self[MAX]) {
-    for (let walker = self[LRU_LIST].tail;
-      self[LENGTH] > self[MAX] && walker !== null;) {
-      // We know that we're about to delete this one, and also
-      // what the next least recently used key will be, so just
-      // go ahead and set it now.
-      const prev = walker.prev
-      del(self, walker)
-      walker = prev
+        return err instanceof Error && !!err.isBoom;
     }
-  }
-}
 
-const del = (self, node) => {
-  if (node) {
-    const hit = node.value
-    if (self[DISPOSE])
-      self[DISPOSE](hit.key, hit.value)
+    static boomify(err, options) {
 
-    self[LENGTH] -= hit.length
-    self[CACHE].delete(hit.key)
-    self[LRU_LIST].removeNode(node)
-  }
-}
+        Hoek.assert(err instanceof Error, 'Cannot wrap non-Error object');
 
-class Entry {
-  constructor (key, value, length, now, maxAge) {
-    this.key = key
-    this.value = value
-    this.length = length
-    this.now = now
-    this.maxAge = maxAge || 0
-  }
-}
+        options = options || {};
 
-const forEachStep = (self, fn, node, thisp) => {
-  let hit = node.value
-  if (isStale(self, hit)) {
-    del(self, node)
-    if (!self[ALLOW_STALE])
-      hit = undefined
-  }
-  if (hit)
-    fn.call(thisp, hit.value, hit.key, self)
-}
+        if (options.data !== undefined) {
+            err.data = options.data;
+        }
 
-module.exports = LRUCache
+        if (options.decorate) {
+            Object.assign(err, options.decorate);
+        }
 
-},{"yallist":152}],150:[function(require,module,exports){
-/* Copyright (c) 2013-2016 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
+        if (!err.isBoom) {
+            return internals.initialize(err, options.statusCode || 500, options.message);
+        }
+
+        if (options.override === false ||                           // Defaults to true
+            !options.statusCode && !options.message) {
+
+            return err;
+        }
+
+        return internals.initialize(err, options.statusCode || err.output.statusCode, options.message);
+    }
+
+    // 4xx Client Errors
+
+    static badRequest(message, data) {
+
+        return new internals.Boom(message, { statusCode: 400, data, ctor: internals.Boom.badRequest });
+    }
+
+    static unauthorized(message, scheme, attributes) {          // Or (message, wwwAuthenticate[])
+
+        const err = new internals.Boom(message, { statusCode: 401, ctor: internals.Boom.unauthorized });
+
+        // function (message)
+
+        if (!scheme) {
+            return err;
+        }
+
+        // function (message, wwwAuthenticate[])
+
+        if (typeof scheme !== 'string') {
+            err.output.headers['WWW-Authenticate'] = scheme.join(', ');
+            return err;
+        }
+
+        // function (message, scheme, attributes)
+
+        let wwwAuthenticate = `${scheme} `;
+
+        if (attributes ||
+            message) {
+
+            err.output.payload.attributes = {};
+        }
+
+        if (attributes) {
+            if (typeof attributes === 'string') {
+                wwwAuthenticate += Hoek.escapeHeaderAttribute(attributes);
+                err.output.payload.attributes = attributes;
+            }
+            else {
+                wwwAuthenticate += Object.keys(attributes).map((name) => {
+
+                    let value = attributes[name];
+                    if (value === null ||
+                        value === undefined) {
+
+                        value = '';
+                    }
+
+                    err.output.payload.attributes[name] = value;
+                    return `${name}="${Hoek.escapeHeaderAttribute(value.toString())}"`;
+                })
+                    .join(', ');
+            }
+        }
+
+        if (message) {
+            if (attributes) {
+                wwwAuthenticate += ', ';
+            }
+
+            wwwAuthenticate += `error="${Hoek.escapeHeaderAttribute(message)}"`;
+            err.output.payload.attributes.error = message;
+        }
+        else {
+            err.isMissing = true;
+        }
+
+        err.output.headers['WWW-Authenticate'] = wwwAuthenticate;
+        return err;
+    }
+
+    static paymentRequired(message, data) {
+
+        return new internals.Boom(message, { statusCode: 402, data, ctor: internals.Boom.paymentRequired });
+    }
+
+    static forbidden(message, data) {
+
+        return new internals.Boom(message, { statusCode: 403, data, ctor: internals.Boom.forbidden });
+    }
+
+    static notFound(message, data) {
+
+        return new internals.Boom(message, { statusCode: 404, data, ctor: internals.Boom.notFound });
+    }
+
+    static methodNotAllowed(message, data, allow) {
+
+        const err = new internals.Boom(message, { statusCode: 405, data, ctor: internals.Boom.methodNotAllowed });
+
+        if (typeof allow === 'string') {
+            allow = [allow];
+        }
+
+        if (Array.isArray(allow)) {
+            err.output.headers.Allow = allow.join(', ');
+        }
+
+        return err;
+    }
+
+    static notAcceptable(message, data) {
+
+        return new internals.Boom(message, { statusCode: 406, data, ctor: internals.Boom.notAcceptable });
+    }
+
+    static proxyAuthRequired(message, data) {
+
+        return new internals.Boom(message, { statusCode: 407, data, ctor: internals.Boom.proxyAuthRequired });
+    }
+
+    static clientTimeout(message, data) {
+
+        return new internals.Boom(message, { statusCode: 408, data, ctor: internals.Boom.clientTimeout });
+    }
+
+    static conflict(message, data) {
+
+        return new internals.Boom(message, { statusCode: 409, data, ctor: internals.Boom.conflict });
+    }
+
+    static resourceGone(message, data) {
+
+        return new internals.Boom(message, { statusCode: 410, data, ctor: internals.Boom.resourceGone });
+    }
+
+    static lengthRequired(message, data) {
+
+        return new internals.Boom(message, { statusCode: 411, data, ctor: internals.Boom.lengthRequired });
+    }
+
+    static preconditionFailed(message, data) {
+
+        return new internals.Boom(message, { statusCode: 412, data, ctor: internals.Boom.preconditionFailed });
+    }
+
+    static entityTooLarge(message, data) {
+
+        return new internals.Boom(message, { statusCode: 413, data, ctor: internals.Boom.entityTooLarge });
+    }
+
+    static uriTooLong(message, data) {
+
+        return new internals.Boom(message, { statusCode: 414, data, ctor: internals.Boom.uriTooLong });
+    }
+
+    static unsupportedMediaType(message, data) {
+
+        return new internals.Boom(message, { statusCode: 415, data, ctor: internals.Boom.unsupportedMediaType });
+    }
+
+    static rangeNotSatisfiable(message, data) {
+
+        return new internals.Boom(message, { statusCode: 416, data, ctor: internals.Boom.rangeNotSatisfiable });
+    }
+
+    static expectationFailed(message, data) {
+
+        return new internals.Boom(message, { statusCode: 417, data, ctor: internals.Boom.expectationFailed });
+    }
+
+    static teapot(message, data) {
+
+        return new internals.Boom(message, { statusCode: 418, data, ctor: internals.Boom.teapot });
+    }
+
+    static badData(message, data) {
+
+        return new internals.Boom(message, { statusCode: 422, data, ctor: internals.Boom.badData });
+    }
+
+    static locked(message, data) {
+
+        return new internals.Boom(message, { statusCode: 423, data, ctor: internals.Boom.locked });
+    }
+
+    static failedDependency(message, data) {
+
+        return new internals.Boom(message, { statusCode: 424, data, ctor: internals.Boom.failedDependency });
+    }
+
+    static preconditionRequired(message, data) {
+
+        return new internals.Boom(message, { statusCode: 428, data, ctor: internals.Boom.preconditionRequired });
+    }
+
+    static tooManyRequests(message, data) {
+
+        return new internals.Boom(message, { statusCode: 429, data, ctor: internals.Boom.tooManyRequests });
+    }
+
+    static illegal(message, data) {
+
+        return new internals.Boom(message, { statusCode: 451, data, ctor: internals.Boom.illegal });
+    }
+
+    // 5xx Server Errors
+
+    static internal(message, data, statusCode = 500) {
+
+        return internals.serverError(message, data, statusCode, internals.Boom.internal);
+    }
+
+    static notImplemented(message, data) {
+
+        return internals.serverError(message, data, 501, internals.Boom.notImplemented);
+    }
+
+    static badGateway(message, data) {
+
+        return internals.serverError(message, data, 502, internals.Boom.badGateway);
+    }
+
+    static serverUnavailable(message, data) {
+
+        return internals.serverError(message, data, 503, internals.Boom.serverUnavailable);
+    }
+
+    static gatewayTimeout(message, data) {
+
+        return internals.serverError(message, data, 504, internals.Boom.gatewayTimeout);
+    }
+
+    static badImplementation(message, data) {
+
+        const err = internals.serverError(message, data, 500, internals.Boom.badImplementation);
+        err.isDeveloperError = true;
+        return err;
+    }
+};
+
+
+internals.Boom.default = internals.Boom;        // Support ES6 module import
+
+
+internals.initialize = function (err, statusCode, message) {
+
+    const numberCode = parseInt(statusCode, 10);
+    Hoek.assert(!isNaN(numberCode) && numberCode >= 400, 'First argument must be a number (400+):', statusCode);
+
+    err.isBoom = true;
+    err.isServer = numberCode >= 500;
+
+    if (!err.hasOwnProperty('data')) {
+        err.data = null;
+    }
+
+    err.output = {
+        statusCode: numberCode,
+        payload: {},
+        headers: {}
+    };
+
+    Object.defineProperty(err, 'reformat', { value: internals.reformat });
+
+    if (!message &&
+        !err.message) {
+
+        err.reformat();
+        message = err.output.payload.error;
+    }
+
+    if (message) {
+        const props = Object.getOwnPropertyDescriptor(err, 'message') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(err), 'message');
+        Hoek.assert(props.configurable && !props.get, 'The error is not compatible with boom');
+
+        err.message = message + (err.message ? ': ' + err.message : '');
+        err.output.payload.message = err.message;
+    }
+
+    err.reformat();
+    return err;
+};
+
+
+internals.reformat = function (debug = false) {
+
+    this.output.payload.statusCode = this.output.statusCode;
+    this.output.payload.error = internals.codes.get(this.output.statusCode) || 'Unknown';
+
+    if (this.output.statusCode === 500 && debug !== true) {
+        this.output.payload.message = 'An internal server error occurred';              // Hide actual error from user
+    }
+    else if (this.message) {
+        this.output.payload.message = this.message;
+    }
+};
+
+
+internals.serverError = function (message, data, statusCode, ctor) {
+
+    if (data instanceof Error &&
+        !data.isBoom) {
+
+        return internals.Boom.boomify(data, { statusCode, message });
+    }
+
+    return new internals.Boom(message, { statusCode, data, ctor });
+};
+
+},{"@hapi/hoek":202}],187:[function(require,module,exports){
+arguments[4][83][0].apply(exports,arguments)
+},{"dup":83}],188:[function(require,module,exports){
+arguments[4][84][0].apply(exports,arguments)
+},{"./assert":189,"./clone":192,"./merge":205,"./utils":211,"dup":84}],189:[function(require,module,exports){
+arguments[4][4][0].apply(exports,arguments)
+},{"./error":195,"dup":4}],190:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"_process":156,"dup":5}],191:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"./ignore":201,"dup":6}],192:[function(require,module,exports){
+arguments[4][88][0].apply(exports,arguments)
+},{"./types":210,"./utils":211,"buffer":48,"dup":88}],193:[function(require,module,exports){
+arguments[4][8][0].apply(exports,arguments)
+},{"./assert":189,"./deepEqual":194,"./escapeRegex":199,"./utils":211,"dup":8}],194:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"./types":210,"buffer":48,"dup":9}],195:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"./stringify":209,"dup":10}],196:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"./assert":189,"dup":11}],197:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],198:[function(require,module,exports){
+arguments[4][13][0].apply(exports,arguments)
+},{"dup":13}],199:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"dup":14}],200:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],201:[function(require,module,exports){
+arguments[4][16][0].apply(exports,arguments)
+},{"dup":16}],202:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"./applyToDefaults":188,"./assert":189,"./bench":190,"./block":191,"./clone":192,"./contain":193,"./deepEqual":194,"./error":195,"./escapeHeaderAttribute":196,"./escapeHtml":197,"./escapeJson":198,"./escapeRegex":199,"./flatten":200,"./ignore":201,"./intersect":203,"./isPromise":204,"./merge":205,"./once":206,"./reach":207,"./reachTemplate":208,"./stringify":209,"./wait":212,"dup":17}],203:[function(require,module,exports){
+arguments[4][18][0].apply(exports,arguments)
+},{"dup":18}],204:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19}],205:[function(require,module,exports){
+arguments[4][101][0].apply(exports,arguments)
+},{"./assert":189,"./clone":192,"./utils":211,"buffer":48,"dup":101}],206:[function(require,module,exports){
+arguments[4][21][0].apply(exports,arguments)
+},{"dup":21}],207:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"./assert":189,"dup":22}],208:[function(require,module,exports){
+arguments[4][23][0].apply(exports,arguments)
+},{"./reach":207,"dup":23}],209:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"dup":24}],210:[function(require,module,exports){
+arguments[4][25][0].apply(exports,arguments)
+},{"buffer":48,"dup":25}],211:[function(require,module,exports){
+arguments[4][107][0].apply(exports,arguments)
+},{"./reach":207,"dup":107}],212:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"dup":27}],213:[function(require,module,exports){
+(function (process,Buffer){
+'use strict';
+
+const Events = require('events');
+const Http = require('http');
+const Https = require('https');
+const Stream = require('stream');
+const Url = require('url');
+const Zlib = require('zlib');
+
+const Boom = require('@hapi/boom');
+const Bourne = require('@hapi/bourne');
+const Hoek = require('@hapi/hoek');
+
+const Payload = require('./payload');
+const Recorder = require('./recorder');
+const Tap = require('./tap');
+
+
+const internals = {
+    jsonRegex: /^application\/([a-z0-9.]*[+-]json|json)$/,
+    shallowOptions: ['agent', 'agents', 'beforeRedirect', 'downstreamRes', 'payload', 'redirected']
+};
+
+
+// New instance is exported as module.exports
+
+internals.Client = function (options = {}) {
+
+    Hoek.assert(!options.agents || (options.agents.https && options.agents.http && options.agents.httpsAllowUnauthorized), 'Option agents must include "http", "https", and "httpsAllowUnauthorized"');
+
+    this._defaults = Hoek.clone(options, { shallow: internals.shallowOptions });
+
+    this.agents = this._defaults.agents || {
+        https: new Https.Agent({ maxSockets: Infinity }),
+        http: new Http.Agent({ maxSockets: Infinity }),
+        httpsAllowUnauthorized: new Https.Agent({ maxSockets: Infinity, rejectUnauthorized: false })
+    };
+
+    if (!options.events) {
+        return;
+    }
+
+    this.events = new Events.EventEmitter();
+    this._emit = function (...args) {
+
+        this.events.emit(...args);
+    };
+};
+
+
+internals.Client.prototype.defaults = function (options) {
+
+    Hoek.assert(options && (typeof options === 'object'), 'options must be provided to defaults');
+
+    options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
+    return new internals.Client(options);
+};
+
+
+// baseUrl needs to end in a trailing / if it contains paths that need to be preserved
+internals.resolveUrl = function (baseUrl, path) {
+
+    if (!path) {
+        return baseUrl;
+    }
+
+    // Will default to path if it's not a relative URL
+    const url = new Url.URL(path, baseUrl);
+    return Url.format(url);
+};
+
+
+internals.Client.prototype.request = function (method, url, options = {}) {
+
+    try {
+        options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
+
+        Hoek.assert(options.payload === undefined || typeof options.payload === 'string' || typeof options.payload === 'object', 'options.payload must be a string, a Buffer, a Stream, or an Object');
+        Hoek.assert((options.agent === undefined || options.agent === null) || (typeof options.rejectUnauthorized !== 'boolean'), 'options.agent cannot be set to an Agent at the same time as options.rejectUnauthorized is set');
+        Hoek.assert(options.beforeRedirect === undefined || options.beforeRedirect === null || typeof options.beforeRedirect === 'function', 'options.beforeRedirect must be a function');
+        Hoek.assert(options.redirected === undefined || options.redirected === null || typeof options.redirected === 'function', 'options.redirected must be a function');
+        Hoek.assert(options.gunzip === undefined || typeof options.gunzip === 'boolean' || options.gunzip === 'force', 'options.gunzip must be a boolean or "force"');
+    }
+    catch (err) {
+        return Promise.reject(err);
+    }
+
+    options.beforeRedirect = options.beforeRedirect || ((redirectMethod, statusCode, location, resHeaders, redirectOptions, next) => next());
+
+    if (options.baseUrl) {
+        url = internals.resolveUrl(options.baseUrl, url);
+        delete options.baseUrl;
+    }
+
+    const relay = {};
+    const req = this._request(method, url, options, relay);
+    const promise = new Promise((resolve, reject) => {
+
+        relay.callback = (err, res) => {
+
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            resolve(res);
+            return;
+        };
+    });
+
+    promise.req = req;
+    return promise;
+};
+
+
+internals.Client.prototype._request = function (method, url, options, relay, _trace) {
+
+    const uri = {};
+    if (options.socketPath) {
+        uri.socketPath = options.socketPath;
+
+        const parsedUri = new Url.URL(url, `unix://${options.socketPath}`);
+        internals.applyUrlToOptions(uri, {
+            // The host must be empty according to https://tools.ietf.org/html/rfc2616#section-14.23
+            host: '',
+            protocol: 'http:',
+            hash: parsedUri.hash,
+            search: parsedUri.search,
+            searchParams: parsedUri.searchParams,
+            pathname: parsedUri.pathname,
+            href: parsedUri.href
+        });
+    }
+    else {
+        uri.setHost = false;
+        const parsedUri = new Url.URL(url);
+        internals.applyUrlToOptions(uri, parsedUri);
+    }
+
+    uri.method = method.toUpperCase();
+    uri.headers = options.headers || {};
+
+    const hostHeader = internals.findHeader('host', uri.headers);
+
+    if (!hostHeader) {
+        uri.headers.host = uri.host;
+    }
+
+    const hasContentLength = internals.findHeader('content-length', uri.headers) !== undefined;
+
+    if (options.payload && typeof options.payload === 'object' && !(options.payload instanceof Stream) && !Buffer.isBuffer(options.payload)) {
+        options.payload = JSON.stringify(options.payload);
+        if (!internals.findHeader('content-type', uri.headers)) {
+            uri.headers['content-type'] = 'application/json';
+        }
+    }
+
+    if (options.gunzip &&
+        internals.findHeader('accept-encoding', uri.headers) === undefined) {
+
+        uri.headers['accept-encoding'] = 'gzip';
+    }
+
+    const payloadSupported = (uri.method !== 'GET' && uri.method !== 'HEAD' && options.payload !== null && options.payload !== undefined);
+    if (payloadSupported &&
+        (typeof options.payload === 'string' || Buffer.isBuffer(options.payload)) &&
+        (!hasContentLength)) {
+
+        uri.headers = Hoek.clone(uri.headers);
+        uri.headers['content-length'] = Buffer.isBuffer(options.payload) ? options.payload.length : Buffer.byteLength(options.payload);
+    }
+
+    let redirects = (options.hasOwnProperty('redirects') ? options.redirects : false);      // Needed to allow 0 as valid value when passed recursively
+
+    _trace = (_trace || []);
+    _trace.push({ method: uri.method, url });
+
+    const client = (uri.protocol === 'https:' ? Https : Http);
+
+    if (options.rejectUnauthorized !== undefined && uri.protocol === 'https:') {
+        uri.agent = options.rejectUnauthorized ? this.agents.https : this.agents.httpsAllowUnauthorized;
+    }
+    else if (options.agent || options.agent === false) {
+        uri.agent = options.agent;
+    }
+    else {
+        uri.agent = uri.protocol === 'https:' ? this.agents.https : this.agents.http;
+    }
+
+    if (options.secureProtocol !== undefined) {
+        uri.secureProtocol = options.secureProtocol;
+    }
+
+    if (options.ciphers !== undefined) {
+        uri.ciphers = options.ciphers;
+    }
+
+    if (this._emit) {
+        this._emit('preRequest', uri, options);
+    }
+
+    const start = Date.now();
+    const req = client.request(uri);
+
+    if (this._emit) {
+        this._emit('request', req);
+    }
+
+    let shadow = null;                                                                      // A copy of the streamed request payload when redirects are enabled
+    let timeoutId;
+
+    const onError = (err) => {
+
+        err.trace = _trace;
+        return finishOnce(Boom.badGateway('Client request error', err));
+    };
+
+    req.once('error', onError);
+
+    const onResponse = (res) => {
+
+        // Pass-through response
+
+        const statusCode = res.statusCode;
+        const redirectMethod = internals.redirectMethod(statusCode, uri.method, options);
+
+        if (redirects === false ||
+            !redirectMethod) {
+
+            return finishOnce(null, res);
+        }
+
+        // Redirection
+
+        res.destroy();
+
+        if (redirects === 0) {
+            return finishOnce(Boom.badGateway('Maximum redirections reached', _trace));
+        }
+
+        let location = res.headers.location;
+        if (!location) {
+            return finishOnce(Boom.badGateway('Received redirection without location', _trace));
+        }
+
+        if (!/^https?:/i.test(location)) {
+            location = Url.resolve(uri.href, location);
+        }
+
+        const redirectOptions = Hoek.clone(options, { shallow: internals.shallowOptions });
+        redirectOptions.payload = shadow || options.payload;                                    // shadow must be ready at this point if set
+        redirectOptions.redirects = --redirects;
+
+        return options.beforeRedirect(redirectMethod, statusCode, location, res.headers, redirectOptions, () => {
+
+            const redirectReq = this._request(redirectMethod, location, redirectOptions, { callback: finishOnce }, _trace);
+
+            if (options.redirected) {
+                options.redirected(statusCode, location, redirectReq);
+            }
+        });
+    };
+
+    // Register handlers
+
+    const finish = (err, res) => {
+
+        if (err) {
+            req.abort();
+        }
+
+        req.abort = _abort;                             // Restore original function to release memory
+        req.removeListener('response', onResponse);
+        req.removeListener('error', onError);
+        req.on('error', Hoek.ignore);
+
+        clearTimeout(timeoutId);
+
+        if (this._emit) {
+            this._emit('response', err, { req, res, start, uri });
+        }
+
+        return relay.callback(err, res);
+    };
+
+    const finishOnce = Hoek.once(finish);
+
+    req.once('response', onResponse);
+
+    if (options.timeout) {
+        timeoutId = setTimeout(() => {
+
+            return finishOnce(Boom.gatewayTimeout('Client request timeout'));
+        }, options.timeout);
+        delete options.timeout;
+    }
+
+    // Custom abort method to detect early aborts
+
+    const _abort = req.abort;
+    let aborted = false;
+    req.abort = () => {
+
+        if (!aborted && !req.res && !req.socket) {
+            process.nextTick(() => {
+
+                // Fake an ECONNRESET error
+
+                const error = new Error('socket hang up');
+                error.code = 'ECONNRESET';
+                finishOnce(error);
+            });
+        }
+
+        aborted = true;
+        return _abort.call(req);
+    };
+
+    // Write payload
+
+    if (payloadSupported) {
+        if (options.payload instanceof Stream) {
+            let stream = options.payload;
+
+            if (redirects) {
+                const collector = new Tap();
+                collector.once('finish', () => {
+
+                    shadow = collector.collect();
+                });
+
+                stream = options.payload.pipe(collector);
+            }
+
+            internals.deferPipeUntilSocketConnects(req, stream);
+            return req;
+        }
+
+        req.write(options.payload);
+    }
+
+    // Finalize request
+
+    req.end();
+    return req;
+};
+
+
+internals.deferPipeUntilSocketConnects = function (req, stream) {
+
+    const onSocket = (socket) => {
+
+        if (!socket.connecting) {
+            return onSocketConnect();
+        }
+
+        socket.once('connect', onSocketConnect);
+    };
+
+    const onSocketConnect = () => {
+
+        stream.pipe(req);
+        stream.removeListener('error', onStreamError);
+    };
+
+    const onStreamError = (err) => {
+
+        req.emit('error', err);
+    };
+
+    req.once('socket', onSocket);
+    stream.on('error', onStreamError);
+};
+
+
+internals.redirectMethod = function (code, method, options) {
+
+    switch (code) {
+        case 301:
+        case 302:
+            return options.redirectMethod || method;
+
+        case 303:
+            if (options.redirect303) {
+                return 'GET';
+            }
+
+            break;
+
+        case 307:
+        case 308:
+            return method;
+    }
+
+    return null;
+};
+
+
+internals.Client.prototype.read = function (res, options = {}) {
+
+    return new Promise((resolve, reject) => {
+
+        this._read(res, options, (err, payload) => {
+
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            resolve(payload);
+            return;
+        });
+    });
+};
+
+
+internals.Client.prototype._read = function (res, options, callback) {
+
+    options = Hoek.applyToDefaults(this._defaults, options, { shallow: internals.shallowOptions });
+
+    // Finish once
+
+    let clientTimeoutId = null;
+
+    const finish = (err, buffer) => {
+
+        clearTimeout(clientTimeoutId);
+        reader.removeListener('error', onReaderError);
+        reader.removeListener('finish', onReaderFinish);
+        res.removeListener('error', onResError);
+        res.removeListener('close', onResAborted);
+        res.removeListener('aborted', onResAborted);
+        res.on('error', Hoek.ignore);
+
+        if (err) {
+            return callback(err);
+        }
+
+        if (!options.json) {
+            return callback(null, buffer);
+        }
+
+        // Parse JSON
+
+        if (options.json === 'force') {
+            return internals.tryParseBuffer(buffer, callback);
+        }
+
+        // mode is "smart", "strict" or true
+
+        const contentType = (res.headers && internals.findHeader('content-type', res.headers)) || '';
+        const mime = contentType.split(';')[0].trim().toLowerCase();
+
+        if (!internals.jsonRegex.test(mime)) {
+            if (options.json === 'strict') {
+                return callback(Boom.notAcceptable('The content-type is not JSON compatible'));
+            }
+
+            return callback(null, buffer);
+        }
+
+        return internals.tryParseBuffer(buffer, callback);
+    };
+
+    const finishOnce = Hoek.once(finish);
+
+    const clientTimeout = options.timeout;
+    if (clientTimeout &&
+        clientTimeout > 0) {
+
+        clientTimeoutId = setTimeout(() => {
+
+            finishOnce(Boom.clientTimeout());
+        }, clientTimeout);
+    }
+
+    // Hander errors
+
+    const onResError = (err) => {
+
+        return finishOnce(err.isBoom ? err : Boom.internal('Payload stream error', err));
+    };
+
+    const onResAborted = () => {
+
+        // Workaround https://github.com/nodejs/node/pull/20611
+        // This is covered in node 10
+        /* $lab:coverage:off$ */
+        if (res.complete) {
+            return;
+        }
+        /* $lab:coverage:on$ */
+
+        return finishOnce(Boom.internal('Payload stream closed prematurely'));
+    };
+
+    res.once('error', onResError);
+    res.once('close', onResAborted);
+    res.once('aborted', onResAborted);
+
+    // Read payload
+
+    const reader = new Recorder({ maxBytes: options.maxBytes });
+
+    const onReaderError = (err) => {
+
+        if (res.destroy) {                          // GZip stream has no destroy() method
+            res.destroy();
+        }
+
+        return finishOnce(err);
+    };
+
+    reader.once('error', onReaderError);
+
+    const onReaderFinish = () => {
+
+        return finishOnce(null, reader.collect());
+    };
+
+    reader.once('finish', onReaderFinish);
+
+    if (options.gunzip) {
+        const contentEncoding = options.gunzip === 'force' ?
+            'gzip' :
+            (res.headers && internals.findHeader('content-encoding', res.headers)) || '';
+
+        if (/^(x-)?gzip(\s*,\s*identity)?$/.test(contentEncoding)) {
+            const gunzip = Zlib.createGunzip();
+
+            gunzip.once('error', onReaderError);
+
+            res.pipe(gunzip).pipe(reader);
+            return;
+        }
+    }
+
+    res.pipe(reader);
+};
+
+
+internals.Client.prototype.toReadableStream = function (payload, encoding) {
+
+    return new Payload(payload, encoding);
+};
+
+
+internals.Client.prototype.parseCacheControl = function (field) {
+
+    /*
+        Cache-Control   = 1#cache-directive
+        cache-directive = token [ "=" ( token / quoted-string ) ]
+        token           = [^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+
+        quoted-string   = "(?:[^"\\]|\\.)*"
+    */
+
+    //                             1: directive                                        =   2: token                                              3: quoted-string
+    const regex = /(?:^|(?:\s*\,\s*))([^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+)(?:\=(?:([^\x00-\x20\(\)<>@\,;\:\\"\/\[\]\?\=\{\}\x7F]+)|(?:\"((?:[^"\\]|\\.)*)\")))?/g;
+
+    const header = {};
+    const error = field.replace(regex, ($0, $1, $2, $3) => {
+
+        const value = $2 || $3;
+        header[$1] = value ? value.toLowerCase() : true;
+        return '';
+    });
+
+    if (header['max-age']) {
+        try {
+            const maxAge = parseInt(header['max-age'], 10);
+            if (isNaN(maxAge)) {
+                return null;
+            }
+
+            header['max-age'] = maxAge;
+        }
+        catch (err) { }
+    }
+
+    return (error ? null : header);
+};
+
+
+// Shortcuts
+
+internals.Client.prototype.get = function (uri, options) {
+
+    return this._shortcut('GET', uri, options);
+};
+
+
+internals.Client.prototype.post = function (uri, options) {
+
+    return this._shortcut('POST', uri, options);
+};
+
+
+internals.Client.prototype.patch = function (uri, options) {
+
+    return this._shortcut('PATCH', uri, options);
+};
+
+
+internals.Client.prototype.put = function (uri, options) {
+
+    return this._shortcut('PUT', uri, options);
+};
+
+
+internals.Client.prototype.delete = function (uri, options) {
+
+    return this._shortcut('DELETE', uri, options);
+};
+
+
+internals.Client.prototype._shortcut = async function (method, uri, options = {}) {
+
+    const res = await this.request(method, uri, options);
+
+    let payload;
+    try {
+        payload = await this.read(res, options);
+    }
+    catch (err) {
+        err.data = err.data || {};
+        err.data.res = res;
+        throw err;
+    }
+
+    if (res.statusCode < 400) {
+        return { res, payload };
+    }
+
+    // Response error
+
+    const data = {
+        isResponseError: true,
+        headers: res.headers,
+        res,
+        payload
+    };
+
+    throw new Boom(`Response Error: ${res.statusCode} ${res.statusMessage}`, { statusCode: res.statusCode, data });
+};
+
+
+internals.tryParseBuffer = function (buffer, next) {
+
+    if (buffer.length === 0) {
+        return next(null, null);
+    }
+
+    let payload;
+    try {
+        payload = Bourne.parse(buffer.toString());
+    }
+    catch (err) {
+        return next(Boom.badGateway(err.message, { payload: buffer }));
+    }
+
+    return next(null, payload);
+};
+
+
+internals.findHeader = function (headerName, headers) {
+
+    const foundKey = Object.keys(headers)
+        .find((key) => key.toLowerCase() === headerName.toLowerCase());
+
+    return foundKey && headers[foundKey];
+};
+
+internals.applyUrlToOptions = (options, url) => {
+
+    options.host = url.host;
+    options.origin = url.origin;
+    options.searchParams = url.searchParams;
+    options.protocol = url.protocol;
+    options.hostname = url.hostname;
+    options.hash = url.hash;
+    options.search = url.search;
+    options.pathname = url.pathname;
+    options.path = `${url.pathname}${url.search || ''}`;
+    options.href = url.href;
+    if (url.port !== '') {
+        options.port = Number(url.port);
+    }
+
+    if (url.username || url.password) {
+        options.auth = `${url.username}:${url.password}`;
+        options.username = url.username;
+        options.password = url.password;
+    }
+
+    return options;
+};
+
+
+module.exports = new internals.Client();
+
+}).call(this,require('_process'),require("buffer").Buffer)
+},{"./payload":214,"./recorder":215,"./tap":216,"@hapi/boom":186,"@hapi/bourne":187,"@hapi/hoek":202,"_process":156,"buffer":48,"events":52,"http":297,"https":56,"stream":296,"url":319,"zlib":45}],214:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"buffer":48,"dup":29,"stream":296}],215:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"@hapi/boom":186,"buffer":48,"dup":30,"stream":296}],216:[function(require,module,exports){
+arguments[4][31][0].apply(exports,arguments)
+},{"./payload":214,"dup":31,"stream":296}],217:[function(require,module,exports){
+/* Copyright (c) 2013-2019 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
 
 ;(function() {
   /* jshint node:true, asi:true, eqnull:true */
@@ -52163,19 +58614,27 @@ module.exports = LRUCache
     var self = {}
     var top = {}
 
+    // Provide internal search order structure
+    self.top = function() {
+      return top
+    }
+
     self.noConflict = function() {
       root.patrun = previous_patrun
       return self
     }
 
     self.add = function(pat, data) {
-      pat = _.clone(pat)
+      pat = { ...pat }
 
-      var customizer = _.isFunction(custom)
-        ? custom.call(self, pat, data)
-        : null
+      var PS = JSON.stringify(pat).replace(/ /g, '')
 
-      var keys = _.keys(pat), plains = [], gexers = []
+      var customizer =
+        'function' === typeof custom ? custom.call(self, pat, data) : null
+
+      var keys = Object.keys(pat)
+      var plains = []
+      var gexers = []
 
       keys.forEach(function(key) {
         var val = pat[key]
@@ -52191,7 +58650,11 @@ module.exports = LRUCache
 
       keys = plains.concat(gexers)
 
-      var keymap = top, valmap
+      var keymap = top
+      var valmap
+
+      // Partial matches return next wider match - see partial-match test
+      //var last_data
 
       for (var i = 0; i < keys.length; i++) {
         var key = keys[i]
@@ -52206,16 +58669,23 @@ module.exports = LRUCache
         valmap = keymap.v
 
         if (valmap && sort_key == keymap.sk) {
+          // console.log('ADD A', PS, sort_key, keymap.d)
+          //last_data = null == keymap.d ? last_data : keymap.d
           add_gexer(keymap, key, gexer)
           keymap = valmap[val] || (valmap[val] = {})
         } else if (!keymap.k) {
+          // console.log('ADD B', PS, sort_key, keymap.d)
+          //last_data = null == keymap.d ? last_data : keymap.d
           add_gexer(keymap, key, gexer)
           keymap.k = key
           keymap.sk = sort_key
           keymap.v = {}
+          // keymap.d = null == keymap.d ? last_data : keymap.d
           keymap = keymap.v[val] = {}
         } else if (sort_key < keymap.sk) {
-          var s = keymap.s, g = keymap.g
+          // console.log('ADD C', PS, sort_key, keymap.d)
+          var s = keymap.s,
+            g = keymap.g
           keymap.s = { k: keymap.k, sk: keymap.sk, v: keymap.v }
           if (s) keymap.s.s = s
           if (g) keymap.s.g = g
@@ -52229,6 +58699,7 @@ module.exports = LRUCache
 
           keymap = keymap.v[val] = {}
         } else {
+          // console.log('ADD D', PS, sort_key, keymap.d)
           valmap = keymap.v
           keymap = keymap.s || (keymap.s = {})
           i--
@@ -52238,10 +58709,10 @@ module.exports = LRUCache
       if (void 0 !== data && keymap) {
         keymap.d = data
         if (customizer) {
-          keymap.f = _.isFunction(customizer) ? customizer : customizer.find
-          keymap.r = _.isFunction(customizer.remove)
-            ? customizer.remove
-            : void 0
+          keymap.f =
+            'function' === typeof customizer ? customizer : customizer.find
+          keymap.r =
+            'function' === typeof customizer.remove ? customizer.remove : void 0
         }
       }
 
@@ -52272,7 +58743,7 @@ module.exports = LRUCache
       var key = null
       var stars = []
       var foundkeys = {}
-      var patlen = _.keys(pat).length
+      var patlen = Object.keys(pat).length
 
       do {
         key = keymap.k
@@ -52298,10 +58769,16 @@ module.exports = LRUCache
               stars.push(keymap.s)
             }
 
-            data = void 0 === nextkeymap.d ? null : nextkeymap.d
+            data =
+              void 0 === nextkeymap.d ? (exact ? null : data) : nextkeymap.d
+            //data = void 0 === nextkeymap.d ? null : nextkeymap.d
+
             finalfind = nextkeymap.f
             keymap = nextkeymap
           } else {
+            // last data
+            // data = (exact || void 0 === keymap.d) ? data : keymap.d
+
             keymap = keymap.s
           }
         } else {
@@ -52314,7 +58791,7 @@ module.exports = LRUCache
       } while (keymap)
 
       if (exact) {
-        if (_.keys(foundkeys).length !== patlen) {
+        if (Object.keys(foundkeys).length !== patlen) {
           data = null
         }
       } else {
@@ -52371,24 +58848,24 @@ module.exports = LRUCache
         if (keymap.v) {
           var key = keymap.k
           var gexval = gex(
-            pat ? null == pat[key] ? exact ? null : '*' : pat[key] : '*'
+            pat ? (null == pat[key] ? (exact ? null : '*') : pat[key]) : '*'
           )
-          var itermatch = _.extend({}, match)
-          var itermissing = _.extend({}, missing)
+          var itermatch = { ...match }
+          var itermissing = { ...missing }
           var nextkeymap
 
           for (var val in keymap.v) {
             if (gexval.on(val)) {
-              var valitermatch = _.clone(itermatch)
+              var valitermatch = { ...itermatch }
               valitermatch[key] = val
 
-              var valitermissing = _.extend({}, itermissing)
+              var valitermissing = { ...itermissing }
               delete valitermissing[key]
 
               nextkeymap = keymap.v[val]
 
               if (
-                0 === _.keys(valitermissing).length &&
+                0 === Object.keys(valitermissing).length &&
                 nextkeymap &&
                 nextkeymap.d
               ) {
@@ -52402,8 +58879,8 @@ module.exports = LRUCache
               if (nextkeymap && nextkeymap.v) {
                 descend(
                   nextkeymap,
-                  _.extend({}, valitermatch),
-                  _.extend({}, valitermissing),
+                  { ...valitermatch },
+                  { ...valitermissing },
                   acc
                 )
               }
@@ -52412,12 +58889,7 @@ module.exports = LRUCache
 
           nextkeymap = keymap.s
           if (nextkeymap) {
-            descend(
-              nextkeymap,
-              _.extend({}, itermatch),
-              _.extend({}, itermissing),
-              acc
-            )
+            descend(nextkeymap, { ...itermatch }, { ...itermissing }, acc)
           }
         }
       }
@@ -52432,18 +58904,21 @@ module.exports = LRUCache
         })
       }
 
-      descend(top, {}, _.extend({}, pat), acc)
+      descend(top, {}, { ...pat }, acc)
       return acc
     }
 
-    self.toString = function() {
-      var tree = _.isBoolean(arguments[0]) ? arguments[0] : !!arguments[1]
+    self.toString = function(first, second) {
+      var tree = true === first ? true : !!second
 
-      var dstr = _.isFunction(arguments[0])
-        ? arguments[0]
-        : function(d) {
-            return _.isFunction(d) ? '<' + d.name + '>' : '<' + d + '>'
-          }
+      var dstr =
+        'function' === typeof first
+          ? first
+          : function(d) {
+              return 'function' === typeof d
+                ? '<' + d.name + '>'
+                : '<' + d + '>'
+            }
 
       function indent(o, d) {
         for (var i = 0; i < d; i++) {
@@ -52468,11 +58943,11 @@ module.exports = LRUCache
         }
         if (n.v) {
           d++
-          var pa = _.keys(n.v)
-          var pal = _.filter(pa, function(x) {
+          var pa = Object.keys(n.v)
+          var pal = pa.filter(function(x) {
             return !x.match(/[\*\?]/)
           })
-          var pas = _.filter(pa, function(x) {
+          var pas = pa.filter(function(x) {
             return x.match(/[\*\?]/)
           })
           pal.sort()
@@ -52485,7 +58960,7 @@ module.exports = LRUCache
             indent(o, d)
             o.push(p + ' ->')
 
-            vsc = _.clone(vs)
+            vsc = vs.slice()
             vsc.push(n.k + '=' + p)
 
             walk(n.v[p], o, d + 1, vsc)
@@ -52496,7 +58971,7 @@ module.exports = LRUCache
             indent(o, d)
             o.push('|')
 
-            vsc = _.clone(vs)
+            vsc = vs.slice()
             walk(n.s, o, d + 1, vsc)
           }
         }
@@ -52513,7 +58988,7 @@ module.exports = LRUCache
       return JSON.stringify(
         top,
         function(key, val) {
-          if (_.isFunction(val)) return '[Function]'
+          if ('function' === typeof val) return '[Function]'
           return val
         },
         indent
@@ -52533,451 +59008,13 @@ module.exports = LRUCache
   }
 }.call(this))
 
-},{"gex":85,"lodash":93}],151:[function(require,module,exports){
-'use strict'
-module.exports = function (Yallist) {
-  Yallist.prototype[Symbol.iterator] = function* () {
-    for (let walker = this.head; walker; walker = walker.next) {
-      yield walker.value
-    }
-  }
-}
-
-},{}],152:[function(require,module,exports){
-'use strict'
-module.exports = Yallist
-
-Yallist.Node = Node
-Yallist.create = Yallist
-
-function Yallist (list) {
-  var self = this
-  if (!(self instanceof Yallist)) {
-    self = new Yallist()
-  }
-
-  self.tail = null
-  self.head = null
-  self.length = 0
-
-  if (list && typeof list.forEach === 'function') {
-    list.forEach(function (item) {
-      self.push(item)
-    })
-  } else if (arguments.length > 0) {
-    for (var i = 0, l = arguments.length; i < l; i++) {
-      self.push(arguments[i])
-    }
-  }
-
-  return self
-}
-
-Yallist.prototype.removeNode = function (node) {
-  if (node.list !== this) {
-    throw new Error('removing node which does not belong to this list')
-  }
-
-  var next = node.next
-  var prev = node.prev
-
-  if (next) {
-    next.prev = prev
-  }
-
-  if (prev) {
-    prev.next = next
-  }
-
-  if (node === this.head) {
-    this.head = next
-  }
-  if (node === this.tail) {
-    this.tail = prev
-  }
-
-  node.list.length--
-  node.next = null
-  node.prev = null
-  node.list = null
-
-  return next
-}
-
-Yallist.prototype.unshiftNode = function (node) {
-  if (node === this.head) {
-    return
-  }
-
-  if (node.list) {
-    node.list.removeNode(node)
-  }
-
-  var head = this.head
-  node.list = this
-  node.next = head
-  if (head) {
-    head.prev = node
-  }
-
-  this.head = node
-  if (!this.tail) {
-    this.tail = node
-  }
-  this.length++
-}
-
-Yallist.prototype.pushNode = function (node) {
-  if (node === this.tail) {
-    return
-  }
-
-  if (node.list) {
-    node.list.removeNode(node)
-  }
-
-  var tail = this.tail
-  node.list = this
-  node.prev = tail
-  if (tail) {
-    tail.next = node
-  }
-
-  this.tail = node
-  if (!this.head) {
-    this.head = node
-  }
-  this.length++
-}
-
-Yallist.prototype.push = function () {
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    push(this, arguments[i])
-  }
-  return this.length
-}
-
-Yallist.prototype.unshift = function () {
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    unshift(this, arguments[i])
-  }
-  return this.length
-}
-
-Yallist.prototype.pop = function () {
-  if (!this.tail) {
-    return undefined
-  }
-
-  var res = this.tail.value
-  this.tail = this.tail.prev
-  if (this.tail) {
-    this.tail.next = null
-  } else {
-    this.head = null
-  }
-  this.length--
-  return res
-}
-
-Yallist.prototype.shift = function () {
-  if (!this.head) {
-    return undefined
-  }
-
-  var res = this.head.value
-  this.head = this.head.next
-  if (this.head) {
-    this.head.prev = null
-  } else {
-    this.tail = null
-  }
-  this.length--
-  return res
-}
-
-Yallist.prototype.forEach = function (fn, thisp) {
-  thisp = thisp || this
-  for (var walker = this.head, i = 0; walker !== null; i++) {
-    fn.call(thisp, walker.value, i, this)
-    walker = walker.next
-  }
-}
-
-Yallist.prototype.forEachReverse = function (fn, thisp) {
-  thisp = thisp || this
-  for (var walker = this.tail, i = this.length - 1; walker !== null; i--) {
-    fn.call(thisp, walker.value, i, this)
-    walker = walker.prev
-  }
-}
-
-Yallist.prototype.get = function (n) {
-  for (var i = 0, walker = this.head; walker !== null && i < n; i++) {
-    // abort out of the list early if we hit a cycle
-    walker = walker.next
-  }
-  if (i === n && walker !== null) {
-    return walker.value
-  }
-}
-
-Yallist.prototype.getReverse = function (n) {
-  for (var i = 0, walker = this.tail; walker !== null && i < n; i++) {
-    // abort out of the list early if we hit a cycle
-    walker = walker.prev
-  }
-  if (i === n && walker !== null) {
-    return walker.value
-  }
-}
-
-Yallist.prototype.map = function (fn, thisp) {
-  thisp = thisp || this
-  var res = new Yallist()
-  for (var walker = this.head; walker !== null;) {
-    res.push(fn.call(thisp, walker.value, this))
-    walker = walker.next
-  }
-  return res
-}
-
-Yallist.prototype.mapReverse = function (fn, thisp) {
-  thisp = thisp || this
-  var res = new Yallist()
-  for (var walker = this.tail; walker !== null;) {
-    res.push(fn.call(thisp, walker.value, this))
-    walker = walker.prev
-  }
-  return res
-}
-
-Yallist.prototype.reduce = function (fn, initial) {
-  var acc
-  var walker = this.head
-  if (arguments.length > 1) {
-    acc = initial
-  } else if (this.head) {
-    walker = this.head.next
-    acc = this.head.value
-  } else {
-    throw new TypeError('Reduce of empty list with no initial value')
-  }
-
-  for (var i = 0; walker !== null; i++) {
-    acc = fn(acc, walker.value, i)
-    walker = walker.next
-  }
-
-  return acc
-}
-
-Yallist.prototype.reduceReverse = function (fn, initial) {
-  var acc
-  var walker = this.tail
-  if (arguments.length > 1) {
-    acc = initial
-  } else if (this.tail) {
-    walker = this.tail.prev
-    acc = this.tail.value
-  } else {
-    throw new TypeError('Reduce of empty list with no initial value')
-  }
-
-  for (var i = this.length - 1; walker !== null; i--) {
-    acc = fn(acc, walker.value, i)
-    walker = walker.prev
-  }
-
-  return acc
-}
-
-Yallist.prototype.toArray = function () {
-  var arr = new Array(this.length)
-  for (var i = 0, walker = this.head; walker !== null; i++) {
-    arr[i] = walker.value
-    walker = walker.next
-  }
-  return arr
-}
-
-Yallist.prototype.toArrayReverse = function () {
-  var arr = new Array(this.length)
-  for (var i = 0, walker = this.tail; walker !== null; i++) {
-    arr[i] = walker.value
-    walker = walker.prev
-  }
-  return arr
-}
-
-Yallist.prototype.slice = function (from, to) {
-  to = to || this.length
-  if (to < 0) {
-    to += this.length
-  }
-  from = from || 0
-  if (from < 0) {
-    from += this.length
-  }
-  var ret = new Yallist()
-  if (to < from || to < 0) {
-    return ret
-  }
-  if (from < 0) {
-    from = 0
-  }
-  if (to > this.length) {
-    to = this.length
-  }
-  for (var i = 0, walker = this.head; walker !== null && i < from; i++) {
-    walker = walker.next
-  }
-  for (; walker !== null && i < to; i++, walker = walker.next) {
-    ret.push(walker.value)
-  }
-  return ret
-}
-
-Yallist.prototype.sliceReverse = function (from, to) {
-  to = to || this.length
-  if (to < 0) {
-    to += this.length
-  }
-  from = from || 0
-  if (from < 0) {
-    from += this.length
-  }
-  var ret = new Yallist()
-  if (to < from || to < 0) {
-    return ret
-  }
-  if (from < 0) {
-    from = 0
-  }
-  if (to > this.length) {
-    to = this.length
-  }
-  for (var i = this.length, walker = this.tail; walker !== null && i > to; i--) {
-    walker = walker.prev
-  }
-  for (; walker !== null && i > from; i--, walker = walker.prev) {
-    ret.push(walker.value)
-  }
-  return ret
-}
-
-Yallist.prototype.splice = function (start, deleteCount /*, ...nodes */) {
-  if (start > this.length) {
-    start = this.length - 1
-  }
-  if (start < 0) {
-    start = this.length + start;
-  }
-
-  for (var i = 0, walker = this.head; walker !== null && i < start; i++) {
-    walker = walker.next
-  }
-
-  var ret = []
-  for (var i = 0; walker && i < deleteCount; i++) {
-    ret.push(walker.value)
-    walker = this.removeNode(walker)
-  }
-  if (walker === null) {
-    walker = this.tail
-  }
-
-  if (walker !== this.head && walker !== this.tail) {
-    walker = walker.prev
-  }
-
-  for (var i = 2; i < arguments.length; i++) {
-    walker = insert(this, walker, arguments[i])
-  }
-  return ret;
-}
-
-Yallist.prototype.reverse = function () {
-  var head = this.head
-  var tail = this.tail
-  for (var walker = head; walker !== null; walker = walker.prev) {
-    var p = walker.prev
-    walker.prev = walker.next
-    walker.next = p
-  }
-  this.head = tail
-  this.tail = head
-  return this
-}
-
-function insert (self, node, value) {
-  var inserted = node === self.head ?
-    new Node(value, null, node, self) :
-    new Node(value, node, node.next, self)
-
-  if (inserted.next === null) {
-    self.tail = inserted
-  }
-  if (inserted.prev === null) {
-    self.head = inserted
-  }
-
-  self.length++
-
-  return inserted
-}
-
-function push (self, item) {
-  self.tail = new Node(item, self.tail, null, self)
-  if (!self.head) {
-    self.head = self.tail
-  }
-  self.length++
-}
-
-function unshift (self, item) {
-  self.head = new Node(item, null, self.head, self)
-  if (!self.tail) {
-    self.tail = self.head
-  }
-  self.length++
-}
-
-function Node (value, prev, next, list) {
-  if (!(this instanceof Node)) {
-    return new Node(value, prev, next, list)
-  }
-
-  this.list = list
-  this.value = value
-
-  if (prev) {
-    prev.next = this
-    this.prev = prev
-  } else {
-    this.prev = null
-  }
-
-  if (next) {
-    next.prev = this
-    this.next = next
-  } else {
-    this.next = null
-  }
-}
-
-try {
-  // add if support for Symbol.iterator is present
-  require('./iterator.js')(Yallist)
-} catch (er) {}
-
-},{"./iterator.js":151}],153:[function(require,module,exports){
+},{"gex":55,"lodash":72}],218:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger & other contributors, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
 
 // Load modules
-var _ = require('lodash')
+//var _ = require('lodash')
 var LruCache = require('lru-cache')
 var Tcp = require('./lib/tcp')
 var TransportUtil = require('./lib/transport-utils.js')
@@ -53116,11 +59153,13 @@ internals.inflight = function(callmap) {
 internals.listen = function(args, callback) {
   var seneca = this
 
-  var config = _.extend({}, args.config, {
+  var config = Object.assign({}, args.config, {
     role: internals.plugin,
     hook: 'listen'
   })
-  var listen_args = seneca.util.clean(_.omit(config, 'cmd'))
+  //var listen_args = seneca.util.clean(_.omit(config, 'cmd'))
+  var listen_args = seneca.util.clean(config)
+  delete config.cmd
   var legacyError = internals.legacyError(seneca, listen_args.type)
   if (legacyError) {
     return callback(legacyError)
@@ -53131,11 +59170,13 @@ internals.listen = function(args, callback) {
 internals.client = function(args, callback) {
   var seneca = this
 
-  var config = _.extend({}, args.config, {
+  var config = Object.assign({}, args.config, {
     role: internals.plugin,
     hook: 'client'
   })
-  var client_args = seneca.util.clean(_.omit(config, 'cmd'))
+  //var client_args = seneca.util.clean(_.omit(config, 'cmd'))
+  var client_args = seneca.util.clean(config)
+  delete config.cmd
   var legacyError = internals.legacyError(seneca, client_args.type)
   if (legacyError) {
     return callback(legacyError)
@@ -53152,7 +59193,7 @@ internals.legacyError = function(seneca, type) {
   }
 }
 
-},{"./lib/http":146,"./lib/tcp":147,"./lib/transport-utils.js":148,"lodash":93,"lru-cache":149}],154:[function(require,module,exports){
+},{"./lib/http":183,"./lib/tcp":184,"./lib/transport-utils.js":185,"lru-cache":73}],219:[function(require,module,exports){
 /* Copyright © 2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -53390,10 +59431,16 @@ const intern = (module.exports.intern = {
 
     meta.error = Util.isError(data.res)
 
+    // A nasty edge case
+    if (!meta.error && data.res === data.err) {
+      data.err = null
+    }
+
     // Add any additional explain items from responder
     if (
       meta.explain &&
-      (reply_meta && reply_meta.explain) &&
+      reply_meta &&
+      reply_meta.explain &&
       meta.explain.length < reply_meta.explain.length
     ) {
       for (var i = meta.explain.length; i < reply_meta.explain.length; i++) {
@@ -53421,16 +59468,27 @@ const intern = (module.exports.intern = {
     if (outward) {
       if ('result' === outward.kind) {
         data.res = outward.result
-      }
+      } else {
+        // DESIGN: new contract - migrate to this for all inward functions
+        if ('sub_outward_action_failed' === outward.code) {
+          var info = {
+            pattern: actctxt.actdef.pattern,
+            msg: data.msg,
+            ...(outward.info || {})
+          }
+          data.err = Common.error(outward.error, outward.code, info)
+        }
 
-      // assume error
-      else {
-        data.res =
-          outward.error ||
-          Common.error(
-            outward.code || 'invalid-process-outward-code',
-            outward.info || {}
-          )
+        // assume error
+        else {
+          data.err =
+            outward.error ||
+            Common.error(
+              outward.code || 'invalid-process-outward-code',
+              outward.info || {}
+            )
+        }
+
         data.meta = data.meta || {}
         data.meta.error = true
       }
@@ -53535,7 +59593,20 @@ const intern = (module.exports.intern = {
     var meta = data.meta
 
     if ('error' === inward.kind) {
-      var err = inward.error || Common.error(inward.code, inward.info)
+      var err = inward.error
+
+      // DESIGN: new contract - migrate to this for all inward functions
+      if ('sub_inward_action_failed' === inward.code) {
+        var info = {
+          pattern: actdef.pattern,
+          msg: data.msg,
+          ...(inward.info || {})
+        }
+        err = Common.error(err, inward.code, info)
+      } else {
+        err = err || Common.error(inward.code, inward.info)
+      }
+
       meta.error = true
 
       if (inward.log && inward.log.level) {
@@ -53619,7 +59690,7 @@ const intern = (module.exports.intern = {
   }
 })
 
-},{"./common":158,"util":202}],155:[function(require,module,exports){
+},{"./common":223,"util":325}],220:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -53711,7 +59782,7 @@ function action_options_get(msg, reply) {
   reply(Common.copydata(val))
 }
 
-},{"./common":158,"lodash":93}],156:[function(require,module,exports){
+},{"./common":223,"lodash":72}],221:[function(require,module,exports){
 (function (setImmediate){
 /* Copyright © 2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -53883,7 +59954,7 @@ const intern = (module.exports.intern = {
 })
 
 }).call(this,require("timers").setImmediate)
-},{"./common":158,"timers":195}],157:[function(require,module,exports){
+},{"./common":223,"timers":318}],222:[function(require,module,exports){
 (function (process){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -53925,15 +59996,17 @@ exports.fix = function(patargs, msgargs, custom) {
   var fix_delegate = self.delegate(patargs)
 
   fix_delegate.add = function fix_add() {
-    var args = Common.parsePattern(this, arguments, 'rest:.*', patargs)
-    var addargs = [args.pattern]
-      .concat({
-        fixed$: Object.assign({}, msgargs, args.pattern.fixed$),
-        custom$: Object.assign({}, custom, args.pattern.custom$)
-      })
-      .concat(args.rest)
+    return self.add.apply(
+      this,
+      intern.fix_args(arguments, patargs, msgargs, custom)
+    )
+  }
 
-    return self.add.apply(this, addargs)
+  fix_delegate.sub = function fix_sub() {
+    return self.sub.apply(
+      this,
+      intern.fix_args(arguments, patargs, msgargs, custom)
+    )
   }
 
   return fix_delegate
@@ -53986,70 +60059,12 @@ exports.options = function(options, chain) {
 exports.close = function(callpoint) {
   return function api_close(done) {
     var seneca = this
-    var options = seneca.options()
 
-    var done_called = false
-    var safe_done = function safe_done(err) {
-      if (!done_called && 'function' === typeof done) {
-        done_called = true
-        return done.call(seneca, err)
-      }
+    if (null == done && false !== done) {
+      return Common.promiser(intern.close.bind(seneca, callpoint))
     }
 
-    // don't try to close twice
-    if (seneca.flags.closed) {
-      return safe_done()
-    }
-
-    seneca.ready(do_close)
-    var close_timeout = setTimeout(do_close, options.close_delay)
-
-    function do_close() {
-      clearTimeout(close_timeout)
-
-      if (seneca.flags.closed) {
-        return safe_done()
-      }
-
-      // TODO: remove in 4.x
-      seneca.closed = true
-
-      seneca.flags.closed = true
-
-      // cleanup process event listeners
-      Common.each(options.system.close_signals, function(active, signal) {
-        if (active) {
-          process.removeListener(signal, seneca.private$.exit_close)
-        }
-      })
-
-      seneca.log.debug({
-        kind: 'close',
-        notice: 'start',
-        callpoint: callpoint(true)
-      })
-
-      seneca.act('role:seneca,cmd:close,closing$:true', function(err) {
-        seneca.log.debug(errlog(err, { kind: 'close', notice: 'end' }))
-
-        seneca.removeAllListeners('act-in')
-        seneca.removeAllListeners('act-out')
-        seneca.removeAllListeners('act-err')
-        seneca.removeAllListeners('pin')
-        seneca.removeAllListeners('after-pin')
-        seneca.removeAllListeners('ready')
-
-        seneca.private$.history.close()
-
-        if (seneca.private$.status_interval) {
-          clearInterval(seneca.private$.status_interval)
-        }
-
-        return safe_done(err)
-      })
-    }
-
-    return seneca
+    return intern.close.call(seneca, callpoint, done)
   }
 }
 
@@ -54203,6 +60218,7 @@ exports.delegate = function(fixedargs, fixedmeta) {
 
   // Somewhere to put contextual data for this delegate.
   // For example, data for individual web requests.
+  // TODO: works better if prototype with Object.create
   delegate.context = Object.assign({}, self.context)
 
   return delegate
@@ -54680,6 +60696,7 @@ exports.client = function(callpoint) {
   }
 }
 
+/*
 // Subscribe to messages.
 exports.sub = function() {
   var self = this
@@ -54777,6 +60794,7 @@ exports.sub = function() {
 
   return self
 }
+  */
 
 // Inspired by https://github.com/hapijs/hapi/blob/master/lib/plugin.js decorate
 // TODO: convert to plugin configuration, with standard errors
@@ -54855,8 +60873,87 @@ intern.resolve_config = function(config, options) {
   return out
 }
 
+intern.close = function(callpoint, done) {
+  var seneca = this
+  var options = seneca.options()
+
+  var done_called = false
+  var safe_done = function safe_done(err) {
+    if (!done_called && 'function' === typeof done) {
+      done_called = true
+      return done.call(seneca, err)
+    }
+  }
+
+  // don't try to close twice
+  if (seneca.flags.closed) {
+    return safe_done()
+  }
+
+  seneca.ready(do_close)
+  var close_timeout = setTimeout(do_close, options.close_delay)
+
+  function do_close() {
+    clearTimeout(close_timeout)
+
+    if (seneca.flags.closed) {
+      return safe_done()
+    }
+
+    // TODO: remove in 4.x
+    seneca.closed = true
+
+    seneca.flags.closed = true
+
+    // cleanup process event listeners
+    Common.each(options.system.close_signals, function(active, signal) {
+      if (active) {
+        process.removeListener(signal, seneca.private$.exit_close)
+      }
+    })
+
+    seneca.log.debug({
+      kind: 'close',
+      notice: 'start',
+      callpoint: callpoint(true)
+    })
+
+    seneca.act('role:seneca,cmd:close,closing$:true', function(err) {
+      seneca.log.debug(errlog(err, { kind: 'close', notice: 'end' }))
+
+      seneca.removeAllListeners('act-in')
+      seneca.removeAllListeners('act-out')
+      seneca.removeAllListeners('act-err')
+      seneca.removeAllListeners('pin')
+      seneca.removeAllListeners('after-pin')
+      seneca.removeAllListeners('ready')
+
+      seneca.private$.history.close()
+
+      if (seneca.private$.status_interval) {
+        clearInterval(seneca.private$.status_interval)
+      }
+
+      return safe_done(err)
+    })
+  }
+
+  return seneca
+}
+
+intern.fix_args = function(origargs, patargs, msgargs, custom) {
+  var args = Common.parsePattern(this, origargs, 'rest:.*', patargs)
+  var fixargs = [args.pattern]
+    .concat({
+      fixed$: Object.assign({}, msgargs, args.pattern.fixed$),
+      custom$: Object.assign({}, custom, args.pattern.custom$)
+    })
+    .concat(args.rest)
+  return fixargs
+}
+
 }).call(this,require('_process'))
-},{"./common":158,"./plugins":165,"_process":119,"assert":62,"jsonic":92,"lodash":93,"norma":97}],158:[function(require,module,exports){
+},{"./common":223,"./plugins":230,"_process":156,"assert":32,"jsonic":62,"lodash":72,"norma":77}],223:[function(require,module,exports){
 (function (process){
 /* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -54878,6 +60975,20 @@ const error = (exports.error = exports.eraro = Eraro({
   msgmap: Errors,
   override: true
 }))
+
+exports.promiser = function(context, callback) {
+  if ('function' === typeof context && null == callback) {
+    callback = context
+  } else {
+    callback = callback.bind(context)
+  }
+
+  return new Promise((resolve, reject) => {
+    callback(err => {
+      return err ? reject(err) : resolve()
+    })
+  })
+}
 
 exports.stringify = function() {
   return Stringify(...arguments)
@@ -55117,6 +61228,7 @@ exports.clean = clean
 
 // rightmost wins
 function deepextend() {
+  // TODO: use ...rest
   var argsarr = new Array(arguments.length)
   for (var l = 0; l < argsarr.length; ++l) {
     argsarr[l] = arguments[l]
@@ -55573,7 +61685,7 @@ History.prototype.toString = function toString() {
 History.prototype[Util.inspect.custom] = History.prototype.toString
 
 }).call(this,require('_process'))
-},{"./errors":159,"./print":166,"_process":119,"assert":62,"eraro":81,"fast-safe-stringify":83,"jsonic":92,"lodash":93,"nid":95,"norma":97,"util":202}],159:[function(require,module,exports){
+},{"./errors":224,"./print":231,"_process":156,"assert":32,"eraro":51,"fast-safe-stringify":53,"jsonic":62,"lodash":72,"nid":75,"norma":77,"util":325}],224:[function(require,module,exports){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -55669,9 +61781,20 @@ module.exports = {
     'Entity data store implementation is missing a command; ' +
     '"<%=cmd%>": "<%=store%>".',
 
+  // TODO: remove
   sub_function_catch:
     'Pattern subscription function threw: <%=message%> on ' +
-    'args: <%=args%>, result: <%=result%>.',
+    'message: <%=msg%>, result: <%=result%>.',
+
+  sub_inward_action_failed:
+    'Subscription action on inward pattern <%=pattern%>' +
+    ' threw: <%=errmsg%> at <%=errline%> on message data: <%=msg%>. ' +
+    'To start debugging, find the `seneca.sub` method call that defines the subscription action, and review the code of the action function.',
+
+  sub_outward_action_failed:
+    'Subscription action on outward pattern <%=pattern%>' +
+    ' threw: <%=errmsg%> at <%=errline%> on message data: <%=msg%>. ' +
+    'To start debugging, find the `seneca.sub` method call that defines the subscription action, and review the code of the action function.',
 
   ready_failed: 'Ready function failed: <%=message%>',
 
@@ -55724,7 +61847,7 @@ module.exports.deprecation = {
   seneca_next_act: 'Seneca.next_act will be removed in Seneca 3.x'
 }
 
-},{}],160:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 /* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -55750,6 +61873,7 @@ module.exports = {
   act_stats: inward_act_stats,
   prepare_delegate: inward_prepare_delegate,
   announce: inward_announce,
+  sub: inward_sub,
   intern: intern
 }
 
@@ -55803,6 +61927,7 @@ function inward_announce(ctxt, data) {
   ctxt.seneca.emit('act-in', data.msg, null, data.meta)
 }
 
+// TODO: allow if not a top level call - close gracefully
 function inward_closed(ctxt, data) {
   if (ctxt.seneca.flags.closed && !data.meta.closing) {
     return {
@@ -56057,6 +62182,43 @@ function inward_prepare_delegate(ctxt, data) {
   }
 }
 
+function inward_sub(ctxt, data) {
+  var meta = data.meta
+  var private$ = ctxt.seneca.private$
+
+  // Only entry msg of prior chain is published
+  if (meta.prior) {
+    return
+  }
+
+  var submsg = ctxt.seneca.util.clean(data.msg)
+
+  // Find all subscription matches, even partial.
+  // Example: a:1,b:2 matches subs for a:1; a:1,b:1; b:1
+  var sub_actions_list = private$.subrouter.inward.find(submsg, false, true)
+
+  submsg.in$ = true
+
+  for (var alI = 0; alI < sub_actions_list.length; alI++) {
+    var sub_actions = sub_actions_list[alI] // Also an array.
+
+    for (var sI = 0; sI < sub_actions.length; sI++) {
+      var sub_action = sub_actions[sI]
+
+      try {
+        sub_action.call(ctxt.seneca, submsg, null, data.meta)
+      } catch (sub_err) {
+        // DESIGN: this should be all that is needed.
+        return {
+          kind: 'error',
+          code: 'sub_inward_action_failed',
+          error: sub_err
+        }
+      }
+    }
+  }
+}
+
 intern.explain = function(meta, entry) {
   var orig_explain = this.explain
   var explain = meta.explain
@@ -56105,7 +62267,7 @@ intern.explain = function(meta, entry) {
   return explain && this.explain
 }
 
-},{"./common":158,"lodash":93,"util":202}],161:[function(require,module,exports){
+},{"./common":223,"lodash":72,"util":325}],226:[function(require,module,exports){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -56248,7 +62410,7 @@ exports.make_legacy_fail = function make_legacy_fail(so) {
   }
 }
 
-},{"./common":158,"./errors":159,"eraro":81,"jsonic":92,"lodash":93,"norma":97}],162:[function(require,module,exports){
+},{"./common":223,"./errors":224,"eraro":51,"jsonic":62,"lodash":72,"norma":77}],227:[function(require,module,exports){
 /* Copyright © 2016-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -56701,7 +62863,7 @@ var intern = (module.exports.intern = {
   }
 })
 
-},{"./common":158,"util":202}],163:[function(require,module,exports){
+},{"./common":223,"util":325}],228:[function(require,module,exports){
 (function (process){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -56845,6 +63007,22 @@ module.exports = function(callmodule, defaults, orig_initial) {
       }
     }
 
+    // Internal adjustments to options
+    var adjusted = {}
+
+    // Legacy global off
+    if (false === initial.legacy) {
+      adjusted.legacy = {
+        transport: false,
+        meta: false,
+        actdef: false,
+        logging: false,
+        error_codes: false,
+        error: false,
+        fail: false
+      }
+    }
+
     // This is the list of option sources.
     // The list is in reverse precedence order,
     // i.e. command line arguments (argv) win
@@ -56855,6 +63033,7 @@ module.exports = function(callmodule, defaults, orig_initial) {
       options,
       sourcemap.loaded,
       initial,
+      adjusted,
       sourcemap.env,
       sourcemap.argv
     )
@@ -56969,7 +63148,7 @@ function ERRMSGMAP() {
 }
 
 }).call(this,require('_process'))
-},{"./common":158,"_process":119,"eraro":81,"fs":76,"jsonic":92,"lodash":93,"minimist":169}],164:[function(require,module,exports){
+},{"./common":223,"_process":156,"eraro":51,"fs":46,"jsonic":62,"lodash":72,"minimist":292}],229:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -56993,7 +63172,8 @@ module.exports = {
   trace: outward_trace,
   act_error: outward_act_error,
   res_entity: outward_res_entity,
-  msg_meta: outward_msg_meta
+  msg_meta: outward_msg_meta,
+  sub: outward_sub
 }
 
 function outward_make_error(ctxt, data) {
@@ -57200,6 +63380,45 @@ function outward_res_entity(ctxt, data) {
   }
 }
 
+function outward_sub(ctxt, data) {
+  var meta = data.meta
+  var private$ = ctxt.seneca.private$
+
+  // Only entry msg of prior chain is published
+  if (meta.prior) {
+    return
+  }
+
+  var submsg = ctxt.seneca.util.clean(data.msg)
+
+  // Find all subscription matches, even partial.
+  // Example: a:1,b:2 matches subs for a:1; a:1,b:1; b:1
+  var sub_actions_list = private$.subrouter.outward.find(submsg, false, true)
+
+  submsg.out$ = true
+
+  // TODO: document this
+  var result = data.res || data.err || null
+
+  for (var alI = 0; alI < sub_actions_list.length; alI++) {
+    var sub_actions = sub_actions_list[alI] // Also an array.
+
+    for (var sI = 0; sI < sub_actions.length; sI++) {
+      var sub_action = sub_actions[sI]
+      try {
+        sub_action.call(ctxt.seneca, submsg, result, data.meta)
+      } catch (sub_err) {
+        // DESIGN: this should be all that is needed.
+        return {
+          kind: 'error',
+          code: 'sub_outward_action_failed',
+          error: sub_err
+        }
+      }
+    }
+  }
+}
+
 intern.act_error = function(instance, ctxt, data) {
   var duration = ctxt.duration
   var act_callpoint = ctxt.callpoint
@@ -57284,7 +63503,7 @@ intern.act_error = function(instance, ctxt, data) {
   }
 }
 
-},{"./common":158,"assert":62,"lodash":93,"util":202}],165:[function(require,module,exports){
+},{"./common":223,"assert":32,"lodash":72,"util":325}],230:[function(require,module,exports){
 /* Copyright © 2014-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -57742,7 +63961,7 @@ function resolve_plugin_exports(seneca, fullname, meta) {
   return exports
 }
 
-},{"./common":158,"./print":166,"eraro":81,"lodash":93}],166:[function(require,module,exports){
+},{"./common":223,"./print":231,"eraro":51,"lodash":72}],231:[function(require,module,exports){
 /* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -57815,7 +64034,7 @@ module.exports.plugin_options = function plugin_options(
   instance.private$.print.log('')
 }
 
-},{"minimist":169,"util":202}],167:[function(require,module,exports){
+},{"minimist":292,"util":325}],232:[function(require,module,exports){
 /* Copyright © 2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -57911,7 +64130,49 @@ function execute_ready(instance, ready_func) {
   }
 }
 
-},{"./common":158}],168:[function(require,module,exports){
+},{"./common":223}],233:[function(require,module,exports){
+/* Copyright © 2020 Richard Rodger and other contributors, MIT License. */
+'use strict'
+
+const Common = require('./common')
+
+//const errlog = Common.make_standard_err_log_entry
+
+// Subscribe to messages.
+exports.api_sub = function() {
+  var self = this
+  var subargs = Common.parsePattern(self, arguments, 'action:f')
+  var pattern = subargs.pattern
+  var action = subargs.action
+
+  var is_inward = !!pattern.in$
+  var is_outward = !!pattern.out$
+
+  if (!is_outward) {
+    is_inward = true // Default if nothing specified
+  }
+
+  var sub_pattern = self.util.clean(pattern)
+
+  var routers = [
+    is_inward ? self.private$.subrouter.inward : null,
+    is_outward ? self.private$.subrouter.outward : null
+  ].filter(r => r)
+
+  routers.forEach(router => {
+    // Exact match, create if needed
+    var sub_actions = router.find(sub_pattern, true)
+    if (!sub_actions) {
+      router.add(sub_pattern, (sub_actions = []))
+      sub_actions.pattern = Common.pattern(sub_pattern)
+    }
+    sub_actions.push(action)
+  })
+
+  return self
+}
+
+},{"./common":223}],234:[function(require,module,exports){
 (function (Buffer){
 /* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -58364,7 +64625,180 @@ function web_modify_request(seneca, spec) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./common":158,"@hapi/wreck":58,"buffer":78,"http":174,"https":86,"jsonic":92,"lodash":93,"qs":121,"url":196}],169:[function(require,module,exports){
+},{"./common":223,"@hapi/wreck":28,"buffer":48,"http":297,"https":56,"jsonic":62,"lodash":72,"qs":158,"url":319}],235:[function(require,module,exports){
+arguments[4][79][0].apply(exports,arguments)
+},{"dup":79,"url":319}],236:[function(require,module,exports){
+arguments[4][80][0].apply(exports,arguments)
+},{"./domain":235,"dup":80,"util":325}],237:[function(require,module,exports){
+arguments[4][81][0].apply(exports,arguments)
+},{"./domain":235,"./email":236,"./tlds":238,"dup":81}],238:[function(require,module,exports){
+arguments[4][82][0].apply(exports,arguments)
+},{"dup":82}],239:[function(require,module,exports){
+arguments[4][83][0].apply(exports,arguments)
+},{"dup":83}],240:[function(require,module,exports){
+arguments[4][84][0].apply(exports,arguments)
+},{"./assert":241,"./clone":244,"./merge":257,"./utils":263,"dup":84}],241:[function(require,module,exports){
+arguments[4][4][0].apply(exports,arguments)
+},{"./error":247,"dup":4}],242:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"_process":156,"dup":5}],243:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"./ignore":253,"dup":6}],244:[function(require,module,exports){
+arguments[4][88][0].apply(exports,arguments)
+},{"./types":262,"./utils":263,"buffer":48,"dup":88}],245:[function(require,module,exports){
+arguments[4][8][0].apply(exports,arguments)
+},{"./assert":241,"./deepEqual":246,"./escapeRegex":251,"./utils":263,"dup":8}],246:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"./types":262,"buffer":48,"dup":9}],247:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"./stringify":261,"dup":10}],248:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"./assert":241,"dup":11}],249:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],250:[function(require,module,exports){
+arguments[4][13][0].apply(exports,arguments)
+},{"dup":13}],251:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"dup":14}],252:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],253:[function(require,module,exports){
+arguments[4][16][0].apply(exports,arguments)
+},{"dup":16}],254:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"./applyToDefaults":240,"./assert":241,"./bench":242,"./block":243,"./clone":244,"./contain":245,"./deepEqual":246,"./error":247,"./escapeHeaderAttribute":248,"./escapeHtml":249,"./escapeJson":250,"./escapeRegex":251,"./flatten":252,"./ignore":253,"./intersect":255,"./isPromise":256,"./merge":257,"./once":258,"./reach":259,"./reachTemplate":260,"./stringify":261,"./wait":264,"dup":17}],255:[function(require,module,exports){
+arguments[4][18][0].apply(exports,arguments)
+},{"dup":18}],256:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19}],257:[function(require,module,exports){
+arguments[4][101][0].apply(exports,arguments)
+},{"./assert":241,"./clone":244,"./utils":263,"buffer":48,"dup":101}],258:[function(require,module,exports){
+arguments[4][21][0].apply(exports,arguments)
+},{"dup":21}],259:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"./assert":241,"dup":22}],260:[function(require,module,exports){
+arguments[4][23][0].apply(exports,arguments)
+},{"./reach":259,"dup":23}],261:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"dup":24}],262:[function(require,module,exports){
+arguments[4][25][0].apply(exports,arguments)
+},{"buffer":48,"dup":25}],263:[function(require,module,exports){
+arguments[4][107][0].apply(exports,arguments)
+},{"./reach":259,"dup":107}],264:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"dup":27}],265:[function(require,module,exports){
+arguments[4][109][0].apply(exports,arguments)
+},{"./ref":269,"@hapi/hoek":254,"dup":109}],266:[function(require,module,exports){
+arguments[4][110][0].apply(exports,arguments)
+},{"./language":268,"@hapi/hoek":254,"dup":110}],267:[function(require,module,exports){
+arguments[4][111][0].apply(exports,arguments)
+},{"../package.json":290,"./cast":265,"./errors":266,"./ref":269,"./types/alternatives":272,"./types/any":273,"./types/array":275,"./types/binary":276,"./types/boolean":277,"./types/date":278,"./types/func":279,"./types/lazy":280,"./types/number":281,"./types/object":282,"./types/string":284,"./types/symbol":288,"@hapi/hoek":254,"dup":111}],268:[function(require,module,exports){
+arguments[4][112][0].apply(exports,arguments)
+},{"dup":112}],269:[function(require,module,exports){
+arguments[4][113][0].apply(exports,arguments)
+},{"@hapi/hoek":254,"dup":113}],270:[function(require,module,exports){
+arguments[4][114][0].apply(exports,arguments)
+},{"./index":267,"dup":114}],271:[function(require,module,exports){
+arguments[4][115][0].apply(exports,arguments)
+},{"../../../../../is-buffer/index.js":59,"./ref":269,"dup":115}],272:[function(require,module,exports){
+arguments[4][116][0].apply(exports,arguments)
+},{"../../cast":265,"../../ref":269,"../any":273,"@hapi/hoek":254,"dup":116}],273:[function(require,module,exports){
+arguments[4][117][0].apply(exports,arguments)
+},{"../../../package.json":290,"../../cast":265,"../../errors":266,"../../ref":269,"../../schemas":270,"../../set":271,"../alternatives":272,"../state":283,"../symbols":289,"./settings":274,"@hapi/hoek":254,"dup":117}],274:[function(require,module,exports){
+arguments[4][118][0].apply(exports,arguments)
+},{"../symbols":289,"@hapi/hoek":254,"dup":118}],275:[function(require,module,exports){
+arguments[4][119][0].apply(exports,arguments)
+},{"../../cast":265,"../../ref":269,"../any":273,"../state":283,"@hapi/bourne":239,"@hapi/hoek":254,"dup":119}],276:[function(require,module,exports){
+arguments[4][120][0].apply(exports,arguments)
+},{"../any":273,"@hapi/hoek":254,"buffer":48,"dup":120}],277:[function(require,module,exports){
+arguments[4][121][0].apply(exports,arguments)
+},{"../../set":271,"../any":273,"@hapi/hoek":254,"dup":121}],278:[function(require,module,exports){
+arguments[4][122][0].apply(exports,arguments)
+},{"../../ref":269,"../any":273,"@hapi/hoek":254,"dup":122}],279:[function(require,module,exports){
+arguments[4][123][0].apply(exports,arguments)
+},{"../../ref":269,"../object":282,"@hapi/hoek":254,"dup":123}],280:[function(require,module,exports){
+arguments[4][124][0].apply(exports,arguments)
+},{"../any":273,"@hapi/hoek":254,"dup":124}],281:[function(require,module,exports){
+arguments[4][125][0].apply(exports,arguments)
+},{"../../ref":269,"../any":273,"@hapi/hoek":254,"dup":125}],282:[function(require,module,exports){
+arguments[4][126][0].apply(exports,arguments)
+},{"../../cast":265,"../../errors":266,"../any":273,"../state":283,"@hapi/bourne":239,"@hapi/hoek":254,"@hapi/topo":291,"dup":126}],283:[function(require,module,exports){
+arguments[4][127][0].apply(exports,arguments)
+},{"dup":127}],284:[function(require,module,exports){
+arguments[4][128][0].apply(exports,arguments)
+},{"../../ref":269,"../any":273,"../date":278,"./ip":285,"./uri":287,"@hapi/address":237,"@hapi/hoek":254,"buffer":48,"dup":128,"net":46}],285:[function(require,module,exports){
+arguments[4][129][0].apply(exports,arguments)
+},{"./rfc3986":286,"dup":129}],286:[function(require,module,exports){
+arguments[4][130][0].apply(exports,arguments)
+},{"dup":130}],287:[function(require,module,exports){
+arguments[4][131][0].apply(exports,arguments)
+},{"./rfc3986":286,"dup":131}],288:[function(require,module,exports){
+arguments[4][132][0].apply(exports,arguments)
+},{"../any":273,"@hapi/hoek":254,"dup":132,"util":325}],289:[function(require,module,exports){
+arguments[4][133][0].apply(exports,arguments)
+},{"dup":133}],290:[function(require,module,exports){
+module.exports={
+  "_from": "@hapi/joi@^15.1.1",
+  "_id": "@hapi/joi@15.1.1",
+  "_inBundle": false,
+  "_integrity": "sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==",
+  "_location": "/seneca/@hapi/joi",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "@hapi/joi@^15.1.1",
+    "name": "@hapi/joi",
+    "escapedName": "@hapi%2fjoi",
+    "scope": "@hapi",
+    "rawSpec": "^15.1.1",
+    "saveSpec": null,
+    "fetchSpec": "^15.1.1"
+  },
+  "_requiredBy": [
+    "/seneca"
+  ],
+  "_resolved": "http://localhost:4873/@hapi%2fjoi/-/joi-15.1.1.tgz",
+  "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
+  "_spec": "@hapi/joi@^15.1.1",
+  "_where": "/Users/richard/Projects/seneca/browser/node_modules/seneca",
+  "bugs": {
+    "url": "https://github.com/hapijs/joi/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "@hapi/address": "2.x.x",
+    "@hapi/bourne": "1.x.x",
+    "@hapi/hoek": "8.x.x",
+    "@hapi/topo": "3.x.x"
+  },
+  "deprecated": false,
+  "description": "Object schema validation",
+  "devDependencies": {
+    "@hapi/code": "6.x.x",
+    "@hapi/lab": "20.x.x"
+  },
+  "homepage": "https://github.com/hapijs/joi",
+  "keywords": [
+    "schema",
+    "validation"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "lib/index.js",
+  "name": "@hapi/joi",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hapijs/joi.git"
+  },
+  "scripts": {
+    "test": "lab -t 100 -a @hapi/code -L",
+    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code"
+  },
+  "version": "15.1.1"
+}
+
+},{}],291:[function(require,module,exports){
+arguments[4][135][0].apply(exports,arguments)
+},{"@hapi/hoek/lib/assert":241,"dup":135}],292:[function(require,module,exports){
 module.exports = function (args, opts) {
     if (!opts) opts = {};
     
@@ -58602,30 +65036,30 @@ function isNumber (x) {
 }
 
 
-},{}],170:[function(require,module,exports){
+},{}],293:[function(require,module,exports){
 module.exports={
-  "_from": "seneca@^3.17.0",
-  "_id": "seneca@3.17.0",
+  "_from": "seneca@^3.18.0",
+  "_id": "seneca@3.18.0",
   "_inBundle": false,
-  "_integrity": "sha512-TNO2sMNJnI3tOblAYAhgIRFvaj4W5gsPKDtj1q0o5V/l9Q3v+0Zqf/jEJZZJhlEtx9KyQ+4Uq5H1unJqd4ArUA==",
+  "_integrity": "sha512-sNsrhMPcAfssklrkekJbFXlwYgStxiC/eEx4vqfVNQyilh4RyVlJ4xu1eNAS9npz523KXogdB9IRzltSJAnajg==",
   "_location": "/seneca",
   "_phantomChildren": {},
   "_requested": {
     "type": "range",
     "registry": true,
-    "raw": "seneca@^3.17.0",
+    "raw": "seneca@^3.18.0",
     "name": "seneca",
     "escapedName": "seneca",
-    "rawSpec": "^3.17.0",
+    "rawSpec": "^3.18.0",
     "saveSpec": null,
-    "fetchSpec": "^3.17.0"
+    "fetchSpec": "^3.18.0"
   },
   "_requiredBy": [
     "#DEV:/"
   ],
-  "_resolved": "https://registry.npmjs.org/seneca/-/seneca-3.17.0.tgz",
-  "_shasum": "621c3a61ddb80fc251c470078a9d472825e5dc46",
-  "_spec": "seneca@^3.17.0",
+  "_resolved": "http://localhost:4873/seneca/-/seneca-3.18.0.tgz",
+  "_shasum": "a67d6a97f0cfc5434dd2e57e5889c1d7ab052c41",
+  "_spec": "seneca@^3.18.0",
   "_where": "/Users/richard/Projects/seneca/browser",
   "author": {
     "name": "Richard Rodger",
@@ -58755,41 +65189,41 @@ module.exports={
   ],
   "dependencies": {
     "@hapi/joi": "^15.1.1",
-    "@hapi/wreck": "^15.1.0",
-    "eraro": "^1.1.0",
+    "@hapi/wreck": "^17.0.0",
+    "eraro": "^2.1.0",
     "fast-safe-stringify": "^2.0.7",
     "gate-executor": "^2.1.0",
-    "gex": "^0.3.0",
+    "gex": "^1.0.0",
     "jsonic": "^0.3.1",
     "lodash": "^4.17.15",
     "minimist": "^1.2.0",
     "nid": "^0.3.2",
-    "norma": "^1.0.0",
+    "norma": "^2.0.2",
     "optioner": "^4.2.0",
     "ordu": "^0.1.1",
-    "patrun": "^2.0.1",
-    "qs": "^6.9.0",
+    "patrun": "^3.0.0",
+    "qs": "^6.9.1",
     "rolling-stats": "^0.1.1",
-    "seneca-transport": "^4.0.1",
-    "use-plugin": "^5.2.1"
+    "seneca-transport": "^5.0.1",
+    "use-plugin": "^6.0.2"
   },
   "deprecated": false,
   "description": "A Microservices Framework for Node.js",
   "devDependencies": {
-    "@hapi/code": "^6.0.0",
-    "@hapi/hoek": "^8.2.5",
-    "@hapi/lab": "^20.3.2",
+    "@hapi/code": "^8.0.1",
+    "@hapi/hoek": "^9.0.2",
+    "@hapi/lab": "^21.0.0",
     "@seneca/test-plugin": "0.0.1",
     "acorn": "^7.1.0",
     "async": "^3.1.0",
     "bench": "^0.3.6",
-    "coveralls": "^3.0.6",
-    "handlebars": "^4.4.0",
-    "lolex": "^4.2.0",
-    "prettier": "^1.18.2",
-    "seneca-entity": "^5.2.0",
+    "coveralls": "^3.0.9",
+    "handlebars": "^4.7.2",
+    "lolex": "^5.1.2",
+    "prettier": "^1.19.1",
+    "seneca-entity": "^6.0.0",
     "seneca-error-test": "^0.2.2",
-    "seneca-joi": "^5.2.0",
+    "seneca-joi": "^6.0.0",
     "seneca-promisify": "^1.1.0"
   },
   "engines": {
@@ -58828,21 +65262,22 @@ module.exports={
     "url": "git+https://github.com/senecajs/seneca.git"
   },
   "scripts": {
-    "clean-npm": "rm -rf node_modules package-lock.json",
+    "clean": "rm -rf node_modules package-lock.json yarn.lock",
     "coverage": "lab -v -P test -L -t 90 -r html > docs/coverage.html",
     "coveralls": "lab -s -P test -r lcov | coveralls",
     "prettier": "prettier --write *.js lib/*.js test/*.js",
-    "repo-publish": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && npm run clean-npm && npm i --registry http://registry.npmjs.org && npm run prettier && npm test && npm run repo-tag --registry http://registry.npmjs.org && npm publish  --registry http://registry.npmjs.org && npm dist-tag add seneca@$REPO_VERSION next --registry http://registry.npmjs.org && npm dist-tag add seneca@$REPO_VERSION plugin --registry http://registry.npmjs.org",
+    "repo-publish": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && npm run clean && npm i --registry http://registry.npmjs.org && npm run prettier && npm test && npm run repo-tag --registry http://registry.npmjs.org && npm publish  --registry http://registry.npmjs.org && npm dist-tag add seneca@$REPO_VERSION next --registry http://registry.npmjs.org && npm dist-tag add seneca@$REPO_VERSION plugin --registry http://registry.npmjs.org",
     "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && echo TAG: v$REPO_VERSION && git commit -a -m v$REPO_VERSION && git push && git tag v$REPO_VERSION && git push --tags;",
+    "reset": "npm run clean && npm i && npm test",
     "smoke": "node test/stubs/launch.js",
     "test": "lab -v -P test -L -t 90"
   },
-  "version": "3.17.0"
+  "version": "3.18.0"
 }
 
-},{}],171:[function(require,module,exports){
+},{}],294:[function(require,module,exports){
 (function (process){
-/* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
+/* Copyright © 2010-2020 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
 // Node API modules.
@@ -58867,6 +65302,7 @@ const Logging = require('./lib/logging')
 const API = require('./lib/api')
 const Ready = require('./lib/ready')
 const Add = require('./lib/add')
+const Sub = require('./lib/sub')
 const Act = require('./lib/act')
 const Inward = require('./lib/inward')
 const Outward = require('./lib/outward')
@@ -59260,7 +65696,13 @@ function make_seneca(initial_opts) {
 
   // These need to come from options as required during construction.
   private$.actrouter = start_opts.internal.actrouter || Patrun({ gex: true })
-  private$.subrouter = start_opts.internal.subrouter || Patrun({ gex: true })
+
+  var soi_subrouter = start_opts.internal.subrouter || {}
+  private$.subrouter = {
+    // Check for legacy inward router
+    inward: soi_subrouter.inward || Patrun({ gex: true }),
+    outward: soi_subrouter.outward || Patrun({ gex: true })
+  }
 
   // Setup event handlers, if defined
   var event_names = ['log', 'act_in', 'act_out', 'act_err', 'ready', 'close']
@@ -59306,7 +65748,7 @@ function make_seneca(initial_opts) {
   root$.list = API.list // List the patterns added to this instance.
   root$.status = API.status // Get the status if this instance.
   root$.reply = API.reply // Reply to a submitted message.
-  root$.sub = API.sub // Subscribe to messages.
+  root$.sub = Sub.api_sub // Subscribe to messages.
   root$.list_plugins = API.list_plugins // List the registered plugins.
   root$.find_plugin = API.find_plugin // Find the plugin definition.
   root$.has_plugin = API.has_plugin // True if the plugin is registered.
@@ -59469,6 +65911,7 @@ function make_seneca(initial_opts) {
     .add(Inward.msg_meta)
     .add(Inward.limit_msg)
     .add(Inward.prepare_delegate)
+    .add(Inward.sub)
     .add(Inward.announce)
 
   private$.outward = Ordu({ name: 'outward' })
@@ -59479,6 +65922,7 @@ function make_seneca(initial_opts) {
     .add(Outward.res_entity)
     .add(Outward.msg_meta)
     .add(Outward.trace)
+    .add(Outward.sub)
     .add(Outward.announce)
     .add(Outward.act_error)
 
@@ -59505,7 +65949,7 @@ function make_seneca(initial_opts) {
 
   private$.exit_close = function() {
     root$.close(function root_exit_close(err) {
-      if (err) {
+      if (err && true != private$.optioner.get().quiet) {
         private$.print.err(err)
       }
 
@@ -59582,7 +66026,7 @@ function make_callpoint(active) {
 }
 
 }).call(this,require('_process'))
-},{"./lib/act":154,"./lib/actions":155,"./lib/add":156,"./lib/api":157,"./lib/common":158,"./lib/inward":160,"./lib/legacy":161,"./lib/logging":162,"./lib/options":163,"./lib/outward":164,"./lib/plugins":165,"./lib/print":166,"./lib/ready":167,"./lib/transport":168,"./package.json":170,"@hapi/joi":33,"_process":119,"eraro":81,"events":82,"gate-executor":84,"jsonic":92,"nid":95,"optioner":99,"ordu":100,"patrun":114,"rolling-stats":144,"seneca-transport":153,"use-plugin":198,"util":202}],172:[function(require,module,exports){
+},{"./lib/act":219,"./lib/actions":220,"./lib/add":221,"./lib/api":222,"./lib/common":223,"./lib/inward":225,"./lib/legacy":226,"./lib/logging":227,"./lib/options":228,"./lib/outward":229,"./lib/plugins":230,"./lib/print":231,"./lib/ready":232,"./lib/sub":233,"./lib/transport":234,"./package.json":293,"@hapi/joi":267,"_process":156,"eraro":51,"events":52,"gate-executor":54,"jsonic":62,"nid":75,"optioner":136,"ordu":137,"patrun":151,"rolling-stats":181,"seneca-transport":218,"use-plugin":321,"util":325}],295:[function(require,module,exports){
 /*
 Copyright (c) 2014-2016, Matteo Collina <hello@matteocollina.com>
 
@@ -59696,7 +66140,7 @@ function split (matcher, mapper, options) {
 
 module.exports = split
 
-},{"string_decoder":193,"through2":194}],173:[function(require,module,exports){
+},{"string_decoder":316,"through2":317}],296:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -59825,7 +66269,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":82,"inherits":88,"readable-stream/duplex.js":128,"readable-stream/passthrough.js":139,"readable-stream/readable.js":140,"readable-stream/transform.js":141,"readable-stream/writable.js":142}],174:[function(require,module,exports){
+},{"events":52,"inherits":58,"readable-stream/duplex.js":165,"readable-stream/passthrough.js":176,"readable-stream/readable.js":177,"readable-stream/transform.js":178,"readable-stream/writable.js":179}],297:[function(require,module,exports){
 (function (global){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -59913,7 +66357,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":176,"./lib/response":177,"builtin-status-codes":79,"url":196,"xtend":203}],175:[function(require,module,exports){
+},{"./lib/request":299,"./lib/response":300,"builtin-status-codes":49,"url":319,"xtend":326}],298:[function(require,module,exports){
 (function (global){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -59976,7 +66420,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],176:[function(require,module,exports){
+},{}],299:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -60295,7 +66739,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":175,"./response":177,"_process":119,"buffer":78,"inherits":88,"readable-stream":192}],177:[function(require,module,exports){
+},{"./capability":298,"./response":300,"_process":156,"buffer":48,"inherits":58,"readable-stream":315}],300:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -60506,7 +66950,7 @@ IncomingMessage.prototype._onXHRProgress = function () {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":175,"_process":119,"buffer":78,"inherits":88,"readable-stream":192}],178:[function(require,module,exports){
+},{"./capability":298,"_process":156,"buffer":48,"inherits":58,"readable-stream":315}],301:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -60635,7 +67079,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],179:[function(require,module,exports){
+},{}],302:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -60656,7 +67100,7 @@ module.exports.emitExperimentalWarning = process.emitWarning
   : noop;
 
 }).call(this,require('_process'))
-},{"_process":119}],180:[function(require,module,exports){
+},{"_process":156}],303:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -60798,7 +67242,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this,require('_process'))
-},{"./_stream_readable":182,"./_stream_writable":184,"_process":119,"inherits":88}],181:[function(require,module,exports){
+},{"./_stream_readable":305,"./_stream_writable":307,"_process":156,"inherits":58}],304:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60838,7 +67282,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":183,"inherits":88}],182:[function(require,module,exports){
+},{"./_stream_transform":306,"inherits":58}],305:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -61928,7 +68372,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":178,"../experimentalWarning":179,"./_stream_duplex":180,"./internal/streams/async_iterator":185,"./internal/streams/buffer_list":186,"./internal/streams/destroy":187,"./internal/streams/state":190,"./internal/streams/stream":191,"_process":119,"buffer":78,"events":82,"inherits":88,"string_decoder/":193,"util":73}],183:[function(require,module,exports){
+},{"../errors":301,"../experimentalWarning":302,"./_stream_duplex":303,"./internal/streams/async_iterator":308,"./internal/streams/buffer_list":309,"./internal/streams/destroy":310,"./internal/streams/state":313,"./internal/streams/stream":314,"_process":156,"buffer":48,"events":52,"inherits":58,"string_decoder/":316,"util":43}],306:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -62130,7 +68574,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":178,"./_stream_duplex":180,"inherits":88}],184:[function(require,module,exports){
+},{"../errors":301,"./_stream_duplex":303,"inherits":58}],307:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -62816,7 +69260,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":178,"./_stream_duplex":180,"./internal/streams/destroy":187,"./internal/streams/state":190,"./internal/streams/stream":191,"_process":119,"buffer":78,"inherits":88,"util-deprecate":199}],185:[function(require,module,exports){
+},{"../errors":301,"./_stream_duplex":303,"./internal/streams/destroy":310,"./internal/streams/state":313,"./internal/streams/stream":314,"_process":156,"buffer":48,"inherits":58,"util-deprecate":322}],308:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -63026,7 +69470,7 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this,require('_process'))
-},{"./end-of-stream":188,"_process":119}],186:[function(require,module,exports){
+},{"./end-of-stream":311,"_process":156}],309:[function(require,module,exports){
 'use strict';
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; var ownKeys = Object.keys(source); if (typeof Object.getOwnPropertySymbols === 'function') { ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) { return Object.getOwnPropertyDescriptor(source, sym).enumerable; })); } ownKeys.forEach(function (key) { _defineProperty(target, key, source[key]); }); } return target; }
@@ -63216,7 +69660,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":78,"util":73}],187:[function(require,module,exports){
+},{"buffer":48,"util":43}],310:[function(require,module,exports){
 (function (process){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -63304,7 +69748,7 @@ module.exports = {
   undestroy: undestroy
 };
 }).call(this,require('_process'))
-},{"_process":119}],188:[function(require,module,exports){
+},{"_process":156}],311:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -63409,7 +69853,7 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":178}],189:[function(require,module,exports){
+},{"../../../errors":301}],312:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -63507,7 +69951,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":178,"./end-of-stream":188}],190:[function(require,module,exports){
+},{"../../../errors":301,"./end-of-stream":311}],313:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -63535,9 +69979,9 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":178}],191:[function(require,module,exports){
-arguments[4][136][0].apply(exports,arguments)
-},{"dup":136,"events":82}],192:[function(require,module,exports){
+},{"../../../errors":301}],314:[function(require,module,exports){
+arguments[4][173][0].apply(exports,arguments)
+},{"dup":173,"events":52}],315:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -63548,9 +69992,9 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":180,"./lib/_stream_passthrough.js":181,"./lib/_stream_readable.js":182,"./lib/_stream_transform.js":183,"./lib/_stream_writable.js":184,"./lib/internal/streams/end-of-stream.js":188,"./lib/internal/streams/pipeline.js":189}],193:[function(require,module,exports){
-arguments[4][138][0].apply(exports,arguments)
-},{"dup":138,"safe-buffer":145}],194:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":303,"./lib/_stream_passthrough.js":304,"./lib/_stream_readable.js":305,"./lib/_stream_transform.js":306,"./lib/_stream_writable.js":307,"./lib/internal/streams/end-of-stream.js":311,"./lib/internal/streams/pipeline.js":312}],316:[function(require,module,exports){
+arguments[4][175][0].apply(exports,arguments)
+},{"dup":175,"safe-buffer":182}],317:[function(require,module,exports){
 (function (process){
 var Transform = require('readable-stream').Transform
   , inherits  = require('util').inherits
@@ -63650,7 +70094,7 @@ module.exports.obj = through2(function (options, transform, flush) {
 })
 
 }).call(this,require('_process'))
-},{"_process":119,"readable-stream":140,"util":202,"xtend":203}],195:[function(require,module,exports){
+},{"_process":156,"readable-stream":177,"util":325,"xtend":326}],318:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -63729,7 +70173,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":119,"timers":195}],196:[function(require,module,exports){
+},{"process/browser.js":156,"timers":318}],319:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64463,7 +70907,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":197,"punycode":77,"querystring":127}],197:[function(require,module,exports){
+},{"./util":320,"punycode":47,"querystring":164}],320:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -64481,7 +70925,7 @@ module.exports = {
   }
 };
 
-},{}],198:[function(require,module,exports){
+},{}],321:[function(require,module,exports){
 /* Copyright © 2014-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -65047,7 +71491,7 @@ const intern = (module.exports.intern = {
   }
 })
 
-},{"eraro":81,"module":76,"nid":95,"norma":97,"optioner":99,"path":113,"util":202}],199:[function(require,module,exports){
+},{"eraro":51,"module":46,"nid":75,"norma":77,"optioner":136,"path":150,"util":325}],322:[function(require,module,exports){
 (function (global){
 
 /**
@@ -65118,13 +71562,13 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],200:[function(require,module,exports){
-arguments[4][63][0].apply(exports,arguments)
-},{"dup":63}],201:[function(require,module,exports){
-arguments[4][64][0].apply(exports,arguments)
-},{"dup":64}],202:[function(require,module,exports){
-arguments[4][65][0].apply(exports,arguments)
-},{"./support/isBuffer":201,"_process":119,"dup":65,"inherits":200}],203:[function(require,module,exports){
+},{}],323:[function(require,module,exports){
+arguments[4][33][0].apply(exports,arguments)
+},{"dup":33}],324:[function(require,module,exports){
+arguments[4][34][0].apply(exports,arguments)
+},{"dup":34}],325:[function(require,module,exports){
+arguments[4][35][0].apply(exports,arguments)
+},{"./support/isBuffer":324,"_process":156,"dup":35,"inherits":323}],326:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -65145,7 +71589,445 @@ function extend() {
     return target
 }
 
-},{}],204:[function(require,module,exports){
+},{}],327:[function(require,module,exports){
+'use strict'
+module.exports = function (Yallist) {
+  Yallist.prototype[Symbol.iterator] = function* () {
+    for (let walker = this.head; walker; walker = walker.next) {
+      yield walker.value
+    }
+  }
+}
+
+},{}],328:[function(require,module,exports){
+'use strict'
+module.exports = Yallist
+
+Yallist.Node = Node
+Yallist.create = Yallist
+
+function Yallist (list) {
+  var self = this
+  if (!(self instanceof Yallist)) {
+    self = new Yallist()
+  }
+
+  self.tail = null
+  self.head = null
+  self.length = 0
+
+  if (list && typeof list.forEach === 'function') {
+    list.forEach(function (item) {
+      self.push(item)
+    })
+  } else if (arguments.length > 0) {
+    for (var i = 0, l = arguments.length; i < l; i++) {
+      self.push(arguments[i])
+    }
+  }
+
+  return self
+}
+
+Yallist.prototype.removeNode = function (node) {
+  if (node.list !== this) {
+    throw new Error('removing node which does not belong to this list')
+  }
+
+  var next = node.next
+  var prev = node.prev
+
+  if (next) {
+    next.prev = prev
+  }
+
+  if (prev) {
+    prev.next = next
+  }
+
+  if (node === this.head) {
+    this.head = next
+  }
+  if (node === this.tail) {
+    this.tail = prev
+  }
+
+  node.list.length--
+  node.next = null
+  node.prev = null
+  node.list = null
+
+  return next
+}
+
+Yallist.prototype.unshiftNode = function (node) {
+  if (node === this.head) {
+    return
+  }
+
+  if (node.list) {
+    node.list.removeNode(node)
+  }
+
+  var head = this.head
+  node.list = this
+  node.next = head
+  if (head) {
+    head.prev = node
+  }
+
+  this.head = node
+  if (!this.tail) {
+    this.tail = node
+  }
+  this.length++
+}
+
+Yallist.prototype.pushNode = function (node) {
+  if (node === this.tail) {
+    return
+  }
+
+  if (node.list) {
+    node.list.removeNode(node)
+  }
+
+  var tail = this.tail
+  node.list = this
+  node.prev = tail
+  if (tail) {
+    tail.next = node
+  }
+
+  this.tail = node
+  if (!this.head) {
+    this.head = node
+  }
+  this.length++
+}
+
+Yallist.prototype.push = function () {
+  for (var i = 0, l = arguments.length; i < l; i++) {
+    push(this, arguments[i])
+  }
+  return this.length
+}
+
+Yallist.prototype.unshift = function () {
+  for (var i = 0, l = arguments.length; i < l; i++) {
+    unshift(this, arguments[i])
+  }
+  return this.length
+}
+
+Yallist.prototype.pop = function () {
+  if (!this.tail) {
+    return undefined
+  }
+
+  var res = this.tail.value
+  this.tail = this.tail.prev
+  if (this.tail) {
+    this.tail.next = null
+  } else {
+    this.head = null
+  }
+  this.length--
+  return res
+}
+
+Yallist.prototype.shift = function () {
+  if (!this.head) {
+    return undefined
+  }
+
+  var res = this.head.value
+  this.head = this.head.next
+  if (this.head) {
+    this.head.prev = null
+  } else {
+    this.tail = null
+  }
+  this.length--
+  return res
+}
+
+Yallist.prototype.forEach = function (fn, thisp) {
+  thisp = thisp || this
+  for (var walker = this.head, i = 0; walker !== null; i++) {
+    fn.call(thisp, walker.value, i, this)
+    walker = walker.next
+  }
+}
+
+Yallist.prototype.forEachReverse = function (fn, thisp) {
+  thisp = thisp || this
+  for (var walker = this.tail, i = this.length - 1; walker !== null; i--) {
+    fn.call(thisp, walker.value, i, this)
+    walker = walker.prev
+  }
+}
+
+Yallist.prototype.get = function (n) {
+  for (var i = 0, walker = this.head; walker !== null && i < n; i++) {
+    // abort out of the list early if we hit a cycle
+    walker = walker.next
+  }
+  if (i === n && walker !== null) {
+    return walker.value
+  }
+}
+
+Yallist.prototype.getReverse = function (n) {
+  for (var i = 0, walker = this.tail; walker !== null && i < n; i++) {
+    // abort out of the list early if we hit a cycle
+    walker = walker.prev
+  }
+  if (i === n && walker !== null) {
+    return walker.value
+  }
+}
+
+Yallist.prototype.map = function (fn, thisp) {
+  thisp = thisp || this
+  var res = new Yallist()
+  for (var walker = this.head; walker !== null;) {
+    res.push(fn.call(thisp, walker.value, this))
+    walker = walker.next
+  }
+  return res
+}
+
+Yallist.prototype.mapReverse = function (fn, thisp) {
+  thisp = thisp || this
+  var res = new Yallist()
+  for (var walker = this.tail; walker !== null;) {
+    res.push(fn.call(thisp, walker.value, this))
+    walker = walker.prev
+  }
+  return res
+}
+
+Yallist.prototype.reduce = function (fn, initial) {
+  var acc
+  var walker = this.head
+  if (arguments.length > 1) {
+    acc = initial
+  } else if (this.head) {
+    walker = this.head.next
+    acc = this.head.value
+  } else {
+    throw new TypeError('Reduce of empty list with no initial value')
+  }
+
+  for (var i = 0; walker !== null; i++) {
+    acc = fn(acc, walker.value, i)
+    walker = walker.next
+  }
+
+  return acc
+}
+
+Yallist.prototype.reduceReverse = function (fn, initial) {
+  var acc
+  var walker = this.tail
+  if (arguments.length > 1) {
+    acc = initial
+  } else if (this.tail) {
+    walker = this.tail.prev
+    acc = this.tail.value
+  } else {
+    throw new TypeError('Reduce of empty list with no initial value')
+  }
+
+  for (var i = this.length - 1; walker !== null; i--) {
+    acc = fn(acc, walker.value, i)
+    walker = walker.prev
+  }
+
+  return acc
+}
+
+Yallist.prototype.toArray = function () {
+  var arr = new Array(this.length)
+  for (var i = 0, walker = this.head; walker !== null; i++) {
+    arr[i] = walker.value
+    walker = walker.next
+  }
+  return arr
+}
+
+Yallist.prototype.toArrayReverse = function () {
+  var arr = new Array(this.length)
+  for (var i = 0, walker = this.tail; walker !== null; i++) {
+    arr[i] = walker.value
+    walker = walker.prev
+  }
+  return arr
+}
+
+Yallist.prototype.slice = function (from, to) {
+  to = to || this.length
+  if (to < 0) {
+    to += this.length
+  }
+  from = from || 0
+  if (from < 0) {
+    from += this.length
+  }
+  var ret = new Yallist()
+  if (to < from || to < 0) {
+    return ret
+  }
+  if (from < 0) {
+    from = 0
+  }
+  if (to > this.length) {
+    to = this.length
+  }
+  for (var i = 0, walker = this.head; walker !== null && i < from; i++) {
+    walker = walker.next
+  }
+  for (; walker !== null && i < to; i++, walker = walker.next) {
+    ret.push(walker.value)
+  }
+  return ret
+}
+
+Yallist.prototype.sliceReverse = function (from, to) {
+  to = to || this.length
+  if (to < 0) {
+    to += this.length
+  }
+  from = from || 0
+  if (from < 0) {
+    from += this.length
+  }
+  var ret = new Yallist()
+  if (to < from || to < 0) {
+    return ret
+  }
+  if (from < 0) {
+    from = 0
+  }
+  if (to > this.length) {
+    to = this.length
+  }
+  for (var i = this.length, walker = this.tail; walker !== null && i > to; i--) {
+    walker = walker.prev
+  }
+  for (; walker !== null && i > from; i--, walker = walker.prev) {
+    ret.push(walker.value)
+  }
+  return ret
+}
+
+Yallist.prototype.splice = function (start, deleteCount /*, ...nodes */) {
+  if (start > this.length) {
+    start = this.length - 1
+  }
+  if (start < 0) {
+    start = this.length + start;
+  }
+
+  for (var i = 0, walker = this.head; walker !== null && i < start; i++) {
+    walker = walker.next
+  }
+
+  var ret = []
+  for (var i = 0; walker && i < deleteCount; i++) {
+    ret.push(walker.value)
+    walker = this.removeNode(walker)
+  }
+  if (walker === null) {
+    walker = this.tail
+  }
+
+  if (walker !== this.head && walker !== this.tail) {
+    walker = walker.prev
+  }
+
+  for (var i = 2; i < arguments.length; i++) {
+    walker = insert(this, walker, arguments[i])
+  }
+  return ret;
+}
+
+Yallist.prototype.reverse = function () {
+  var head = this.head
+  var tail = this.tail
+  for (var walker = head; walker !== null; walker = walker.prev) {
+    var p = walker.prev
+    walker.prev = walker.next
+    walker.next = p
+  }
+  this.head = tail
+  this.tail = head
+  return this
+}
+
+function insert (self, node, value) {
+  var inserted = node === self.head ?
+    new Node(value, null, node, self) :
+    new Node(value, node, node.next, self)
+
+  if (inserted.next === null) {
+    self.tail = inserted
+  }
+  if (inserted.prev === null) {
+    self.head = inserted
+  }
+
+  self.length++
+
+  return inserted
+}
+
+function push (self, item) {
+  self.tail = new Node(item, self.tail, null, self)
+  if (!self.head) {
+    self.head = self.tail
+  }
+  self.length++
+}
+
+function unshift (self, item) {
+  self.head = new Node(item, null, self.head, self)
+  if (!self.tail) {
+    self.tail = self.head
+  }
+  self.length++
+}
+
+function Node (value, prev, next, list) {
+  if (!(this instanceof Node)) {
+    return new Node(value, prev, next, list)
+  }
+
+  this.list = list
+  this.value = value
+
+  if (prev) {
+    prev.next = this
+    this.prev = prev
+  } else {
+    this.prev = null
+  }
+
+  if (next) {
+    next.prev = this
+    this.next = next
+  } else {
+    this.next = null
+  }
+}
+
+try {
+  // add if support for Symbol.iterator is present
+  require('./iterator.js')(Yallist)
+} catch (er) {}
+
+},{"./iterator.js":327}],329:[function(require,module,exports){
 (function (global){
 /* Copyright (c) Richard Rodger 2019, MIT license. */
 
@@ -65175,6 +72057,7 @@ var SenecaExport = function(options, more_options) {
         reply({
           send: function(msg, reply, meta) {
             fetch(options.endpoint, {
+              // TODO: set content-type header to json
               credentials: 'same-origin',
               method: 'post',
               body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta))
@@ -65206,5 +72089,5 @@ SenecaExport.prototype = SenecaModule.prototype
 module.exports = SenecaExport
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"seneca":171,"timers":195}]},{},[204])(204)
+},{"seneca":294,"timers":318}]},{},[329])(329)
 });
