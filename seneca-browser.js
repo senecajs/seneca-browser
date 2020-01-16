@@ -44657,7 +44657,7 @@ module.exports={
   "_requiredBy": [
     "/optioner"
   ],
-  "_resolved": "http://localhost:4873/@hapi%2fjoi/-/joi-15.1.1.tgz",
+  "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.1.1.tgz",
   "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
   "_spec": "@hapi/joi@^15.1.1",
   "_where": "/Users/richard/Projects/seneca/browser/node_modules/optioner",
@@ -64757,7 +64757,7 @@ module.exports={
   "_requiredBy": [
     "/seneca"
   ],
-  "_resolved": "http://localhost:4873/@hapi%2fjoi/-/joi-15.1.1.tgz",
+  "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.1.1.tgz",
   "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
   "_spec": "@hapi/joi@^15.1.1",
   "_where": "/Users/richard/Projects/seneca/browser/node_modules/seneca",
@@ -65057,7 +65057,7 @@ module.exports={
   "_requiredBy": [
     "#DEV:/"
   ],
-  "_resolved": "http://localhost:4873/seneca/-/seneca-3.18.0.tgz",
+  "_resolved": "https://registry.npmjs.org/seneca/-/seneca-3.18.0.tgz",
   "_shasum": "a67d6a97f0cfc5434dd2e57e5889c1d7ab052c41",
   "_spec": "seneca@^3.18.0",
   "_where": "/Users/richard/Projects/seneca/browser",
