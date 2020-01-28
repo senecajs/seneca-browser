@@ -705,7 +705,7 @@ module.exports = internals.Bench = class {
 };
 
 }).call(this,require('_process'))
-},{"_process":156}],6:[function(require,module,exports){
+},{"_process":100}],6:[function(require,module,exports){
 'use strict';
 
 const Ignore = require('./ignore');
@@ -895,7 +895,7 @@ internals.base = function (obj, baseProto, options) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./reach":22,"./types":25,"./utils":26,"buffer":48}],8:[function(require,module,exports){
+},{"./reach":22,"./types":25,"./utils":26,"buffer":49}],8:[function(require,module,exports){
 'use strict';
 
 const Assert = require('./assert');
@@ -1523,7 +1523,7 @@ internals.SeenEntry = class {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./types":25,"buffer":48}],10:[function(require,module,exports){
+},{"./types":25,"buffer":49}],10:[function(require,module,exports){
 'use strict';
 
 const Stringify = require('./stringify');
@@ -1911,7 +1911,7 @@ module.exports = internals.merge = function (target, source, options) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./assert":4,"./clone":7,"./utils":26,"buffer":48}],21:[function(require,module,exports){
+},{"./assert":4,"./clone":7,"./utils":26,"buffer":49}],21:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -2107,7 +2107,7 @@ exports.getInternalProto = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":48}],26:[function(require,module,exports){
+},{"buffer":49}],26:[function(require,module,exports){
 'use strict';
 
 const internals = {};
@@ -2130,6 +2130,8 @@ module.exports = function (timeout) {
 };
 
 },{}],28:[function(require,module,exports){
+!function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.joi=t():e.joi=t()}(window,(function(){return function(e){var t={};function r(s){if(t[s])return t[s].exports;var n=t[s]={i:s,l:!1,exports:{}};return e[s].call(n.exports,n,n.exports,r),n.l=!0,n.exports}return r.m=e,r.c=t,r.d=function(e,t,s){r.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:s})},r.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},r.t=function(e,t){if(1&t&&(e=r(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var s=Object.create(null);if(r.r(s),Object.defineProperty(s,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var n in e)r.d(s,n,function(t){return e[t]}.bind(null,n));return s},r.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return r.d(t,"a",t),t},r.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},r.p="",r(r.s=11)}([function(e,t,r){"use strict";const s=r(12);e.exports=function(e,...t){if(!e){if(1===t.length&&t[0]instanceof Error)throw t[0];throw new s(t)}}},function(e,t,r){"use strict";const s=r(0),n=r(12),o=r(29);let a,i;const l={isoDate:/^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/};t.version=o.version,t.defaults={abortEarly:!0,allowUnknown:!1,cache:!0,context:null,convert:!0,dateFormat:"iso",errors:{escapeHtml:!1,label:"path",language:null,render:!0,stack:!1,wrap:{label:'"',array:"[]"}},externals:!0,messages:{},nonEnumerables:!1,noDefaults:!1,presence:"optional",skipFunctions:!1,stripUnknown:!1,warnings:!1},t.symbols={any:Symbol.for("@hapi/joi/schema"),arraySingle:Symbol("arraySingle"),deepDefault:Symbol("deepDefault"),literal:Symbol("literal"),override:Symbol("override"),prefs:Symbol("prefs"),ref:Symbol("ref"),values:Symbol("values"),template:Symbol("template")},t.assertOptions=function(e,t,r="Options"){s(e&&"object"==typeof e&&!Array.isArray(e),"Options must be of type object");const n=Object.keys(e).filter(e=>!t.includes(e));s(0===n.length,"".concat(r," contain unknown keys: ").concat(n))},t.checkPreferences=function(e){i=i||r(16);const t=i.preferences.validate(e);if(t.error)throw new n([t.error.details[0].message])},t.compare=function(e,t,r){switch(r){case"=":return e===t;case">":return e>t;case"<":return e<t;case">=":return e>=t;case"<=":return e<=t}},t.default=function(e,t){return void 0===e?t:e},t.isIsoDate=function(e){return l.isoDate.test(e)},t.isNumber=function(e){return"number"==typeof e&&!isNaN(e)},t.isResolvable=function(e){return!!e&&(e[t.symbols.ref]||e[t.symbols.template])},t.isSchema=function(e,r={}){const n=e&&e[t.symbols.any];return!!n&&(s(r.legacy||n.version===t.version,"Cannot mix different versions of joi schemas"),!0)},t.isValues=function(e){return e[t.symbols.values]},t.limit=function(e){return Number.isSafeInteger(e)&&e>=0},t.preferences=function(e,s){a=a||r(9),e=e||{},s=s||{};const n=Object.assign({},e,s);return s.errors&&e.errors&&(n.errors=Object.assign({},e.errors,s.errors),n.errors.wrap=Object.assign({},e.errors.wrap,s.errors.wrap)),s.messages&&(n.messages=a.compile(s.messages,e.messages)),delete n[t.symbols.prefs],n},t.tryWithPath=function(e,t,r={}){try{return e()}catch(e){throw void 0!==e.path?e.path=t+"."+e.path:e.path=t,r.append&&(e.message="".concat(e.message," (").concat(e.path,")")),e}},t.validateArg=function(e,r,{assert:s,message:n}){if(t.isSchema(s)){const t=s.validate(e);if(!t.error)return;return t.error.message}if(!s(e))return r?"".concat(r," ").concat(n):n},t.verifyFlat=function(e,t){for(const r of e)s(!Array.isArray(r),"Method no longer accepts array arguments:",t)}},function(e,t,r){"use strict";const s=r(6),n=r(13),o=r(14),a={needsProtoHack:new Set([n.set,n.map,n.weakSet,n.weakMap])};e.exports=a.clone=function(e,t={},r=null){if("object"!=typeof e||null===e)return e;let s=a.clone,i=r;if(t.shallow){if(!0!==t.shallow)return a.cloneWithShallow(e,t);s=e=>e}else if(i){const t=i.get(e);if(t)return t}else i=new Map;const l=n.getInternalProto(e);if(l===n.buffer)return!1;if(l===n.date)return new Date(e.getTime());if(l===n.regex)return new RegExp(e);const c=a.base(e,l,t);if(c===e)return e;if(i&&i.set(e,c),l===n.set)for(const r of e)c.add(s(r,t,i));else if(l===n.map)for(const[r,n]of e)c.set(r,s(n,t,i));const u=o.keys(e,t);for(const r of u){if(l===n.array&&"length"===r){c.length=e.length;continue}const o=Object.getOwnPropertyDescriptor(e,r);o?o.get||o.set?Object.defineProperty(c,r,o):o.enumerable?c[r]=s(e[r],t,i):Object.defineProperty(c,r,{enumerable:!1,writable:!0,configurable:!0,value:s(e[r],t,i)}):Object.defineProperty(c,r,{enumerable:!0,writable:!0,configurable:!0,value:s(e[r],t,i)})}return c},a.cloneWithShallow=function(e,t){const r=t.shallow;(t=Object.assign({},t)).shallow=!1;const n=new Map;for(const t of r){const r=s(e,t);"object"!=typeof r&&"function"!=typeof r||n.set(r,r)}return a.clone(e,t,n)},a.base=function(e,t,r){if(!1===r.prototype)return a.needsProtoHack.has(t)?new t.constructor:t===n.array?[]:{};const s=Object.getPrototypeOf(e);if(s&&s.isImmutable)return e;if(t===n.array){const e=[];return s!==t&&Object.setPrototypeOf(e,s),e}if(a.needsProtoHack.has(t)){const e=new s.constructor;return s!==t&&Object.setPrototypeOf(e,s),e}return Object.create(s)}},function(e,t,r){"use strict";const s=r(0),n=r(34),o=r(1),a=r(9);e.exports=n.extend({type:"any",flags:{only:{default:!1}},terms:{alterations:{init:null},examples:{init:null},externals:{init:null},metas:{init:[]},notes:{init:[]},shared:{init:null},tags:{init:[]},whens:{init:null}},rules:{custom:{method(e,t){return s("function"==typeof e,"Method must be a function"),s(void 0===t||t&&"string"==typeof t,"Description must be a non-empty string"),this.$_addRule({name:"custom",args:{method:e,description:t}})},validate(e,t,{method:r}){try{return r(e,t)}catch(e){return t.error("any.custom",{error:e})}},args:["method","description"],multi:!0},messages:{method(e){return this.prefs({messages:e})}},shared:{method(e){s(o.isSchema(e)&&e._flags.id,"Schema must be a schema with an id");const t=this.clone();return t.$_terms.shared=t.$_terms.shared||[],t.$_terms.shared.push(e),t.$_mutateRegister(e),t}},warning:{method(e,t){return s(e&&"string"==typeof e,"Invalid warning code"),this.$_addRule({name:"warning",args:{code:e,local:t},warn:!0})},validate:(e,t,{code:r,local:s})=>t.error(r,s),args:["code","local"],multi:!0}},modifiers:{keep(e,t=!0){e.keep=t},message(e,t){e.message=a.compile(t)},warn(e,t=!0){e.warn=t}},manifest:{build(e,t){for(const r in t){const s=t[r];if(["examples","externals","metas","notes","tags"].includes(r))for(const t of s)e=e[r.slice(0,-1)](t);else if("alterations"!==r)if("whens"!==r){if("shared"===r)for(const t of s)e=e.shared(t)}else for(const t of s){const{ref:r,is:s,not:n,then:o,otherwise:a,concat:i}=t;e=i?e.concat(i):r?e.when(r,{is:s,not:n,then:o,otherwise:a,switch:t.switch,break:t.break}):e.when(s,{then:o,otherwise:a,break:t.break})}else{const t={};for(const{target:e,adjuster:r}of s)t[e]=r;e=e.alter(t)}}return e}},messages:{"any.custom":"{{#label}} failed custom validation because {{#error.message}}","any.default":"{{#label}} threw an error when running default method","any.failover":"{{#label}} threw an error when running failover method","any.invalid":"{{#label}} contains an invalid value","any.only":'{{#label}} must be {if(#valids.length == 1, "", "one of ")}{{#valids}}',"any.ref":'{{#label}} {{#arg}} references "{{#ref}}" which {{#reason}}',"any.required":"{{#label}} is required","any.unknown":"{{#label}} is not allowed"}})},function(e,t,r){"use strict";const s=r(32),n=r(1),o=r(7);t.Report=class{constructor(e,r,s,n,o,a,i){if(this.code=e,this.flags=n,this.messages=o,this.path=a.path,this.prefs=i,this.state=a,this.value=r,this.message=null,this.template=null,this.local=s||{},this.local.label=t.label(this.flags,this.state,this.prefs,this.messages),void 0===this.value||this.local.hasOwnProperty("value")||(this.local.value=this.value),this.path.length){const e=this.path[this.path.length-1];"object"!=typeof e&&(this.local.key=e)}}_setTemplate(e){if(this.template=e,!this.flags.label&&0===this.path.length){const e=this._template(this.template,"root");e&&(this.local.label=e)}}toString(){if(this.message)return this.message;const e=this.code;if(!this.prefs.errors.render)return this.code;const t=this._template(this.template)||this._template(this.prefs.messages)||this._template(this.messages);return void 0===t?'Error code "'.concat(e,'" is not defined, your custom type is missing the correct messages definition'):(this.message=t.render(this.value,this.state,this.prefs,this.local,{errors:this.prefs.errors,messages:[this.prefs.messages,this.messages]}),this.prefs.errors.label||(this.message=this.message.replace(/^"" /,"").trim()),this.message)}_template(e,r){return t.template(this.value,e,r||this.code,this.state,this.prefs)}},t.path=function(e){let t="";for(const r of e)"object"!=typeof r&&("string"==typeof r?(t&&(t+="."),t+=r):t+="[".concat(r,"]"));return t},t.template=function(e,t,r,s,a){if(!t)return;if(o.isTemplate(t))return"root"!==r?t:null;let i=a.errors.language;return n.isResolvable(i)&&(i=i.resolve(e,s,a)),i&&t[i]&&void 0!==t[i][r]?t[i][r]:t[r]},t.label=function(e,r,s,n){if(e.label)return e.label;if(!s.errors.label)return"";let o=r.path;"key"===s.errors.label&&r.path.length>1&&(o=r.path.slice(-1));const a=t.path(o);return a||(t.template(null,s.messages,"root",r,s)||n&&t.template(null,n,"root",r,s)||"value")},t.process=function(e,r,s){if(!e)return null;const{override:n,message:o,details:a}=t.details(e);if(n)return n;if(s.errors.stack)return new t.ValidationError(o,a,r);const i=Error.stackTraceLimit;Error.stackTraceLimit=0;const l=new t.ValidationError(o,a,r);return Error.stackTraceLimit=i,l},t.details=function(e,t={}){let r=[];const s=[];for(const n of e){if(n instanceof Error){if(!1!==t.override)return{override:n};const e=n.toString();r.push(e),s.push({message:e,type:"override",context:{error:n}});continue}const e=n.toString();r.push(e),s.push({message:e,path:n.path.filter(e=>"object"!=typeof e),type:n.code,context:n.local})}return r.length>1&&(r=[...new Set(r)]),{message:r.join(". "),details:s}},t.ValidationError=class extends Error{constructor(e,t,r){super(e),this._original=r,this.details=t}static isError(e){return e instanceof t.ValidationError}},t.ValidationError.prototype.isJoi=!0,t.ValidationError.prototype.name="ValidationError",t.ValidationError.prototype.annotate=s.error},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(6),a=r(1);let i;const l={symbol:Symbol("ref"),defaults:{adjust:null,in:!1,iterables:null,map:null,separator:".",type:"value"}};t.create=function(e,t={}){s("string"==typeof e,"Invalid reference key:",e),a.assertOptions(t,["adjust","ancestor","in","iterables","map","prefix","separator"]),s(!t.prefix||"object"==typeof t.prefix,"options.prefix must be of type object");const r=Object.assign({},l.defaults,t);delete r.prefix;const n=r.separator,o=l.context(e,n,t.prefix);if(r.type=o.type,e=o.key,"value"===r.type)if(o.root&&(s(!n||e[0]!==n,"Cannot specify relative path with root prefix"),r.ancestor="root",e||(e=null)),n&&n===e)e=null,r.ancestor=0;else if(void 0!==r.ancestor)s(!n||!e||e[0]!==n,"Cannot combine prefix with ancestor option");else{const[t,s]=l.ancestor(e,n);s&&""===(e=e.slice(s))&&(e=null),r.ancestor=t}return r.path=n?null===e?[]:e.split(n):[e],new l.Ref(r)},t.in=function(e,r={}){return t.create(e,Object.assign({},r,{in:!0}))},t.isRef=function(e){return!!e&&!!e[a.symbols.ref]},l.Ref=class{constructor(e){s("object"==typeof e,"Invalid reference construction"),a.assertOptions(e,["adjust","ancestor","in","iterables","map","path","separator","type","depth","key","root","display"]),s([!1,void 0].includes(e.separator)||"string"==typeof e.separator&&1===e.separator.length,"Invalid separator"),s(!e.adjust||"function"==typeof e.adjust,"options.adjust must be a function"),s(!e.map||Array.isArray(e.map),"options.map must be an array"),s(!e.map||!e.adjust,"Cannot set both map and adjust options"),Object.assign(this,l.defaults,e),s("value"===this.type||void 0===this.ancestor,"Non-value references cannot reference ancestors"),Array.isArray(this.map)&&(this.map=new Map(this.map)),this.depth=this.path.length,this.key=this.path.length?this.path.join(this.separator):null,this.root=this.path[0],this.updateDisplay()}resolve(e,t,r,n,o={}){return s(!this.in||o.in,"Invalid in() reference usage"),"global"===this.type?this._resolve(r.context,t,o):"local"===this.type?this._resolve(n,t,o):this.ancestor?"root"===this.ancestor?this._resolve(t.ancestors[t.ancestors.length-1],t,o):(s(this.ancestor<=t.ancestors.length,"Invalid reference exceeds the schema root:",this.display),this._resolve(t.ancestors[this.ancestor-1],t,o)):this._resolve(e,t,o)}_resolve(e,t,r){let s;if("value"===this.type&&t.mainstay.shadow&&!1!==r.shadow&&(s=t.mainstay.shadow.get(this.absolute(t))),void 0===s&&(s=o(e,this.path,{iterables:this.iterables,functions:!0})),this.adjust&&(s=this.adjust(s)),this.map){const e=this.map.get(s);void 0!==e&&(s=e)}return t.mainstay&&t.mainstay.tracer.resolve(t,this,s),s}toString(){return this.display}absolute(e){return[...e.path.slice(0,-this.ancestor),...this.path]}clone(){return new l.Ref(this)}describe(){const e={path:this.path};"value"!==this.type&&(e.type=this.type),"."!==this.separator&&(e.separator=this.separator),"value"===this.type&&1!==this.ancestor&&(e.ancestor=this.ancestor),this.map&&(e.map=[...this.map]);for(const t of["adjust","iterables"])null!==this[t]&&(e[t]=this[t]);return!1!==this.in&&(e.in=!0),{ref:e}}updateDisplay(){const e=null!==this.key?this.key:"";if("value"!==this.type)return void(this.display="ref:".concat(this.type,":").concat(e));if(!this.separator)return void(this.display="ref:".concat(e));if(!this.ancestor)return void(this.display="ref:".concat(this.separator).concat(e));if("root"===this.ancestor)return void(this.display="ref:root:".concat(e));if(1===this.ancestor)return void(this.display="ref:".concat(e||".."));const t=new Array(this.ancestor+1).fill(this.separator).join("");this.display="ref:".concat(t).concat(e||"")}},l.Ref.prototype[a.symbols.ref]=!0,t.build=function(e){return"value"===(e=Object.assign({},l.defaults,e)).type&&void 0===e.ancestor&&(e.ancestor=1),new l.Ref(e)},l.context=function(e,t,r={}){if(e=e.trim(),r){const s=void 0===r.global?"$":r.global;if(s!==t&&e.startsWith(s))return{key:e.slice(s.length),type:"global"};const n=void 0===r.local?"#":r.local;if(n!==t&&e.startsWith(n))return{key:e.slice(n.length),type:"local"};const o=void 0===r.root?"/":r.root;if(o!==t&&e.startsWith(o))return{key:e.slice(o.length),type:"value",root:!0}}return{key:e,type:"value"}},l.ancestor=function(e,t){if(!t)return[1,0];if(e[0]!==t)return[1,0];if(e[1]!==t)return[0,1];let r=2;for(;e[r]===t;)++r;return[r-1,r]},t.toSibling=0,t.toParent=1,t.Manager=class{constructor(){this.refs=[]}register(e,s){if(e)if(s=void 0===s?t.toParent:s,Array.isArray(e))for(const t of e)this.register(t,s);else if(a.isSchema(e))for(const t of e._refs.refs)t.ancestor-s>=0&&this.refs.push({ancestor:t.ancestor-s,root:t.root});else t.isRef(e)&&"value"===e.type&&e.ancestor-s>=0&&this.refs.push({ancestor:e.ancestor-s,root:e.root}),i=i||r(7),i.isTemplate(e)&&this.register(e.refs(),s)}get length(){return this.refs.length}clone(){const e=new t.Manager;return e.refs=n(this.refs),e}reset(){this.refs=[]}roots(){return this.refs.filter(e=>!e.ancestor).map(e=>e.root)}}},function(e,t,r){"use strict";const s=r(0),n={};e.exports=function(e,t,r){if(!1===t||null==t)return e;"string"==typeof(r=r||{})&&(r={separator:r});const o=Array.isArray(t);s(!o||!r.separator,"Separator option no valid for array-based chain");const a=o?t:t.split(r.separator||".");let i=e;for(let e=0;e<a.length;++e){let o=a[e];const l=r.iterables&&n.iterables(i);if(Array.isArray(i)||"set"===l){const e=Number(o);Number.isInteger(e)&&(o=e<0?i.length+e:e)}if(!i||"function"==typeof i&&!1===r.functions||!l&&void 0===i[o]){s(!r.strict||e+1===a.length,"Missing segment",o,"in reach path ",t),s("object"==typeof i||!0===r.functions||"function"!=typeof i,"Invalid segment",o,"in reach path ",t),i=r.default;break}i=l?"set"===l?[...i][o]:i.get(o):i[o]}return i},n.iterables=function(e){return e instanceof Set?"set":e instanceof Map?"map":void 0}},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(30),a=r(31),i=r(1),l=r(4),c=r(5),u={symbol:Symbol("template"),opens:new Array(1e3).join("\0"),closes:new Array(1e3).join(""),dateFormat:{date:Date.prototype.toDateString,iso:Date.prototype.toISOString,string:Date.prototype.toString,time:Date.prototype.toTimeString,utc:Date.prototype.toUTCString}};e.exports=u.Template=class{constructor(e,t){s("string"==typeof e,"Template source must be a string"),s(!e.includes("\0")&&!e.includes(""),"Template source cannot contain reserved control characters"),this.source=e,this.rendered=e,this._template=null,this._settings=n(t),this._parse()}_parse(){if(!this.source.includes("{"))return;const e=u.encode(this.source),t=u.split(e);let r=!1;const s=[],n=t.shift();n&&s.push(n);for(const e of t){const t="{"!==e[0],n=t?"}":"}}",o=e.indexOf(n);if(-1===o||"{"===e[1]){s.push("{".concat(u.decode(e)));continue}const a=e.slice(t?0:1,o),i=this._ref(u.decode(a),t);s.push(i),"string"!=typeof i&&(r=!0);const l=e.slice(o+n.length);l&&s.push(u.decode(l))}r?this._template=s:this.rendered=s.join("")}static date(e,t){return u.dateFormat[t.dateFormat].call(e)}describe(e={}){if(!this._settings&&e.compact)return this.source;const t={template:this.source};return this._settings&&(t.options=this._settings),t}static build(e){return new u.Template(e.template,e.options)}isDynamic(){return!!this._template}static isTemplate(e){return!!e&&!!e[i.symbols.template]}refs(){if(!this._template)return;const e=[];for(const t of this._template)"string"!=typeof t&&e.push(...t.refs);return e}resolve(e,t,r,s){return this._template&&1===this._template.length?this._part(this._template[0],e,t,r,s,{}):this.render(e,t,r,s)}_part(e,...t){return e.ref?e.ref.resolve(...t):e.formula.evaluate(t)}render(e,t,r,s,n={}){if(!this.isDynamic())return this.rendered;const a=[];for(const i of this._template)if("string"==typeof i)a.push(i);else{const l=this._part(i,e,t,r,s,n),c=u.stringify(l,r,n.errors);if(void 0!==c){const e=i.raw||!1===(n.errors&&n.errors.escapeHtml)?c:o(c),t=i.ref&&"local"===i.ref.type&&"label"===i.ref.key&&r.errors.wrap.label;a.push(u.wrap(e,t))}}return a.join("")}_ref(e,t){const r=[],s=e=>{const t=c.create(e,this._settings);return r.push(t),e=>t.resolve(...e)};try{var n=new a.Parser(e,{reference:s,functions:u.functions,constants:u.constants})}catch(t){throw t.message='Invalid template variable "'.concat(e,'" fails due to: ').concat(t.message),t}return n.single?"reference"===n.single.type?{ref:r[0],raw:t,refs:r}:u.stringify(n.single.value):{formula:n,raw:t,refs:r}}toString(){return this.source}},u.Template.prototype[i.symbols.template]=!0,u.Template.prototype.isImmutable=!0,u.encode=function(e){return e.replace(/\\(\{+)/g,(e,t)=>u.opens.slice(0,t.length)).replace(/\\(\}+)/g,(e,t)=>u.closes.slice(0,t.length))},u.decode=function(e){return e.replace(/\u0000/g,"{").replace(/\u0001/g,"}")},u.split=function(e){const t=[];let r="";for(let s=0;s<e.length;++s){const n=e[s];if("{"===n){let n="";for(;s+1<e.length&&"{"===e[s+1];)n+="{",++s;t.push(r),r=n}else r+=n}return t.push(r),t},u.wrap=function(e,t){return t?1===t.length?"".concat(t).concat(e).concat(t):"".concat(t[0]).concat(e).concat(t[1]):e},u.stringify=function(e,t,r){const s=typeof e;if(null===e)return"null";if("string"===s)return e;if("number"===s||"function"===s||"symbol"===s)return e.toString();if("object"!==s)return JSON.stringify(e);if(e instanceof Date)return u.Template.date(e,t);if(e instanceof Map){const t=[];for(const[r,s]of e.entries())t.push("".concat(r.toString()," -> ").concat(s.toString()));e=t}if(!Array.isArray(e))return e.toString();let n="";for(const s of e)n=n+(n.length?", ":"")+u.stringify(s,t,r);return u.wrap(n,t.errors.wrap.array)},u.constants={true:!0,false:!1,null:null,second:1e3,minute:6e4,hour:36e5,day:864e5},u.functions={if:(e,t,r)=>e?t:r,msg(e){const[t,r,s,n,o]=this,a=o.messages;if(!a)return"";const i=l.template(t,a[0],e,r,s)||l.template(t,a[1],e,r,s);return i?i.render(t,r,s,n,o):""},number:e=>"number"==typeof e?e:"string"==typeof e?parseFloat(e):"boolean"==typeof e?e?1:0:e instanceof Date?e.getTime():null}},function(e,t,r){"use strict";const s=r(0),n=r(1),o=r(5),a={};t.schema=function(e,t,r={}){n.assertOptions(r,["appendPath","override"]);try{return a.schema(e,t,r)}catch(e){throw r.appendPath&&void 0!==e.path&&(e.message="".concat(e.message," (").concat(e.path,")")),e}},a.schema=function(e,t,r){s(void 0!==t,"Invalid undefined schema"),Array.isArray(t)&&(s(t.length,"Invalid empty array schema"),1===t.length&&(t=t[0]));const o=(t,...s)=>!1!==r.override?t.valid(e.override,...s):t.valid(...s);if(a.simple(t))return o(e,t);if("function"==typeof t)return e.custom(t);if(s("object"==typeof t,"Invalid schema content:",typeof t),n.isResolvable(t))return o(e,t);if(n.isSchema(t))return t;if(Array.isArray(t)){for(const r of t)if(!a.simple(r))return e.alternatives().try(...t);return o(e,...t)}return t instanceof RegExp?e.string().regex(t):t instanceof Date?o(e.date(),t):(s(Object.getPrototypeOf(t)===Object.getPrototypeOf({}),"Schema can only contain plain objects"),e.object().keys(t))},t.ref=function(e,t){return o.isRef(e)?e:o.create(e,t)},t.compile=function(e,r,o={}){n.assertOptions(o,["legacy"]);const i=r&&r[n.symbols.any];if(i)return s(o.legacy||i.version===n.version,"Cannot mix different versions of joi schemas:",i.version,n.version),r;if("object"!=typeof r||!o.legacy)return t.schema(e,r,{appendPath:!0});const l=a.walk(r);return l?l.compile(l.root,r):t.schema(e,r,{appendPath:!0})},a.walk=function(e){if("object"!=typeof e)return null;if(Array.isArray(e)){for(const t of e){const e=a.walk(t);if(e)return e}return null}const t=e[n.symbols.any];if(t)return{root:e[t.root],compile:t.compile};s(Object.getPrototypeOf(e)===Object.getPrototypeOf({}),"Schema can only contain plain objects");for(const t in e){const r=a.walk(e[t]);if(r)return r}return null},a.simple=function(e){return null===e||["boolean","string","number"].includes(typeof e)},t.when=function(e,r,i){if(void 0===i&&(s(r&&"object"==typeof r,"Missing options"),i=r,r=o.create(".")),Array.isArray(i)&&(i={switch:i}),n.assertOptions(i,["is","not","then","otherwise","switch","break"]),n.isSchema(r))return s(void 0===i.is,'"is" can not be used with a schema condition'),s(void 0===i.not,'"not" can not be used with a schema condition'),s(void 0===i.switch,'"switch" can not be used with a schema condition'),a.condition(e,{is:r,then:i.then,otherwise:i.otherwise,break:i.break});if(s(o.isRef(r)||"string"==typeof r,"Invalid condition:",r),s(void 0===i.not||void 0===i.is,'Cannot combine "is" with "not"'),void 0===i.switch){let l=i;void 0!==i.not&&(l={is:i.not,then:i.otherwise,otherwise:i.then,break:i.break});let c=void 0!==l.is?e.$_compile(l.is):e.$_root.invalid(null,!1,0,"").required();return s(void 0!==l.then||void 0!==l.otherwise,'options must have at least one of "then", "otherwise", or "switch"'),s(void 0===l.break||void 0===l.then||void 0===l.otherwise,"Cannot specify then, otherwise, and break all together"),void 0===i.is||o.isRef(i.is)||n.isSchema(i.is)||(c=c.required()),a.condition(e,{ref:t.ref(r),is:c,then:l.then,otherwise:l.otherwise,break:l.break})}s(Array.isArray(i.switch),'"switch" must be an array'),s(void 0===i.is,'Cannot combine "switch" with "is"'),s(void 0===i.not,'Cannot combine "switch" with "not"'),s(void 0===i.then,'Cannot combine "switch" with "then"');const l={ref:t.ref(r),switch:[],break:i.break};for(let t=0;t<i.switch.length;++t){const r=i.switch[t],a=t===i.switch.length-1;n.assertOptions(r,a?["is","then","otherwise"]:["is","then"]),s(void 0!==r.is,'Switch statement missing "is"'),s(void 0!==r.then,'Switch statement missing "then"');const c={is:e.$_compile(r.is),then:e.$_compile(r.then)};if(o.isRef(r.is)||n.isSchema(r.is)||(c.is=c.is.required()),a){s(void 0===i.otherwise||void 0===r.otherwise,'Cannot specify "otherwise" inside and outside a "switch"');const t=void 0!==i.otherwise?i.otherwise:r.otherwise;void 0!==t&&(s(void 0===l.break,"Cannot specify both otherwise and break"),c.otherwise=e.$_compile(t))}l.switch.push(c)}return l},a.condition=function(e,t){for(const r of["then","otherwise"])void 0===t[r]?delete t[r]:t[r]=e.$_compile(t[r]);return t}},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(7);t.compile=function(e,t){if("string"==typeof e)return s(!t,"Cannot set single message string"),new o(e);if(o.isTemplate(e))return s(!t,"Cannot set single message template"),e;s("object"==typeof e&&!Array.isArray(e),"Invalid message options"),t=t?n(t):{};for(let r in e){const n=e[r];if("root"===r||o.isTemplate(n)){t[r]=n;continue}if("string"==typeof n){t[r]=new o(n);continue}s("object"==typeof n&&!Array.isArray(n),"Invalid message for",r);const a=r;for(r in t[a]=t[a]||{},n){const e=n[r];"root"===r||o.isTemplate(e)?t[a][r]=e:(s("string"==typeof e,"Invalid message for",r,"in",a),t[a][r]=new o(e))}}return t},t.decompile=function(e){const t={};for(let r in e){const s=e[r];if("root"===r){t[r]=s;continue}if(o.isTemplate(s)){t[r]=s.describe({compact:!0});continue}const n=r;for(r in t[n]={},s){const e=s[r];"root"!==r?t[n][r]=e.describe({compact:!0}):t[n][r]=e}}return t},t.merge=function(e,r){if(!e)return t.compile(r);if(!r)return e;if("string"==typeof r)return new o(r);if(o.isTemplate(r))return r;const a=n(e);for(let e in r){const t=r[e];if("root"===e||o.isTemplate(t)){a[e]=t;continue}if("string"==typeof t){a[e]=new o(t);continue}s("object"==typeof t&&!Array.isArray(t),"Invalid message for",e);const n=e;for(e in a[n]=a[n]||{},t){const r=t[e];"root"===e||o.isTemplate(r)?a[n][e]=r:(s("string"==typeof r,"Invalid message for",e,"in",n),a[n][e]=new o(r))}}return a}},function(e,t,r){"use strict";const s=r(13),n={mismatched:null};e.exports=function(e,t,r){return r=Object.assign({prototype:!0},r),!!n.isDeepEqual(e,t,r,[])},n.isDeepEqual=function(e,t,r,o){if(e===t)return 0!==e||1/e==1/t;const a=typeof e;if(a!==typeof t)return!1;if(null===e||null===t)return!1;if("function"===a){if(!r.deepFunction||e.toString()!==t.toString())return!1}else if("object"!==a)return e!=e&&t!=t;const i=n.getSharedType(e,t,!!r.prototype);switch(i){case s.buffer:return!1;case s.promise:return e===t;case s.regex:return e.toString()===t.toString();case n.mismatched:return!1}for(let r=o.length-1;r>=0;--r)if(o[r].isSame(e,t))return!0;o.push(new n.SeenEntry(e,t));try{return!!n.isDeepEqualObj(i,e,t,r,o)}finally{o.pop()}},n.getSharedType=function(e,t,r){if(r)return Object.getPrototypeOf(e)!==Object.getPrototypeOf(t)?n.mismatched:s.getInternalProto(e);const o=s.getInternalProto(e);return o!==s.getInternalProto(t)?n.mismatched:o},n.valueOf=function(e){const t=e.valueOf;if(void 0===t)return e;try{return t.call(e)}catch(e){return e}},n.hasOwnEnumerableProperty=function(e,t){return Object.prototype.propertyIsEnumerable.call(e,t)},n.isSetSimpleEqual=function(e,t){for(const r of e)if(!t.has(r))return!1;return!0},n.isDeepEqualObj=function(e,t,r,o,a){const{isDeepEqual:i,valueOf:l,hasOwnEnumerableProperty:c}=n,{keys:u,getOwnPropertySymbols:f}=Object;if(e===s.array){if(!o.part){if(t.length!==r.length)return!1;for(let e=0;e<t.length;++e)if(!i(t[e],r[e],o,a))return!1;return!0}for(const e of t)for(const t of r)if(i(e,t,o,a))return!0}else if(e===s.set){if(t.size!==r.size)return!1;if(!n.isSetSimpleEqual(t,r)){const e=new Set(r);for(const r of t){if(e.delete(r))continue;let t=!1;for(const s of e)if(i(r,s,o,a)){e.delete(s),t=!0;break}if(!t)return!1}}}else if(e===s.map){if(t.size!==r.size)return!1;for(const[e,s]of t){if(void 0===s&&!r.has(e))return!1;if(!i(s,r.get(e),o,a))return!1}}else if(e===s.error&&(t.name!==r.name||t.message!==r.message))return!1;const m=l(t),h=l(r);if((t!==m||r!==h)&&!i(m,h,o,a))return!1;const d=u(t);if(!o.part&&d.length!==u(r).length&&!o.skip)return!1;let p=0;for(const e of d)if(o.skip&&o.skip.includes(e))void 0===r[e]&&++p;else{if(!c(r,e))return!1;if(!i(t[e],r[e],o,a))return!1}if(!o.part&&d.length-p!==u(r).length)return!1;if(!1!==o.symbols){const e=f(t),s=new Set(f(r));for(const n of e){if(!o.skip||!o.skip.includes(n))if(c(t,n)){if(!c(r,n))return!1;if(!i(t[n],r[n],o,a))return!1}else if(c(r,n))return!1;s.delete(n)}for(const e of s)if(c(r,e))return!1}return!0},n.SeenEntry=class{constructor(e,t){this.obj=e,this.ref=t}isSame(e,t){return this.obj===e&&this.ref===t}}},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(15),a=r(1),i=r(8),l=r(4),c=r(17),u=r(18),f=r(5),m=r(7),h=r(19);let d;const p={types:{alternatives:r(33),any:r(3),array:r(39),boolean:r(40),date:r(41),function:r(42),link:r(45),number:r(46),object:r(47),string:r(48),symbol:r(52)},aliases:{alt:"alternatives",bool:"boolean",func:"function"}};p.root=function(){const e={_types:new Set(Object.keys(p.types))};for(const t of e._types)e[t]=function(...e){return s(!e.length||["alternatives","link","object"].includes(t),"The",t,"type does not allow arguments"),p.generate(this,p.types[t],e)};for(const t of["allow","custom","disallow","equal","exist","forbidden","invalid","not","only","optional","options","prefs","preferences","required","strip","valid","when"])e[t]=function(...e){return this.any()[t](...e)};Object.assign(e,p.methods);for(const t in p.aliases){const r=p.aliases[t];e[t]=e[r]}return e.x=e.expression,h.setup&&h.setup(e),e},p.methods={ValidationError:l.ValidationError,version:a.version,cache:o.provider,assert(e,t,...r){p.assert(e,t,!0,r)},attempt:(e,t,...r)=>p.assert(e,t,!1,r),build(e){return s("function"==typeof u.build,"Manifest functionality disabled"),u.build(this,e)},checkPreferences(e){a.checkPreferences(e)},compile(e,t){return i.compile(this,e,t)},defaults(e){s("function"==typeof e,"modifier must be a function");const t=Object.assign({},this);for(const r of t._types){const n=e(t[r]());s(a.isSchema(n),"modifier must return a valid schema object"),t[r]=function(...e){return p.generate(this,n,e)}}return t},expression:(...e)=>new m(...e),extend(...e){a.verifyFlat(e,"extend"),d=d||r(16),s(e.length,"You need to provide at least one extension"),this.assert(e,d.extensions);const t=Object.assign({},this);t._types=new Set(t._types);for(let r of e){"function"==typeof r&&(r=r(t)),this.assert(r,d.extension);const e=p.expandExtension(r,t);for(const r of e){s(void 0===t[r.type]||t._types.has(r.type),"Cannot override name",r.type);const e=r.base||this.any(),n=c.type(e,r);t._types.add(r.type),t[r.type]=function(...e){return p.generate(this,n,e)}}}return t},isError:l.ValidationError.isError,isExpression:m.isTemplate,isRef:f.isRef,isSchema:a.isSchema,in:(...e)=>f.in(...e),override:a.symbols.override,ref:(...e)=>f.create(...e),types(){const e={};for(const t of this._types)e[t]=this[t]();for(const t in p.aliases)e[t]=this[t]();return e}},p.assert=function(e,t,r,s){const o=s[0]instanceof Error||"string"==typeof s[0]?s[0]:null,i=o?s[1]:s[0],c=t.validate(e,a.preferences({errors:{stack:!0}},i||{}));let u=c.error;if(!u)return c.value;if(o instanceof Error)throw o;const f=r&&"function"==typeof u.annotate?u.annotate():u.message;throw u instanceof l.ValidationError==!1&&(u=n(u)),u.message=o?"".concat(o," ").concat(f):f,u},p.generate=function(e,t,r){return s(e,"Must be invoked on a Joi instance."),t.$_root=e,t._definition.args&&r.length?t._definition.args(t,...r):t},p.expandExtension=function(e,t){if("string"==typeof e.type)return[e];const r=[];for(const s of t._types)if(e.type.test(s)){const n=Object.assign({},e);n.type=s,n.base=t[s](),r.push(n)}return r},e.exports=p.root()},function(e,t,r){"use strict";const s=r(28);e.exports=class extends Error{constructor(e){super(e.filter(e=>""!==e).map(e=>"string"==typeof e?e:e instanceof Error?e.message:s(e)).join(" ")||"Unknown error"),"function"==typeof Error.captureStackTrace&&Error.captureStackTrace(this,t.assert)}}},function(e,t,r){"use strict";const s={};t=e.exports={array:Array.prototype,buffer:!1,date:Date.prototype,error:Error.prototype,generic:Object.prototype,map:Map.prototype,promise:Promise.prototype,regex:RegExp.prototype,set:Set.prototype,weakMap:WeakMap.prototype,weakSet:WeakSet.prototype},s.typeMap=new Map([["[object Error]",t.error],["[object Map]",t.map],["[object Promise]",t.promise],["[object Set]",t.set],["[object WeakMap]",t.weakMap],["[object WeakSet]",t.weakSet]]),t.getInternalProto=function(e){if(Array.isArray(e))return t.array;if(e instanceof Date)return t.date;if(e instanceof RegExp)return t.regex;if(e instanceof Error)return t.error;const r=Object.prototype.toString.call(e);return s.typeMap.get(r)||t.generic}},function(e,t,r){"use strict";t.keys=function(e,t={}){return!1!==t.symbols?Reflect.ownKeys(e):Object.getOwnPropertyNames(e)}},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(1),a={max:1e3,supported:new Set(["undefined","boolean","number","string"])};t.provider={provision:e=>new a.Cache(e)},a.Cache=class{constructor(e={}){o.assertOptions(e,["max"]),s(void 0===e.max||e.max&&e.max>0&&isFinite(e.max),"Invalid max cache size"),this._max=e.max||a.max,this._map=new Map,this._list=new a.List}get length(){return this._map.size}set(e,t){if(null!==e&&!a.supported.has(typeof e))return;let r=this._map.get(e);if(r)return r.value=t,void this._list.first(r);r=this._list.unshift({key:e,value:t}),this._map.set(e,r),this._compact()}get(e){const t=this._map.get(e);if(t)return this._list.first(t),n(t.value)}_compact(){if(this._map.size>this._max){const e=this._list.pop();this._map.delete(e.key)}}},a.List=class{constructor(){this.tail=null,this.head=null}unshift(e){return e.next=null,e.prev=this.head,this.head&&(this.head.next=e),this.head=e,this.tail||(this.tail=e),e}first(e){e!==this.head&&(this._remove(e),this.unshift(e))}pop(){return this._remove(this.tail)}_remove(e){const{next:t,prev:r}=e;return t.prev=r,r&&(r.next=t),e===this.tail&&(this.tail=t),e.prev=null,e.next=null,e}}},function(e,t,r){"use strict";const s=r(11),n={};n.wrap=s.string().min(1).max(2).allow(!1),t.preferences=s.object({allowUnknown:s.boolean(),abortEarly:s.boolean(),cache:s.boolean(),context:s.object(),convert:s.boolean(),dateFormat:s.valid("date","iso","string","time","utc"),debug:s.boolean(),errors:{escapeHtml:s.boolean(),label:s.valid("path","key",!1),language:[s.string(),s.object().ref()],render:s.boolean(),stack:s.boolean(),wrap:{label:n.wrap,array:n.wrap}},externals:s.boolean(),messages:s.object(),noDefaults:s.boolean(),nonEnumerables:s.boolean(),presence:s.valid("required","optional","forbidden"),skipFunctions:s.boolean(),stripUnknown:s.object({arrays:s.boolean(),objects:s.boolean()}).or("arrays","objects").allow(!0,!1),warnings:s.boolean()}).strict(),n.nameRx=/^[a-zA-Z0-9]\w*$/,n.rule=s.object({alias:s.array().items(s.string().pattern(n.nameRx)).single(),args:s.array().items(s.string(),s.object({name:s.string().pattern(n.nameRx).required(),ref:s.boolean(),assert:s.alternatives([s.function(),s.object().schema()]).conditional("ref",{is:!0,then:s.required()}),normalize:s.function(),message:s.string().when("assert",{is:s.function(),then:s.required()})})),convert:s.boolean(),manifest:s.boolean(),method:s.function().allow(!1),multi:s.boolean(),validate:s.function()}),t.extension=s.object({type:s.alternatives([s.string(),s.object().regex()]).required(),args:s.function(),base:s.object().schema().when("type",{is:s.object().regex(),then:s.forbidden()}),coerce:[s.function().maxArity(3),s.object({method:s.function().maxArity(3).required(),from:s.array().items(s.string()).single()})],flags:s.object().pattern(n.nameRx,s.object({setter:s.string(),default:s.any()})),manifest:{build:s.function().arity(2)},messages:[s.object(),s.string()],modifiers:s.object().pattern(n.nameRx,s.function().minArity(1).maxArity(2)),overrides:s.object().pattern(n.nameRx,s.function()),prepare:s.function().maxArity(3),rebuild:s.function().arity(1),rules:s.object().pattern(n.nameRx,n.rule),terms:s.object().pattern(n.nameRx,s.object({init:s.array().allow(null).required(),manifest:s.object().pattern(/.+/,[s.valid("schema","single"),s.object({mapped:s.object({from:s.string().required(),to:s.string().required()}).required()})])})),validate:s.function().maxArity(3)}).strict(),t.extensions=s.array().items(s.object(),s.function().arity(1)).strict(),n.desc={buffer:s.object({buffer:s.string()}),func:s.object({function:s.function().required(),options:{literal:!0}}),override:s.object({override:!0}),ref:s.object({ref:s.object({type:s.valid("value","global","local"),path:s.array().required(),separator:s.string().length(1).allow(!1),ancestor:s.number().min(0).integer().allow("root"),map:s.array().items(s.array().length(2)).min(1),adjust:s.function(),iterables:s.boolean(),in:s.boolean()}).required()}),regex:s.object({regex:s.string().min(3)}),special:s.object({special:s.valid("deep").required()}),template:s.object({template:s.string().required(),options:s.object()}),value:s.object({value:s.alternatives([s.object(),s.array()]).required()})},n.desc.entity=s.alternatives([s.array().items(s.link("...")),s.boolean(),s.function(),s.number(),s.string(),n.desc.buffer,n.desc.func,n.desc.ref,n.desc.regex,n.desc.special,n.desc.template,n.desc.value,s.link("/")]),n.desc.values=s.array().items(null,s.boolean(),s.function(),s.number().allow(1/0,-1/0),s.string().allow(""),s.symbol(),n.desc.buffer,n.desc.func,n.desc.override,n.desc.ref,n.desc.regex,n.desc.template,n.desc.value),n.desc.messages=s.object().pattern(/.+/,[s.string(),n.desc.template,s.object().pattern(/.+/,[s.string(),n.desc.template])]),t.description=s.object({type:s.string().required(),flags:s.object({cast:s.string(),default:s.any(),description:s.string(),empty:s.link("/"),failover:n.desc.entity,id:s.string(),label:s.string(),only:!0,presence:["optional","required","forbidden"],result:["raw","strip"],strip:s.boolean(),unit:s.string()}).unknown(),preferences:{allowUnknown:s.boolean(),abortEarly:s.boolean(),cache:s.boolean(),convert:s.boolean(),dateFormat:["date","iso","string","time","utc"],errors:{escapeHtml:s.boolean(),label:["path","key"],language:[s.string(),n.desc.ref],wrap:{label:n.wrap,array:n.wrap}},externals:s.boolean(),messages:n.desc.messages,noDefaults:s.boolean(),nonEnumerables:s.boolean(),presence:["required","optional","forbidden"],skipFunctions:s.boolean(),stripUnknown:s.object({arrays:s.boolean(),objects:s.boolean()}).or("arrays","objects").allow(!0,!1),warnings:s.boolean()},allow:n.desc.values,invalid:n.desc.values,rules:s.array().min(1).items({name:s.string().required(),args:s.object().min(1),keep:s.boolean(),message:[s.string(),n.desc.messages],warn:s.boolean()}),keys:s.object().pattern(/.*/,s.link("/")),link:n.desc.ref}).pattern(/^[a-z]\w*$/,s.any())},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(1),a=r(9),i={};t.type=function(e,t){const r=Object.getPrototypeOf(e),l=n(r),c=e._assign(Object.create(l)),u=Object.assign({},t);delete u.base,l._definition=u;const f=r._definition||{};u.messages=a.merge(f.messages,u.messages),u.properties=Object.assign({},f.properties,u.properties),c.type=u.type,u.flags=Object.assign({},f.flags,u.flags);const m=Object.assign({},f.terms);if(u.terms)for(const e in u.terms){const t=u.terms[e];s(void 0===c.$_terms[e],"Invalid term override for",u.type,e),c.$_terms[e]=t.init,m[e]=t}u.terms=m,u.args||(u.args=f.args),u.prepare=i.prepare(u.prepare,f.prepare),u.coerce&&("function"==typeof u.coerce&&(u.coerce={method:u.coerce}),u.coerce.from&&!Array.isArray(u.coerce.from)&&(u.coerce={method:u.coerce.method,from:[].concat(u.coerce.from)})),u.coerce=i.coerce(u.coerce,f.coerce),u.validate=i.validate(u.validate,f.validate);const h=Object.assign({},f.rules);if(u.rules)for(const e in u.rules){const t=u.rules[e];s("object"==typeof t,"Invalid rule definition for",u.type,e);let r=t.method;if(void 0===r&&(r=function(){return this.$_addRule(e)}),r&&(s(!l[e],"Rule conflict in",u.type,e),l[e]=r),s(!h[e],"Rule conflict in",u.type,e),h[e]=t,t.alias){const e=[].concat(t.alias);for(const r of e)l[r]=t.method}t.args&&(t.argsByName=new Map,t.args=t.args.map(e=>("string"==typeof e&&(e={name:e}),s(!t.argsByName.has(e.name),"Duplicated argument name",e.name),o.isSchema(e.assert)&&(e.assert=e.assert.strict().label(e.name)),t.argsByName.set(e.name,e),e)))}u.rules=h;const d=Object.assign({},f.modifiers);if(u.modifiers)for(const e in u.modifiers){s(!l[e],"Rule conflict in",u.type,e);const t=u.modifiers[e];s("function"==typeof t,"Invalid modifier definition for",u.type,e);const r=function(t){return this.rule({[e]:t})};l[e]=r,d[e]=t}if(u.modifiers=d,u.overrides){l._super=r,c.$_super={};for(const e in u.overrides)s(r[e],"Cannot override missing",e),c.$_super[e]=r[e].bind(c);Object.assign(l,u.overrides)}u.cast=Object.assign({},f.cast,u.cast);const p=Object.assign({},f.manifest,u.manifest);return p.build=i.build(u.manifest&&u.manifest.build,f.manifest&&f.manifest.build),u.manifest=p,u.rebuild=i.rebuild(u.rebuild,f.rebuild),c},i.build=function(e,t){return e&&t?function(r,s){return t(e(r,s),s)}:e||t},i.coerce=function(e,t){return e&&t?{from:e.from&&t.from?[...new Set([...e.from,...t.from])]:null,method(r,s){let n;if((!t.from||t.from.includes(typeof r))&&(n=t.method(r,s),n)){if(n.errors||void 0===n.value)return n;r=n.value}if(!e.from||e.from.includes(typeof r)){const t=e.method(r,s);if(t)return t}return n}}:e||t},i.prepare=function(e,t){return e&&t?function(r,s){const n=e(r,s);if(n){if(n.errors||void 0===n.value)return n;r=n.value}return t(r,s)||n}:e||t},i.rebuild=function(e,t){return e&&t?function(r){t(r),e(r)}:e||t},i.validate=function(e,t){return e&&t?function(r,s){const n=t(r,s);if(n){if(n.errors&&(!Array.isArray(n.errors)||n.errors.length))return n;r=n.value}return e(r,s)||n}:e||t}},function(e,t){},function(e,t){},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(14),a={};e.exports=a.merge=function(e,t,r){if(s(e&&"object"==typeof e,"Invalid target value: must be an object"),s(null==t||"object"==typeof t,"Invalid source value: must be null, undefined, or an object"),!t)return e;if(r=Object.assign({nullOverride:!0,mergeArrays:!0},r),Array.isArray(t)){s(Array.isArray(e),"Cannot merge array onto an object"),r.mergeArrays||(e.length=0);for(let s=0;s<t.length;++s)e.push(n(t[s],{symbols:r.symbols}));return e}const i=o.keys(t,r);for(let s=0;s<i.length;++s){const o=i[s];if("__proto__"===o||!Object.prototype.propertyIsEnumerable.call(t,o))continue;const l=t[o];if(l&&"object"==typeof l){if(e[o]===l)continue;!e[o]||"object"!=typeof e[o]||Array.isArray(e[o])!==Array.isArray(l)||l instanceof Date||l instanceof RegExp?e[o]=n(l,{symbols:r.symbols}):a.merge(e[o],l,r)}else null!=l?e[o]=l:r.nullOverride&&(e[o]=l)}return e}},function(e,t,r){"use strict";const s=r(0),n=r(10),o=r(1),a={};e.exports=a.Values=class{constructor(e,t){this._values=new Set(e),this._refs=new Set(t),this._lowercase=a.lowercases(e),this._override=!1}get length(){return this._values.size+this._refs.size}add(e,t){o.isResolvable(e)?this._refs.has(e)||(this._refs.add(e),t&&t.register(e)):this.has(e,null,null,!1)||(this._values.add(e),"string"==typeof e&&this._lowercase.set(e.toLowerCase(),e))}static merge(e,t,r){if(e=e||new a.Values,t){if(t._override)return t.clone();for(const r of[...t._values,...t._refs])e.add(r)}if(r)for(const t of[...r._values,...r._refs])e.remove(t);return e.length?e:null}remove(e){o.isResolvable(e)?this._refs.delete(e):(this._values.delete(e),"string"==typeof e&&this._lowercase.delete(e.toLowerCase()))}has(e,t,r,s){return!!this.get(e,t,r,s)}get(e,t,r,s){if(!this.length)return!1;if(this._values.has(e))return{value:e};if("string"==typeof e&&e&&s){const t=this._lowercase.get(e.toLowerCase());if(t)return{value:t}}if(!this._refs.size&&"object"!=typeof e)return!1;if("object"==typeof e)for(const t of this._values)if(n(t,e))return{value:t};if(t)for(const o of this._refs){const a=o.resolve(e,t,r,null,{in:!0});if(void 0===a)continue;const i=o.in&&"object"==typeof a?Array.isArray(a)?a:Object.keys(a):[a];for(const t of i)if(typeof t==typeof e)if(s&&e&&"string"==typeof e){if(t.toLowerCase()===e.toLowerCase())return{value:t,ref:o}}else if(n(t,e))return{value:t,ref:o}}return!1}override(){this._override=!0}values(e){if(e&&e.display){const e=[];for(const t of[...this._values,...this._refs])void 0!==t&&e.push(t);return e}return Array.from([...this._values,...this._refs])}clone(){const e=new a.Values(this._values,this._refs);return e._override=this._override,e}concat(e){s(!e._override,"Cannot concat override set of values");const t=new a.Values([...this._values,...e._values],[...this._refs,...e._refs]);return t._override=this._override,t}describe(){const e=[];this._override&&e.push({override:!0});for(const t of this._values.values())e.push(t&&"object"==typeof t?{value:t}:t);for(const t of this._refs.values())e.push(t.describe());return e}},a.Values.prototype[o.symbols.values]=!0,a.Values.prototype.slice=a.Values.prototype.clone,a.lowercases=function(e){const t=new Map;if(e)for(const r of e)"string"==typeof r&&t.set(r.toLowerCase(),r);return t}},function(e,t,r){"use strict";const s=r(43),n=r(0),o=r(2),a=r(44),i=r(3),l=r(1),c=r(8),u=r(4),f=r(5),m=r(7),h={renameDefaults:{alias:!1,multiple:!1,override:!1}};e.exports=i.extend({type:"_keys",properties:{typeof:"object"},flags:{unknown:{default:!1}},terms:{dependencies:{init:null},keys:{init:null,manifest:{mapped:{from:"schema",to:"key"}}},patterns:{init:null},renames:{init:null}},args:(e,t)=>e.keys(t),validate(e,{schema:t,error:r,state:s,prefs:n}){if(!e||typeof e!==t.$_property("typeof")||Array.isArray(e))return{value:e,errors:r("object.base",{type:t.$_property("typeof")})};if(!(t.$_terms.renames||t.$_terms.dependencies||t.$_terms.keys||t.$_terms.patterns||t.$_terms.externals))return;e=h.clone(e,n);const o=[];if(t.$_terms.renames&&!h.rename(t,e,s,n,o))return{value:e,errors:o};if(!t.$_terms.keys&&!t.$_terms.patterns&&!t.$_terms.dependencies)return{value:e,errors:o};const a=new Set(Object.keys(e));if(t.$_terms.keys){const r=[e,...s.ancestors];for(const i of t.$_terms.keys){const t=i.key,l=e[t];a.delete(t);const c=s.localize([...s.path,t],r,i),u=i.schema.$_validate(l,c,n);if(u.errors){if(n.abortEarly)return{value:e,errors:u.errors};o.push(...u.errors)}else"strip"===i.schema._flags.result||void 0===u.value&&void 0!==l?delete e[t]:void 0!==u.value&&(e[t]=u.value)}}if(a.size||t._flags._hasPatternMatch){const r=h.unknown(t,e,a,o,s,n);if(r)return r}if(t.$_terms.dependencies)for(const r of t.$_terms.dependencies){if(r.key&&void 0===r.key.resolve(e,s,n,null,{shadow:!1}))continue;const a=h.dependencies[r.rel](t,r,e,s,n);if(a){const r=t.$_createError(a.code,e,a.context,s,n);if(n.abortEarly)return{value:e,errors:r};o.push(r)}}return{value:e,errors:o}},rules:{and:{method(...e){return l.verifyFlat(e,"and"),h.dependency(this,"and",null,e)}},append:{method(e){return null==e||0===Object.keys(e).length?this:this.keys(e)}},assert:{method(e,t,r){m.isTemplate(e)||(e=c.ref(e)),n(void 0===r||"string"==typeof r,"Message must be a string"),t=this.$_compile(t,{appendPath:!0});const s=this.$_addRule({name:"assert",args:{subject:e,schema:t,message:r}});return s.$_mutateRegister(e),s.$_mutateRegister(t),s},validate(e,{error:t,prefs:r,state:s},{subject:n,schema:o,message:a}){const i=n.resolve(e,s,r),l=f.isRef(n)?n.absolute(s):[];return o.$_match(i,s.localize(l,[e,...s.ancestors],o),r)?e:t("object.assert",{subject:n,message:a})},args:["subject","schema","message"],multi:!0},instance:{method(e,t){return n("function"==typeof e,"constructor must be a function"),t=t||e.name,this.$_addRule({name:"instance",args:{constructor:e,name:t}})},validate:(e,t,{constructor:r,name:s})=>e instanceof r?e:t.error("object.instance",{type:s,value:e}),args:["constructor","name"]},keys:{method(e){n(void 0===e||"object"==typeof e,"Object schema must be a valid object"),n(!l.isSchema(e),"Object schema cannot be a joi schema");const t=this.clone();if(e)if(Object.keys(e).length){t.$_terms.keys=t.$_terms.keys?t.$_terms.keys.filter(t=>!e.hasOwnProperty(t.key)):new h.Keys;for(const r in e)l.tryWithPath(()=>t.$_terms.keys.push({key:r,schema:this.$_compile(e[r])}),r)}else t.$_terms.keys=new h.Keys;else t.$_terms.keys=null;return t.$_mutateRebuild()}},length:{method(e){return this.$_addRule({name:"length",args:{limit:e},operator:"="})},validate:(e,t,{limit:r},{name:s,operator:n,args:o})=>l.compare(Object.keys(e).length,r,n)?e:t.error("object."+s,{limit:o.limit,value:e}),args:[{name:"limit",ref:!0,assert:l.limit,message:"must be a positive integer"}]},max:{method(e){return this.$_addRule({name:"max",method:"length",args:{limit:e},operator:"<="})}},min:{method(e){return this.$_addRule({name:"min",method:"length",args:{limit:e},operator:">="})}},nand:{method(...e){return l.verifyFlat(e,"nand"),h.dependency(this,"nand",null,e)}},or:{method(...e){return l.verifyFlat(e,"or"),h.dependency(this,"or",null,e)}},oxor:{method(...e){return h.dependency(this,"oxor",null,e)}},pattern:{method(e,t,r={}){const s=e instanceof RegExp;s||(e=this.$_compile(e,{appendPath:!0})),n(void 0!==t,"Invalid rule"),l.assertOptions(r,["fallthrough","matches"]),s&&n(!e.flags.includes("g")&&!e.flags.includes("y"),"pattern should not use global or sticky mode"),t=this.$_compile(t,{appendPath:!0});const o=this.clone();o.$_terms.patterns=o.$_terms.patterns||[];const a={[s?"regex":"schema"]:e,rule:t};return r.matches&&(a.matches=this.$_compile(r.matches),"array"!==a.matches.type&&(a.matches=a.matches.$_root.array().items(a.matches)),o.$_mutateRegister(a.matches),o.$_setFlag("_hasPatternMatch",!0,{clone:!1})),r.fallthrough&&(a.fallthrough=!0),o.$_terms.patterns.push(a),o.$_mutateRegister(t),o}},ref:{method(){return this.$_addRule("ref")},validate:(e,t)=>f.isRef(e)?e:t.error("object.refType",{value:e})},regex:{method(){return this.$_addRule("regex")},validate:(e,t)=>e instanceof RegExp?e:t.error("object.regex",{value:e})},rename:{method(e,t,r={}){n("string"==typeof e||e instanceof RegExp,"Rename missing the from argument"),n("string"==typeof t||t instanceof m,"Invalid rename to argument"),n(t!==e,"Cannot rename key to same name:",e),l.assertOptions(r,["alias","ignoreUndefined","override","multiple"]);const o=this.clone();o.$_terms.renames=o.$_terms.renames||[];for(const t of o.$_terms.renames)n(t.from!==e,"Cannot rename the same key multiple times");return t instanceof m&&o.$_mutateRegister(t),o.$_terms.renames.push({from:e,to:t,options:s(h.renameDefaults,r)}),o}},schema:{method(e="any"){return this.$_addRule({name:"schema",args:{type:e}})},validate:(e,t,{type:r})=>!l.isSchema(e)||"any"!==r&&e.type!==r?t.error("object.schema",{type:r}):e},unknown:{method(e){return this.$_setFlag("unknown",!1!==e)}},with:{method(e,t,r={}){return h.dependency(this,"with",e,t,r)}},without:{method(e,t,r={}){return h.dependency(this,"without",e,t,r)}},xor:{method(...e){return l.verifyFlat(e,"xor"),h.dependency(this,"xor",null,e)}}},overrides:{default(e,t){return void 0===e&&(e=l.symbols.deepDefault),this.$_super.default(e,t)}},rebuild(e){if(e.$_terms.keys){const t=new a.Sorter;for(const r of e.$_terms.keys)l.tryWithPath(()=>t.add(r,{after:r.schema.$_rootReferences(),group:r.key}),r.key);e.$_terms.keys=new h.Keys(...t.nodes)}},manifest:{build(e,t){if(t.keys&&(e=e.keys(t.keys)),t.dependencies)for(const{rel:r,key:s=null,peers:n,options:o}of t.dependencies)e=h.dependency(e,r,s,n,o);if(t.patterns)for(const{regex:r,schema:s,rule:n,fallthrough:o,matches:a}of t.patterns)e=e.pattern(r||s,n,{fallthrough:o,matches:a});if(t.renames)for(const{from:r,to:s,options:n}of t.renames)e=e.rename(r,s,n);return e}},messages:{"object.and":"{{#label}} contains {{#presentWithLabels}} without its required peers {{#missingWithLabels}}","object.assert":'{{#label}} is invalid because {if(#subject.key, `"` + #subject.key + `" failed to ` + (#message || "pass the assertion test"), #message || "the assertion failed")}',"object.base":"{{#label}} must be of type {{#type}}","object.instance":'{{#label}} must be an instance of "{{#type}}"',"object.length":'{{#label}} must have {{#limit}} key{if(#limit == 1, "", "s")}',"object.max":'{{#label}} must have less than or equal to {{#limit}} key{if(#limit == 1, "", "s")}',"object.min":'{{#label}} must have at least {{#limit}} key{if(#limit == 1, "", "s")}',"object.missing":"{{#label}} must contain at least one of {{#peersWithLabels}}","object.nand":'"{{#mainWithLabel}}" must not exist simultaneously with {{#peersWithLabels}}',"object.oxor":"{{#label}} contains a conflict between optional exclusive peers {{#peersWithLabels}}","object.pattern.match":"{{#label}} keys failed to match pattern requirements","object.refType":"{{#label}} must be a Joi reference","object.regex":"{{#label}} must be a RegExp object","object.rename.multiple":'{{#label}} cannot rename "{{#from}}" because multiple renames are disabled and another key was already renamed to "{{#to}}"',"object.rename.override":'{{#label}} cannot rename "{{#from}}" because override is disabled and target "{{#to}}" exists',"object.schema":"{{#label}} must be a Joi schema of {{#type}} type","object.unknown":"{{#label}} is not allowed","object.with":'"{{#mainWithLabel}}" missing required peer "{{#peerWithLabel}}"',"object.without":'"{{#mainWithLabel}}" conflict with forbidden peer "{{#peerWithLabel}}"',"object.xor":"{{#label}} contains a conflict between exclusive peers {{#peersWithLabels}}"}}),h.clone=function(e,t){if("object"==typeof e){if(t.nonEnumerables)return o(e,{shallow:!0});const r=Object.create(Object.getPrototypeOf(e));return Object.assign(r,e),r}const r=function(...t){return e.apply(this,t)};return r.prototype=o(e.prototype),Object.defineProperty(r,"name",{value:e.name,writable:!1}),Object.defineProperty(r,"length",{value:e.length,writable:!1}),Object.assign(r,e),r},h.dependency=function(e,t,r,s,o){n(null===r||"string"==typeof r,t,"key must be a strings"),o||(o=s.length>1&&"object"==typeof s[s.length-1]?s.pop():{}),l.assertOptions(o,["separator"]),s=[].concat(s);const a=l.default(o.separator,"."),i=[];for(const e of s)n("string"==typeof e,t,"peers must be a string or a reference"),i.push(c.ref(e,{separator:a,ancestor:0,prefix:!1}));null!==r&&(r=c.ref(r,{separator:a,ancestor:0,prefix:!1}));const u=e.clone();return u.$_terms.dependencies=u.$_terms.dependencies||[],u.$_terms.dependencies.push(new h.Dependency(t,r,i,s)),u},h.dependencies={and(e,t,r,s,n){const o=[],a=[],i=t.peers.length;for(const e of t.peers)void 0===e.resolve(r,s,n,null,{shadow:!1})?o.push(e.key):a.push(e.key);if(o.length!==i&&a.length!==i)return{code:"object.and",context:{present:a,presentWithLabels:h.keysToLabels(e,a),missing:o,missingWithLabels:h.keysToLabels(e,o)}}},nand(e,t,r,s,n){const o=[];for(const e of t.peers)void 0!==e.resolve(r,s,n,null,{shadow:!1})&&o.push(e.key);if(o.length!==t.peers.length)return;const a=t.paths[0],i=t.paths.slice(1);return{code:"object.nand",context:{main:a,mainWithLabel:h.keysToLabels(e,a),peers:i,peersWithLabels:h.keysToLabels(e,i)}}},or(e,t,r,s,n){for(const e of t.peers)if(void 0!==e.resolve(r,s,n,null,{shadow:!1}))return;return{code:"object.missing",context:{peers:t.paths,peersWithLabels:h.keysToLabels(e,t.paths)}}},oxor(e,t,r,s,n){const o=[];for(const e of t.peers)void 0!==e.resolve(r,s,n,null,{shadow:!1})&&o.push(e.key);if(!o.length||1===o.length)return;const a={peers:t.paths,peersWithLabels:h.keysToLabels(e,t.paths)};return a.present=o,a.presentWithLabels=h.keysToLabels(e,o),{code:"object.oxor",context:a}},with(e,t,r,s,n){for(const o of t.peers)if(void 0===o.resolve(r,s,n,null,{shadow:!1}))return{code:"object.with",context:{main:t.key.key,mainWithLabel:h.keysToLabels(e,t.key.key),peer:o.key,peerWithLabel:h.keysToLabels(e,o.key)}}},without(e,t,r,s,n){for(const o of t.peers)if(void 0!==o.resolve(r,s,n,null,{shadow:!1}))return{code:"object.without",context:{main:t.key.key,mainWithLabel:h.keysToLabels(e,t.key.key),peer:o.key,peerWithLabel:h.keysToLabels(e,o.key)}}},xor(e,t,r,s,n){const o=[];for(const e of t.peers)void 0!==e.resolve(r,s,n,null,{shadow:!1})&&o.push(e.key);if(1===o.length)return;const a={peers:t.paths,peersWithLabels:h.keysToLabels(e,t.paths)};return 0===o.length?{code:"object.missing",context:a}:(a.present=o,a.presentWithLabels=h.keysToLabels(e,o),{code:"object.xor",context:a})}},h.keysToLabels=function(e,t){return Array.isArray(t)?t.map(t=>e.$_mapLabels(t)):e.$_mapLabels(t)},h.rename=function(e,t,r,s,n){const o={};for(const a of e.$_terms.renames){const i=[],l="string"!=typeof a.from;if(l)for(const e in t){if(void 0===t[e]&&a.options.ignoreUndefined)continue;if(e===a.to)continue;const r=a.from.exec(e);r&&i.push({from:e,to:a.to,match:r})}else!Object.prototype.hasOwnProperty.call(t,a.from)||void 0===t[a.from]&&a.options.ignoreUndefined||i.push(a);for(const c of i){const i=c.from;let u=c.to;if(u instanceof m&&(u=u.render(t,r,s,c.match)),i!==u){if(!a.options.multiple&&o[u]&&(n.push(e.$_createError("object.rename.multiple",t,{from:i,to:u,pattern:l},r,s)),s.abortEarly))return!1;if(Object.prototype.hasOwnProperty.call(t,u)&&!a.options.override&&!o[u]&&(n.push(e.$_createError("object.rename.override",t,{from:i,to:u,pattern:l},r,s)),s.abortEarly))return!1;void 0===t[i]?delete t[u]:t[u]=t[i],o[u]=!0,a.options.alias||delete t[i]}}}return!0},h.unknown=function(e,t,r,s,n,o){if(e.$_terms.patterns){let a=!1;const i=e.$_terms.patterns.map(e=>{if(e.matches)return a=!0,[]}),l=[t,...n.ancestors];for(const a of r){const c=t[a],u=[...n.path,a];for(let f=0;f<e.$_terms.patterns.length;++f){const m=e.$_terms.patterns[f];if(m.regex){const e=m.regex.test(a);if(n.mainstay.tracer.debug(n,"rule","pattern.".concat(f),e?"pass":"error"),!e)continue}else if(!m.schema.$_match(a,n.nest(m.schema,"pattern.".concat(f)),o))continue;r.delete(a);const h=n.localize(u,l,{schema:m.rule,key:a}),d=m.rule.$_validate(c,h,o);if(d.errors){if(o.abortEarly)return{value:t,errors:d.errors};s.push(...d.errors)}if(m.matches&&i[f].push(a),t[a]=d.value,!m.fallthrough)break}}if(a)for(let r=0;r<i.length;++r){const a=i[r];if(!a)continue;const c=e.$_terms.patterns[r].matches,f=n.localize(n.path,l,c),m=c.$_validate(a,f,o);if(m.errors){const r=u.details(m.errors,{override:!1});r.matches=a;const i=e.$_createError("object.pattern.match",t,r,n,o);if(o.abortEarly)return{value:t,errors:i};s.push(i)}}}if(!r.size||!e.$_terms.keys&&!e.$_terms.patterns)return;if(o.stripUnknown&&!e._flags.unknown||o.skipFunctions){const e=!!o.stripUnknown&&(!0===o.stripUnknown||!!o.stripUnknown.objects);for(const s of r)e?(delete t[s],r.delete(s)):"function"==typeof t[s]&&r.delete(s)}if(!l.default(e._flags.unknown,o.allowUnknown))for(const a of r){const r=n.localize([...n.path,a],[]),i=e.$_createError("object.unknown",t[a],{child:a},r,o,{flags:!1});if(o.abortEarly)return{value:t,errors:i};s.push(i)}},h.Dependency=class{constructor(e,t,r,s){this.rel=e,this.key=t,this.peers=r,this.paths=s}describe(){const e={rel:this.rel,peers:this.paths};return null!==this.key&&(e.key=this.key.key),"."!==this.peers[0].separator&&(e.options={separator:this.peers[0].separator}),e}},h.Keys=class extends Array{concat(e){const t=this.slice(),r=new Map;for(let e=0;e<t.length;++e)r.set(t[e].key,e);for(const s of e){const e=s.key,n=r.get(e);void 0!==n?t[n]={key:e,schema:t[n].schema.concat(s.schema)}:t.push(s)}return t}}},function(e,t,r){"use strict";const s=r(24),n=r(25),o={minDomainSegments:2,nonAsciiRx:/[^\x00-\x7f]/,domainControlRx:/[\x00-\x20@\:\/]/,tldSegmentRx:/^[a-zA-Z](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,domainSegmentRx:/^[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,URL:s.URL||URL};t.analyze=function(e,t={}){if("string"!=typeof e)throw new Error("Invalid input: domain must be a string");if(!e)return n.code("DOMAIN_NON_EMPTY_STRING");if(e.length>256)return n.code("DOMAIN_TOO_LONG");if(!!o.nonAsciiRx.test(e)){if(!1===t.allowUnicode)return n.code("DOMAIN_INVALID_UNICODE_CHARS");e=e.normalize("NFC")}if(o.domainControlRx.test(e))return n.code("DOMAIN_INVALID_CHARS");e=o.punycode(e);const r=t.minDomainSegments||o.minDomainSegments,s=e.split(".");if(s.length<r)return n.code("DOMAIN_SEGMENTS_COUNT");const a=t.tlds;if(a){const e=s[s.length-1].toLowerCase();if(a.deny&&a.deny.has(e)||a.allow&&!a.allow.has(e))return n.code("DOMAIN_FORBIDDEN_TLDS")}for(let e=0;e<s.length;++e){const t=s[e];if(!t.length)return n.code("DOMAIN_EMPTY_SEGMENT");if(t.length>63)return n.code("DOMAIN_LONG_SEGMENT");if(e<s.length-1){if(!o.domainSegmentRx.test(t))return n.code("DOMAIN_INVALID_CHARS")}else if(!o.tldSegmentRx.test(t))return n.code("DOMAIN_INVALID_TLDS_CHARS")}return null},t.isValid=function(e,r){return!t.analyze(e,r)},o.punycode=function(e){try{return new o.URL("http://".concat(e)).host}catch(t){return e}}},function(e,t){},function(e,t,r){"use strict";t.codes={EMPTY_STRING:"Address must be a non-empty string",FORBIDDEN_UNICODE:"Address contains forbidden Unicode characters",MULTIPLE_AT_CHAR:"Address cannot contain more than one @ character",MISSING_AT_CHAR:"Address must contain one @ character",EMPTY_LOCAL:"Address local part cannot be empty",ADDRESS_TOO_LONG:"Address too long",LOCAL_TOO_LONG:"Address local part too long",EMPTY_LOCAL_SEGMENT:"Address local part contains empty dot-separated segment",INVALID_LOCAL_CHARS:"Address local part contains invalid character",DOMAIN_NON_EMPTY_STRING:"Domain must be a non-empty string",DOMAIN_TOO_LONG:"Domain too long",DOMAIN_INVALID_UNICODE_CHARS:"Domain contains forbidden Unicode characters",DOMAIN_INVALID_CHARS:"Domain contains invalid character",DOMAIN_INVALID_TLDS_CHARS:"Domain contains invalid tld character",DOMAIN_SEGMENTS_COUNT:"Domain lacks the minimum required number of segments",DOMAIN_FORBIDDEN_TLDS:"Domain uses forbidden TLD",DOMAIN_EMPTY_SEGMENT:"Domain contains empty dot-separated segment",DOMAIN_LONG_SEGMENT:"Domain contains dot-separated segment that is too long"},t.code=function(e){return{code:e,error:t.codes[e]}}},function(e,t,r){"use strict";const s=r(0),n=r(27),o={generate:function(){const e={},t="!\\$&'\\(\\)\\*\\+,;=",r="\\w-\\.~%\\dA-Fa-f"+t+":@",s="["+r+"]",n="(?:0{0,2}\\d|0?[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])";e.ipv4address="(?:"+n+"\\.){3}"+n;const o="[\\dA-Fa-f]{1,4}",a="(?:"+o+":"+o+"|"+e.ipv4address+")",i="(?:"+o+":){6}"+a,l="::(?:"+o+":){5}"+a,c="(?:"+o+")?::(?:"+o+":){4}"+a,u="(?:(?:"+o+":){0,1}"+o+")?::(?:"+o+":){3}"+a,f="(?:(?:"+o+":){0,2}"+o+")?::(?:"+o+":){2}"+a,m="(?:(?:"+o+":){0,3}"+o+")?::"+o+":"+a,h="(?:(?:"+o+":){0,4}"+o+")?::"+a;e.ipv4Cidr="(?:\\d|[1-2]\\d|3[0-2])",e.ipv6Cidr="(?:0{0,2}\\d|0?[1-9]\\d|1[01]\\d|12[0-8])",e.ipv6address="(?:"+i+"|"+l+"|"+c+"|"+u+"|"+f+"|"+m+"|"+h+"|(?:(?:[\\dA-Fa-f]{1,4}:){0,5}[\\dA-Fa-f]{1,4})?::[\\dA-Fa-f]{1,4}|(?:(?:[\\dA-Fa-f]{1,4}:){0,6}[\\dA-Fa-f]{1,4})?::)",e.ipvFuture="v[\\dA-Fa-f]+\\.[\\w-\\.~"+t+":]+",e.scheme="[a-zA-Z][a-zA-Z\\d+-\\.]*",e.schemeRegex=new RegExp(e.scheme);const d="[\\w-\\.~%\\dA-Fa-f"+t+":]*",p="(?:"+("\\[(?:"+e.ipv6address+"|"+e.ipvFuture+")\\]")+"|"+e.ipv4address+"|[\\w-\\.~%\\dA-Fa-f!\\$&'\\(\\)\\*\\+,;=]{1,255})",g="(?:"+d+"@)?"+p+"(?::\\d*)?",y="(?:"+d+"@)?("+p+")(?::\\d*)?",b=s+"*",v=s+"+",_="(?:\\/"+b+")*",w="\\/(?:"+v+_+")?",$=v+_;return e.hierPart="(?:(?:\\/\\/"+g+_+")|"+w+"|"+$+"|(?:\\/\\/\\/[\\w-\\.~%\\dA-Fa-f!\\$&'\\(\\)\\*\\+,;=:@]*(?:\\/[\\w-\\.~%\\dA-Fa-f!\\$&'\\(\\)\\*\\+,;=:@]*)*))",e.hierPartCapture="(?:(?:\\/\\/"+y+_+")|"+w+"|"+$+")",e.relativeRef="(?:(?:\\/\\/"+g+_+")|"+w+"|[\\w-\\.~%\\dA-Fa-f!\\$&'\\(\\)\\*\\+,;=@]+(?:\\/[\\w-\\.~%\\dA-Fa-f!\\$&'\\(\\)\\*\\+,;=:@]*)*|)",e.query="["+r+"\\/\\?]*(?=#|$)",e.queryWithSquareBrackets="["+r+"\\[\\]\\/\\?]*(?=#|$)",e.fragment="["+r+"\\/\\?]*",e}};o.rfc3986=o.generate(),t.ip={v4Cidr:o.rfc3986.ipv4Cidr,v6Cidr:o.rfc3986.ipv6Cidr,ipv4:o.rfc3986.ipv4address,ipv6:o.rfc3986.ipv6address,ipvfuture:o.rfc3986.ipvFuture},o.createRegex=function(e){const t=o.rfc3986,r="(?:\\?"+(e.allowQuerySquareBrackets?t.queryWithSquareBrackets:t.query)+")?(?:#"+t.fragment+")?";if(e.relativeOnly)return o.wrap(t.relativeRef+r);let a="";if(e.scheme){s(e.scheme instanceof RegExp||"string"==typeof e.scheme||Array.isArray(e.scheme),"scheme must be a RegExp, String, or Array");const r=[].concat(e.scheme);s(r.length>=1,"scheme must have at least 1 scheme specified");const o=[];for(let e=0;e<r.length;++e){const a=r[e];s(a instanceof RegExp||"string"==typeof a,"scheme at position "+e+" must be a RegExp or String"),a instanceof RegExp?o.push(a.source.toString()):(s(t.schemeRegex.test(a),"scheme at position "+e+" must be a valid scheme"),o.push(n(a)))}a=o.join("|")}const i="(?:"+(a?"(?:"+a+")":t.scheme)+":"+(e.domain?t.hierPartCapture:t.hierPart)+")",l=e.allowRelative?"(?:"+i+"|"+t.relativeRef+")":i;return o.wrap(l+r,a)},o.wrap=function(e,t){return{raw:e="(?=.)(?!https?:/$)".concat(e),regex:new RegExp("^".concat(e,"$")),scheme:t}},o.uriRegex=o.createRegex({}),t.regex=function(e={}){return e.scheme||e.allowRelative||e.relativeOnly||e.allowQuerySquareBrackets||e.domain?o.createRegex(e):o.uriRegex}},function(e,t,r){"use strict";e.exports=function(e){return e.replace(/[\^\$\.\*\+\-\?\=\!\:\|\\\/\(\)\[\]\{\}\,]/g,"\\$&")}},function(e,t,r){"use strict";e.exports=function(...e){try{return JSON.stringify.apply(null,e)}catch(e){return"[Cannot display object: "+e.message+"]"}}},function(e){e.exports=JSON.parse('{"version":"17.1.0"}')},function(e,t,r){"use strict";const s={};e.exports=function(e){if(!e)return"";let t="";for(let r=0;r<e.length;++r){const n=e.charCodeAt(r);s.isSafe(n)?t+=e[r]:t+=s.escapeHtmlChar(n)}return t},s.escapeHtmlChar=function(e){const t=s.namedHtml[e];if(void 0!==t)return t;if(e>=256)return"&#"+e+";";const r=e.toString(16).padStart(2,"0");return"&#x".concat(r,";")},s.isSafe=function(e){return void 0!==s.safeCharCodes[e]},s.namedHtml={38:"&amp;",60:"&lt;",62:"&gt;",34:"&quot;",160:"&nbsp;",162:"&cent;",163:"&pound;",164:"&curren;",169:"&copy;",174:"&reg;"},s.safeCharCodes=function(){const e={};for(let t=32;t<123;++t)(t>=97||t>=65&&t<=90||t>=48&&t<=57||32===t||46===t||44===t||45===t||58===t||95===t)&&(e[t]=null);return e}()},function(e,t,r){"use strict";const s={operators:["!","^","*","/","%","+","-","<","<=",">",">=","==","!=","&&","||","??"],operatorCharacters:["!","^","*","/","%","+","-","<","=",">","&","|","?"],operatorsOrder:[["^"],["*","/","%"],["+","-"],["<","<=",">",">="],["==","!="],["&&"],["||","??"]],operatorsPrefix:["!","n"],literals:{'"':'"',"`":"`","'":"'","[":"]"},numberRx:/^(?:[0-9]*\.?[0-9]*){1}$/,tokenRx:/^[\w\$\#\.\@\:\{\}]+$/,symbol:Symbol("formula"),settings:Symbol("settings")};t.Parser=class{constructor(e,t={}){if(!t[s.settings]&&t.constants)for(const e in t.constants){const r=t.constants[e];if(null!==r&&!["boolean","number","string"].includes(typeof r))throw new Error("Formula constant ".concat(e," contains invalid ").concat(typeof r," value type"))}this.settings=t[s.settings]?t:Object.assign({[s.settings]:!0,constants:{},functions:{}},t),this.single=null,this._parts=null,this._parse(e)}_parse(e){let r=[],n="",o=0,a=!1;const i=e=>{if(o)throw new Error("Formula missing closing parenthesis");const i=r.length?r[r.length-1]:null;if(a||n||e){if(i&&"reference"===i.type&&")"===e)return i.type="function",i.value=this._subFormula(n,i.value),void(n="");if(")"===e){const e=new t.Parser(n,this.settings);r.push({type:"segment",value:e})}else if(a){if("]"===a)return r.push({type:"reference",value:n}),void(n="");r.push({type:"literal",value:n})}else if(s.operatorCharacters.includes(n))i&&"operator"===i.type&&s.operators.includes(i.value+n)?i.value+=n:r.push({type:"operator",value:n});else if(n.match(s.numberRx))r.push({type:"constant",value:parseFloat(n)});else if(void 0!==this.settings.constants[n])r.push({type:"constant",value:this.settings.constants[n]});else{if(!n.match(s.tokenRx))throw new Error("Formula contains invalid token: ".concat(n));r.push({type:"reference",value:n})}n=""}};for(const t of e)a?t===a?(i(),a=!1):n+=t:o?"("===t?(n+=t,++o):")"===t?(--o,o?n+=t:i(t)):n+=t:t in s.literals?a=s.literals[t]:"("===t?(i(),++o):s.operatorCharacters.includes(t)?(i(),n=t,i()):" "!==t?n+=t:i();i(),r=r.map((e,t)=>"operator"!==e.type||"-"!==e.value||t&&"operator"!==r[t-1].type?e:{type:"operator",value:"n"});let l=!1;for(const e of r){if("operator"===e.type){if(s.operatorsPrefix.includes(e.value))continue;if(!l)throw new Error("Formula contains an operator in invalid position");if(!s.operators.includes(e.value))throw new Error("Formula contains an unknown operator ".concat(e.value))}else if(l)throw new Error("Formula missing expected operator");l=!l}if(!l)throw new Error("Formula contains invalid trailing operator");1===r.length&&["reference","literal","constant"].includes(r[0].type)&&(this.single={type:"reference"===r[0].type?"reference":"value",value:r[0].value}),this._parts=r.map(e=>{if("operator"===e.type)return s.operatorsPrefix.includes(e.value)?e:e.value;if("reference"!==e.type)return e.value;if(this.settings.tokenRx&&!this.settings.tokenRx.test(e.value))throw new Error("Formula contains invalid reference ".concat(e.value));return this.settings.reference?this.settings.reference(e.value):s.reference(e.value)})}_subFormula(e,r){const n=this.settings.functions[r];if("function"!=typeof n)throw new Error("Formula contains unknown function ".concat(r));let o=[];if(e){let t="",n=0,a=!1;const i=()=>{if(!t)throw new Error("Formula contains function ".concat(r," with invalid arguments ").concat(e));o.push(t),t=""};for(let r=0;r<e.length;++r){const o=e[r];a?(t+=o,o===a&&(a=!1)):o in s.literals&&!n?(t+=o,a=s.literals[o]):","!==o||n?(t+=o,"("===o?++n:")"===o&&--n):i()}i()}return o=o.map(e=>new t.Parser(e,this.settings)),function(e){const t=[];for(const r of o)t.push(r.evaluate(e));return n.call(e,...t)}}evaluate(e){const t=this._parts.slice();for(let r=t.length-2;r>=0;--r){const n=t[r];if(n&&"operator"===n.type){const o=t[r+1];t.splice(r+1,1);const a=s.evaluate(o,e);t[r]=s.single(n.value,a)}}return s.operatorsOrder.forEach(r=>{for(let n=1;n<t.length-1;)if(r.includes(t[n])){const r=t[n],o=s.evaluate(t[n-1],e),a=s.evaluate(t[n+1],e);t.splice(n,2);const i=s.calculate(r,o,a);t[n-1]=0===i?0:i}else n+=2}),s.evaluate(t[0],e)}},t.Parser.prototype[s.symbol]=!0,s.reference=function(e){return function(t){return t&&void 0!==t[e]?t[e]:null}},s.evaluate=function(e,t){return null===e?null:"function"==typeof e?e(t):e[s.symbol]?e.evaluate(t):e},s.single=function(e,t){if("!"===e)return!t;const r=-t;return 0===r?0:r},s.calculate=function(e,t,r){if("??"===e)return s.exists(t)?t:r;if("string"==typeof t||"string"==typeof r){if("+"===e)return(t=s.exists(t)?t:"")+(r=s.exists(r)?r:"")}else switch(e){case"^":return Math.pow(t,r);case"*":return t*r;case"/":return t/r;case"%":return t%r;case"+":return t+r;case"-":return t-r}switch(e){case"<":return t<r;case"<=":return t<=r;case">":return t>r;case">=":return t>=r;case"==":return t===r;case"!=":return t!==r;case"&&":return t&&r;case"||":return t||r}return null},s.exists=function(e){return null!=e}},function(e,t){},function(e,t,r){"use strict";const s=r(0),n=r(3),o=r(1),a=r(8),i=r(4),l=r(5),c={};e.exports=n.extend({type:"alternatives",flags:{match:{default:"any"}},terms:{matches:{init:[],register:l.toSibling}},args:(e,...t)=>1===t.length&&Array.isArray(t[0])?e.try(...t[0]):e.try(...t),validate(e,t){const{schema:r,error:s,state:n,prefs:o}=t;if(r._flags.match){let t,a=0;for(let s=0;s<r.$_terms.matches.length;++s){const i=r.$_terms.matches[s],l=n.nest(i.schema,"match.".concat(s));l.snapshot();const c=i.schema.$_validate(e,l,o);c.errors?l.restore():(++a,t=c.value)}return a?"one"===r._flags.match?1===a?{value:t}:{errors:s("alternatives.one")}:a===r.$_terms.matches.length?{value:e}:{errors:s("alternatives.all")}:{errors:s("alternatives.any")}}const a=[];for(let t=0;t<r.$_terms.matches.length;++t){const s=r.$_terms.matches[t];if(s.schema){const r=n.nest(s.schema,"match.".concat(t));r.snapshot();const i=s.schema.$_validate(e,r,o);if(!i.errors)return i;r.restore(),a.push({schema:s.schema,reports:i.errors});continue}const i=s.ref?s.ref.resolve(e,n,o):e,l=s.is?[s]:s.switch;for(let r=0;r<l.length;++r){const a=l[r],{is:c,then:u,otherwise:f}=a,m="match.".concat(t).concat(s.switch?"."+r:"");if(c.$_match(i,n.nest(c,"".concat(m,".is")),o)){if(u)return u.$_validate(e,n.nest(u,"".concat(m,".then")),o)}else if(f)return f.$_validate(e,n.nest(f,"".concat(m,".otherwise")),o)}}return c.errors(a,t)},rules:{conditional:{method(e,t){s(!this._flags._endedSwitch,"Unreachable condition"),s(!this._flags.match,"Cannot combine match mode",this._flags.match,"with conditional rule"),s(void 0===t.break,"Cannot use break option with alternatives conditional");const r=this.clone(),n=a.when(r,e,t),o=n.is?[n]:n.switch;for(const e of o)if(e.then&&e.otherwise){r.$_setFlag("_endedSwitch",!0,{clone:!1});break}return r.$_terms.matches.push(n),r.$_mutateRebuild()}},match:{method(e){if(s(["any","one","all"].includes(e),"Invalid alternatives match mode",e),"any"!==e)for(const t of this.$_terms.matches)s(t.schema,"Cannot combine match mode",e,"with conditional rules");return this.$_setFlag("match",e)}},try:{method(...e){s(e.length,"Missing alternative schemas"),o.verifyFlat(e,"try"),s(!this._flags._endedSwitch,"Unreachable condition");const t=this.clone();for(const r of e)t.$_terms.matches.push({schema:t.$_compile(r)});return t.$_mutateRebuild()}}},overrides:{label(e){return this.$_super.label(e).$_modify({each:(t,r)=>"is"!==r.path[0]?t.label(e):void 0,ref:!1})}},rebuild(e){e.$_modify({each:t=>{o.isSchema(t)&&"array"===t.type&&e.$_setFlag("_arrayItems",!0,{clone:!1})}})},manifest:{build(e,t){if(t.matches)for(const r of t.matches){const{schema:t,ref:s,is:n,not:o,then:a,otherwise:i}=r;e=t?e.try(t):s?e.conditional(s,{is:n,then:a,not:o,otherwise:i,switch:r.switch}):e.conditional(n,{then:a,otherwise:i})}return e}},messages:{"alternatives.all":"{{#label}} does not match all of the required types","alternatives.any":"{{#label}} does not match any of the allowed types","alternatives.match":"{{#label}} does not match any of the allowed types","alternatives.one":"{{#label}} matches more than one allowed type","alternatives.types":"{{#label}} must be one of {{#types}}"}}),c.errors=function(e,{error:t,state:r}){if(!e.length)return{errors:t("alternatives.any")};if(1===e.length)return{errors:e[0].reports};const s=new Set,n=[];for(const{reports:o,schema:a}of e){if(o.length>1)return c.unmatched(e,t);const l=o[0];if(l instanceof i.Report==!1)return c.unmatched(e,t);if(l.state.path.length!==r.path.length){n.push({type:a.type,report:l});continue}if("any.only"===l.code){for(const e of l.local.valids)s.add(e);continue}const[u,f]=l.code.split(".");"base"===f?s.add(u):n.push({type:a.type,report:l})}return n.length?1===n.length?{errors:n[0].report}:c.unmatched(e,t):{errors:t("alternatives.types",{types:[...s]})}},c.unmatched=function(e,t){const r=[];for(const t of e)r.push(...t.reports);return{errors:t("alternatives.match",i.details(r,{override:!1}))}}},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(10),a=r(20),i=r(15),l=r(1),c=r(8),u=r(4),f=r(17),m=r(18),h=r(9),d=r(35),p=r(5),g=r(19),y=r(36),b=r(21),v={Base:class{constructor(e){this.type=e,this.$_root=null,this._definition={},this._ids=new d.Ids,this._preferences=null,this._refs=new p.Manager,this._cache=null,this._valids=null,this._invalids=null,this._flags={},this._rules=[],this._singleRules=new Map,this.$_terms={},this.$_temp={ruleset:null,whens:{}}}describe(){return s("function"==typeof m.describe,"Manifest functionality disabled"),m.describe(this)}allow(...e){return l.verifyFlat(e,"allow"),this._values(e,"_valids")}alter(e){s(e&&"object"==typeof e&&!Array.isArray(e),"Invalid targets argument"),s(!this._inRuleset(),"Cannot set alterations inside a ruleset");const t=this.clone();t.$_terms.alterations=t.$_terms.alterations||[];for(const r in e){const n=e[r];s("function"==typeof n,"Alteration adjuster for",r,"must be a function"),t.$_terms.alterations.push({target:r,adjuster:n})}return t.$_temp.ruleset=!1,t}cast(e){return s(!1===e||"string"==typeof e,"Invalid to value"),s(!1===e||this._definition.cast[e],"Type",this.type,"does not support casting to",e),this.$_setFlag("cast",!1===e?void 0:e)}default(e,t){return this._default("default",e,t)}description(e){return s(e&&"string"==typeof e,"Description must be a non-empty string"),this.$_setFlag("description",e)}empty(e){const t=this.clone();return void 0!==e&&(e=t.$_compile(e,{override:!1})),t.$_setFlag("empty",e,{clone:!1})}error(e){return s(e,"Missing error"),s(e instanceof Error||"function"==typeof e,"Must provide a valid Error object or a function"),this.$_setFlag("error",e)}example(e,t={}){return s(void 0!==e,"Missing example"),l.assertOptions(t,["override"]),this._inner("examples",e,{single:!0,override:t.override})}external(e,t){return"object"==typeof e&&(s(!t,"Cannot combine options with description"),t=e.description,e=e.method),s("function"==typeof e,"Method must be a function"),s(void 0===t||t&&"string"==typeof t,"Description must be a non-empty string"),this._inner("externals",{method:e,description:t},{single:!0})}failover(e,t){return this._default("failover",e,t)}forbidden(){return this.presence("forbidden")}id(e){return e?(s("string"==typeof e,"id must be a non-empty string"),s(/^[^\.]+$/.test(e),"id cannot contain period character"),this.$_setFlag("id",e)):this.$_setFlag("id",void 0)}invalid(...e){return this._values(e,"_invalids")}label(e){return s(e&&"string"==typeof e,"Label name must be a non-empty string"),this.$_setFlag("label",e)}meta(e){return s(void 0!==e,"Meta cannot be undefined"),this._inner("metas",e,{single:!0})}note(...e){s(e.length,"Missing notes");for(const t of e)s(t&&"string"==typeof t,"Notes must be non-empty strings");return this._inner("notes",e)}only(e=!0){return s("boolean"==typeof e,"Invalid mode:",e),this.$_setFlag("only",e)}optional(){return this.presence("optional")}prefs(e){s(e,"Missing preferences"),s(void 0===e.context,"Cannot override context"),s(void 0===e.externals,"Cannot override externals"),s(void 0===e.warnings,"Cannot override warnings"),s(void 0===e.debug,"Cannot override debug"),l.checkPreferences(e);const t=this.clone();return t._preferences=l.preferences(t._preferences,e),t}presence(e){return s(["optional","required","forbidden"].includes(e),"Unknown presence mode",e),this.$_setFlag("presence",e)}raw(e=!0){return this.$_setFlag("result",e?"raw":void 0)}result(e){return s(["raw","strip"].includes(e),"Unknown result mode",e),this.$_setFlag("result",e)}required(){return this.presence("required")}strict(e){const t=this.clone(),r=void 0!==e&&!e;return t._preferences=l.preferences(t._preferences,{convert:r}),t}strip(e=!0){return this.$_setFlag("result",e?"strip":void 0)}tag(...e){s(e.length,"Missing tags");for(const t of e)s(t&&"string"==typeof t,"Tags must be non-empty strings");return this._inner("tags",e)}unit(e){return s(e&&"string"==typeof e,"Unit name must be a non-empty string"),this.$_setFlag("unit",e)}valid(...e){l.verifyFlat(e,"valid");const t=this.allow(...e);return t.$_setFlag("only",!!t._valids,{clone:!1}),t}when(e,t){const r=this.clone();r.$_terms.whens||(r.$_terms.whens=[]);const n=c.when(r,e,t);if(!["any","link"].includes(r.type)){const e=n.is?[n]:n.switch;for(const t of e)s(!t.then||"any"===t.then.type||t.then.type===r.type,"Cannot combine",r.type,"with",t.then&&t.then.type),s(!t.otherwise||"any"===t.otherwise.type||t.otherwise.type===r.type,"Cannot combine",r.type,"with",t.otherwise&&t.otherwise.type)}return r.$_terms.whens.push(n),r.$_mutateRebuild()}cache(e){s(!this._inRuleset(),"Cannot set caching inside a ruleset"),s(!this._cache,"Cannot override schema cache");const t=this.clone();return t._cache=e||i.provider.provision(),t.$_temp.ruleset=!1,t}clone(){const e=Object.create(Object.getPrototypeOf(this));return this._assign(e)}concat(e){s(l.isSchema(e),"Invalid schema object"),s("any"===this.type||"any"===e.type||e.type===this.type,"Cannot merge type",this.type,"with another type:",e.type),s(!this._inRuleset(),"Cannot concatenate onto a schema with open ruleset"),s(!e._inRuleset(),"Cannot concatenate a schema with open ruleset");let t=this.clone();if("any"===this.type&&"any"!==e.type){const r=e.clone();for(const e of Object.keys(t))"type"!==e&&(r[e]=t[e]);t=r}t._ids.concat(e._ids),t._refs.register(e,p.toSibling),t._preferences=t._preferences?l.preferences(t._preferences,e._preferences):e._preferences,t._valids=b.merge(t._valids,e._valids,e._invalids),t._invalids=b.merge(t._invalids,e._invalids,e._valids);for(const r of e._singleRules.keys())t._singleRules.has(r)&&(t._rules=t._rules.filter(e=>e.keep||e.name!==r),t._singleRules.delete(r));for(const r of e._rules)e._definition.rules[r.method].multi||t._singleRules.set(r.name,r),t._rules.push(r);if(t._flags.empty&&e._flags.empty){t._flags.empty=t._flags.empty.concat(e._flags.empty);const r=Object.assign({},e._flags);delete r.empty,a(t._flags,r)}else if(e._flags.empty){t._flags.empty=e._flags.empty;const r=Object.assign({},e._flags);delete r.empty,a(t._flags,r)}else a(t._flags,e._flags);for(const r in e.$_terms){const s=e.$_terms[r];s?t.$_terms[r]?t.$_terms[r]=t.$_terms[r].concat(s):t.$_terms[r]=s.slice():t.$_terms[r]||(t.$_terms[r]=s)}return this.$_root._tracer&&this.$_root._tracer._combine(t,[this,e]),t.$_mutateRebuild()}extend(e){return s(!e.base,"Cannot extend type with another base"),f.type(this,e)}extract(e){return e=Array.isArray(e)?e:e.split("."),this._ids.reach(e)}fork(e,t){s(!this._inRuleset(),"Cannot fork inside a ruleset");let r=this;for(let s of[].concat(e))s=Array.isArray(s)?s:s.split("."),r=r._ids.fork(s,t,r);return r.$_temp.ruleset=!1,r}rule(e){const t=this._definition;l.assertOptions(e,Object.keys(t.modifiers)),s(!1!==this.$_temp.ruleset,"Cannot apply rules to empty ruleset or the last rule added does not support rule properties");const r=null===this.$_temp.ruleset?this._rules.length-1:this.$_temp.ruleset;s(r>=0&&r<this._rules.length,"Cannot apply rules to empty ruleset");const o=this.clone();for(let a=r;a<o._rules.length;++a){const r=o._rules[a],i=n(r);for(const n in e)t.modifiers[n](i,e[n]),s(i.name===r.name,"Cannot change rule name");o._rules[a]=i,o._singleRules.get(i.name)===r&&o._singleRules.set(i.name,i)}return o.$_temp.ruleset=!1,o.$_mutateRebuild()}get ruleset(){s(!this._inRuleset(),"Cannot start a new ruleset without closing the previous one");const e=this.clone();return e.$_temp.ruleset=e._rules.length,e}get $(){return this.ruleset}tailor(e){e=[].concat(e),s(!this._inRuleset(),"Cannot tailor inside a ruleset");let t=this;if(this.$_terms.alterations)for(const{target:r,adjuster:n}of this.$_terms.alterations)e.includes(r)&&(t=n(t),s(l.isSchema(t),"Alteration adjuster for",r,"failed to return a schema object"));return t=t.$_modify({each:t=>t.tailor(e),ref:!1}),t.$_temp.ruleset=!1,t.$_mutateRebuild()}tracer(){return g.location?g.location(this):this}validate(e,t){return y.entry(e,this,t)}validateAsync(e,t){return y.entryAsync(e,this,t)}$_addRule(e){"string"==typeof e&&(e={name:e}),s(e&&"object"==typeof e,"Invalid options"),s(e.name&&"string"==typeof e.name,"Invalid rule name");for(const t in e)s("_"!==t[0],"Cannot set private rule properties");const t=Object.assign({},e);t._resolve=[],t.method=t.method||t.name;const r=this._definition.rules[t.method],n=t.args;s(r,"Unknown rule",t.method);const o=this.clone();if(n){s(1===Object.keys(n).length||Object.keys(n).length===this._definition.rules[t.name].args.length,"Invalid rule definition for",this.type,t.name);for(const e in n){let a=n[e];if(void 0!==a){if(r.argsByName){const i=r.argsByName.get(e);if(i.ref&&l.isResolvable(a))t._resolve.push(e),o.$_mutateRegister(a);else if(i.normalize&&(a=i.normalize(a),n[e]=a),i.assert){const t=l.validateArg(a,e,i);s(!t,t,"or reference")}}n[e]=a}else delete n[e]}}return r.multi||(o._ruleRemove(t.name,{clone:!1}),o._singleRules.set(t.name,t)),!1===o.$_temp.ruleset&&(o.$_temp.ruleset=null),r.priority?o._rules.unshift(t):o._rules.push(t),o}$_compile(e,t){return c.schema(this.$_root,e,t)}$_createError(e,t,r,s,n,o={}){const a=!1!==o.flags?this._flags:{},i=o.messages?h.merge(this._definition.messages,o.messages):this._definition.messages;return new u.Report(e,t,r,a,i,s,n)}$_getFlag(e){return this._flags[e]}$_getRule(e){return this._singleRules.get(e)}$_mapLabels(e){return e=Array.isArray(e)?e:e.split("."),this._ids.labels(e)}$_match(e,t,r,s){(r=Object.assign({},r)).abortEarly=!0,r._externals=!1,t.snapshot();const n=!y.validate(e,this,t,r,s).errors;return t.restore(),n}$_modify(e){return l.assertOptions(e,["each","once","ref","schema"]),d.schema(this,e)||this}$_mutateRebuild(){s(!this._inRuleset(),"Cannot add this rule inside a ruleset"),this._refs.reset(),this._ids.reset();return this.$_modify({each:(e,{source:t,name:r,path:s,key:n})=>{const o=this._definition[t][r]&&this._definition[t][r].register;!1!==o&&this.$_mutateRegister(e,{family:o,key:n})}}),this._definition.rebuild&&this._definition.rebuild(this),this.$_temp.ruleset=!1,this}$_mutateRegister(e,{family:t,key:r}={}){this._refs.register(e,t),this._ids.register(e,{key:r})}$_property(e){return this._definition.properties[e]}$_reach(e){return this._ids.reach(e)}$_rootReferences(){return this._refs.roots()}$_setFlag(e,t,r={}){s("_"===e[0]||!this._inRuleset(),"Cannot set flag inside a ruleset");const n=this._definition.flags[e]||{};if(o(t,n.default)&&(t=void 0),o(t,this._flags[e]))return this;const a=!1!==r.clone?this.clone():this;return void 0!==t?(a._flags[e]=t,a.$_mutateRegister(t)):delete a._flags[e],"_"!==e[0]&&(a.$_temp.ruleset=!1),a}$_validate(e,t,r){return y.validate(e,this,t,r)}_assign(e){e.type=this.type,e.$_root=this.$_root,e.$_temp=Object.assign({},this.$_temp),e.$_temp.whens={},e._ids=this._ids.clone(),e._preferences=this._preferences,e._valids=this._valids&&this._valids.clone(),e._invalids=this._invalids&&this._invalids.clone(),e._rules=this._rules.slice(),e._singleRules=n(this._singleRules,{shallow:!0}),e._refs=this._refs.clone(),e._flags=Object.assign({},this._flags),e._cache=null,e.$_terms={};for(const t in this.$_terms)e.$_terms[t]=this.$_terms[t]?this.$_terms[t].slice():null;e.$_super={};for(const t in this.$_super)e.$_super[t]=this._super[t].bind(e);return e}_default(e,t,r={}){return l.assertOptions(r,"literal"),s(void 0!==t,"Missing",e,"value"),s("function"==typeof t||!r.literal,"Only function value supports literal option"),"function"==typeof t&&r.literal&&(t={[l.symbols.literal]:!0,literal:t}),this.$_setFlag(e,t)}_generate(e,t,r){if(!this.$_terms.whens)return{schema:this};const s=[],n=[];for(let o=0;o<this.$_terms.whens.length;++o){const a=this.$_terms.whens[o];if(a.concat){s.push(a.concat),n.push("".concat(o,".concat"));continue}const i=a.ref?a.ref.resolve(e,t,r):e,l=a.is?[a]:a.switch,c=n.length;for(let c=0;c<l.length;++c){const{is:u,then:f,otherwise:m}=l[c],h="".concat(o).concat(a.switch?"."+c:"");if(u.$_match(i,t.nest(u,"".concat(h,".is")),r)){if(f){const o=t.localize([...t.path,"".concat(h,".then")],t.ancestors,t.schemas),{schema:a,id:i}=f._generate(e,o,r);s.push(a),n.push("".concat(h,".then").concat(i?"(".concat(i,")"):""));break}}else if(m){const o=t.localize([...t.path,"".concat(h,".otherwise")],t.ancestors,t.schemas),{schema:a,id:i}=m._generate(e,o,r);s.push(a),n.push("".concat(h,".otherwise").concat(i?"(".concat(i,")"):""));break}}if(a.break&&n.length>c)break}const o=n.join(", ");if(t.mainstay.tracer.debug(t,"rule","when",o),!o)return{schema:this};if(!t.mainstay.tracer.active&&this.$_temp.whens[o])return{schema:this.$_temp.whens[o],id:o};let a=this;this._definition.generate&&(a=this._definition.generate(this,e,t,r));for(const e of s)a=a.concat(e);return this.$_root._tracer&&this.$_root._tracer._combine(a,[this,...s]),this.$_temp.whens[o]=a,{schema:a,id:o}}_inner(e,t,r={}){s(!this._inRuleset(),"Cannot set ".concat(e," inside a ruleset"));const n=this.clone();return n.$_terms[e]&&!r.override||(n.$_terms[e]=[]),r.single?n.$_terms[e].push(t):n.$_terms[e].push(...t),n.$_temp.ruleset=!1,n}_inRuleset(){return null!==this.$_temp.ruleset&&!1!==this.$_temp.ruleset}_ruleRemove(e,t={}){if(!this._singleRules.has(e))return this;const r=!1!==t.clone?this.clone():this;r._singleRules.delete(e);const s=[];for(let t=0;t<r._rules.length;++t){const n=r._rules[t];n.name!==e||n.keep?s.push(n):r._inRuleset()&&t<r.$_temp.ruleset&&--r.$_temp.ruleset}return r._rules=s,r}_values(e,t){l.verifyFlat(e,t.slice(1,-1));const r=this.clone(),n=e[0]===l.symbols.override;if(n&&(e=e.slice(1)),!r[t]&&e.length?r[t]=new b:n&&(r[t]=e.length?new b:null,r.$_mutateRebuild()),!r[t])return r;n&&r[t].override();for(const n of e){s(void 0!==n,"Cannot call allow/valid/invalid with undefined"),s(n!==l.symbols.override,"Override must be the first value");const e="_invalids"===t?"_valids":"_invalids";r[e]&&(r[e].remove(n),r[e].length||(s("_valids"===t||!r._flags.only,"Setting invalid value",n,"leaves schema rejecting all values due to previous valid rule"),r[e]=null)),r[t].add(n,r._refs)}return r}}};v.Base.prototype[l.symbols.any]={version:l.version,compile:c.compile,root:"$_root"},v.Base.prototype.isImmutable=!0,v.Base.prototype.deny=v.Base.prototype.invalid,v.Base.prototype.disallow=v.Base.prototype.invalid,v.Base.prototype.equal=v.Base.prototype.valid,v.Base.prototype.exist=v.Base.prototype.required,v.Base.prototype.not=v.Base.prototype.invalid,v.Base.prototype.options=v.Base.prototype.prefs,v.Base.prototype.preferences=v.Base.prototype.prefs,e.exports=new v.Base},function(e,t,r){"use strict";function s(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var s=Object.getOwnPropertySymbols(e);t&&(s=s.filter((function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable}))),r.push.apply(r,s)}return r}function n(e,t,r){return t in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}const o=r(0),a=r(1),i=r(5),l={};t.Ids=l.Ids=class{constructor(){this._byId=new Map,this._byKey=new Map,this._schemaChain=!1}clone(){const e=new l.Ids;return e._byId=new Map(this._byId),e._byKey=new Map(this._byKey),e._schemaChain=this._schemaChain,e}concat(e){e._schemaChain&&(this._schemaChain=!0);for(const[t,r]of e._byId.entries())o(!this._byKey.has(t),"Schema id conflicts with existing key:",t),this._byId.set(t,r);for(const[t,r]of e._byKey.entries())o(!this._byId.has(t),"Schema key conflicts with existing id:",t),this._byKey.set(t,r)}fork(e,t,r){const s=this._collect(e);s.push({schema:r});const n=s.shift();let i={id:n.id,schema:t(n.schema)};o(a.isSchema(i.schema),"adjuster function failed to return a joi schema type");for(const e of s)i={id:e.id,schema:l.fork(e.schema,i.id,i.schema)};return i.schema}labels(e,t=[]){const r=e[0],s=this._get(r);if(!s)return[...t,...e].join(".");const n=e.slice(1);return t=[...t,s.schema._flags.label||r],n.length?s.schema._ids.labels(n,t):t.join(".")}reach(e,t=[]){const r=e[0],s=this._get(r);o(s,"Schema does not contain path",[...t,...e].join("."));const n=e.slice(1);return n.length?s.schema._ids.reach(n,[...t,r]):s.schema}register(e,{key:t}={}){if(!e||!a.isSchema(e))return;(e.$_property("schemaChain")||e._ids._schemaChain)&&(this._schemaChain=!0);const r=e._flags.id;if(r){const t=this._byId.get(r);o(!t||t.schema===e,"Cannot add different schemas with the same id:",r),o(!this._byKey.has(r),"Schema id conflicts with existing key:",r),this._byId.set(r,{schema:e,id:r})}t&&(o(!this._byKey.has(t),"Schema already contains key:",t),o(!this._byId.has(t),"Schema key conflicts with existing id:",t),this._byKey.set(t,{schema:e,id:t}))}reset(){this._byId=new Map,this._byKey=new Map,this._schemaChain=!1}_collect(e,t=[],r=[]){const s=e[0],n=this._get(s);o(n,"Schema does not contain path",[...t,...e].join(".")),r=[n,...r];const a=e.slice(1);return a.length?n.schema._ids._collect(a,[...t,s],r):r}_get(e){return this._byId.get(e)||this._byKey.get(e)}},l.fork=function(e,r,s){return t.schema(e,{each:(e,{key:t})=>{if(r===(e._flags.id||t))return s},ref:!1}).$_mutateRebuild()},t.schema=function(e,t){let r;for(const s in e._flags){if("_"===s[0])continue;const n=l.scan(e._flags[s],{source:"flags",name:s},t);void 0!==n&&(r=r||e.clone(),r._flags[s]=n)}for(let s=0;s<e._rules.length;++s){const n=e._rules[s],o=l.scan(n.args,{source:"rules",name:n.name},t);if(void 0!==o){r=r||e.clone();const t=Object.assign({},n);t.args=o,r._rules[s]=t,r._singleRules.get(n.name)===n&&r._singleRules.set(n.name,t)}}for(const s in e.$_terms){if("_"===s[0])continue;const n=l.scan(e.$_terms[s],{source:"terms",name:s},t);void 0!==n&&(r=r||e.clone(),r.$_terms[s]=n)}return r},l.scan=function(e,t,r,o,c){const u=o||[];if(null===e||"object"!=typeof e)return;let f;if(Array.isArray(e)){for(let s=0;s<e.length;++s){const n="terms"===t.source&&"keys"===t.name&&e[s].key,o=l.scan(e[s],t,r,[s,...u],n);void 0!==o&&(f=f||e.slice(),f[s]=o)}return f}if(!1!==r.schema&&a.isSchema(e)||!1!==r.ref&&i.isRef(e)){const o=r.each(e,function(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?s(Object(r),!0).forEach((function(t){n(e,t,r[t])})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):s(Object(r)).forEach((function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))}))}return e}({},t,{path:u,key:c}));if(o===e)return;return o}for(const s in e){if("_"===s[0])continue;const n=l.scan(e[s],t,r,[s,...u],c);void 0!==n&&(f=f||Object.assign({},e),f[s]=n)}return f}},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(37),a=r(6),i=r(1),l=r(4),c=r(38),u={result:Symbol("result")};t.entry=function(e,t,r){let n=i.defaults;r&&(s(void 0===r.warnings,"Cannot override warnings preference in synchronous validation"),n=i.preferences(i.defaults,r));const o=u.entry(e,t,n);s(!o.mainstay.externals.length,"Schema with external rules must use validateAsync()");const a={value:o.value};return o.error&&(a.error=o.error),o.mainstay.warnings.length&&(a.warning=l.details(o.mainstay.warnings)),o.mainstay.debug&&(a.debug=o.mainstay.debug),a},t.entryAsync=async function(e,t,r){let s=i.defaults;r&&(s=i.preferences(i.defaults,r));const n=u.entry(e,t,s),o=n.mainstay;if(n.error)throw o.debug&&(n.error.debug=o.debug),n.error;if(o.externals.length){let e=n.value;for(const{method:t,path:r,label:s}of o.externals){let n,o,i=e;r.length&&(n=r[r.length-1],o=a(e,r.slice(0,-1)),i=o[n]);try{const r=await t(i);if(void 0===r||r===i)continue;o?o[n]=r:e=r}catch(e){throw e.message+=" (".concat(s,")"),e}}n.value=e}if(!s.warnings&&!s.debug)return n.value;const c={value:n.value};return o.warnings.length&&(c.warning=l.details(o.warnings)),o.debug&&(c.debug=o.debug),c},u.entry=function(e,r,s){const{tracer:n,cleanup:o}=u.tracer(r,s),a={externals:[],warnings:[],tracer:n,debug:s.debug?[]:null,links:r._ids._schemaChain?new Map:null},i=r._ids._schemaChain?[{schema:r}]:null,f=new c([],[],{mainstay:a,schemas:i}),m=t.validate(e,r,f,s);o&&r.$_root.untrace();const h=l.process(m.errors,e,s);return{value:m.value,error:h,mainstay:a}},u.tracer=function(e,t){return e.$_root._tracer?{tracer:e.$_root._tracer._register(e)}:t.debug?(s(e.$_root.trace,"Debug mode not supported"),{tracer:e.$_root.trace()._register(e),cleanup:!0}):{tracer:u.ignore}},t.validate=function(e,t,r,s,n={}){if(t.$_terms.whens&&(t=t._generate(e,r,s).schema),t._preferences&&(s=u.prefs(t,s)),t._cache&&s.cache){const s=t._cache.get(e);if(r.mainstay.tracer.debug(r,"validate","cached",!!s),s)return s}const o=(n,o,a)=>t.$_createError(n,e,o,a||r,s),a={original:e,prefs:s,schema:t,state:r,error:o,warn:(e,t,s)=>r.mainstay.warnings.push(o(e,t,s)),message:(n,o)=>t.$_createError("custom",e,o,r,s,{messages:n})};r.mainstay.tracer.entry(t,r);const l=t._definition;if(l.prepare&&void 0!==e&&s.convert){const t=l.prepare(e,a);if(t){if(r.mainstay.tracer.value(r,"prepare",e,t.value),t.errors)return u.finalize(t.value,[].concat(t.errors),a);e=t.value}}if(l.coerce&&void 0!==e&&s.convert&&(!l.coerce.from||l.coerce.from.includes(typeof e))){const t=l.coerce.method(e,a);if(t){if(r.mainstay.tracer.value(r,"coerced",e,t.value),t.errors)return u.finalize(t.value,[].concat(t.errors),a);e=t.value}}const c=t._flags.empty;c&&c.$_match(u.trim(e,t),r.nest(c),i.defaults)&&(r.mainstay.tracer.value(r,"empty",e,void 0),e=void 0);const f=n.presence||t._flags.presence||(t._flags._endedSwitch?"ignore":s.presence);if(void 0===e){if("forbidden"===f)return u.finalize(e,null,a);if("required"===f)return u.finalize(e,[t.$_createError("any.required",e,null,r,s)],a);if("optional"===f){if(t._flags.default!==i.symbols.deepDefault)return u.finalize(e,null,a);r.mainstay.tracer.value(r,"default",e,{}),e={}}}else if("forbidden"===f)return u.finalize(e,[t.$_createError("any.unknown",e,null,r,s)],a);const m=[];if(t._valids){const n=t._valids.get(e,r,s,t._flags.insensitive);if(n)return s.convert&&(r.mainstay.tracer.value(r,"valids",e,n.value),e=n.value),r.mainstay.tracer.filter(t,r,"valid",n),u.finalize(e,null,a);if(t._flags.only){const n=t.$_createError("any.only",e,{valids:t._valids.values({display:!0})},r,s);if(s.abortEarly)return u.finalize(e,[n],a);m.push(n)}}if(t._invalids){const n=t._invalids.get(e,r,s,t._flags.insensitive);if(n){r.mainstay.tracer.filter(t,r,"invalid",n);const o=t.$_createError("any.invalid",e,{invalids:t._invalids.values({display:!0})},r,s);if(s.abortEarly)return u.finalize(e,[o],a);m.push(o)}}if(l.validate){const t=l.validate(e,a);if(t&&(r.mainstay.tracer.value(r,"base",e,t.value),e=t.value,t.errors)){if(!Array.isArray(t.errors))return m.push(t.errors),u.finalize(e,m,a);if(t.errors.length)return m.push(...t.errors),u.finalize(e,m,a)}}return t._rules.length?u.rules(e,m,a):u.finalize(e,m,a)},u.rules=function(e,t,r){const{schema:s,state:n,prefs:o}=r;for(const a of s._rules){const l=s._definition.rules[a.method];if(l.convert&&o.convert){n.mainstay.tracer.log(s,n,"rule",a.name,"full");continue}let c,f=a.args;if(a._resolve.length){f=Object.assign({},f);for(const t of a._resolve){const r=l.argsByName.get(t),a=f[t].resolve(e,n,o),u=r.normalize?r.normalize(a):a,m=i.validateArg(u,null,r);if(m){c=s.$_createError("any.ref",a,{arg:t,ref:f[t],reason:m},n,o);break}f[t]=u}}c=c||l.validate(e,r,f,a);const m=u.rule(c,a);if(m.errors){if(n.mainstay.tracer.log(s,n,"rule",a.name,"error"),a.warn){n.mainstay.warnings.push(...m.errors);continue}if(o.abortEarly)return u.finalize(e,m.errors,r);t.push(...m.errors)}else n.mainstay.tracer.log(s,n,"rule",a.name,"pass"),n.mainstay.tracer.value(n,"rule",e,m.value,a.name),e=m.value}return u.finalize(e,t,r)},u.rule=function(e,t){return e instanceof l.Report?(u.error(e,t),{errors:[e],value:null}):Array.isArray(e)&&(e[0]instanceof l.Report||e[0]instanceof Error)?(e.forEach(e=>u.error(e,t)),{errors:e,value:null}):{errors:null,value:e}},u.error=function(e,t){return t.message&&e._setTemplate(t.message),e},u.finalize=function(e,t,r){t=t||[];const{schema:n,state:o,prefs:a}=r;if(t.length){const s=u.default("failover",void 0,t,r);void 0!==s&&(o.mainstay.tracer.value(o,"failover",e,s),e=s,t=[])}if(t.length&&n._flags.error)if("function"==typeof n._flags.error){t=n._flags.error(t),Array.isArray(t)||(t=[t]);for(const e of t)s(e instanceof Error||e instanceof l.Report,"error() must return an Error object")}else t=[n._flags.error];if(void 0===e){const s=u.default("default",e,t,r);o.mainstay.tracer.value(o,"default",e,s),e=s}if(n._flags.cast&&void 0!==e){const t=n._definition.cast[n._flags.cast];if(t.from(e)){const s=t.to(e,r);o.mainstay.tracer.value(o,"cast",e,s,n._flags.cast),e=s}}if(n.$_terms.externals&&a.externals&&!1!==a._externals)for(const{method:e}of n.$_terms.externals)o.mainstay.externals.push({method:e,path:o.path,label:l.label(n._flags,o,a)});const i={value:e,errors:t.length?t:null};return n._flags.result&&(i.value="strip"===n._flags.result?void 0:r.original,o.mainstay.tracer.value(o,n._flags.result,e,i.value),o.shadow(e,n._flags.result)),n._cache&&!1!==a.cache&&!n._refs.length&&n._cache.set(r.original,i),i},u.prefs=function(e,t){const r=t===i.defaults;return r&&e._preferences[i.symbols.prefs]?e._preferences[i.symbols.prefs]:(t=i.preferences(t,e._preferences),r&&(e._preferences[i.symbols.prefs]=t),t)},u.default=function(e,t,r,s){const{schema:o,state:a,prefs:l}=s,c=o._flags[e];if(l.noDefaults||void 0===c)return t;if(a.mainstay.tracer.log(o,a,"rule",e,"full"),!c)return c;if("function"==typeof c){const t=c.length?[n(a.ancestors[0]),s]:[];try{return c(...t)}catch(t){return void r.push(o.$_createError("any.".concat(e),null,{error:t},a,l))}}return"object"!=typeof c?c:c[i.symbols.literal]?c.literal:i.isResolvable(c)?c.resolve(t,a,l):n(c)},u.trim=function(e,t){if("string"!=typeof e)return e;const r=t.$_getRule("trim");return r&&r.args.enabled?e.trim():e},u.ignore={active:!1,debug:o,entry:o,filter:o,log:o,resolve:o,value:o}},function(e,t,r){"use strict";e.exports=function(){}},function(e,t,r){"use strict";const s=r(2),n=r(6),o=r(1),a={value:Symbol("value")};e.exports=a.State=class{constructor(e,t,r){this.path=e,this.ancestors=t,this.mainstay=r.mainstay,this.schemas=r.schemas,this.debug=null}localize(e,t=null,r=null){const s=new a.State(e,t,this);return r&&s.schemas&&(s.schemas=[a.schemas(r),...s.schemas]),s}nest(e,t){const r=new a.State(this.path,this.ancestors,this);return r.schemas=r.schemas&&[a.schemas(e),...r.schemas],r.debug=t,r}shadow(e,t){this.mainstay.shadow=this.mainstay.shadow||new a.Shadow,this.mainstay.shadow.set(this.path,e,t)}snapshot(){this.mainstay.shadow&&(this._snapshot=s(this.mainstay.shadow.node(this.path)))}restore(){this.mainstay.shadow&&(this.mainstay.shadow.override(this.path,this._snapshot),this._snapshot=void 0)}},a.schemas=function(e){return o.isSchema(e)?{schema:e}:e},a.Shadow=class{constructor(){this._values=null}set(e,t,r){if(!e.length)return;if("strip"===r&&"number"==typeof e[e.length-1])return;this._values=this._values||new Map;let s=this._values;for(let t=0;t<e.length;++t){const r=e[t];let n=s.get(r);n||(n=new Map,s.set(r,n)),s=n}s[a.value]=t}get(e){const t=this.node(e);if(t)return t[a.value]}node(e){if(this._values)return n(this._values,e,{iterables:!0})}override(e,t){if(!this._values)return;const r=e.slice(0,-1),s=e[e.length-1],o=n(this._values,r,{iterables:!0});t?o.set(s,t):o&&o.delete(s)}}},function(e,t,r){"use strict";const s=r(0),n=r(10),o=r(6),a=r(3),i=r(1),l=r(8),c={};e.exports=a.extend({type:"array",flags:{single:{default:!1},sparse:{default:!1}},terms:{items:{init:[],manifest:"schema"},ordered:{init:[],manifest:"schema"},_exclusions:{init:[]},_inclusions:{init:[]},_requireds:{init:[]}},coerce:{from:"object",method(e,{schema:t,state:r,prefs:s}){if(!Array.isArray(e))return;const n=t.$_getRule("sort");return n?c.sort(t,e,n.args.options,r,s):void 0}},validate(e,{schema:t,error:r}){if(!Array.isArray(e)){if(t._flags.single){const t=[e];return t[i.symbols.arraySingle]=!0,{value:t}}return{errors:r("array.base")}}if(t.$_getRule("items")||t.$_terms.externals)return{value:e.slice()}},rules:{has:{method(e){e=this.$_compile(e,{appendPath:!0});const t=this.$_addRule({name:"has",args:{schema:e}});return t.$_mutateRegister(e),t},validate(e,{state:t,prefs:r,error:s},{schema:n}){const o=[e,...t.ancestors];for(let s=0;s<e.length;++s){const a=t.localize([...t.path,s],o,n);if(n.$_match(e[s],a,r))return e}const a=n._flags.label;return a?s("array.hasKnown",{patternLabel:a}):s("array.hasUnknown",null)},multi:!0},items:{method(...e){i.verifyFlat(e,"items");const t=this.$_addRule("items");for(let r=0;r<e.length;++r){const s=i.tryWithPath(()=>this.$_compile(e[r]),r,{append:!0});t.$_terms.items.push(s)}return t.$_mutateRebuild()},validate(e,{schema:t,error:r,state:s,prefs:n}){const o=t.$_terms._requireds.slice(),a=t.$_terms.ordered.slice(),l=[...t.$_terms._inclusions,...o],u=!e[i.symbols.arraySingle];delete e[i.symbols.arraySingle];const f=[];let m=e.length;for(let i=0;i<m;++i){const h=e[i];let d=!1,p=!1;const g=u?i:new Number(i),y=[...s.path,g];if(!t._flags.sparse&&void 0===h){if(f.push(r("array.sparse",{key:g,path:y,pos:i,value:void 0},s.localize(y))),n.abortEarly)return f;a.shift();continue}const b=[e,...s.ancestors];for(const e of t.$_terms._exclusions)if(e.$_match(h,s.localize(y,b,e),n,{presence:"ignore"})){if(f.push(r("array.excludes",{pos:i,value:h},s.localize(y))),n.abortEarly)return f;d=!0,a.shift();break}if(d)continue;if(t.$_terms.ordered.length){if(a.length){const o=a.shift(),l=o.$_validate(h,s.localize(y,b,o),n);if(l.errors){if(f.push(...l.errors),n.abortEarly)return f}else if("strip"===o._flags.result)c.fastSplice(e,i),--i,--m;else{if(!t._flags.sparse&&void 0===l.value){if(f.push(r("array.sparse",{key:g,path:y,pos:i,value:void 0},s.localize(y))),n.abortEarly)return f;continue}e[i]=l.value}continue}if(!t.$_terms.items.length){if(f.push(r("array.orderedLength",{pos:i,limit:t.$_terms.ordered.length})),n.abortEarly)return f;break}}const v=[];let _=o.length;for(let a=0;a<_;++a){const l=s.localize(y,b,o[a]);l.snapshot();const u=o[a].$_validate(h,l,n);if(v[a]=u,!u.errors){if(e[i]=u.value,p=!0,c.fastSplice(o,a),--a,--_,!t._flags.sparse&&void 0===u.value&&(f.push(r("array.sparse",{key:g,path:y,pos:i,value:void 0},s.localize(y))),n.abortEarly))return f;break}l.restore()}if(p)continue;const w=n.stripUnknown&&!!n.stripUnknown.arrays||!1;_=l.length;for(const a of l){let l;const u=o.indexOf(a);if(-1!==u)l=v[u];else{const o=s.localize(y,b,a);if(o.snapshot(),l=a.$_validate(h,o,n),!l.errors){"strip"===a._flags.result?(c.fastSplice(e,i),--i,--m):t._flags.sparse||void 0!==l.value?e[i]=l.value:(f.push(r("array.sparse",{key:g,path:y,pos:i,value:void 0},s.localize(y))),d=!0),p=!0;break}o.restore()}if(1===_){if(w){c.fastSplice(e,i),--i,--m,p=!0;break}if(f.push(...l.errors),n.abortEarly)return f;d=!0;break}}if(!d&&(t.$_terms._inclusions.length&&!p)){if(w){c.fastSplice(e,i),--i,--m;continue}if(f.push(r("array.includes",{pos:i,value:h},s.localize(y))),n.abortEarly)return f}}return o.length&&c.fillMissedErrors(t,f,o,e,s,n),a.length&&c.fillOrderedErrors(t,f,a,e,s,n),f.length?f:e},priority:!0,manifest:!1},length:{method(e){return this.$_addRule({name:"length",args:{limit:e},operator:"="})},validate:(e,t,{limit:r},{name:s,operator:n,args:o})=>i.compare(e.length,r,n)?e:t.error("array."+s,{limit:o.limit,value:e}),args:[{name:"limit",ref:!0,assert:i.limit,message:"must be a positive integer"}]},max:{method(e){return this.$_addRule({name:"max",method:"length",args:{limit:e},operator:"<="})}},min:{method(e){return this.$_addRule({name:"min",method:"length",args:{limit:e},operator:">="})}},ordered:{method(...e){i.verifyFlat(e,"ordered");const t=this.$_addRule("items");for(let r=0;r<e.length;++r){const s=i.tryWithPath(()=>this.$_compile(e[r]),r,{append:!0});c.validateSingle(s,t),t.$_mutateRegister(s),t.$_terms.ordered.push(s)}return t.$_mutateRebuild()}},single:{method(e){const t=void 0===e||!!e;return s(!t||!this._flags._arrayItems,"Cannot specify single rule when array has array items"),this.$_setFlag("single",t)}},sort:{method(e={}){i.assertOptions(e,["by","order"]);const t={order:e.order||"ascending"};return e.by&&(t.by=l.ref(e.by,{ancestor:0}),s(!t.by.ancestor,"Cannot sort by ancestor")),this.$_addRule({name:"sort",args:{options:t}})},validate(e,{error:t,state:r,prefs:s,schema:n},{options:o}){const{value:a,errors:i}=c.sort(n,e,o,r,s);if(i)return i;for(let r=0;r<e.length;++r)if(e[r]!==a[r])return t("array.sort",{order:o.order,by:o.by?o.by.key:"value"});return e},convert:!0},sparse:{method(e){const t=void 0===e||!!e;return this._flags.sparse===t?this:(t?this.clone():this.$_addRule("items")).$_setFlag("sparse",t,{clone:!1})}},unique:{method(e,t={}){s(!e||"function"==typeof e||"string"==typeof e,"comparator must be a function or a string"),i.assertOptions(t,["ignoreUndefined","separator"]);const r={name:"unique",args:{options:t,comparator:e}};if(e)if("string"==typeof e){const s=i.default(t.separator,".");r.path=s?e.split(s):[e]}else r.comparator=e;return this.$_addRule(r)},validate(e,{state:t,error:r,schema:a},{comparator:i,options:l},{comparator:c,path:u}){const f={string:Object.create(null),number:Object.create(null),undefined:Object.create(null),boolean:Object.create(null),object:new Map,function:new Map,custom:new Map},m=c||n,h=l.ignoreUndefined;for(let n=0;n<e.length;++n){const a=u?o(e[n],u):e[n],l=c?f.custom:f[typeof a];if(s(l,"Failed to find unique map container for type",typeof a),l instanceof Map){const s=l.entries();let o;for(;!(o=s.next()).done;)if(m(o.value[0],a)){const s=t.localize([...t.path,n],[e,...t.ancestors]),a={pos:n,value:e[n],dupePos:o.value[1],dupeValue:e[o.value[1]]};return u&&(a.path=i),r("array.unique",a,s)}l.set(a,n)}else{if((!h||void 0!==a)&&void 0!==l[a]){const s={pos:n,value:e[n],dupePos:l[a],dupeValue:e[l[a]]};return u&&(s.path=i),r("array.unique",s,t.localize([...t.path,n],[e,...t.ancestors]))}l[a]=n}}return e},args:["comparator","options"],multi:!0}},cast:{set:{from:Array.isArray,to:(e,t)=>new Set(e)}},rebuild(e){e.$_terms._inclusions=[],e.$_terms._exclusions=[],e.$_terms._requireds=[];for(const t of e.$_terms.items)c.validateSingle(t,e),"required"===t._flags.presence?e.$_terms._requireds.push(t):"forbidden"===t._flags.presence?e.$_terms._exclusions.push(t):e.$_terms._inclusions.push(t);for(const t of e.$_terms.ordered)c.validateSingle(t,e)},manifest:{build:(e,t)=>(t.items&&(e=e.items(...t.items)),t.ordered&&(e=e.ordered(...t.ordered)),e)},messages:{"array.base":"{{#label}} must be an array","array.excludes":"{{#label}} contains an excluded value","array.hasKnown":'{{#label}} does not contain at least one required match for type "{#patternLabel}"',"array.hasUnknown":"{{#label}} does not contain at least one required match","array.includes":"{{#label}} does not match any of the allowed types","array.includesRequiredBoth":"{{#label}} does not contain {{#knownMisses}} and {{#unknownMisses}} other required value(s)","array.includesRequiredKnowns":"{{#label}} does not contain {{#knownMisses}}","array.includesRequiredUnknowns":"{{#label}} does not contain {{#unknownMisses}} required value(s)","array.length":"{{#label}} must contain {{#limit}} items","array.max":"{{#label}} must contain less than or equal to {{#limit}} items","array.min":"{{#label}} must contain at least {{#limit}} items","array.orderedLength":"{{#label}} must contain at most {{#limit}} items","array.sort":"{{#label}} must be sorted in {#order} order by {{#by}}","array.sort.mismatching":"{{#label}} cannot be sorted due to mismatching types","array.sort.unsupported":"{{#label}} cannot be sorted due to unsupported type {#type}","array.sparse":"{{#label}} must not be a sparse array item","array.unique":"{{#label}} contains a duplicate value"}}),c.fillMissedErrors=function(e,t,r,s,n,o){const a=[];let i=0;for(const e of r){const t=e._flags.label;t?a.push(t):++i}a.length?i?t.push(e.$_createError("array.includesRequiredBoth",s,{knownMisses:a,unknownMisses:i},n,o)):t.push(e.$_createError("array.includesRequiredKnowns",s,{knownMisses:a},n,o)):t.push(e.$_createError("array.includesRequiredUnknowns",s,{unknownMisses:i},n,o))},c.fillOrderedErrors=function(e,t,r,s,n,o){const a=[];for(const e of r)"required"===e._flags.presence&&a.push(e);a.length&&c.fillMissedErrors(e,t,a,s,n,o)},c.fastSplice=function(e,t){let r=t;for(;r<e.length;)e[r++]=e[r];--e.length},c.validateSingle=function(e,t){("array"===e.type||e._flags._arrayItems)&&(s(!t._flags.single,"Cannot specify array item with single rule enabled"),t.$_setFlag("_arrayItems",!0,{clone:!1}))},c.sort=function(e,t,r,s,n){const o="ascending"===r.order?1:-1,a=-1*o,i=o,l=(l,u)=>{let f=c.compare(l,u,a,i);if(null!==f)return f;if(r.by&&(l=r.by.resolve(l,s,n),u=r.by.resolve(u,s,n)),f=c.compare(l,u,a,i),null!==f)return f;const m=typeof l;if(m!==typeof u)throw e.$_createError("array.sort.mismatching",t,null,s,n);if("number"!==m&&"string"!==m)throw e.$_createError("array.sort.unsupported",t,{type:m},s,n);return"number"===m?(l-u)*o:l<u?a:i};try{return{value:t.slice().sort(l)}}catch(e){return{errors:e}}},c.compare=function(e,t,r,s){return e===t?0:void 0===e?1:void 0===t?-1:null===e?s:null===t?r:null}},function(e,t,r){"use strict";const s=r(0),n=r(3),o=r(1),a=r(21),i={isBool:function(e){return"boolean"==typeof e}};e.exports=n.extend({type:"boolean",flags:{sensitive:{default:!1}},terms:{falsy:{init:null,manifest:"values"},truthy:{init:null,manifest:"values"}},coerce(e,{schema:t}){if("boolean"!=typeof e){if("string"==typeof e){const r=t._flags.sensitive?e:e.toLowerCase();e="true"===r||"false"!==r&&e}return"boolean"!=typeof e&&(e=t.$_terms.truthy&&t.$_terms.truthy.has(e,null,null,!t._flags.sensitive)||(!t.$_terms.falsy||!t.$_terms.falsy.has(e,null,null,!t._flags.sensitive))&&e),{value:e}}},validate(e,{error:t}){if("boolean"!=typeof e)return{value:e,errors:t("boolean.base")}},rules:{truthy:{method(...e){o.verifyFlat(e,"truthy");const t=this.clone();t.$_terms.truthy=t.$_terms.truthy||new a;for(let r=0;r<e.length;++r){const n=e[r];s(void 0!==n,"Cannot call truthy with undefined"),t.$_terms.truthy.add(n)}return t}},falsy:{method(...e){o.verifyFlat(e,"falsy");const t=this.clone();t.$_terms.falsy=t.$_terms.falsy||new a;for(let r=0;r<e.length;++r){const n=e[r];s(void 0!==n,"Cannot call falsy with undefined"),t.$_terms.falsy.add(n)}return t}},sensitive:{method(e=!0){return this.$_setFlag("sensitive",e)}}},cast:{number:{from:i.isBool,to:(e,t)=>e?1:0},string:{from:i.isBool,to:(e,t)=>e?"true":"false"}},manifest:{build:(e,t)=>(t.truthy&&(e=e.truthy(...t.truthy)),t.falsy&&(e=e.falsy(...t.falsy)),e)},messages:{"boolean.base":"{{#label}} must be a boolean"}})},function(e,t,r){"use strict";const s=r(0),n=r(3),o=r(1),a=r(7),i={isDate:function(e){return e instanceof Date}};e.exports=n.extend({type:"date",coerce:{from:["number","string"],method:(e,{schema:t})=>({value:i.parse(e,t._flags.format)||e})},validate(e,{schema:t,error:r,prefs:s}){if(e instanceof Date&&!isNaN(e.getTime()))return;const n=t._flags.format;return s.convert&&n&&"string"==typeof e?{value:e,errors:r("date.format",{format:n})}:{value:e,errors:r("date.base")}},rules:{compare:{method:!1,validate(e,t,{date:r},{name:s,operator:n,args:a}){const i="now"===r?Date.now():r.getTime();return o.compare(e.getTime(),i,n)?e:t.error("date."+s,{limit:a.date,value:e})},args:[{name:"date",ref:!0,normalize:e=>"now"===e?e:i.parse(e),assert:e=>null!==e,message:"must have a valid date format"}]},format:{method(e){return s(["iso","javascript","unix"].includes(e),"Unknown date format",e),this.$_setFlag("format",e)}},greater:{method(e){return this.$_addRule({name:"greater",method:"compare",args:{date:e},operator:">"})}},iso:{method(){return this.format("iso")}},less:{method(e){return this.$_addRule({name:"less",method:"compare",args:{date:e},operator:"<"})}},max:{method(e){return this.$_addRule({name:"max",method:"compare",args:{date:e},operator:"<="})}},min:{method(e){return this.$_addRule({name:"min",method:"compare",args:{date:e},operator:">="})}},timestamp:{method(e="javascript"){return s(["javascript","unix"].includes(e),'"type" must be one of "javascript, unix"'),this.format(e)}}},cast:{number:{from:i.isDate,to:(e,t)=>e.getTime()},string:{from:i.isDate,to:(e,{prefs:t})=>a.date(e,t)}},messages:{"date.base":"{{#label}} must be a valid date","date.format":'{{#label}} must be in {msg("date.format." + #format) || #format} format',"date.greater":'{{#label}} must be greater than "{{#limit}}"',"date.less":'{{#label}} must be less than "{{#limit}}"',"date.max":'{{#label}} must be less than or equal to "{{#limit}}"',"date.min":'{{#label}} must be larger than or equal to "{{#limit}}"',"date.format.iso":"ISO 8601 date","date.format.javascript":"timestamp or number of milliseconds","date.format.unix":"timestamp or number of seconds"}}),i.parse=function(e,t){if(e instanceof Date)return e;if("string"!=typeof e&&(isNaN(e)||!isFinite(e)))return null;if(/^\s*$/.test(e))return null;if("iso"===t)return o.isIsoDate(e)?i.date(e.toString()):null;const r=e;if("string"==typeof e&&/^[+-]?\d+(\.\d+)?$/.test(e)&&(e=parseFloat(e)),t){if("javascript"===t)return i.date(1*e);if("unix"===t)return i.date(1e3*e);if("string"==typeof r)return null}return i.date(e)},i.date=function(e){const t=new Date(e);return isNaN(t.getTime())?null:t}},function(e,t,r){"use strict";const s=r(0),n=r(22);e.exports=n.extend({type:"function",properties:{typeof:"function"},rules:{arity:{method(e){return s(Number.isSafeInteger(e)&&e>=0,"n must be a positive integer"),this.$_addRule({name:"arity",args:{n:e}})},validate:(e,t,{n:r})=>e.length===r?e:t.error("function.arity",{n:r})},class:{method(){return this.$_addRule("class")},validate:(e,t)=>/^\s*class\s/.test(e.toString())?e:t.error("function.class",{value:e})},minArity:{method(e){return s(Number.isSafeInteger(e)&&e>0,"n must be a strict positive integer"),this.$_addRule({name:"minArity",args:{n:e}})},validate:(e,t,{n:r})=>e.length>=r?e:t.error("function.minArity",{n:r})},maxArity:{method(e){return s(Number.isSafeInteger(e)&&e>=0,"n must be a positive integer"),this.$_addRule({name:"maxArity",args:{n:e}})},validate:(e,t,{n:r})=>e.length<=r?e:t.error("function.maxArity",{n:r})}},messages:{"function.arity":"{{#label}} must have an arity of {{#n}}","function.class":"{{#label}} must be a class","function.maxArity":"{{#label}} must have an arity lesser or equal to {{#n}}","function.minArity":"{{#label}} must have an arity greater or equal to {{#n}}"}})},function(e,t,r){"use strict";const s=r(0),n=r(2),o=r(20),a=r(6),i={};e.exports=function(e,t,r={}){if(s(e&&"object"==typeof e,"Invalid defaults value: must be an object"),s(!t||!0===t||"object"==typeof t,"Invalid source value: must be true, falsy or an object"),s("object"==typeof r,"Invalid options: must be an object"),!t)return null;if(r.shallow)return i.applyToDefaultsWithShallow(e,t,r);const a=n(e);if(!0===t)return a;const l=void 0!==r.nullOverride&&r.nullOverride;return o(a,t,{nullOverride:l,mergeArrays:!1})},i.applyToDefaultsWithShallow=function(e,t,r){const l=r.shallow;s(Array.isArray(l),"Invalid keys");const c=new Map,u=!0===t?null:new Set;for(let r of l){r=Array.isArray(r)?r:r.split(".");const s=a(e,r);s&&"object"==typeof s?c.set(s,u&&a(t,r)||s):u&&u.add(r)}const f=n(e,{},c);if(!u)return f;for(const e of u)i.reachCopy(f,t,e);return o(f,t,{mergeArrays:!1,nullOverride:!1})},i.reachCopy=function(e,t,r){for(const e of r){if(!(e in t))return;t=t[e]}const s=t;let n=e;for(let e=0;e<r.length-1;++e){const t=r[e];"object"!=typeof n[t]&&(n[t]={}),n=n[t]}n[r[r.length-1]]=s}},function(e,t,r){"use strict";const s=r(0),n={};t.Sorter=class{constructor(){this._items=[],this.nodes=[]}add(e,t){const r=[].concat((t=t||{}).before||[]),n=[].concat(t.after||[]),o=t.group||"?",a=t.sort||0;s(!r.includes(o),"Item cannot come before itself: ".concat(o)),s(!r.includes("?"),"Item cannot come before unassociated items"),s(!n.includes(o),"Item cannot come after itself: ".concat(o)),s(!n.includes("?"),"Item cannot come after unassociated items"),Array.isArray(e)||(e=[e]);for(const t of e){const e={seq:this._items.length,sort:a,before:r,after:n,group:o,node:t};this._items.push(e)}const i=this._sort();return s(i,"item","?"!==o?"added into group ".concat(o):"","created a dependencies error"),this.nodes}merge(e){Array.isArray(e)||(e=[e]);for(const t of e)if(t)for(const e of t._items)this._items.push(Object.assign({},e));this._items.sort(n.mergeSort);for(let e=0;e<this._items.length;++e)this._items[e].seq=e;const t=this._sort();return s(t,"merge created a dependencies error"),this.nodes}_sort(){const e={},t=Object.create(null),r=Object.create(null);for(const s of this._items){const n=s.seq,o=s.group;r[o]=r[o]||[],r[o].push(n),e[n]=s.before;for(const e of s.after)t[e]=t[e]||[],t[e].push(n)}for(const t in e){const s=[];for(const n in e[t]){const o=e[t][n];r[o]=r[o]||[],s.push(...r[o])}e[t]=s}for(const s in t)if(r[s])for(const n of r[s])e[n].push(...t[s]);const s={};for(const t in e){const r=e[t];for(const e of r)s[e]=s[e]||[],s[e].push(t)}const n={},o=[];for(let e=0;e<this._items.length;++e){let t=e;if(s[e]){t=null;for(let e=0;e<this._items.length;++e){if(!0===n[e])continue;s[e]||(s[e]=[]);const r=s[e].length;let o=0;for(let t=0;t<r;++t)n[s[e][t]]&&++o;if(o===r){t=e;break}}}null!==t&&(n[t]=!0,o.push(t))}if(o.length!==this._items.length)return!1;const a={};for(const e of this._items)a[e.seq]=e;this._items=[],this.nodes=[];for(const e of o){const t=a[e];this.nodes.push(t.node),this._items.push(t)}return!0}},n.mergeSort=(e,t)=>e.sort===t.sort?0:e.sort<t.sort?-1:1},function(e,t,r){"use strict";const s=r(0),n=r(3),o=r(1),a=r(8),i=r(4),l={};e.exports=n.extend({type:"link",properties:{schemaChain:!0},terms:{link:{init:null,manifest:"single",register:!1}},args:(e,t)=>e.ref(t),validate(e,{schema:t,state:r,prefs:n}){s(t.$_terms.link,"Uninitialized link schema");const o=l.generate(t,e,r,n),a=t.$_terms.link[0].ref;return o.$_validate(e,r.nest(o,"link:".concat(a.display,":").concat(o.type)),n)},generate:(e,t,r,s)=>l.generate(e,t,r,s),rules:{ref:{method(e){s(!this.$_terms.link,"Cannot reinitialize schema"),e=a.ref(e),s("value"===e.type||"local"===e.type,"Invalid reference type:",e.type),s("local"===e.type||"root"===e.ancestor||e.ancestor>0,"Link cannot reference itself");const t=this.clone();return t.$_terms.link=[{ref:e}],t}},relative:{method(e=!0){return this.$_setFlag("relative",e)}}},overrides:{concat(e){s(this.$_terms.link,"Uninitialized link schema"),s(o.isSchema(e),"Invalid schema object"),s("link"!==e.type,"Cannot merge type link with another link");const t=this.clone();return t.$_terms.whens||(t.$_terms.whens=[]),t.$_terms.whens.push({concat:e}),t.$_mutateRebuild()}},manifest:{build:(e,t)=>(s(t.link,"Invalid link description missing link"),e.ref(t.link))}}),l.generate=function(e,t,r,s){let n=r.mainstay.links.get(e);if(n)return n._generate(t,r,s).schema;const o=e.$_terms.link[0].ref,{perspective:a,path:i}=l.perspective(o,r);l.assert(a,"which is outside of schema boundaries",o,e,r,s);try{n=i.length?a.$_reach(i):a}catch(t){l.assert(!1,"to non-existing schema",o,e,r,s)}return l.assert("link"!==n.type,"which is another link",o,e,r,s),e._flags.relative||r.mainstay.links.set(e,n),n._generate(t,r,s).schema},l.perspective=function(e,t){if("local"===e.type){for(const{schema:r,key:s}of t.schemas){if((r._flags.id||s)===e.path[0])return{perspective:r,path:e.path.slice(1)};if(r.$_terms.shared)for(const t of r.$_terms.shared)if(t._flags.id===e.path[0])return{perspective:t,path:e.path.slice(1)}}return{perspective:null,path:null}}return"root"===e.ancestor?{perspective:t.schemas[t.schemas.length-1].schema,path:e.path}:{perspective:t.schemas[e.ancestor]&&t.schemas[e.ancestor].schema,path:e.path}},l.assert=function(e,t,r,n,o,a){e||s(!1,'"'.concat(i.label(n._flags,o,a),'" contains link reference "').concat(r.display,'" ').concat(t))}},function(e,t,r){"use strict";const s=r(0),n=r(3),o=r(1),a={numberRx:/^\s*[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e([+-]?\d+))?\s*$/i,precisionRx:/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/};e.exports=n.extend({type:"number",flags:{unsafe:{default:!1}},coerce:{from:"string",method(e,{schema:t,error:r}){const s=e.match(a.numberRx);if(!s)return;e=e.trim();const n={value:parseFloat(e)};if(0===n.value&&(n.value=0),!t._flags.unsafe)if(e.match(/e/i)){if(a.normalizeExponent("".concat(n.value/Math.pow(10,s[1]),"e").concat(s[1]))!==a.normalizeExponent(e))return n.errors=r("number.unsafe"),n}else{const t=n.value.toString();if(t.match(/e/i))return n;if(t!==a.normalizeDecimal(e))return n.errors=r("number.unsafe"),n}return n}},validate(e,{schema:t,error:r,prefs:s}){if(e===1/0||e===-1/0)return{value:e,errors:r("number.infinity")};if(!o.isNumber(e))return{value:e,errors:r("number.base")};const n={value:e};if(s.convert){const e=t.$_getRule("precision");if(e){const t=Math.pow(10,e.args.limit);n.value=Math.round(n.value*t)/t}}return 0===n.value&&(n.value=0),!t._flags.unsafe&&(e>Number.MAX_SAFE_INTEGER||e<Number.MIN_SAFE_INTEGER)&&(n.errors=r("number.unsafe")),n},rules:{compare:{method:!1,validate:(e,t,{limit:r},{name:s,operator:n,args:a})=>o.compare(e,r,n)?e:t.error("number."+s,{limit:a.limit,value:e}),args:[{name:"limit",ref:!0,assert:o.isNumber,message:"must be a number"}]},greater:{method(e){return this.$_addRule({name:"greater",method:"compare",args:{limit:e},operator:">"})}},integer:{method(){return this.$_addRule("integer")},validate:(e,t)=>Math.trunc(e)-e==0?e:t.error("number.integer")},less:{method(e){return this.$_addRule({name:"less",method:"compare",args:{limit:e},operator:"<"})}},max:{method(e){return this.$_addRule({name:"max",method:"compare",args:{limit:e},operator:"<="})}},min:{method(e){return this.$_addRule({name:"min",method:"compare",args:{limit:e},operator:">="})}},multiple:{method(e){return this.$_addRule({name:"multiple",args:{base:e}})},validate:(e,t,{base:r},s)=>e%r==0?e:t.error("number.multiple",{multiple:s.args.base,value:e}),args:[{name:"base",ref:!0,assert:e=>"number"==typeof e&&isFinite(e)&&e>0,message:"must be a positive number"}],multi:!0},negative:{method(){return this.sign("negative")}},port:{method(){return this.$_addRule("port")},validate:(e,t)=>Number.isSafeInteger(e)&&e>=0&&e<=65535?e:t.error("number.port")},positive:{method(){return this.sign("positive")}},precision:{method(e){return s(Number.isSafeInteger(e),"limit must be an integer"),this.$_addRule({name:"precision",args:{limit:e}})},validate(e,t,{limit:r}){const s=e.toString().match(a.precisionRx);return Math.max((s[1]?s[1].length:0)-(s[2]?parseInt(s[2],10):0),0)<=r?e:t.error("number.precision",{limit:r,value:e})},convert:!0},sign:{method(e){return s(["negative","positive"].includes(e),"Invalid sign",e),this.$_addRule({name:"sign",args:{sign:e}})},validate:(e,t,{sign:r})=>"negative"===r&&e<0||"positive"===r&&e>0?e:t.error("number.".concat(r))},unsafe:{method(e=!0){return s("boolean"==typeof e,"enabled must be a boolean"),this.$_setFlag("unsafe",e)}}},cast:{string:{from:e=>"number"==typeof e,to:(e,t)=>e.toString()}},messages:{"number.base":"{{#label}} must be a number","number.greater":"{{#label}} must be greater than {{#limit}}","number.infinity":"{{#label}} cannot be infinity","number.integer":"{{#label}} must be an integer","number.less":"{{#label}} must be less than {{#limit}}","number.max":"{{#label}} must be less than or equal to {{#limit}}","number.min":"{{#label}} must be larger than or equal to {{#limit}}","number.multiple":"{{#label}} must be a multiple of {{#multiple}}","number.negative":"{{#label}} must be a negative number","number.port":"{{#label}} must be a valid port","number.positive":"{{#label}} must be a positive number","number.precision":"{{#label}} must have no more than {{#limit}} decimal places","number.unsafe":"{{#label}} must be a safe number"}}),a.normalizeExponent=function(e){return e.replace(/E/,"e").replace(/\.(\d*[1-9])?0+e/,".$1e").replace(/\.e/,"e").replace(/e\+/,"e").replace(/^\+/,"").replace(/^(-?)0+([1-9])/,"$1$2")},a.normalizeDecimal=function(e){return(e=e.replace(/^\+/,"").replace(/\.0+$/,"").replace(/^(-?)\.([^\.]*)$/,"$10.$2").replace(/^(-?)0+([1-9])/,"$1$2")).includes(".")&&e.endsWith("0")&&(e=e.replace(/0+$/,"")),"-0"===e?"0":e}},function(e,t,r){"use strict";const s=r(22);e.exports=s.extend({type:"object",cast:{map:{from:e=>e&&"object"==typeof e,to:(e,t)=>new Map(Object.entries(e))}}})},function(e,t,r){"use strict";function s(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var s=Object.getOwnPropertySymbols(e);t&&(s=s.filter((function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable}))),r.push.apply(r,s)}return r}function n(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?s(Object(r),!0).forEach((function(t){o(e,t,r[t])})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):s(Object(r)).forEach((function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))}))}return e}function o(e,t,r){return t in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}const a=r(0),i=r(23),l=r(49),c=r(50),u=r(27),f=r(51),m=r(26),h=r(3),d=r(1),p={tlds:f instanceof Set&&{tlds:{allow:f,deny:null}},base64Regex:{true:{true:/^(?:[\w\-]{2}[\w\-]{2})*(?:[\w\-]{2}==|[\w\-]{3}=)?$/,false:/^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/},false:{true:/^(?:[\w\-]{2}[\w\-]{2})*(?:[\w\-]{2}(==)?|[\w\-]{3}=?)?$/,false:/^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/}},dataUriRegex:/^data:[\w+.-]+\/[\w+.-]+;((charset=[\w-]+|base64),)?(.*)$/,hexRegex:/^[a-f0-9]+$/i,ipRegex:c.regex().regex,isoDurationRegex:/^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/,guidBrackets:{"{":"}","[":"]","(":")","":""},guidVersions:{uuidv1:"1",uuidv2:"2",uuidv3:"3",uuidv4:"4",uuidv5:"5"},cidrPresences:["required","optional","forbidden"],normalizationForms:["NFC","NFD","NFKC","NFKD"]};e.exports=h.extend({type:"string",flags:{insensitive:{default:!1},truncate:{default:!1}},terms:{replacements:{init:null}},coerce:{from:"string",method(e,{schema:t,state:r,prefs:s}){const n=t.$_getRule("normalize");n&&(e=e.normalize(n.args.form));const o=t.$_getRule("case");o&&(e="upper"===o.args.direction?e.toLocaleUpperCase():e.toLocaleLowerCase());const a=t.$_getRule("trim");if(a&&a.args.enabled&&(e=e.trim()),t.$_terms.replacements)for(const r of t.$_terms.replacements)e=e.replace(r.pattern,r.replacement);const i=t.$_getRule("hex");if(i&&i.args.options.byteAligned&&e.length%2!=0&&(e="0".concat(e)),t.$_getRule("isoDate")){const t=p.isoDate(e);t&&(e=t)}if(t._flags.truncate){const n=t.$_getRule("max");if(n){let o=n.args.limit;if(d.isResolvable(o)&&(o=o.resolve(e,r,s),!d.limit(o)))return{value:e,errors:t.$_createError("any.ref",o,{ref:n.args.limit,arg:"limit",reason:"must be a positive integer"},r,s)};e=e.slice(0,o)}}return{value:e}}},validate:(e,{error:t})=>"string"!=typeof e?{value:e,errors:t("string.base")}:""===e?{value:e,errors:t("string.empty")}:void 0,rules:{alphanum:{method(){return this.$_addRule("alphanum")},validate:(e,t)=>/^[a-zA-Z0-9]+$/.test(e)?e:t.error("string.alphanum")},base64:{method(e={}){return d.assertOptions(e,["paddingRequired","urlSafe"]),e=n({urlSafe:!1,paddingRequired:!0},e),a("boolean"==typeof e.paddingRequired,"paddingRequired must be boolean"),a("boolean"==typeof e.urlSafe,"urlSafe must be boolean"),this.$_addRule({name:"base64",args:{options:e}})},validate:(e,t,{options:r})=>p.base64Regex[r.paddingRequired][r.urlSafe].test(e)?e:t.error("string.base64")},case:{method(e){return a(["lower","upper"].includes(e),"Invalid case:",e),this.$_addRule({name:"case",args:{direction:e}})},validate:(e,t,{direction:r})=>"lower"===r&&e===e.toLocaleLowerCase()||"upper"===r&&e===e.toLocaleUpperCase()?e:t.error("string.".concat(r,"case")),convert:!0},creditCard:{method(){return this.$_addRule("creditCard")},validate(e,t){let r=e.length,s=0,n=1;for(;r--;){const t=e.charAt(r)*n;s+=t-9*(t>9),n^=3}return s>0&&s%10==0?e:t.error("string.creditCard")}},dataUri:{method(e={}){return d.assertOptions(e,["paddingRequired"]),e=n({paddingRequired:!0},e),a("boolean"==typeof e.paddingRequired,"paddingRequired must be boolean"),this.$_addRule({name:"dataUri",args:{options:e}})},validate(e,t,{options:r}){const s=e.match(p.dataUriRegex);if(s){if(!s[2])return e;if("base64"!==s[2])return e;if(p.base64Regex[r.paddingRequired].false.test(s[3]))return e}return t.error("string.dataUri")}},domain:{method(e){e&&d.assertOptions(e,["allowUnicode","minDomainSegments","tlds"]);const t=p.addressOptions(e);return this.$_addRule({name:"domain",args:{options:e},address:t})},validate:(e,t,r,{address:s})=>i.isValid(e,s)?e:t.error("string.domain")},email:{method(e={}){d.assertOptions(e,["allowUnicode","ignoreLength","minDomainSegments","multiple","separator","tlds"]),a(void 0===e.multiple||"boolean"==typeof e.multiple,"multiple option must be an boolean");const t=p.addressOptions(e),r=new RegExp("\\s*[".concat(e.separator?u(e.separator):",","]\\s*"));return this.$_addRule({name:"email",args:{options:e},regex:r,address:t})},validate(e,t,{options:r},{regex:s,address:n}){const o=r.multiple?e.split(s):[e],a=[];for(const e of o)l.isValid(e,n)||a.push(e);return a.length?t.error("string.email",{value:e,invalids:a}):e}},guid:{alias:"uuid",method(e={}){d.assertOptions(e,["version"]);let t="";if(e.version){const r=[].concat(e.version);a(r.length>=1,"version must have at least 1 valid version specified");const s=new Set;for(let e=0;e<r.length;++e){const n=r[e];a("string"==typeof n,"version at position "+e+" must be a string");const o=p.guidVersions[n.toLowerCase()];a(o,"version at position "+e+" must be one of "+Object.keys(p.guidVersions).join(", ")),a(!s.has(o),"version at position "+e+" must not be a duplicate"),t+=o,s.add(o)}}const r=new RegExp("^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[".concat(t||"0-9A-F","][0-9A-F]{3}\\2?[").concat(t?"89AB":"0-9A-F","][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$"),"i");return this.$_addRule({name:"guid",args:{options:e},regex:r})},validate(e,t,r,{regex:s}){const n=s.exec(e);return n?p.guidBrackets[n[1]]!==n[n.length-1]?t.error("string.guid"):e:t.error("string.guid")}},hex:{method(e={}){return d.assertOptions(e,["byteAligned"]),e=n({byteAligned:!1},e),a("boolean"==typeof e.byteAligned,"byteAligned must be boolean"),this.$_addRule({name:"hex",args:{options:e}})},validate:(e,t,{options:r})=>p.hexRegex.test(e)?r.byteAligned&&e.length%2!=0?t.error("string.hexAlign"):e:t.error("string.hex")},hostname:{method(){return this.$_addRule("hostname")},validate:(e,t)=>i.isValid(e,{minDomainSegments:1})||p.ipRegex.test(e)?e:t.error("string.hostname")},insensitive:{method(){return this.$_setFlag("insensitive",!0)}},ip:{method(e={}){d.assertOptions(e,["cidr","version"]);const{cidr:t,versions:r,regex:s}=c.regex(e),n=e.version?r:void 0;return this.$_addRule({name:"ip",args:{options:{cidr:t,version:n}},regex:s})},validate:(e,t,{options:r},{regex:s})=>s.test(e)?e:r.version?t.error("string.ipVersion",{value:e,cidr:r.cidr,version:r.version}):t.error("string.ip",{value:e,cidr:r.cidr})},isoDate:{method(){return this.$_addRule("isoDate")},validate:(e,{error:t})=>p.isoDate(e)?e:t("string.isoDate")},isoDuration:{method(){return this.$_addRule("isoDuration")},validate:(e,t)=>p.isoDurationRegex.test(e)?e:t.error("string.isoDuration")},length:{method(e,t){return p.length(this,"length",e,"=",t)},validate(e,t,{limit:r,encoding:s},{name:n,operator:o,args:a}){const i=!s&&e.length;return d.compare(i,r,o)?e:t.error("string."+n,{limit:a.limit,value:e,encoding:s})},args:[{name:"limit",ref:!0,assert:d.limit,message:"must be a positive integer"},"encoding"]},lowercase:{method(){return this.case("lower")}},max:{method(e,t){return p.length(this,"max",e,"<=",t)},args:["limit","encoding"]},min:{method(e,t){return p.length(this,"min",e,">=",t)},args:["limit","encoding"]},normalize:{method(e="NFC"){return a(p.normalizationForms.includes(e),"normalization form must be one of "+p.normalizationForms.join(", ")),this.$_addRule({name:"normalize",args:{form:e}})},validate:(e,{error:t},{form:r})=>e===e.normalize(r)?e:t("string.normalize",{value:e,form:r}),convert:!0},pattern:{alias:"regex",method(e,t={}){a(e instanceof RegExp,"regex must be a RegExp"),a(!e.flags.includes("g")&&!e.flags.includes("y"),"regex should not use global or sticky mode"),"string"==typeof t&&(t={name:t}),d.assertOptions(t,["invert","name"]);const r=["string.pattern",t.invert?".invert":"",t.name?".name":".base"].join("");return this.$_addRule({name:"pattern",args:{regex:e,options:t},errorCode:r})},validate:(e,t,{regex:r,options:s},{errorCode:n})=>r.test(e)^s.invert?e:t.error(n,{name:s.name,regex:r,value:e}),args:["regex","options"],multi:!0},replace:{method(e,t){"string"==typeof e&&(e=new RegExp(u(e),"g")),a(e instanceof RegExp,"pattern must be a RegExp"),a("string"==typeof t,"replacement must be a String");const r=this.clone();return r.$_terms.replacements||(r.$_terms.replacements=[]),r.$_terms.replacements.push({pattern:e,replacement:t}),r}},token:{method(){return this.$_addRule("token")},validate:(e,t)=>/^\w+$/.test(e)?e:t.error("string.token")},trim:{method(e=!0){return a("boolean"==typeof e,"enabled must be a boolean"),this.$_addRule({name:"trim",args:{enabled:e}})},validate:(e,t,{enabled:r})=>r&&e!==e.trim()?t.error("string.trim"):e,convert:!0},truncate:{method(e=!0){return a("boolean"==typeof e,"enabled must be a boolean"),this.$_setFlag("truncate",e)}},uppercase:{method(){return this.case("upper")}},uri:{method(e={}){d.assertOptions(e,["allowRelative","allowQuerySquareBrackets","domain","relativeOnly","scheme"]),e.domain&&d.assertOptions(e.domain,["allowUnicode","minDomainSegments","tlds"]);const{regex:t,scheme:r}=m.regex(e),s=e.domain?p.addressOptions(e.domain):null;return this.$_addRule({name:"uri",args:{options:e},regex:t,domain:s,scheme:r})},validate(e,t,{options:r},{regex:s,domain:n,scheme:o}){if(["http:/","https:/"].includes(e))return t.error("string.uri");const a=s.exec(e);return a?n&&!i.isValid(a[1],n)?t.error("string.domain",{value:a[1]}):e:r.relativeOnly?t.error("string.uriRelativeOnly"):r.scheme?t.error("string.uriCustomScheme",{scheme:o,value:e}):t.error("string.uri")}}},manifest:{build(e,t){if(t.replacements)for(const{pattern:r,replacement:s}of t.replacements)e=e.replace(r,s);return e}},messages:{"string.alphanum":"{{#label}} must only contain alpha-numeric characters","string.base":"{{#label}} must be a string","string.base64":"{{#label}} must be a valid base64 string","string.creditCard":"{{#label}} must be a credit card","string.dataUri":"{{#label}} must be a valid dataUri string","string.domain":"{{#label}} must contain a valid domain name","string.email":"{{#label}} must be a valid email","string.empty":"{{#label}} is not allowed to be empty","string.guid":"{{#label}} must be a valid GUID","string.hex":"{{#label}} must only contain hexadecimal characters","string.hexAlign":"{{#label}} hex decoded representation must be byte aligned","string.hostname":"{{#label}} must be a valid hostname","string.ip":"{{#label}} must be a valid ip address with a {{#cidr}} CIDR","string.ipVersion":"{{#label}} must be a valid ip address of one of the following versions {{#version}} with a {{#cidr}} CIDR","string.isoDate":"{{#label}} must be in iso format","string.isoDuration":"{{#label}} must be a valid ISO 8601 duration","string.length":"{{#label}} length must be {{#limit}} characters long","string.lowercase":"{{#label}} must only contain lowercase characters","string.max":"{{#label}} length must be less than or equal to {{#limit}} characters long","string.min":"{{#label}} length must be at least {{#limit}} characters long","string.normalize":"{{#label}} must be unicode normalized in the {{#form}} form","string.token":"{{#label}} must only contain alpha-numeric and underscore characters","string.pattern.base":'{{#label}} with value "{[.]}" fails to match the required pattern: {{#regex}}',"string.pattern.name":'{{#label}} with value "{[.]}" fails to match the {{#name}} pattern',"string.pattern.invert.base":'{{#label}} with value "{[.]}" matches the inverted pattern: {{#regex}}',"string.pattern.invert.name":'{{#label}} with value "{[.]}" matches the inverted {{#name}} pattern',"string.trim":"{{#label}} must not have leading or trailing whitespace","string.uri":"{{#label}} must be a valid uri","string.uriCustomScheme":"{{#label}} must be a valid uri with a scheme matching the {{#scheme}} pattern","string.uriRelativeOnly":"{{#label}} must be a valid relative uri","string.uppercase":"{{#label}} must only contain uppercase characters"}}),p.addressOptions=function(e){if(!e)return e;if(a(void 0===e.minDomainSegments||Number.isSafeInteger(e.minDomainSegments)&&e.minDomainSegments>0,"minDomainSegments must be a positive integer"),!1===e.tlds)return e;if(!0===e.tlds||void 0===e.tlds)return a(p.tlds,"Built-in TLD list disabled"),Object.assign({},e,p.tlds);a("object"==typeof e.tlds,"tlds must be true, false, or an object");const t=e.tlds.deny;if(t)return Array.isArray(t)&&(e=Object.assign({},e,{tlds:{deny:new Set(t)}})),a(e.tlds.deny instanceof Set,"tlds.deny must be an array, Set, or boolean"),a(!e.tlds.allow,"Cannot specify both tlds.allow and tlds.deny lists"),e;const r=e.tlds.allow;return r?!0===r?(a(p.tlds,"Built-in TLD list disabled"),Object.assign({},e,p.tlds)):(Array.isArray(r)&&(e=Object.assign({},e,{tlds:{allow:new Set(r)}})),a(e.tlds.allow instanceof Set,"tlds.allow must be an array, Set, or boolean"),e):e},p.isoDate=function(e){if(!d.isIsoDate(e))return null;const t=new Date(e);return isNaN(t.getTime())?null:t.toISOString()},p.length=function(e,t,r,s,n){return a(!n||!1,"Invalid encoding:",n),e.$_addRule({name:t,method:"length",args:{limit:r,encoding:n},operator:s})}},function(e,t,r){"use strict";const s=r(24),n=r(23),o=r(25),a={nonAsciiRx:/[^\x00-\x7f]/,encoder:new(s.TextEncoder||TextEncoder)};t.analyze=function(e,t){return a.email(e,t)},t.isValid=function(e,t){return!a.email(e,t)},a.email=function(e,t={}){if("string"!=typeof e)throw new Error("Invalid input: email must be a string");if(!e)return o.code("EMPTY_STRING");const r=!a.nonAsciiRx.test(e);if(!r){if(!1===t.allowUnicode)return o.code("FORBIDDEN_UNICODE");e=e.normalize("NFC")}const s=e.split("@");if(2!==s.length)return s.length>2?o.code("MULTIPLE_AT_CHAR"):o.code("MISSING_AT_CHAR");const[i,l]=s;if(!i)return o.code("EMPTY_LOCAL");if(!t.ignoreLength){if(e.length>254)return o.code("ADDRESS_TOO_LONG");if(a.encoder.encode(i).length>64)return o.code("LOCAL_TOO_LONG")}return a.local(i,r)||n.analyze(l,t)},a.local=function(e,t){const r=e.split(".");for(const e of r){if(!e.length)return o.code("EMPTY_LOCAL_SEGMENT");if(t){if(!a.atextRx.test(e))return o.code("INVALID_LOCAL_CHARS")}else for(const t of e){if(a.atextRx.test(t))continue;const e=a.binary(t);if(!a.atomRx.test(e))return o.code("INVALID_LOCAL_CHARS")}}},a.binary=function(e){return Array.from(a.encoder.encode(e)).map(e=>String.fromCharCode(e)).join("")},a.atextRx=/^[\w!#\$%&'\*\+\-/=\?\^`\{\|\}~]+$/,a.atomRx=new RegExp(["(?:[\\xc2-\\xdf][\\x80-\\xbf])","(?:\\xe0[\\xa0-\\xbf][\\x80-\\xbf])|(?:[\\xe1-\\xec][\\x80-\\xbf]{2})|(?:\\xed[\\x80-\\x9f][\\x80-\\xbf])|(?:[\\xee-\\xef][\\x80-\\xbf]{2})","(?:\\xf0[\\x90-\\xbf][\\x80-\\xbf]{2})|(?:[\\xf1-\\xf3][\\x80-\\xbf]{3})|(?:\\xf4[\\x80-\\x8f][\\x80-\\xbf]{2})"].join("|"))},function(e,t,r){"use strict";const s=r(0),n=r(26);t.regex=function(e={}){s(void 0===e.cidr||"string"==typeof e.cidr,"options.cidr must be a string");const t=e.cidr?e.cidr.toLowerCase():"optional";s(["required","optional","forbidden"].includes(t),"options.cidr must be one of required, optional, forbidden"),s(void 0===e.version||"string"==typeof e.version||Array.isArray(e.version),"options.version must be a string or an array of string");let r=e.version||["ipv4","ipv6","ipvfuture"];Array.isArray(r)||(r=[r]),s(r.length>=1,"options.version must have at least 1 version specified");for(let e=0;e<r.length;++e)s("string"==typeof r[e],"options.version must only contain strings"),r[e]=r[e].toLowerCase(),s(["ipv4","ipv6","ipvfuture"].includes(r[e]),"options.version contains unknown version "+r[e]+" - must be one of ipv4, ipv6, ipvfuture");r=Array.from(new Set(r));const o=r.map(e=>{if("forbidden"===t)return n.ip[e];const r="\\/".concat("ipv4"===e?n.ip.v4Cidr:n.ip.v6Cidr);return"required"===t?"".concat(n.ip[e]).concat(r):"".concat(n.ip[e],"(?:").concat(r,")?")}),a="(?:".concat(o.join("|"),")"),i=new RegExp("^".concat(a,"$"));return{cidr:t,versions:r,regex:i,raw:a}}},function(e,t){},function(e,t,r){"use strict";const s=r(0),n=r(3),o={};o.Map=class extends Map{slice(){return new o.Map(this)}},e.exports=n.extend({type:"symbol",terms:{map:{init:new o.Map}},coerce:{method(e,{schema:t,error:r}){const s=t.$_terms.map.get(e);return s&&(e=s),t._flags.only&&"symbol"!=typeof e?{value:e,errors:r("symbol.map",{map:t.$_terms.map})}:{value:e}}},validate(e,{error:t}){if("symbol"!=typeof e)return{value:e,errors:t("symbol.base")}},rules:{map:{method(e){e&&!e[Symbol.iterator]&&"object"==typeof e&&(e=Object.entries(e)),s(e&&e[Symbol.iterator],"Iterable must be an iterable or object");const t=this.clone(),r=[];for(const n of e){s(n&&n[Symbol.iterator],"Entry must be an iterable");const[e,o]=n;s("object"!=typeof e&&"function"!=typeof e&&"symbol"!=typeof e,"Key must not be of type object, function, or Symbol"),s("symbol"==typeof o,"Value must be a Symbol"),t.$_terms.map.set(e,o),r.push(o)}return t.valid(...r)}}},manifest:{build:(e,t)=>(t.map&&(e=e.map(t.map)),e)},messages:{"symbol.base":"{{#label}} must be a symbol","symbol.map":"{{#label}} must be one of {{#map}}"}})}])}));
+},{}],29:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -2805,7 +2807,7 @@ internals.applyUrlToOptions = (options, url) => {
 module.exports = new internals.Client();
 
 }).call(this,require("buffer").Buffer)
-},{"./payload":29,"./recorder":30,"./tap":31,"@hapi/boom":1,"@hapi/bourne":2,"@hapi/hoek":17,"buffer":48,"events":52,"http":297,"https":56,"stream":296,"url":319,"zlib":45}],29:[function(require,module,exports){
+},{"./payload":30,"./recorder":31,"./tap":32,"@hapi/boom":1,"@hapi/bourne":2,"@hapi/hoek":17,"buffer":49,"events":53,"http":184,"https":57,"stream":183,"url":206,"zlib":46}],30:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -2847,7 +2849,7 @@ module.exports = internals.Payload = class extends Stream.Readable {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":48,"stream":296}],30:[function(require,module,exports){
+},{"buffer":49,"stream":183}],31:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -2891,7 +2893,7 @@ module.exports = internals.Recorder = class extends Stream.Writable {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"@hapi/boom":1,"buffer":48,"stream":296}],31:[function(require,module,exports){
+},{"@hapi/boom":1,"buffer":49,"stream":183}],32:[function(require,module,exports){
 'use strict';
 
 const Stream = require('stream');
@@ -2922,7 +2924,7 @@ module.exports = internals.Tap = class extends Stream.Transform {
     }
 };
 
-},{"./payload":29,"stream":296}],32:[function(require,module,exports){
+},{"./payload":30,"stream":183}],33:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -3432,7 +3434,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":78,"util/":35}],33:[function(require,module,exports){
+},{"object-assign":79,"util/":36}],34:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -3457,14 +3459,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4054,7 +4056,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":34,"_process":156,"inherits":33}],36:[function(require,module,exports){
+},{"./support/isBuffer":35,"_process":100,"inherits":34}],37:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -4087,7 +4089,7 @@ module.exports.call = function(fn, vargs, callback) {
     return new FunctionCall(fn, vargs, callback);
 };
 
-},{"./lib/backoff":37,"./lib/function_call.js":38,"./lib/strategy/exponential":39,"./lib/strategy/fibonacci":40}],37:[function(require,module,exports){
+},{"./lib/backoff":38,"./lib/function_call.js":39,"./lib/strategy/exponential":40,"./lib/strategy/fibonacci":41}],38:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -4154,7 +4156,7 @@ Backoff.prototype.reset = function() {
 
 module.exports = Backoff;
 
-},{"events":52,"precond":152,"util":325}],38:[function(require,module,exports){
+},{"events":53,"precond":96,"util":270}],39:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -4346,7 +4348,7 @@ FunctionCall.prototype.handleBackoff_ = function(number, delay, err) {
 
 module.exports = FunctionCall;
 
-},{"./backoff":37,"./strategy/fibonacci":40,"events":52,"precond":152,"util":325}],39:[function(require,module,exports){
+},{"./backoff":38,"./strategy/fibonacci":41,"events":53,"precond":96,"util":270}],40:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -4389,7 +4391,7 @@ ExponentialBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = ExponentialBackoffStrategy;
 
-},{"./strategy":41,"precond":152,"util":325}],40:[function(require,module,exports){
+},{"./strategy":42,"precond":96,"util":270}],41:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -4419,7 +4421,7 @@ FibonacciBackoffStrategy.prototype.reset_ = function() {
 
 module.exports = FibonacciBackoffStrategy;
 
-},{"./strategy":41,"util":325}],41:[function(require,module,exports){
+},{"./strategy":42,"util":270}],42:[function(require,module,exports){
 //      Copyright (c) 2012 Mathieu Turcotte
 //      Licensed under the MIT license.
 
@@ -4501,7 +4503,7 @@ BackoffStrategy.prototype.reset_ = function() {
 
 module.exports = BackoffStrategy;
 
-},{"events":52,"util":325}],42:[function(require,module,exports){
+},{"events":53,"util":270}],43:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -4655,9 +4657,9 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],43:[function(require,module,exports){
-
 },{}],44:[function(require,module,exports){
+
+},{}],45:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 /* eslint camelcase: "off" */
@@ -5069,7 +5071,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":156,"assert":32,"buffer":48,"pako/lib/zlib/constants":141,"pako/lib/zlib/deflate.js":143,"pako/lib/zlib/inflate.js":145,"pako/lib/zlib/zstream":149}],45:[function(require,module,exports){
+},{"_process":100,"assert":33,"buffer":49,"pako/lib/zlib/constants":85,"pako/lib/zlib/deflate.js":87,"pako/lib/zlib/inflate.js":89,"pako/lib/zlib/zstream":93}],46:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -5681,9 +5683,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this,require('_process'))
-},{"./binding":44,"_process":156,"assert":32,"buffer":48,"stream":296,"util":325}],46:[function(require,module,exports){
-arguments[4][43][0].apply(exports,arguments)
-},{"dup":43}],47:[function(require,module,exports){
+},{"./binding":45,"_process":100,"assert":33,"buffer":49,"stream":183,"util":270}],47:[function(require,module,exports){
+arguments[4][44][0].apply(exports,arguments)
+},{"dup":44}],48:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -6220,7 +6222,7 @@ arguments[4][43][0].apply(exports,arguments)
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -8023,7 +8025,7 @@ var hexSliceLookupTable = (function () {
 })()
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":42,"buffer":48,"ieee754":57}],49:[function(require,module,exports){
+},{"base64-js":43,"buffer":49,"ieee754":58}],50:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -8089,7 +8091,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8200,7 +8202,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":59}],51:[function(require,module,exports){
+},{"../../is-buffer/index.js":60}],52:[function(require,module,exports){
 /* Copyright (c) 2014-2018 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 
@@ -8486,7 +8488,7 @@ function originalmsg(override, ex) {
   return ex.message
 }
 
-},{"lodash.template":70,"util":325}],52:[function(require,module,exports){
+},{"lodash.template":71,"util":270}],53:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9011,7 +9013,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 module.exports = stringify
 stringify.default = stringify
 stringify.stable = deterministicStringify
@@ -9174,7 +9176,7 @@ function replaceGetterValues (replacer) {
   }
 }
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 (function (setImmediate){
 /* Copyright (c) 2014-2019 Richard Rodger, MIT License */
 'use strict'
@@ -9539,7 +9541,7 @@ function GateExecutor(options, instance_counter) {
 module.exports = make_GateExecutor
 
 }).call(this,require("timers").setImmediate)
-},{"assert":32,"timers":318}],55:[function(require,module,exports){
+},{"assert":33,"timers":205}],56:[function(require,module,exports){
 /* Copyright (c) 2011-2019 Richard Rodger, MIT License */
 
 // eslint-disable-next-line
@@ -9681,7 +9683,7 @@ module.exports = make_GateExecutor
   }
 }.call(this))
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -9714,7 +9716,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":297,"url":319}],57:[function(require,module,exports){
+},{"http":184,"url":206}],58:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -9800,7 +9802,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -9829,7 +9831,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -9852,14 +9854,14 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -9888,7 +9890,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License, https://github.com/rjrodger/jsonic */
 "use strict";
 
@@ -12102,7 +12104,7 @@ var jsonic_parser = (function() {
 
 
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /**
  * lodash 3.0.0 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -12117,7 +12119,7 @@ var reInterpolate = /<%=([\s\S]+?)%>/g;
 
 module.exports = reInterpolate;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 /**
  * lodash (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -12684,7 +12686,7 @@ function identity(value) {
 
 module.exports = forEach;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 /**
  * lodash (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -12915,7 +12917,7 @@ function isObjectLike(value) {
 
 module.exports = isArguments;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 (function (global){
 /**
  * lodash (Custom Build) <https://lodash.com/>
@@ -13038,7 +13040,7 @@ function isObjectLike(value) {
 module.exports = isDate;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 /**
  * lodash 3.0.2 (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -13150,7 +13152,7 @@ function isNumber(value) {
 
 module.exports = isNaN;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 (function (global){
 /**
  * lodash (Custom Build) <https://lodash.com/>
@@ -13275,7 +13277,7 @@ var isRegExp = nodeIsRegExp ? baseUnary(nodeIsRegExp) : baseIsRegExp;
 module.exports = isRegExp;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 (function (global){
 /**
  * lodash (Custom Build) <https://lodash.com/>
@@ -14767,7 +14769,7 @@ function stubArray() {
 module.exports = omit;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 (function (global){
 /**
  * Lodash (Custom Build) <https://lodash.com/>
@@ -16426,7 +16428,7 @@ function stubFalse() {
 module.exports = template;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"lodash._reinterpolate":63,"lodash.templatesettings":71}],71:[function(require,module,exports){
+},{"lodash._reinterpolate":64,"lodash.templatesettings":72}],72:[function(require,module,exports){
 (function (global){
 /**
  * Lodash (Custom Build) <https://lodash.com/>
@@ -16812,7 +16814,7 @@ function escape(string) {
 module.exports = templateSettings;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"lodash._reinterpolate":63}],72:[function(require,module,exports){
+},{"lodash._reinterpolate":64}],73:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -33928,7 +33930,7 @@ module.exports = templateSettings;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 'use strict'
 
 // A linked list to keep track of recently-used-ness
@@ -34264,7 +34266,7 @@ const forEachStep = (self, fn, node, thisp) => {
 
 module.exports = LRUCache
 
-},{"yallist":328}],74:[function(require,module,exports){
+},{"yallist":273}],75:[function(require,module,exports){
 var through = require('through2')
 var split = require('split2')
 var EOL = require('os').EOL
@@ -34297,7 +34299,7 @@ function serialize (opts) {
   })
 }
 
-},{"json-stringify-safe":61,"os":138,"split2":295,"through2":317}],75:[function(require,module,exports){
+},{"json-stringify-safe":62,"os":82,"split2":182,"through2":204}],76:[function(require,module,exports){
 /* Copyright (c) 2013 Richard Rodger, MIT License */
 "use strict";
 
@@ -34445,7 +34447,7 @@ nid.__defaults = defaults
 
 module.exports = nid
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -35634,7 +35636,7 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 /* Copyright (c) 2014-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -35952,7 +35954,7 @@ module.exports.compile = function(spec) {
   return out
 }
 
-},{"./norma-parser":76,"eraro":51,"lodash.isarguments":65,"lodash.isdate":66,"lodash.isnan":67,"lodash.isregexp":68,"util":325}],78:[function(require,module,exports){
+},{"./norma-parser":77,"eraro":52,"lodash.isarguments":66,"lodash.isdate":67,"lodash.isnan":68,"lodash.isregexp":69,"util":270}],79:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -36044,8880 +36046,9 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],79:[function(require,module,exports){
-'use strict';
-
-const Url = require('url');
-
-
-const internals = {
-    minDomainSegments: 2,
-    nonAsciiRx: /[^\x00-\x7f]/,
-    domainControlRx: /[\x00-\x20@\:\/]/,                                                // Control + space + separators
-    tldSegmentRx: /^[a-zA-Z](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
-    domainSegmentRx: /^[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
-    URL: Url.URL || URL                                                                 // $lab:coverage:ignore$
-};
-
-
-exports.analyze = function (domain, options = {}) {
-
-    if (typeof domain !== 'string') {
-        throw new Error('Invalid input: domain must be a string');
-    }
-
-    if (!domain) {
-        return { error: 'Domain must be a non-empty string' };
-    }
-
-    if (domain.length > 256) {
-        return { error: 'Domain too long' };
-    }
-
-    const ascii = !internals.nonAsciiRx.test(domain);
-    if (!ascii) {
-        if (options.allowUnicode === false) {                                           // Defaults to true
-            return { error: 'Domain contains forbidden Unicode characters' };
-        }
-
-        domain = domain.normalize('NFC');
-    }
-
-    if (internals.domainControlRx.test(domain)) {
-        return { error: 'Domain contains invalid character' };
-    }
-
-    domain = internals.punycode(domain);
-
-    // https://tools.ietf.org/html/rfc1035 section 2.3.1
-
-    const minDomainSegments = options.minDomainSegments || internals.minDomainSegments;
-
-    const segments = domain.split('.');
-    if (segments.length < minDomainSegments) {
-        return { error: 'Domain lacks the minimum required number of segments' };
-    }
-
-    const tlds = options.tlds;
-    if (tlds) {
-        const tld = segments[segments.length - 1].toLowerCase();
-        if (tlds.deny && tlds.deny.has(tld) ||
-            tlds.allow && !tlds.allow.has(tld)) {
-
-            return { error: 'Domain uses forbidden TLD' };
-        }
-    }
-
-    for (let i = 0; i < segments.length; ++i) {
-        const segment = segments[i];
-
-        if (!segment.length) {
-            return { error: 'Domain contains empty dot-separated segment' };
-        }
-
-        if (segment.length > 63) {
-            return { error: 'Domain contains dot-separated segment that is too long' };
-        }
-
-        if (i < segments.length - 1) {
-            if (!internals.domainSegmentRx.test(segment)) {
-                return { error: 'Domain contains invalid character' };
-            }
-        }
-        else {
-            if (!internals.tldSegmentRx.test(segment)) {
-                return { error: 'Domain contains invalid tld character' };
-            }
-        }
-    }
-};
-
-
-exports.isValid = function (domain, options) {
-
-    return !exports.analyze(domain, options);
-};
-
-
-internals.punycode = function (domain) {
-
-    try {
-        return new internals.URL(`http://${domain}`).host;
-    }
-    catch (err) {
-        return domain;
-    }
-};
-
-},{"url":319}],80:[function(require,module,exports){
-'use strict';
-
-const Util = require('util');
-
-const Domain = require('./domain');
-
-
-const internals = {
-    nonAsciiRx: /[^\x00-\x7f]/,
-    encoder: new (Util.TextEncoder || TextEncoder)()                                            // $lab:coverage:ignore$
-};
-
-
-exports.analyze = function (email, options) {
-
-    return internals.email(email, options);
-};
-
-
-exports.isValid = function (email, options) {
-
-    return !internals.email(email, options);
-};
-
-
-internals.email = function (email, options = {}) {
-
-    if (typeof email !== 'string') {
-        throw new Error('Invalid input: email must be a string');
-    }
-
-    if (!email) {
-        return { error: 'Address must be a non-empty string' };
-    }
-
-    // Unicode
-
-    const ascii = !internals.nonAsciiRx.test(email);
-    if (!ascii) {
-        if (options.allowUnicode === false) {                                                   // Defaults to true
-            return { error: 'Address contains forbidden Unicode characters' };
-        }
-
-        email = email.normalize('NFC');
-    }
-
-    // Basic structure
-
-    const parts = email.split('@');
-    if (parts.length !== 2) {
-        return { error: parts.length > 2 ? 'Address cannot contain more than one @ character' : 'Address must contain one @ character' };
-    }
-
-    const [local, domain] = parts;
-
-    if (!local) {
-        return { error: 'Address local part cannot be empty' };
-    }
-
-    if (!options.ignoreLength) {
-        if (email.length > 254) {                                           // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.3
-            return { error: 'Address too long' };
-        }
-
-        if (internals.encoder.encode(local).length > 64) {                  // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.1
-            return { error: 'Address local part too long' };
-        }
-    }
-
-    // Validate parts
-
-    return internals.local(local, ascii) || Domain.analyze(domain, options);
-};
-
-
-internals.local = function (local, ascii) {
-
-    const segments = local.split('.');
-    for (const segment of segments) {
-        if (!segment.length) {
-            return { error: 'Address local part contains empty dot-separated segment' };
-        }
-
-        if (ascii) {
-            if (!internals.atextRx.test(segment)) {
-                return { error: 'Address local part contains invalid character' };
-            }
-
-            continue;
-        }
-
-        for (const char of segment) {
-            if (internals.atextRx.test(char)) {
-                continue;
-            }
-
-            const binary = internals.binary(char);
-            if (!internals.atomRx.test(binary)) {
-                return { error: 'Address local part contains invalid character' };
-            }
-        }
-    }
-};
-
-
-internals.binary = function (char) {
-
-    return Array.from(internals.encoder.encode(char)).map((v) => String.fromCharCode(v)).join('');
-};
-
-
-/*
-    From RFC 5321:
-
-        Mailbox         =   Local-part "@" ( Domain / address-literal )
-
-        Local-part      =   Dot-string / Quoted-string
-        Dot-string      =   Atom *("."  Atom)
-        Atom            =   1*atext
-        atext           =   ALPHA / DIGIT / "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
-
-        Domain          =   sub-domain *("." sub-domain)
-        sub-domain      =   Let-dig [Ldh-str]
-        Let-dig         =   ALPHA / DIGIT
-        Ldh-str         =   *( ALPHA / DIGIT / "-" ) Let-dig
-
-        ALPHA           =   %x41-5A / %x61-7A        ; a-z, A-Z
-        DIGIT           =   %x30-39                  ; 0-9
-
-    From RFC 6531:
-
-        sub-domain      =/  U-label
-        atext           =/  UTF8-non-ascii
-
-        UTF8-non-ascii  =   UTF8-2 / UTF8-3 / UTF8-4
-
-        UTF8-2          =   %xC2-DF UTF8-tail
-        UTF8-3          =   %xE0 %xA0-BF UTF8-tail /
-                            %xE1-EC 2( UTF8-tail ) /
-                            %xED %x80-9F UTF8-tail /
-                            %xEE-EF 2( UTF8-tail )
-        UTF8-4          =   %xF0 %x90-BF 2( UTF8-tail ) /
-                            %xF1-F3 3( UTF8-tail ) /
-                            %xF4 %x80-8F 2( UTF8-tail )
-
-        UTF8-tail       =   %x80-BF
-
-    Note: The following are not supported:
-
-        RFC 5321: address-literal, Quoted-string
-        RFC 5322: obs-*, CFWS
-*/
-
-
-internals.atextRx = /^[\w!#\$%&'\*\+\-/=\?\^`\{\|\}~]+$/;               // _ included in \w
-
-
-internals.atomRx = new RegExp([
-
-    //  %xC2-DF UTF8-tail
-    '(?:[\\xc2-\\xdf][\\x80-\\xbf])',
-
-    //  %xE0 %xA0-BF UTF8-tail              %xE1-EC 2( UTF8-tail )            %xED %x80-9F UTF8-tail              %xEE-EF 2( UTF8-tail )
-    '(?:\\xe0[\\xa0-\\xbf][\\x80-\\xbf])|(?:[\\xe1-\\xec][\\x80-\\xbf]{2})|(?:\\xed[\\x80-\\x9f][\\x80-\\xbf])|(?:[\\xee-\\xef][\\x80-\\xbf]{2})',
-
-    //  %xF0 %x90-BF 2( UTF8-tail )            %xF1-F3 3( UTF8-tail )            %xF4 %x80-8F 2( UTF8-tail )
-    '(?:\\xf0[\\x90-\\xbf][\\x80-\\xbf]{2})|(?:[\\xf1-\\xf3][\\x80-\\xbf]{3})|(?:\\xf4[\\x80-\\x8f][\\x80-\\xbf]{2})'
-
-].join('|'));
-
-},{"./domain":79,"util":325}],81:[function(require,module,exports){
-'use strict';
-
-const Domain = require('./domain');
-const Email = require('./email');
-const Tlds = require('./tlds');
-
-
-const internals = {
-    defaultTlds: { allow: Tlds, deny: null }
-};
-
-
-module.exports = {
-    domain: {
-        analyze(domain, options) {
-
-            options = internals.options(options);
-            return Domain.analyze(domain, options);
-        },
-
-        isValid(domain, options) {
-
-            options = internals.options(options);
-            return Domain.isValid(domain, options);
-        }
-    },
-    email: {
-        analyze(email, options) {
-
-            options = internals.options(options);
-            return Email.analyze(email, options);
-        },
-
-        isValid(email, options) {
-
-            options = internals.options(options);
-            return Email.isValid(email, options);
-        }
-    }
-};
-
-
-internals.options = function (options) {
-
-    if (!options) {
-        return { tlds: internals.defaultTlds };
-    }
-
-    if (options.tlds === false) {                // Defaults to true
-        return options;
-    }
-
-    if (!options.tlds ||
-        options.tlds === true) {
-
-        return Object.assign({}, options, { tlds: internals.defaultTlds });
-    }
-
-    if (typeof options.tlds !== 'object') {
-        throw new Error('Invalid options: tlds must be a boolean or an object');
-    }
-
-    if (options.tlds.deny) {
-        if (options.tlds.deny instanceof Set === false) {
-            throw new Error('Invalid options: tlds.deny must be a Set object');
-        }
-
-        if (options.tlds.allow) {
-            throw new Error('Invalid options: cannot specify both tlds.allow and tlds.deny lists');
-        }
-
-        return options;
-    }
-
-    if (options.tlds.allow === true) {
-        return Object.assign({}, options, { tlds: internals.defaultTlds });
-    }
-
-    if (options.tlds.allow instanceof Set === false) {
-        throw new Error('Invalid options: tlds.allow must be a Set object or true');
-    }
-
-    return options;
-};
-
-},{"./domain":79,"./email":80,"./tlds":82}],82:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-// http://data.iana.org/TLD/tlds-alpha-by-domain.txt
-// # Version 2019091902, Last Updated Fri Sep 20 07: 07: 02 2019 UTC
-
-
-internals.tlds = [
-    'AAA',
-    'AARP',
-    'ABARTH',
-    'ABB',
-    'ABBOTT',
-    'ABBVIE',
-    'ABC',
-    'ABLE',
-    'ABOGADO',
-    'ABUDHABI',
-    'AC',
-    'ACADEMY',
-    'ACCENTURE',
-    'ACCOUNTANT',
-    'ACCOUNTANTS',
-    'ACO',
-    'ACTOR',
-    'AD',
-    'ADAC',
-    'ADS',
-    'ADULT',
-    'AE',
-    'AEG',
-    'AERO',
-    'AETNA',
-    'AF',
-    'AFAMILYCOMPANY',
-    'AFL',
-    'AFRICA',
-    'AG',
-    'AGAKHAN',
-    'AGENCY',
-    'AI',
-    'AIG',
-    'AIGO',
-    'AIRBUS',
-    'AIRFORCE',
-    'AIRTEL',
-    'AKDN',
-    'AL',
-    'ALFAROMEO',
-    'ALIBABA',
-    'ALIPAY',
-    'ALLFINANZ',
-    'ALLSTATE',
-    'ALLY',
-    'ALSACE',
-    'ALSTOM',
-    'AM',
-    'AMERICANEXPRESS',
-    'AMERICANFAMILY',
-    'AMEX',
-    'AMFAM',
-    'AMICA',
-    'AMSTERDAM',
-    'ANALYTICS',
-    'ANDROID',
-    'ANQUAN',
-    'ANZ',
-    'AO',
-    'AOL',
-    'APARTMENTS',
-    'APP',
-    'APPLE',
-    'AQ',
-    'AQUARELLE',
-    'AR',
-    'ARAB',
-    'ARAMCO',
-    'ARCHI',
-    'ARMY',
-    'ARPA',
-    'ART',
-    'ARTE',
-    'AS',
-    'ASDA',
-    'ASIA',
-    'ASSOCIATES',
-    'AT',
-    'ATHLETA',
-    'ATTORNEY',
-    'AU',
-    'AUCTION',
-    'AUDI',
-    'AUDIBLE',
-    'AUDIO',
-    'AUSPOST',
-    'AUTHOR',
-    'AUTO',
-    'AUTOS',
-    'AVIANCA',
-    'AW',
-    'AWS',
-    'AX',
-    'AXA',
-    'AZ',
-    'AZURE',
-    'BA',
-    'BABY',
-    'BAIDU',
-    'BANAMEX',
-    'BANANAREPUBLIC',
-    'BAND',
-    'BANK',
-    'BAR',
-    'BARCELONA',
-    'BARCLAYCARD',
-    'BARCLAYS',
-    'BAREFOOT',
-    'BARGAINS',
-    'BASEBALL',
-    'BASKETBALL',
-    'BAUHAUS',
-    'BAYERN',
-    'BB',
-    'BBC',
-    'BBT',
-    'BBVA',
-    'BCG',
-    'BCN',
-    'BD',
-    'BE',
-    'BEATS',
-    'BEAUTY',
-    'BEER',
-    'BENTLEY',
-    'BERLIN',
-    'BEST',
-    'BESTBUY',
-    'BET',
-    'BF',
-    'BG',
-    'BH',
-    'BHARTI',
-    'BI',
-    'BIBLE',
-    'BID',
-    'BIKE',
-    'BING',
-    'BINGO',
-    'BIO',
-    'BIZ',
-    'BJ',
-    'BLACK',
-    'BLACKFRIDAY',
-    'BLOCKBUSTER',
-    'BLOG',
-    'BLOOMBERG',
-    'BLUE',
-    'BM',
-    'BMS',
-    'BMW',
-    'BN',
-    'BNPPARIBAS',
-    'BO',
-    'BOATS',
-    'BOEHRINGER',
-    'BOFA',
-    'BOM',
-    'BOND',
-    'BOO',
-    'BOOK',
-    'BOOKING',
-    'BOSCH',
-    'BOSTIK',
-    'BOSTON',
-    'BOT',
-    'BOUTIQUE',
-    'BOX',
-    'BR',
-    'BRADESCO',
-    'BRIDGESTONE',
-    'BROADWAY',
-    'BROKER',
-    'BROTHER',
-    'BRUSSELS',
-    'BS',
-    'BT',
-    'BUDAPEST',
-    'BUGATTI',
-    'BUILD',
-    'BUILDERS',
-    'BUSINESS',
-    'BUY',
-    'BUZZ',
-    'BV',
-    'BW',
-    'BY',
-    'BZ',
-    'BZH',
-    'CA',
-    'CAB',
-    'CAFE',
-    'CAL',
-    'CALL',
-    'CALVINKLEIN',
-    'CAM',
-    'CAMERA',
-    'CAMP',
-    'CANCERRESEARCH',
-    'CANON',
-    'CAPETOWN',
-    'CAPITAL',
-    'CAPITALONE',
-    'CAR',
-    'CARAVAN',
-    'CARDS',
-    'CARE',
-    'CAREER',
-    'CAREERS',
-    'CARS',
-    'CARTIER',
-    'CASA',
-    'CASE',
-    'CASEIH',
-    'CASH',
-    'CASINO',
-    'CAT',
-    'CATERING',
-    'CATHOLIC',
-    'CBA',
-    'CBN',
-    'CBRE',
-    'CBS',
-    'CC',
-    'CD',
-    'CEB',
-    'CENTER',
-    'CEO',
-    'CERN',
-    'CF',
-    'CFA',
-    'CFD',
-    'CG',
-    'CH',
-    'CHANEL',
-    'CHANNEL',
-    'CHARITY',
-    'CHASE',
-    'CHAT',
-    'CHEAP',
-    'CHINTAI',
-    'CHRISTMAS',
-    'CHROME',
-    'CHRYSLER',
-    'CHURCH',
-    'CI',
-    'CIPRIANI',
-    'CIRCLE',
-    'CISCO',
-    'CITADEL',
-    'CITI',
-    'CITIC',
-    'CITY',
-    'CITYEATS',
-    'CK',
-    'CL',
-    'CLAIMS',
-    'CLEANING',
-    'CLICK',
-    'CLINIC',
-    'CLINIQUE',
-    'CLOTHING',
-    'CLOUD',
-    'CLUB',
-    'CLUBMED',
-    'CM',
-    'CN',
-    'CO',
-    'COACH',
-    'CODES',
-    'COFFEE',
-    'COLLEGE',
-    'COLOGNE',
-    'COM',
-    'COMCAST',
-    'COMMBANK',
-    'COMMUNITY',
-    'COMPANY',
-    'COMPARE',
-    'COMPUTER',
-    'COMSEC',
-    'CONDOS',
-    'CONSTRUCTION',
-    'CONSULTING',
-    'CONTACT',
-    'CONTRACTORS',
-    'COOKING',
-    'COOKINGCHANNEL',
-    'COOL',
-    'COOP',
-    'CORSICA',
-    'COUNTRY',
-    'COUPON',
-    'COUPONS',
-    'COURSES',
-    'CR',
-    'CREDIT',
-    'CREDITCARD',
-    'CREDITUNION',
-    'CRICKET',
-    'CROWN',
-    'CRS',
-    'CRUISE',
-    'CRUISES',
-    'CSC',
-    'CU',
-    'CUISINELLA',
-    'CV',
-    'CW',
-    'CX',
-    'CY',
-    'CYMRU',
-    'CYOU',
-    'CZ',
-    'DABUR',
-    'DAD',
-    'DANCE',
-    'DATA',
-    'DATE',
-    'DATING',
-    'DATSUN',
-    'DAY',
-    'DCLK',
-    'DDS',
-    'DE',
-    'DEAL',
-    'DEALER',
-    'DEALS',
-    'DEGREE',
-    'DELIVERY',
-    'DELL',
-    'DELOITTE',
-    'DELTA',
-    'DEMOCRAT',
-    'DENTAL',
-    'DENTIST',
-    'DESI',
-    'DESIGN',
-    'DEV',
-    'DHL',
-    'DIAMONDS',
-    'DIET',
-    'DIGITAL',
-    'DIRECT',
-    'DIRECTORY',
-    'DISCOUNT',
-    'DISCOVER',
-    'DISH',
-    'DIY',
-    'DJ',
-    'DK',
-    'DM',
-    'DNP',
-    'DO',
-    'DOCS',
-    'DOCTOR',
-    'DODGE',
-    'DOG',
-    'DOMAINS',
-    'DOT',
-    'DOWNLOAD',
-    'DRIVE',
-    'DTV',
-    'DUBAI',
-    'DUCK',
-    'DUNLOP',
-    'DUPONT',
-    'DURBAN',
-    'DVAG',
-    'DVR',
-    'DZ',
-    'EARTH',
-    'EAT',
-    'EC',
-    'ECO',
-    'EDEKA',
-    'EDU',
-    'EDUCATION',
-    'EE',
-    'EG',
-    'EMAIL',
-    'EMERCK',
-    'ENERGY',
-    'ENGINEER',
-    'ENGINEERING',
-    'ENTERPRISES',
-    'EPSON',
-    'EQUIPMENT',
-    'ER',
-    'ERICSSON',
-    'ERNI',
-    'ES',
-    'ESQ',
-    'ESTATE',
-    'ESURANCE',
-    'ET',
-    'ETISALAT',
-    'EU',
-    'EUROVISION',
-    'EUS',
-    'EVENTS',
-    'EVERBANK',
-    'EXCHANGE',
-    'EXPERT',
-    'EXPOSED',
-    'EXPRESS',
-    'EXTRASPACE',
-    'FAGE',
-    'FAIL',
-    'FAIRWINDS',
-    'FAITH',
-    'FAMILY',
-    'FAN',
-    'FANS',
-    'FARM',
-    'FARMERS',
-    'FASHION',
-    'FAST',
-    'FEDEX',
-    'FEEDBACK',
-    'FERRARI',
-    'FERRERO',
-    'FI',
-    'FIAT',
-    'FIDELITY',
-    'FIDO',
-    'FILM',
-    'FINAL',
-    'FINANCE',
-    'FINANCIAL',
-    'FIRE',
-    'FIRESTONE',
-    'FIRMDALE',
-    'FISH',
-    'FISHING',
-    'FIT',
-    'FITNESS',
-    'FJ',
-    'FK',
-    'FLICKR',
-    'FLIGHTS',
-    'FLIR',
-    'FLORIST',
-    'FLOWERS',
-    'FLY',
-    'FM',
-    'FO',
-    'FOO',
-    'FOOD',
-    'FOODNETWORK',
-    'FOOTBALL',
-    'FORD',
-    'FOREX',
-    'FORSALE',
-    'FORUM',
-    'FOUNDATION',
-    'FOX',
-    'FR',
-    'FREE',
-    'FRESENIUS',
-    'FRL',
-    'FROGANS',
-    'FRONTDOOR',
-    'FRONTIER',
-    'FTR',
-    'FUJITSU',
-    'FUJIXEROX',
-    'FUN',
-    'FUND',
-    'FURNITURE',
-    'FUTBOL',
-    'FYI',
-    'GA',
-    'GAL',
-    'GALLERY',
-    'GALLO',
-    'GALLUP',
-    'GAME',
-    'GAMES',
-    'GAP',
-    'GARDEN',
-    'GAY',
-    'GB',
-    'GBIZ',
-    'GD',
-    'GDN',
-    'GE',
-    'GEA',
-    'GENT',
-    'GENTING',
-    'GEORGE',
-    'GF',
-    'GG',
-    'GGEE',
-    'GH',
-    'GI',
-    'GIFT',
-    'GIFTS',
-    'GIVES',
-    'GIVING',
-    'GL',
-    'GLADE',
-    'GLASS',
-    'GLE',
-    'GLOBAL',
-    'GLOBO',
-    'GM',
-    'GMAIL',
-    'GMBH',
-    'GMO',
-    'GMX',
-    'GN',
-    'GODADDY',
-    'GOLD',
-    'GOLDPOINT',
-    'GOLF',
-    'GOO',
-    'GOODYEAR',
-    'GOOG',
-    'GOOGLE',
-    'GOP',
-    'GOT',
-    'GOV',
-    'GP',
-    'GQ',
-    'GR',
-    'GRAINGER',
-    'GRAPHICS',
-    'GRATIS',
-    'GREEN',
-    'GRIPE',
-    'GROCERY',
-    'GROUP',
-    'GS',
-    'GT',
-    'GU',
-    'GUARDIAN',
-    'GUCCI',
-    'GUGE',
-    'GUIDE',
-    'GUITARS',
-    'GURU',
-    'GW',
-    'GY',
-    'HAIR',
-    'HAMBURG',
-    'HANGOUT',
-    'HAUS',
-    'HBO',
-    'HDFC',
-    'HDFCBANK',
-    'HEALTH',
-    'HEALTHCARE',
-    'HELP',
-    'HELSINKI',
-    'HERE',
-    'HERMES',
-    'HGTV',
-    'HIPHOP',
-    'HISAMITSU',
-    'HITACHI',
-    'HIV',
-    'HK',
-    'HKT',
-    'HM',
-    'HN',
-    'HOCKEY',
-    'HOLDINGS',
-    'HOLIDAY',
-    'HOMEDEPOT',
-    'HOMEGOODS',
-    'HOMES',
-    'HOMESENSE',
-    'HONDA',
-    'HORSE',
-    'HOSPITAL',
-    'HOST',
-    'HOSTING',
-    'HOT',
-    'HOTELES',
-    'HOTELS',
-    'HOTMAIL',
-    'HOUSE',
-    'HOW',
-    'HR',
-    'HSBC',
-    'HT',
-    'HU',
-    'HUGHES',
-    'HYATT',
-    'HYUNDAI',
-    'IBM',
-    'ICBC',
-    'ICE',
-    'ICU',
-    'ID',
-    'IE',
-    'IEEE',
-    'IFM',
-    'IKANO',
-    'IL',
-    'IM',
-    'IMAMAT',
-    'IMDB',
-    'IMMO',
-    'IMMOBILIEN',
-    'IN',
-    'INC',
-    'INDUSTRIES',
-    'INFINITI',
-    'INFO',
-    'ING',
-    'INK',
-    'INSTITUTE',
-    'INSURANCE',
-    'INSURE',
-    'INT',
-    'INTEL',
-    'INTERNATIONAL',
-    'INTUIT',
-    'INVESTMENTS',
-    'IO',
-    'IPIRANGA',
-    'IQ',
-    'IR',
-    'IRISH',
-    'IS',
-    'ISMAILI',
-    'IST',
-    'ISTANBUL',
-    'IT',
-    'ITAU',
-    'ITV',
-    'IVECO',
-    'JAGUAR',
-    'JAVA',
-    'JCB',
-    'JCP',
-    'JE',
-    'JEEP',
-    'JETZT',
-    'JEWELRY',
-    'JIO',
-    'JLL',
-    'JM',
-    'JMP',
-    'JNJ',
-    'JO',
-    'JOBS',
-    'JOBURG',
-    'JOT',
-    'JOY',
-    'JP',
-    'JPMORGAN',
-    'JPRS',
-    'JUEGOS',
-    'JUNIPER',
-    'KAUFEN',
-    'KDDI',
-    'KE',
-    'KERRYHOTELS',
-    'KERRYLOGISTICS',
-    'KERRYPROPERTIES',
-    'KFH',
-    'KG',
-    'KH',
-    'KI',
-    'KIA',
-    'KIM',
-    'KINDER',
-    'KINDLE',
-    'KITCHEN',
-    'KIWI',
-    'KM',
-    'KN',
-    'KOELN',
-    'KOMATSU',
-    'KOSHER',
-    'KP',
-    'KPMG',
-    'KPN',
-    'KR',
-    'KRD',
-    'KRED',
-    'KUOKGROUP',
-    'KW',
-    'KY',
-    'KYOTO',
-    'KZ',
-    'LA',
-    'LACAIXA',
-    'LADBROKES',
-    'LAMBORGHINI',
-    'LAMER',
-    'LANCASTER',
-    'LANCIA',
-    'LANCOME',
-    'LAND',
-    'LANDROVER',
-    'LANXESS',
-    'LASALLE',
-    'LAT',
-    'LATINO',
-    'LATROBE',
-    'LAW',
-    'LAWYER',
-    'LB',
-    'LC',
-    'LDS',
-    'LEASE',
-    'LECLERC',
-    'LEFRAK',
-    'LEGAL',
-    'LEGO',
-    'LEXUS',
-    'LGBT',
-    'LI',
-    'LIAISON',
-    'LIDL',
-    'LIFE',
-    'LIFEINSURANCE',
-    'LIFESTYLE',
-    'LIGHTING',
-    'LIKE',
-    'LILLY',
-    'LIMITED',
-    'LIMO',
-    'LINCOLN',
-    'LINDE',
-    'LINK',
-    'LIPSY',
-    'LIVE',
-    'LIVING',
-    'LIXIL',
-    'LK',
-    'LLC',
-    'LOAN',
-    'LOANS',
-    'LOCKER',
-    'LOCUS',
-    'LOFT',
-    'LOL',
-    'LONDON',
-    'LOTTE',
-    'LOTTO',
-    'LOVE',
-    'LPL',
-    'LPLFINANCIAL',
-    'LR',
-    'LS',
-    'LT',
-    'LTD',
-    'LTDA',
-    'LU',
-    'LUNDBECK',
-    'LUPIN',
-    'LUXE',
-    'LUXURY',
-    'LV',
-    'LY',
-    'MA',
-    'MACYS',
-    'MADRID',
-    'MAIF',
-    'MAISON',
-    'MAKEUP',
-    'MAN',
-    'MANAGEMENT',
-    'MANGO',
-    'MAP',
-    'MARKET',
-    'MARKETING',
-    'MARKETS',
-    'MARRIOTT',
-    'MARSHALLS',
-    'MASERATI',
-    'MATTEL',
-    'MBA',
-    'MC',
-    'MCKINSEY',
-    'MD',
-    'ME',
-    'MED',
-    'MEDIA',
-    'MEET',
-    'MELBOURNE',
-    'MEME',
-    'MEMORIAL',
-    'MEN',
-    'MENU',
-    'MERCKMSD',
-    'METLIFE',
-    'MG',
-    'MH',
-    'MIAMI',
-    'MICROSOFT',
-    'MIL',
-    'MINI',
-    'MINT',
-    'MIT',
-    'MITSUBISHI',
-    'MK',
-    'ML',
-    'MLB',
-    'MLS',
-    'MM',
-    'MMA',
-    'MN',
-    'MO',
-    'MOBI',
-    'MOBILE',
-    'MODA',
-    'MOE',
-    'MOI',
-    'MOM',
-    'MONASH',
-    'MONEY',
-    'MONSTER',
-    'MOPAR',
-    'MORMON',
-    'MORTGAGE',
-    'MOSCOW',
-    'MOTO',
-    'MOTORCYCLES',
-    'MOV',
-    'MOVIE',
-    'MOVISTAR',
-    'MP',
-    'MQ',
-    'MR',
-    'MS',
-    'MSD',
-    'MT',
-    'MTN',
-    'MTR',
-    'MU',
-    'MUSEUM',
-    'MUTUAL',
-    'MV',
-    'MW',
-    'MX',
-    'MY',
-    'MZ',
-    'NA',
-    'NAB',
-    'NADEX',
-    'NAGOYA',
-    'NAME',
-    'NATIONWIDE',
-    'NATURA',
-    'NAVY',
-    'NBA',
-    'NC',
-    'NE',
-    'NEC',
-    'NET',
-    'NETBANK',
-    'NETFLIX',
-    'NETWORK',
-    'NEUSTAR',
-    'NEW',
-    'NEWHOLLAND',
-    'NEWS',
-    'NEXT',
-    'NEXTDIRECT',
-    'NEXUS',
-    'NF',
-    'NFL',
-    'NG',
-    'NGO',
-    'NHK',
-    'NI',
-    'NICO',
-    'NIKE',
-    'NIKON',
-    'NINJA',
-    'NISSAN',
-    'NISSAY',
-    'NL',
-    'NO',
-    'NOKIA',
-    'NORTHWESTERNMUTUAL',
-    'NORTON',
-    'NOW',
-    'NOWRUZ',
-    'NOWTV',
-    'NP',
-    'NR',
-    'NRA',
-    'NRW',
-    'NTT',
-    'NU',
-    'NYC',
-    'NZ',
-    'OBI',
-    'OBSERVER',
-    'OFF',
-    'OFFICE',
-    'OKINAWA',
-    'OLAYAN',
-    'OLAYANGROUP',
-    'OLDNAVY',
-    'OLLO',
-    'OM',
-    'OMEGA',
-    'ONE',
-    'ONG',
-    'ONL',
-    'ONLINE',
-    'ONYOURSIDE',
-    'OOO',
-    'OPEN',
-    'ORACLE',
-    'ORANGE',
-    'ORG',
-    'ORGANIC',
-    'ORIGINS',
-    'OSAKA',
-    'OTSUKA',
-    'OTT',
-    'OVH',
-    'PA',
-    'PAGE',
-    'PANASONIC',
-    'PARIS',
-    'PARS',
-    'PARTNERS',
-    'PARTS',
-    'PARTY',
-    'PASSAGENS',
-    'PAY',
-    'PCCW',
-    'PE',
-    'PET',
-    'PF',
-    'PFIZER',
-    'PG',
-    'PH',
-    'PHARMACY',
-    'PHD',
-    'PHILIPS',
-    'PHONE',
-    'PHOTO',
-    'PHOTOGRAPHY',
-    'PHOTOS',
-    'PHYSIO',
-    'PIAGET',
-    'PICS',
-    'PICTET',
-    'PICTURES',
-    'PID',
-    'PIN',
-    'PING',
-    'PINK',
-    'PIONEER',
-    'PIZZA',
-    'PK',
-    'PL',
-    'PLACE',
-    'PLAY',
-    'PLAYSTATION',
-    'PLUMBING',
-    'PLUS',
-    'PM',
-    'PN',
-    'PNC',
-    'POHL',
-    'POKER',
-    'POLITIE',
-    'PORN',
-    'POST',
-    'PR',
-    'PRAMERICA',
-    'PRAXI',
-    'PRESS',
-    'PRIME',
-    'PRO',
-    'PROD',
-    'PRODUCTIONS',
-    'PROF',
-    'PROGRESSIVE',
-    'PROMO',
-    'PROPERTIES',
-    'PROPERTY',
-    'PROTECTION',
-    'PRU',
-    'PRUDENTIAL',
-    'PS',
-    'PT',
-    'PUB',
-    'PW',
-    'PWC',
-    'PY',
-    'QA',
-    'QPON',
-    'QUEBEC',
-    'QUEST',
-    'QVC',
-    'RACING',
-    'RADIO',
-    'RAID',
-    'RE',
-    'READ',
-    'REALESTATE',
-    'REALTOR',
-    'REALTY',
-    'RECIPES',
-    'RED',
-    'REDSTONE',
-    'REDUMBRELLA',
-    'REHAB',
-    'REISE',
-    'REISEN',
-    'REIT',
-    'RELIANCE',
-    'REN',
-    'RENT',
-    'RENTALS',
-    'REPAIR',
-    'REPORT',
-    'REPUBLICAN',
-    'REST',
-    'RESTAURANT',
-    'REVIEW',
-    'REVIEWS',
-    'REXROTH',
-    'RICH',
-    'RICHARDLI',
-    'RICOH',
-    'RIGHTATHOME',
-    'RIL',
-    'RIO',
-    'RIP',
-    'RMIT',
-    'RO',
-    'ROCHER',
-    'ROCKS',
-    'RODEO',
-    'ROGERS',
-    'ROOM',
-    'RS',
-    'RSVP',
-    'RU',
-    'RUGBY',
-    'RUHR',
-    'RUN',
-    'RW',
-    'RWE',
-    'RYUKYU',
-    'SA',
-    'SAARLAND',
-    'SAFE',
-    'SAFETY',
-    'SAKURA',
-    'SALE',
-    'SALON',
-    'SAMSCLUB',
-    'SAMSUNG',
-    'SANDVIK',
-    'SANDVIKCOROMANT',
-    'SANOFI',
-    'SAP',
-    'SARL',
-    'SAS',
-    'SAVE',
-    'SAXO',
-    'SB',
-    'SBI',
-    'SBS',
-    'SC',
-    'SCA',
-    'SCB',
-    'SCHAEFFLER',
-    'SCHMIDT',
-    'SCHOLARSHIPS',
-    'SCHOOL',
-    'SCHULE',
-    'SCHWARZ',
-    'SCIENCE',
-    'SCJOHNSON',
-    'SCOR',
-    'SCOT',
-    'SD',
-    'SE',
-    'SEARCH',
-    'SEAT',
-    'SECURE',
-    'SECURITY',
-    'SEEK',
-    'SELECT',
-    'SENER',
-    'SERVICES',
-    'SES',
-    'SEVEN',
-    'SEW',
-    'SEX',
-    'SEXY',
-    'SFR',
-    'SG',
-    'SH',
-    'SHANGRILA',
-    'SHARP',
-    'SHAW',
-    'SHELL',
-    'SHIA',
-    'SHIKSHA',
-    'SHOES',
-    'SHOP',
-    'SHOPPING',
-    'SHOUJI',
-    'SHOW',
-    'SHOWTIME',
-    'SHRIRAM',
-    'SI',
-    'SILK',
-    'SINA',
-    'SINGLES',
-    'SITE',
-    'SJ',
-    'SK',
-    'SKI',
-    'SKIN',
-    'SKY',
-    'SKYPE',
-    'SL',
-    'SLING',
-    'SM',
-    'SMART',
-    'SMILE',
-    'SN',
-    'SNCF',
-    'SO',
-    'SOCCER',
-    'SOCIAL',
-    'SOFTBANK',
-    'SOFTWARE',
-    'SOHU',
-    'SOLAR',
-    'SOLUTIONS',
-    'SONG',
-    'SONY',
-    'SOY',
-    'SPACE',
-    'SPORT',
-    'SPOT',
-    'SPREADBETTING',
-    'SR',
-    'SRL',
-    'SRT',
-    'SS',
-    'ST',
-    'STADA',
-    'STAPLES',
-    'STAR',
-    'STATEBANK',
-    'STATEFARM',
-    'STC',
-    'STCGROUP',
-    'STOCKHOLM',
-    'STORAGE',
-    'STORE',
-    'STREAM',
-    'STUDIO',
-    'STUDY',
-    'STYLE',
-    'SU',
-    'SUCKS',
-    'SUPPLIES',
-    'SUPPLY',
-    'SUPPORT',
-    'SURF',
-    'SURGERY',
-    'SUZUKI',
-    'SV',
-    'SWATCH',
-    'SWIFTCOVER',
-    'SWISS',
-    'SX',
-    'SY',
-    'SYDNEY',
-    'SYMANTEC',
-    'SYSTEMS',
-    'SZ',
-    'TAB',
-    'TAIPEI',
-    'TALK',
-    'TAOBAO',
-    'TARGET',
-    'TATAMOTORS',
-    'TATAR',
-    'TATTOO',
-    'TAX',
-    'TAXI',
-    'TC',
-    'TCI',
-    'TD',
-    'TDK',
-    'TEAM',
-    'TECH',
-    'TECHNOLOGY',
-    'TEL',
-    'TELEFONICA',
-    'TEMASEK',
-    'TENNIS',
-    'TEVA',
-    'TF',
-    'TG',
-    'TH',
-    'THD',
-    'THEATER',
-    'THEATRE',
-    'TIAA',
-    'TICKETS',
-    'TIENDA',
-    'TIFFANY',
-    'TIPS',
-    'TIRES',
-    'TIROL',
-    'TJ',
-    'TJMAXX',
-    'TJX',
-    'TK',
-    'TKMAXX',
-    'TL',
-    'TM',
-    'TMALL',
-    'TN',
-    'TO',
-    'TODAY',
-    'TOKYO',
-    'TOOLS',
-    'TOP',
-    'TORAY',
-    'TOSHIBA',
-    'TOTAL',
-    'TOURS',
-    'TOWN',
-    'TOYOTA',
-    'TOYS',
-    'TR',
-    'TRADE',
-    'TRADING',
-    'TRAINING',
-    'TRAVEL',
-    'TRAVELCHANNEL',
-    'TRAVELERS',
-    'TRAVELERSINSURANCE',
-    'TRUST',
-    'TRV',
-    'TT',
-    'TUBE',
-    'TUI',
-    'TUNES',
-    'TUSHU',
-    'TV',
-    'TVS',
-    'TW',
-    'TZ',
-    'UA',
-    'UBANK',
-    'UBS',
-    'UCONNECT',
-    'UG',
-    'UK',
-    'UNICOM',
-    'UNIVERSITY',
-    'UNO',
-    'UOL',
-    'UPS',
-    'US',
-    'UY',
-    'UZ',
-    'VA',
-    'VACATIONS',
-    'VANA',
-    'VANGUARD',
-    'VC',
-    'VE',
-    'VEGAS',
-    'VENTURES',
-    'VERISIGN',
-    'VERSICHERUNG',
-    'VET',
-    'VG',
-    'VI',
-    'VIAJES',
-    'VIDEO',
-    'VIG',
-    'VIKING',
-    'VILLAS',
-    'VIN',
-    'VIP',
-    'VIRGIN',
-    'VISA',
-    'VISION',
-    'VISTAPRINT',
-    'VIVA',
-    'VIVO',
-    'VLAANDEREN',
-    'VN',
-    'VODKA',
-    'VOLKSWAGEN',
-    'VOLVO',
-    'VOTE',
-    'VOTING',
-    'VOTO',
-    'VOYAGE',
-    'VU',
-    'VUELOS',
-    'WALES',
-    'WALMART',
-    'WALTER',
-    'WANG',
-    'WANGGOU',
-    'WARMAN',
-    'WATCH',
-    'WATCHES',
-    'WEATHER',
-    'WEATHERCHANNEL',
-    'WEBCAM',
-    'WEBER',
-    'WEBSITE',
-    'WED',
-    'WEDDING',
-    'WEIBO',
-    'WEIR',
-    'WF',
-    'WHOSWHO',
-    'WIEN',
-    'WIKI',
-    'WILLIAMHILL',
-    'WIN',
-    'WINDOWS',
-    'WINE',
-    'WINNERS',
-    'WME',
-    'WOLTERSKLUWER',
-    'WOODSIDE',
-    'WORK',
-    'WORKS',
-    'WORLD',
-    'WOW',
-    'WS',
-    'WTC',
-    'WTF',
-    'XBOX',
-    'XEROX',
-    'XFINITY',
-    'XIHUAN',
-    'XIN',
-    'XN--11B4C3D',
-    'XN--1CK2E1B',
-    'XN--1QQW23A',
-    'XN--2SCRJ9C',
-    'XN--30RR7Y',
-    'XN--3BST00M',
-    'XN--3DS443G',
-    'XN--3E0B707E',
-    'XN--3HCRJ9C',
-    'XN--3OQ18VL8PN36A',
-    'XN--3PXU8K',
-    'XN--42C2D9A',
-    'XN--45BR5CYL',
-    'XN--45BRJ9C',
-    'XN--45Q11C',
-    'XN--4GBRIM',
-    'XN--54B7FTA0CC',
-    'XN--55QW42G',
-    'XN--55QX5D',
-    'XN--5SU34J936BGSG',
-    'XN--5TZM5G',
-    'XN--6FRZ82G',
-    'XN--6QQ986B3XL',
-    'XN--80ADXHKS',
-    'XN--80AO21A',
-    'XN--80AQECDR1A',
-    'XN--80ASEHDB',
-    'XN--80ASWG',
-    'XN--8Y0A063A',
-    'XN--90A3AC',
-    'XN--90AE',
-    'XN--90AIS',
-    'XN--9DBQ2A',
-    'XN--9ET52U',
-    'XN--9KRT00A',
-    'XN--B4W605FERD',
-    'XN--BCK1B9A5DRE4C',
-    'XN--C1AVG',
-    'XN--C2BR7G',
-    'XN--CCK2B3B',
-    'XN--CG4BKI',
-    'XN--CLCHC0EA0B2G2A9GCD',
-    'XN--CZR694B',
-    'XN--CZRS0T',
-    'XN--CZRU2D',
-    'XN--D1ACJ3B',
-    'XN--D1ALF',
-    'XN--E1A4C',
-    'XN--ECKVDTC9D',
-    'XN--EFVY88H',
-    'XN--ESTV75G',
-    'XN--FCT429K',
-    'XN--FHBEI',
-    'XN--FIQ228C5HS',
-    'XN--FIQ64B',
-    'XN--FIQS8S',
-    'XN--FIQZ9S',
-    'XN--FJQ720A',
-    'XN--FLW351E',
-    'XN--FPCRJ9C3D',
-    'XN--FZC2C9E2C',
-    'XN--FZYS8D69UVGM',
-    'XN--G2XX48C',
-    'XN--GCKR3F0F',
-    'XN--GECRJ9C',
-    'XN--GK3AT1E',
-    'XN--H2BREG3EVE',
-    'XN--H2BRJ9C',
-    'XN--H2BRJ9C8C',
-    'XN--HXT814E',
-    'XN--I1B6B1A6A2E',
-    'XN--IMR513N',
-    'XN--IO0A7I',
-    'XN--J1AEF',
-    'XN--J1AMH',
-    'XN--J6W193G',
-    'XN--JLQ61U9W7B',
-    'XN--JVR189M',
-    'XN--KCRX77D1X4A',
-    'XN--KPRW13D',
-    'XN--KPRY57D',
-    'XN--KPU716F',
-    'XN--KPUT3I',
-    'XN--L1ACC',
-    'XN--LGBBAT1AD8J',
-    'XN--MGB9AWBF',
-    'XN--MGBA3A3EJT',
-    'XN--MGBA3A4F16A',
-    'XN--MGBA7C0BBN0A',
-    'XN--MGBAAKC7DVF',
-    'XN--MGBAAM7A8H',
-    'XN--MGBAB2BD',
-    'XN--MGBAH1A3HJKRD',
-    'XN--MGBAI9AZGQP6J',
-    'XN--MGBAYH7GPA',
-    'XN--MGBBH1A',
-    'XN--MGBBH1A71E',
-    'XN--MGBC0A9AZCG',
-    'XN--MGBCA7DZDO',
-    'XN--MGBERP4A5D4AR',
-    'XN--MGBGU82A',
-    'XN--MGBI4ECEXP',
-    'XN--MGBPL2FH',
-    'XN--MGBT3DHD',
-    'XN--MGBTX2B',
-    'XN--MGBX4CD0AB',
-    'XN--MIX891F',
-    'XN--MK1BU44C',
-    'XN--MXTQ1M',
-    'XN--NGBC5AZD',
-    'XN--NGBE9E0A',
-    'XN--NGBRX',
-    'XN--NODE',
-    'XN--NQV7F',
-    'XN--NQV7FS00EMA',
-    'XN--NYQY26A',
-    'XN--O3CW4H',
-    'XN--OGBPF8FL',
-    'XN--OTU796D',
-    'XN--P1ACF',
-    'XN--P1AI',
-    'XN--PBT977C',
-    'XN--PGBS0DH',
-    'XN--PSSY2U',
-    'XN--Q9JYB4C',
-    'XN--QCKA1PMC',
-    'XN--QXA6A',
-    'XN--QXAM',
-    'XN--RHQV96G',
-    'XN--ROVU88B',
-    'XN--RVC1E0AM3E',
-    'XN--S9BRJ9C',
-    'XN--SES554G',
-    'XN--T60B56A',
-    'XN--TCKWE',
-    'XN--TIQ49XQYJ',
-    'XN--UNUP4Y',
-    'XN--VERMGENSBERATER-CTB',
-    'XN--VERMGENSBERATUNG-PWB',
-    'XN--VHQUV',
-    'XN--VUQ861B',
-    'XN--W4R85EL8FHU5DNRA',
-    'XN--W4RS40L',
-    'XN--WGBH1C',
-    'XN--WGBL6A',
-    'XN--XHQ521B',
-    'XN--XKC2AL3HYE2A',
-    'XN--XKC2DL3A5EE0H',
-    'XN--Y9A3AQ',
-    'XN--YFRO4I67O',
-    'XN--YGBI2AMMX',
-    'XN--ZFR164B',
-    'XXX',
-    'XYZ',
-    'YACHTS',
-    'YAHOO',
-    'YAMAXUN',
-    'YANDEX',
-    'YE',
-    'YODOBASHI',
-    'YOGA',
-    'YOKOHAMA',
-    'YOU',
-    'YOUTUBE',
-    'YT',
-    'YUN',
-    'ZA',
-    'ZAPPOS',
-    'ZARA',
-    'ZERO',
-    'ZIP',
-    'ZM',
-    'ZONE',
-    'ZUERICH',
-    'ZW'
-];
-
-
-// Keep as upper-case to make updating from source easier
-
-module.exports = new Set(internals.tlds.map((tld) => tld.toLowerCase()));
-
-},{}],83:[function(require,module,exports){
-'use strict';
-
-
-const internals = {
-    suspectRx: /"(?:_|\\u005[Ff])(?:_|\\u005[Ff])(?:p|\\u0070)(?:r|\\u0072)(?:o|\\u006[Ff])(?:t|\\u0074)(?:o|\\u006[Ff])(?:_|\\u005[Ff])(?:_|\\u005[Ff])"\s*\:/
-};
-
-
-exports.parse = function (text, reviver, options) {
-
-    // Normalize arguments
-
-    if (!options) {
-        if (reviver &&
-            typeof reviver === 'object') {
-
-            options = reviver;
-            reviver = undefined;
-        }
-        else {
-            options = {};
-        }
-    }
-
-    // Parse normally, allowing exceptions
-
-    const obj = JSON.parse(text, reviver);
-
-    // options.protoAction: 'error' (default) / 'remove' / 'ignore'
-
-    if (options.protoAction === 'ignore') {
-        return obj;
-    }
-
-    // Ignore null and non-objects
-
-    if (!obj ||
-        typeof obj !== 'object') {
-
-        return obj;
-    }
-
-    // Check original string for potential exploit
-
-    if (!text.match(internals.suspectRx)) {
-        return obj;
-    }
-
-    // Scan result for proto keys
-
-    exports.scan(obj, options);
-
-    return obj;
-};
-
-
-exports.scan = function (obj, options) {
-
-    options = options || {};
-
-    let next = [obj];
-
-    while (next.length) {
-        const nodes = next;
-        next = [];
-
-        for (const node of nodes) {
-            if (Object.prototype.hasOwnProperty.call(node, '__proto__')) {      // Avoid calling node.hasOwnProperty directly
-                if (options.protoAction !== 'remove') {
-                    throw new SyntaxError('Object contains forbidden prototype property');
-                }
-
-                delete node.__proto__;
-            }
-
-            for (const key in node) {
-                const value = node[key];
-                if (value &&
-                    typeof value === 'object') {
-
-                    next.push(node[key]);
-                }
-            }
-        }
-    }
-};
-
-
-exports.safeParse = function (text, reviver) {
-
-    try {
-        return exports.parse(text, reviver);
-    }
-    catch (ignoreError) {
-        return null;
-    }
-};
-
-},{}],84:[function(require,module,exports){
-'use strict';
-
-const Assert = require('./assert');
-const Clone = require('./clone');
-const Merge = require('./merge');
-const Utils = require('./utils');
-
-
-const internals = {};
-
-
-module.exports = function (defaults, source, options = {}) {
-
-    Assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
-    Assert(!source || source === true || typeof source === 'object', 'Invalid source value: must be true, falsy or an object');
-    Assert(typeof options === 'object', 'Invalid options: must be an object');
-
-    if (!source) {                                                  // If no source, return null
-        return null;
-    }
-
-    if (options.shallow) {
-        return internals.applyToDefaultsWithShallow(defaults, source, options);
-    }
-
-    const copy = Clone(defaults);
-
-    if (source === true) {                                          // If source is set to true, use defaults
-        return copy;
-    }
-
-    const nullOverride = options.nullOverride !== undefined ? options.nullOverride : false;
-    return Merge(copy, source, { nullOverride, mergeArrays: false });
-};
-
-
-internals.applyToDefaultsWithShallow = function (defaults, source, options) {
-
-    const keys = options.shallow;
-    Assert(Array.isArray(keys), 'Invalid keys');
-
-    options = Object.assign({}, options);
-    options.shallow = false;
-
-    const copy = Clone(defaults, { shallow: keys });
-
-    if (source === true) {                                                      // If source is set to true, use defaults
-        return copy;
-    }
-
-    const storage = Utils.store(source, keys);                              // Move shallow copy items to storage
-    Merge(copy, source, { mergeArrays: false, nullOverride: false });   // Deep copy the rest
-    Utils.restore(copy, source, storage);                                   // Shallow copy the stored items and restore
-    return copy;
-};
-
-},{"./assert":85,"./clone":88,"./merge":101,"./utils":107}],85:[function(require,module,exports){
-arguments[4][4][0].apply(exports,arguments)
-},{"./error":91,"dup":4}],86:[function(require,module,exports){
-arguments[4][5][0].apply(exports,arguments)
-},{"_process":156,"dup":5}],87:[function(require,module,exports){
-arguments[4][6][0].apply(exports,arguments)
-},{"./ignore":97,"dup":6}],88:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Types = require('./types');
-const Utils = require('./utils');
-
-
-const internals = {
-    needsProtoHack: new Set([Types.set, Types.map, Types.weakSet, Types.weakMap])
-};
-
-
-module.exports = internals.clone = function (obj, options = {}, _seen = null) {
-
-    if (typeof obj !== 'object' ||
-        obj === null) {
-
-        return obj;
-    }
-
-    let clone = internals.clone;
-    let seen = _seen;
-
-    if (options.shallow) {
-        if (options.shallow !== true) {
-            return internals.cloneWithShallow(obj, options);
-        }
-
-        clone = (value) => value;
-    }
-    else {
-        seen = seen || new Map();
-
-        const lookup = seen.get(obj);
-        if (lookup) {
-            return lookup;
-        }
-    }
-
-    // Built-in object types
-
-    const baseProto = Types.getInternalProto(obj);
-    if (baseProto === Types.buffer) {
-        return Buffer && Buffer.from(obj);              // $lab:coverage:ignore$
-    }
-
-    if (baseProto === Types.date) {
-        return new Date(obj.getTime());
-    }
-
-    if (baseProto === Types.regex) {
-        return new RegExp(obj);
-    }
-
-    // Generic objects
-
-    const newObj = internals.base(obj, baseProto, options);
-    if (newObj === obj) {
-        return obj;
-    }
-
-    if (seen) {
-        seen.set(obj, newObj);                              // Set seen, since obj could recurse
-    }
-
-    if (baseProto === Types.set) {
-        for (const value of obj) {
-            newObj.add(clone(value, options, seen));
-        }
-    }
-    else if (baseProto === Types.map) {
-        for (const [key, value] of obj) {
-            newObj.set(key, clone(value, options, seen));
-        }
-    }
-
-    const keys = Utils.keys(obj, options);
-    for (const key of keys) {
-        if (baseProto === Types.array &&
-            key === 'length') {
-
-            newObj.length = obj.length;
-            continue;
-        }
-
-        const descriptor = Object.getOwnPropertyDescriptor(obj, key);
-        if (descriptor) {
-            if (descriptor.get ||
-                descriptor.set) {
-
-                Object.defineProperty(newObj, key, descriptor);
-            }
-            else if (descriptor.enumerable) {
-                newObj[key] = clone(obj[key], options, seen);
-            }
-            else {
-                Object.defineProperty(newObj, key, { enumerable: false, writable: true, configurable: true, value: clone(obj[key], options, seen) });
-            }
-        }
-        else {
-            Object.defineProperty(newObj, key, {
-                enumerable: true,
-                writable: true,
-                configurable: true,
-                value: clone(obj[key], options, seen)
-            });
-        }
-    }
-
-    return newObj;
-};
-
-
-internals.cloneWithShallow = function (source, options) {
-
-    const keys = options.shallow;
-    options = Object.assign({}, options);
-    options.shallow = false;
-
-    const storage = Utils.store(source, keys);    // Move shallow copy items to storage
-    const copy = internals.clone(source, options);      // Deep copy the rest
-    Utils.restore(copy, source, storage);         // Shallow copy the stored items and restore
-    return copy;
-};
-
-
-internals.base = function (obj, baseProto, options) {
-
-    if (baseProto === Types.array) {
-        return [];
-    }
-
-    if (options.prototype === false) {                  // Defaults to true
-        if (internals.needsProtoHack.has(baseProto)) {
-            return new baseProto.constructor();
-        }
-
-        return {};
-    }
-
-    const proto = Object.getPrototypeOf(obj);
-    if (proto &&
-        proto.isImmutable) {
-
-        return obj;
-    }
-
-    if (internals.needsProtoHack.has(baseProto)) {
-        const newObj = new proto.constructor();
-        if (proto !== baseProto) {
-            Object.setPrototypeOf(newObj, proto);
-        }
-
-        return newObj;
-    }
-
-    return Object.create(proto);
-};
-
-}).call(this,require("buffer").Buffer)
-},{"./types":106,"./utils":107,"buffer":48}],89:[function(require,module,exports){
-arguments[4][8][0].apply(exports,arguments)
-},{"./assert":85,"./deepEqual":90,"./escapeRegex":95,"./utils":107,"dup":8}],90:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"./types":106,"buffer":48,"dup":9}],91:[function(require,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"./stringify":105,"dup":10}],92:[function(require,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"./assert":85,"dup":11}],93:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],94:[function(require,module,exports){
-arguments[4][13][0].apply(exports,arguments)
-},{"dup":13}],95:[function(require,module,exports){
-arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],96:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],97:[function(require,module,exports){
-arguments[4][16][0].apply(exports,arguments)
-},{"dup":16}],98:[function(require,module,exports){
-arguments[4][17][0].apply(exports,arguments)
-},{"./applyToDefaults":84,"./assert":85,"./bench":86,"./block":87,"./clone":88,"./contain":89,"./deepEqual":90,"./error":91,"./escapeHeaderAttribute":92,"./escapeHtml":93,"./escapeJson":94,"./escapeRegex":95,"./flatten":96,"./ignore":97,"./intersect":99,"./isPromise":100,"./merge":101,"./once":102,"./reach":103,"./reachTemplate":104,"./stringify":105,"./wait":108,"dup":17}],99:[function(require,module,exports){
-arguments[4][18][0].apply(exports,arguments)
-},{"dup":18}],100:[function(require,module,exports){
-arguments[4][19][0].apply(exports,arguments)
-},{"dup":19}],101:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Assert = require('./assert');
-const Clone = require('./clone');
-const Utils = require('./utils');
-
-
-const internals = {};
-
-
-module.exports = internals.merge = function (target, source, options) {
-
-    Assert(target && typeof target === 'object', 'Invalid target value: must be an object');
-    Assert(source === null || source === undefined || typeof source === 'object', 'Invalid source value: must be null, undefined, or an object');
-
-    if (!source) {
-        return target;
-    }
-
-    options = Object.assign({ nullOverride: true, mergeArrays: true }, options);
-
-    if (Array.isArray(source)) {
-        Assert(Array.isArray(target), 'Cannot merge array onto an object');
-        if (!options.mergeArrays) {
-            target.length = 0;                                                          // Must not change target assignment
-        }
-
-        for (let i = 0; i < source.length; ++i) {
-            target.push(Clone(source[i], { symbols: options.symbols }));
-        }
-
-        return target;
-    }
-
-    const keys = Utils.keys(source, options);
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        if (key === '__proto__' ||
-            !Object.prototype.propertyIsEnumerable.call(source, key)) {
-
-            continue;
-        }
-
-        const value = source[key];
-        if (value &&
-            typeof value === 'object') {
-
-            if (!target[key] ||
-                typeof target[key] !== 'object' ||
-                (Array.isArray(target[key]) !== Array.isArray(value)) ||
-                value instanceof Date ||
-                (Buffer && Buffer.isBuffer(value)) ||               // $lab:coverage:ignore$
-                value instanceof RegExp) {
-
-                target[key] = Clone(value, { symbols: options.symbols });
-            }
-            else {
-                internals.merge(target[key], value, options);
-            }
-        }
-        else {
-            if (value !== null &&
-                value !== undefined) {                              // Explicit to preserve empty strings
-
-                target[key] = value;
-            }
-            else if (options.nullOverride) {
-                target[key] = value;
-            }
-        }
-    }
-
-    return target;
-};
-
-}).call(this,require("buffer").Buffer)
-},{"./assert":85,"./clone":88,"./utils":107,"buffer":48}],102:[function(require,module,exports){
-arguments[4][21][0].apply(exports,arguments)
-},{"dup":21}],103:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"./assert":85,"dup":22}],104:[function(require,module,exports){
-arguments[4][23][0].apply(exports,arguments)
-},{"./reach":103,"dup":23}],105:[function(require,module,exports){
-arguments[4][24][0].apply(exports,arguments)
-},{"dup":24}],106:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"buffer":48,"dup":25}],107:[function(require,module,exports){
-'use strict';
-
-const Reach = require('./reach');
-
-
-const internals = {};
-
-
-exports.keys = function (obj, options = {}) {
-
-    return options.symbols !== false ? Reflect.ownKeys(obj) : Object.getOwnPropertyNames(obj);  // Defaults to true
-};
-
-
-exports.store = function (source, keys) {
-
-    const storage = new Map();
-    for (let i = 0; i < keys.length; ++i) {
-        const key = keys[i];
-        const value = Reach(source, key);
-        if (typeof value === 'object' ||
-            typeof value === 'function') {
-
-            storage.set(key, value);
-            internals.reachSet(source, key, undefined);
-        }
-    }
-
-    return storage;
-};
-
-
-exports.restore = function (copy, source, storage) {
-
-    for (const [key, value] of storage) {
-        internals.reachSet(copy, key, value);
-        internals.reachSet(source, key, value);
-    }
-};
-
-
-internals.reachSet = function (obj, key, value) {
-
-    const path = Array.isArray(key) ? key : key.split('.');
-    let ref = obj;
-    for (let i = 0; i < path.length; ++i) {
-        const segment = path[i];
-        if (i + 1 === path.length) {
-            ref[segment] = value;
-        }
-
-        ref = ref[segment];
-    }
-};
-
-},{"./reach":103}],108:[function(require,module,exports){
-arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],109:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Ref = require('./ref');
-
-
-const internals = {};
-
-
-exports.schema = function (Joi, config) {
-
-    if (config !== undefined && config !== null && typeof config === 'object') {
-
-        if (config.isJoi) {
-            return config;
-        }
-
-        if (Array.isArray(config)) {
-            return Joi.alternatives().try(config);
-        }
-
-        if (config instanceof RegExp) {
-            return Joi.string().regex(config);
-        }
-
-        if (config instanceof Date) {
-            return Joi.date().valid(config);
-        }
-
-        return Joi.object().keys(config);
-    }
-
-    if (typeof config === 'string') {
-        return Joi.string().valid(config);
-    }
-
-    if (typeof config === 'number') {
-        return Joi.number().valid(config);
-    }
-
-    if (typeof config === 'boolean') {
-        return Joi.boolean().valid(config);
-    }
-
-    if (Ref.isRef(config)) {
-        return Joi.valid(config);
-    }
-
-    Hoek.assert(config === null, 'Invalid schema content:', config);
-
-    return Joi.valid(null);
-};
-
-
-exports.ref = function (id) {
-
-    return Ref.isRef(id) ? id : Ref.create(id);
-};
-
-},{"./ref":113,"@hapi/hoek":98}],110:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Language = require('./language');
-
-
-const internals = {
-    annotations: Symbol('joi-annotations')
-};
-
-
-internals.stringify = function (value, wrapArrays) {
-
-    const type = typeof value;
-
-    if (value === null) {
-        return 'null';
-    }
-
-    if (type === 'string') {
-        return value;
-    }
-
-    if (value instanceof exports.Err || type === 'function' || type === 'symbol') {
-        return value.toString();
-    }
-
-    if (type === 'object') {
-        if (Array.isArray(value)) {
-            let partial = '';
-
-            for (let i = 0; i < value.length; ++i) {
-                partial = partial + (partial.length ? ', ' : '') + internals.stringify(value[i], wrapArrays);
-            }
-
-            return wrapArrays ? '[' + partial + ']' : partial;
-        }
-
-        return value.toString();
-    }
-
-    return JSON.stringify(value);
-};
-
-
-exports.Err = class {
-
-    constructor(type, context, state, options, flags, message, template) {
-
-        this.isJoi = true;
-        this.type = type;
-        this.context = context || {};
-        this.context.key = state.path[state.path.length - 1];
-        this.context.label = state.key;
-        this.path = state.path;
-        this.options = options;
-        this.flags = flags;
-        this.message = message;
-        this.template = template;
-
-        const localized = this.options.language;
-
-        if (this.flags.label) {
-            this.context.label = this.flags.label;
-        }
-        else if (localized &&                   // language can be null for arrays exclusion check
-            (this.context.label === '' ||
-            this.context.label === null)) {
-            this.context.label = localized.root || Language.errors.root;
-        }
-    }
-
-    toString() {
-
-        if (this.message) {
-            return this.message;
-        }
-
-        let format;
-
-        if (this.template) {
-            format = this.template;
-        }
-
-        const localized = this.options.language;
-
-        format = format || Hoek.reach(localized, this.type) || Hoek.reach(Language.errors, this.type);
-
-        if (format === undefined) {
-            return `Error code "${this.type}" is not defined, your custom type is missing the correct language definition`;
-        }
-
-        let wrapArrays = Hoek.reach(localized, 'messages.wrapArrays');
-        if (typeof wrapArrays !== 'boolean') {
-            wrapArrays = Language.errors.messages.wrapArrays;
-        }
-
-        if (format === null) {
-            const childrenString = internals.stringify(this.context.reason, wrapArrays);
-            if (wrapArrays) {
-                return childrenString.slice(1, -1);
-            }
-
-            return childrenString;
-        }
-
-        const hasKey = /{{!?label}}/.test(format);
-        const skipKey = format.length > 2 && format[0] === '!' && format[1] === '!';
-
-        if (skipKey) {
-            format = format.slice(2);
-        }
-
-        if (!hasKey && !skipKey) {
-            const localizedKey = Hoek.reach(localized, 'key');
-            if (typeof localizedKey === 'string') {
-                format = localizedKey + format;
-            }
-            else {
-                format = Hoek.reach(Language.errors, 'key') + format;
-            }
-        }
-
-        const message =  format.replace(/{{(!?)([^}]+)}}/g, ($0, isSecure, name) => {
-
-            const value = Hoek.reach(this.context, name);
-            const normalized = internals.stringify(value, wrapArrays);
-            return (isSecure && this.options.escapeHtml ? Hoek.escapeHtml(normalized) : normalized);
-        });
-
-        this.toString = () => message;  // Persist result of last toString call, it won't change
-
-        return message;
-    }
-
-};
-
-
-exports.create = function (type, context, state, options, flags, message, template) {
-
-    return new exports.Err(type, context, state, options, flags, message, template);
-};
-
-
-exports.process = function (errors, object) {
-
-    if (!errors) {
-        return null;
-    }
-
-    // Construct error
-
-    let message = '';
-    const details = [];
-
-    const processErrors = function (localErrors, parent, overrideMessage) {
-
-        for (let i = 0; i < localErrors.length; ++i) {
-            const item = localErrors[i];
-
-            if (item instanceof Error) {
-                return item;
-            }
-
-            if (item.flags.error && typeof item.flags.error !== 'function') {
-                if (!item.flags.selfError || !item.context.reason) {
-                    return item.flags.error;
-                }
-            }
-
-            let itemMessage;
-            if (parent === undefined) {
-                itemMessage = item.toString();
-                message = message + (message ? '. ' : '') + itemMessage;
-            }
-
-            // Do not push intermediate errors, we're only interested in leafs
-
-            if (item.context.reason) {
-                const override = processErrors(item.context.reason, item.path, item.type === 'override' ? item.message : null);
-                if (override) {
-                    return override;
-                }
-            }
-            else {
-                details.push({
-                    message: overrideMessage || itemMessage || item.toString(),
-                    path: item.path,
-                    type: item.type,
-                    context: item.context
-                });
-            }
-        }
-    };
-
-    const override = processErrors(errors);
-    if (override) {
-        return override;
-    }
-
-    const error = new Error(message);
-    error.isJoi = true;
-    error.name = 'ValidationError';
-    error.details = details;
-    error._object = object;
-    error.annotate = internals.annotate;
-    return error;
-};
-
-
-// Inspired by json-stringify-safe
-
-internals.safeStringify = function (obj, spaces) {
-
-    return JSON.stringify(obj, internals.serializer(), spaces);
-};
-
-
-internals.serializer = function () {
-
-    const keys = [];
-    const stack = [];
-
-    const cycleReplacer = (key, value) => {
-
-        if (stack[0] === value) {
-            return '[Circular ~]';
-        }
-
-        return '[Circular ~.' + keys.slice(0, stack.indexOf(value)).join('.') + ']';
-    };
-
-    return function (key, value) {
-
-        if (stack.length > 0) {
-            const thisPos = stack.indexOf(this);
-            if (~thisPos) {
-                stack.length = thisPos + 1;
-                keys.length = thisPos + 1;
-                keys[thisPos] = key;
-            }
-            else {
-                stack.push(this);
-                keys.push(key);
-            }
-
-            if (~stack.indexOf(value)) {
-                value = cycleReplacer.call(this, key, value);
-            }
-        }
-        else {
-            stack.push(value);
-        }
-
-        if (value) {
-            const annotations = value[internals.annotations];
-            if (annotations) {
-                if (Array.isArray(value)) {
-                    const annotated = [];
-
-                    for (let i = 0; i < value.length; ++i) {
-                        if (annotations.errors[i]) {
-                            annotated.push(`_$idx$_${annotations.errors[i].sort().join(', ')}_$end$_`);
-                        }
-
-                        annotated.push(value[i]);
-                    }
-
-                    value = annotated;
-                }
-                else {
-                    const errorKeys = Object.keys(annotations.errors);
-                    for (let i = 0; i < errorKeys.length; ++i) {
-                        const errorKey = errorKeys[i];
-                        value[`${errorKey}_$key$_${annotations.errors[errorKey].sort().join(', ')}_$end$_`] = value[errorKey];
-                        value[errorKey] = undefined;
-                    }
-
-                    const missingKeys = Object.keys(annotations.missing);
-                    for (let i = 0; i < missingKeys.length; ++i) {
-                        const missingKey = missingKeys[i];
-                        value[`_$miss$_${missingKey}|${annotations.missing[missingKey]}_$end$_`] = '__missing__';
-                    }
-                }
-
-                return value;
-            }
-        }
-
-        if (value === Infinity || value === -Infinity || Number.isNaN(value) ||
-            typeof value === 'function' || typeof value === 'symbol') {
-            return '[' + value.toString() + ']';
-        }
-
-        return value;
-    };
-};
-
-
-internals.annotate = function (stripColorCodes) {
-
-    const redFgEscape = stripColorCodes ? '' : '\u001b[31m';
-    const redBgEscape = stripColorCodes ? '' : '\u001b[41m';
-    const endColor = stripColorCodes ? '' : '\u001b[0m';
-
-    if (typeof this._object !== 'object') {
-        return this.details[0].message;
-    }
-
-    const obj = Hoek.clone(this._object || {});
-
-    for (let i = this.details.length - 1; i >= 0; --i) {        // Reverse order to process deepest child first
-        const pos = i + 1;
-        const error = this.details[i];
-        const path = error.path;
-        let ref = obj;
-        for (let j = 0; ; ++j) {
-            const seg = path[j];
-
-            if (ref.isImmutable) {
-                ref = ref.clone();                              // joi schemas are not cloned by hoek, we have to take this extra step
-            }
-
-            if (j + 1 < path.length &&
-                ref[seg] &&
-                typeof ref[seg] !== 'string') {
-
-                ref = ref[seg];
-            }
-            else {
-                const refAnnotations = ref[internals.annotations] = ref[internals.annotations] || { errors: {}, missing: {} };
-                const value = ref[seg];
-                const cacheKey = seg || error.context.label;
-
-                if (value !== undefined) {
-                    refAnnotations.errors[cacheKey] = refAnnotations.errors[cacheKey] || [];
-                    refAnnotations.errors[cacheKey].push(pos);
-                }
-                else {
-                    refAnnotations.missing[cacheKey] = pos;
-                }
-
-                break;
-            }
-        }
-    }
-
-    const replacers = {
-        key: /_\$key\$_([, \d]+)_\$end\$_"/g,
-        missing: /"_\$miss\$_([^|]+)\|(\d+)_\$end\$_": "__missing__"/g,
-        arrayIndex: /\s*"_\$idx\$_([, \d]+)_\$end\$_",?\n(.*)/g,
-        specials: /"\[(NaN|Symbol.*|-?Infinity|function.*|\(.*)]"/g
-    };
-
-    let message = internals.safeStringify(obj, 2)
-        .replace(replacers.key, ($0, $1) => `" ${redFgEscape}[${$1}]${endColor}`)
-        .replace(replacers.missing, ($0, $1, $2) => `${redBgEscape}"${$1}"${endColor}${redFgEscape} [${$2}]: -- missing --${endColor}`)
-        .replace(replacers.arrayIndex, ($0, $1, $2) => `\n${$2} ${redFgEscape}[${$1}]${endColor}`)
-        .replace(replacers.specials, ($0, $1) => $1);
-
-    message = `${message}\n${redFgEscape}`;
-
-    for (let i = 0; i < this.details.length; ++i) {
-        const pos = i + 1;
-        message = `${message}\n[${pos}] ${this.details[i].message}`;
-    }
-
-    message = message + endColor;
-
-    return message;
-};
-
-},{"./language":112,"@hapi/hoek":98}],111:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('./types/any');
-const Cast = require('./cast');
-const Errors = require('./errors');
-const Lazy = require('./types/lazy');
-const Ref = require('./ref');
-
-
-const internals = {
-    alternatives: require('./types/alternatives'),
-    array: require('./types/array'),
-    boolean: require('./types/boolean'),
-    binary: require('./types/binary'),
-    date: require('./types/date'),
-    func: require('./types/func'),
-    number: require('./types/number'),
-    object: require('./types/object'),
-    string: require('./types/string'),
-    symbol: require('./types/symbol')
-};
-
-
-internals.callWithDefaults = function (schema, args) {
-
-    Hoek.assert(this, 'Must be invoked on a Joi instance.');
-
-    if (this._defaults) {
-        schema = this._defaults(schema);
-    }
-
-    schema._currentJoi = this;
-
-    return schema._init(...args);
-};
-
-
-internals.root = function () {
-
-    const any = new Any();
-
-    const root = any.clone();
-    Any.prototype._currentJoi = root;
-    root._currentJoi = root;
-    root._binds = new Set(['any', 'alternatives', 'alt', 'array', 'bool', 'boolean', 'binary', 'date', 'func', 'number', 'object', 'string', 'symbol', 'validate', 'describe', 'compile', 'assert', 'attempt', 'lazy', 'defaults', 'extend', 'allow', 'valid', 'only', 'equal', 'invalid', 'disallow', 'not', 'required', 'exist', 'optional', 'forbidden', 'strip', 'when', 'empty', 'default']);
-
-    root.any = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.any() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, any, args);
-    };
-
-    root.alternatives = root.alt = function (...args) {
-
-        return internals.callWithDefaults.call(this, internals.alternatives, args);
-    };
-
-    root.array = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.array() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.array, args);
-    };
-
-    root.boolean = root.bool = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.boolean() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.boolean, args);
-    };
-
-    root.binary = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.binary() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.binary, args);
-    };
-
-    root.date = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.date() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.date, args);
-    };
-
-    root.func = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.func() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.func, args);
-    };
-
-    root.number = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.number() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.number, args);
-    };
-
-    root.object = function (...args) {
-
-        return internals.callWithDefaults.call(this, internals.object, args);
-    };
-
-    root.string = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.string() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.string, args);
-    };
-
-    root.symbol = function (...args) {
-
-        Hoek.assert(args.length === 0, 'Joi.symbol() does not allow arguments.');
-
-        return internals.callWithDefaults.call(this, internals.symbol, args);
-    };
-
-    root.ref = function (...args) {
-
-        return Ref.create(...args);
-    };
-
-    root.isRef = function (ref) {
-
-        return Ref.isRef(ref);
-    };
-
-    root.validate = function (value, ...args /*, [schema], [options], callback */) {
-
-        const last = args[args.length - 1];
-        const callback = typeof last === 'function' ? last : null;
-
-        const count = args.length - (callback ? 1 : 0);
-        if (count === 0) {
-            return any.validate(value, callback);
-        }
-
-        const options = count === 2 ? args[1] : undefined;
-        const schema = this.compile(args[0]);
-
-        return schema._validateWithOptions(value, options, callback);
-    };
-
-    root.describe = function (...args) {
-
-        const schema = args.length ? this.compile(args[0]) : any;
-        return schema.describe();
-    };
-
-    root.compile = function (schema) {
-
-        try {
-            return Cast.schema(this, schema);
-        }
-        catch (err) {
-            if (err.hasOwnProperty('path')) {
-                err.message = err.message + '(' + err.path + ')';
-            }
-
-            throw err;
-        }
-    };
-
-    root.assert = function (value, schema, message) {
-
-        this.attempt(value, schema, message);
-    };
-
-    root.attempt = function (value, schema, message) {
-
-        const result = this.validate(value, schema);
-        const error = result.error;
-        if (error) {
-            if (!message) {
-                if (typeof error.annotate === 'function') {
-                    error.message = error.annotate();
-                }
-
-                throw error;
-            }
-
-            if (!(message instanceof Error)) {
-                if (typeof error.annotate === 'function') {
-                    error.message = `${message} ${error.annotate()}`;
-                }
-
-                throw error;
-            }
-
-            throw message;
-        }
-
-        return result.value;
-    };
-
-    root.reach = function (schema, path) {
-
-        Hoek.assert(schema && schema instanceof Any, 'you must provide a joi schema');
-        Hoek.assert(Array.isArray(path) || typeof path === 'string', 'path must be a string or an array of strings');
-
-        const reach = (sourceSchema, schemaPath) => {
-
-            if (!schemaPath.length) {
-                return sourceSchema;
-            }
-
-            const children = sourceSchema._inner.children;
-            if (!children) {
-                return;
-            }
-
-            const key = schemaPath.shift();
-            for (let i = 0; i < children.length; ++i) {
-                const child = children[i];
-                if (child.key === key) {
-                    return reach(child.schema, schemaPath);
-                }
-            }
-        };
-
-        const schemaPath = typeof path === 'string' ? (path ? path.split('.') : []) : path.slice();
-
-        return reach(schema, schemaPath);
-    };
-
-    root.lazy = function (...args) {
-
-        return internals.callWithDefaults.call(this, Lazy, args);
-    };
-
-    root.defaults = function (fn) {
-
-        Hoek.assert(typeof fn === 'function', 'Defaults must be a function');
-
-        let joi = Object.create(this.any());
-        joi = fn(joi);
-
-        Hoek.assert(joi && joi instanceof this.constructor, 'defaults() must return a schema');
-
-        Object.assign(joi, this, joi.clone()); // Re-add the types from `this` but also keep the settings from joi's potential new defaults
-
-        joi._defaults = (schema) => {
-
-            if (this._defaults) {
-                schema = this._defaults(schema);
-                Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
-            }
-
-            schema = fn(schema);
-            Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
-            return schema;
-        };
-
-        return joi;
-    };
-
-    root.bind = function () {
-
-        const joi = Object.create(this);
-
-        joi._binds.forEach((bind) => {
-
-            joi[bind] = joi[bind].bind(joi);
-        });
-
-        return joi;
-    };
-
-    root.extend = function (...args) {
-
-        const extensions = Hoek.flatten(args);
-        Hoek.assert(extensions.length > 0, 'You need to provide at least one extension');
-
-        this.assert(extensions, root.extensionsSchema);
-
-        const joi = Object.create(this.any());
-        Object.assign(joi, this);
-        joi._currentJoi = joi;
-        joi._binds = new Set(joi._binds);
-
-        for (let i = 0; i < extensions.length; ++i) {
-            let extension = extensions[i];
-
-            if (typeof extension === 'function') {
-                extension = extension(joi);
-            }
-
-            this.assert(extension, root.extensionSchema);
-
-            const base = (extension.base || this.any()).clone(); // Cloning because we're going to override language afterwards
-            const ctor = base.constructor;
-            const type = class extends ctor { // eslint-disable-line no-loop-func
-
-                constructor() {
-
-                    super();
-                    if (extension.base) {
-                        Object.assign(this, base);
-                    }
-
-                    this._type = extension.name;
-                }
-
-            };
-
-            if (extension.language) {
-                const lang = {
-                    [extension.name]: extension.language
-                };
-                type.prototype._language = Hoek.applyToDefaults(type.prototype._language || (base._settings && base._settings.language) || {}, lang);
-            }
-
-
-            if (extension.coerce) {
-                type.prototype._coerce = function (value, state, options) {
-
-                    if (ctor.prototype._coerce) {
-                        const baseRet = ctor.prototype._coerce.call(this, value, state, options);
-
-                        if (baseRet.errors) {
-                            return baseRet;
-                        }
-
-                        value = baseRet.value;
-                    }
-
-                    const ret = extension.coerce.call(this, value, state, options);
-                    if (ret instanceof Errors.Err) {
-                        return { value, errors: ret };
-                    }
-
-                    return { value: ret };
-                };
-            }
-
-            if (extension.pre) {
-                type.prototype._base = function (value, state, options) {
-
-                    if (ctor.prototype._base) {
-                        const baseRet = ctor.prototype._base.call(this, value, state, options);
-
-                        if (baseRet.errors) {
-                            return baseRet;
-                        }
-
-                        value = baseRet.value;
-                    }
-
-                    const ret = extension.pre.call(this, value, state, options);
-                    if (ret instanceof Errors.Err) {
-                        return { value, errors: ret };
-                    }
-
-                    return { value: ret };
-                };
-            }
-
-            if (extension.rules) {
-                for (let j = 0; j < extension.rules.length; ++j) {
-                    const rule = extension.rules[j];
-                    const ruleArgs = rule.params ?
-                        (rule.params instanceof Any ? rule.params._inner.children.map((k) => k.key) : Object.keys(rule.params)) :
-                        [];
-                    const validateArgs = rule.params ? Cast.schema(this, rule.params) : null;
-
-                    type.prototype[rule.name] = function (...rArgs) { // eslint-disable-line no-loop-func
-
-                        if (rArgs.length > ruleArgs.length) {
-                            throw new Error('Unexpected number of arguments');
-                        }
-
-                        let hasRef = false;
-                        let arg = {};
-
-                        for (let k = 0; k < ruleArgs.length; ++k) {
-                            arg[ruleArgs[k]] = rArgs[k];
-                            if (!hasRef && Ref.isRef(rArgs[k])) {
-                                hasRef = true;
-                            }
-                        }
-
-                        if (validateArgs) {
-                            arg = joi.attempt(arg, validateArgs);
-                        }
-
-                        let schema;
-                        if (rule.validate && !rule.setup) {
-                            const validate = function (value, state, options) {
-
-                                return rule.validate.call(this, arg, value, state, options);
-                            };
-
-                            schema = this._test(rule.name, arg, validate, {
-                                description: rule.description,
-                                hasRef
-                            });
-                        }
-                        else {
-                            schema = this.clone();
-                        }
-
-                        if (rule.setup) {
-                            const newSchema = rule.setup.call(schema, arg);
-                            if (newSchema !== undefined) {
-                                Hoek.assert(newSchema instanceof Any, `Setup of extension Joi.${this._type}().${rule.name}() must return undefined or a Joi object`);
-                                schema = newSchema;
-                            }
-
-                            if (rule.validate) {
-                                const validate = function (value, state, options) {
-
-                                    return rule.validate.call(this, arg, value, state, options);
-                                };
-
-                                schema = schema._test(rule.name, arg, validate, {
-                                    description: rule.description,
-                                    hasRef
-                                });
-                            }
-                        }
-
-                        return schema;
-                    };
-                }
-            }
-
-            if (extension.describe) {
-                type.prototype.describe = function () {
-
-                    const description = ctor.prototype.describe.call(this);
-                    return extension.describe.call(this, description);
-                };
-            }
-
-            const instance = new type();
-            joi[extension.name] = function (...extArgs) {
-
-                return internals.callWithDefaults.call(this, instance, extArgs);
-            };
-
-            joi._binds.add(extension.name);
-        }
-
-        return joi;
-    };
-
-    root.extensionSchema = internals.object.keys({
-        base: internals.object.type(Any, 'Joi object'),
-        name: internals.string.required(),
-        coerce: internals.func.arity(3),
-        pre: internals.func.arity(3),
-        language: internals.object,
-        describe: internals.func.arity(1),
-        rules: internals.array.items(internals.object.keys({
-            name: internals.string.required(),
-            setup: internals.func.arity(1),
-            validate: internals.func.arity(4),
-            params: [
-                internals.object.pattern(/.*/, internals.object.type(Any, 'Joi object')),
-                internals.object.type(internals.object.constructor, 'Joi object')
-            ],
-            description: [internals.string, internals.func.arity(1)]
-        }).or('setup', 'validate'))
-    }).strict();
-
-    root.extensionsSchema = internals.array.items([internals.object, internals.func.arity(1)]).strict();
-
-    root.version = require('../package.json').version;
-
-    return root;
-};
-
-
-module.exports = internals.root();
-
-},{"../package.json":134,"./cast":109,"./errors":110,"./ref":113,"./types/alternatives":116,"./types/any":117,"./types/array":119,"./types/binary":120,"./types/boolean":121,"./types/date":122,"./types/func":123,"./types/lazy":124,"./types/number":125,"./types/object":126,"./types/string":128,"./types/symbol":132,"@hapi/hoek":98}],112:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-exports.errors = {
-    root: 'value',
-    key: '"{{!label}}" ',
-    messages: {
-        wrapArrays: true
-    },
-    any: {
-        unknown: 'is not allowed',
-        invalid: 'contains an invalid value',
-        empty: 'is not allowed to be empty',
-        required: 'is required',
-        allowOnly: 'must be one of {{valids}}',
-        default: 'threw an error when running default method'
-    },
-    alternatives: {
-        base: 'not matching any of the allowed alternatives',
-        child: null
-    },
-    array: {
-        base: 'must be an array',
-        includes: 'at position {{pos}} does not match any of the allowed types',
-        includesSingle: 'single value of "{{!label}}" does not match any of the allowed types',
-        includesOne: 'at position {{pos}} fails because {{reason}}',
-        includesOneSingle: 'single value of "{{!label}}" fails because {{reason}}',
-        includesRequiredUnknowns: 'does not contain {{unknownMisses}} required value(s)',
-        includesRequiredKnowns: 'does not contain {{knownMisses}}',
-        includesRequiredBoth: 'does not contain {{knownMisses}} and {{unknownMisses}} other required value(s)',
-        excludes: 'at position {{pos}} contains an excluded value',
-        excludesSingle: 'single value of "{{!label}}" contains an excluded value',
-        hasKnown: 'does not contain at least one required match for type "{{!patternLabel}}"',
-        hasUnknown: 'does not contain at least one required match',
-        min: 'must contain at least {{limit}} items',
-        max: 'must contain less than or equal to {{limit}} items',
-        length: 'must contain {{limit}} items',
-        ordered: 'at position {{pos}} fails because {{reason}}',
-        orderedLength: 'at position {{pos}} fails because array must contain at most {{limit}} items',
-        ref: 'references "{{ref}}" which is not a positive integer',
-        sparse: 'must not be a sparse array',
-        unique: 'position {{pos}} contains a duplicate value'
-    },
-    boolean: {
-        base: 'must be a boolean'
-    },
-    binary: {
-        base: 'must be a buffer or a string',
-        min: 'must be at least {{limit}} bytes',
-        max: 'must be less than or equal to {{limit}} bytes',
-        length: 'must be {{limit}} bytes'
-    },
-    date: {
-        base: 'must be a number of milliseconds or valid date string',
-        strict: 'must be a valid date',
-        min: 'must be larger than or equal to "{{limit}}"',
-        max: 'must be less than or equal to "{{limit}}"',
-        less: 'must be less than "{{limit}}"',
-        greater: 'must be greater than "{{limit}}"',
-        isoDate: 'must be a valid ISO 8601 date',
-        timestamp: {
-            javascript: 'must be a valid timestamp or number of milliseconds',
-            unix: 'must be a valid timestamp or number of seconds'
-        },
-        ref: 'references "{{ref}}" which is not a date'
-    },
-    function: {
-        base: 'must be a Function',
-        arity: 'must have an arity of {{n}}',
-        minArity: 'must have an arity greater or equal to {{n}}',
-        maxArity: 'must have an arity lesser or equal to {{n}}',
-        ref: 'must be a Joi reference',
-        class: 'must be a class'
-    },
-    lazy: {
-        base: '!!schema error: lazy schema must be set',
-        schema: '!!schema error: lazy schema function must return a schema'
-    },
-    object: {
-        base: 'must be an object',
-        child: '!!child "{{!child}}" fails because {{reason}}',
-        min: 'must have at least {{limit}} children',
-        max: 'must have less than or equal to {{limit}} children',
-        length: 'must have {{limit}} children',
-        allowUnknown: '!!"{{!child}}" is not allowed',
-        with: '!!"{{mainWithLabel}}" missing required peer "{{peerWithLabel}}"',
-        without: '!!"{{mainWithLabel}}" conflict with forbidden peer "{{peerWithLabel}}"',
-        missing: 'must contain at least one of {{peersWithLabels}}',
-        xor: 'contains a conflict between exclusive peers {{peersWithLabels}}',
-        oxor: 'contains a conflict between optional exclusive peers {{peersWithLabels}}',
-        and: 'contains {{presentWithLabels}} without its required peers {{missingWithLabels}}',
-        nand: '!!"{{mainWithLabel}}" must not exist simultaneously with {{peersWithLabels}}',
-        assert: '!!"{{ref}}" validation failed because "{{ref}}" failed to {{message}}',
-        rename: {
-            multiple: 'cannot rename child "{{from}}" because multiple renames are disabled and another key was already renamed to "{{to}}"',
-            override: 'cannot rename child "{{from}}" because override is disabled and target "{{to}}" exists',
-            regex: {
-                multiple: 'cannot rename children {{from}} because multiple renames are disabled and another key was already renamed to "{{to}}"',
-                override: 'cannot rename children {{from}} because override is disabled and target "{{to}}" exists'
-            }
-        },
-        type: 'must be an instance of "{{type}}"',
-        schema: 'must be a Joi instance'
-    },
-    number: {
-        base: 'must be a number',
-        unsafe: 'must be a safe number',
-        min: 'must be larger than or equal to {{limit}}',
-        max: 'must be less than or equal to {{limit}}',
-        less: 'must be less than {{limit}}',
-        greater: 'must be greater than {{limit}}',
-        integer: 'must be an integer',
-        negative: 'must be a negative number',
-        positive: 'must be a positive number',
-        precision: 'must have no more than {{limit}} decimal places',
-        ref: 'references "{{ref}}" which is not a number',
-        multiple: 'must be a multiple of {{multiple}}',
-        port: 'must be a valid port'
-    },
-    string: {
-        base: 'must be a string',
-        min: 'length must be at least {{limit}} characters long',
-        max: 'length must be less than or equal to {{limit}} characters long',
-        length: 'length must be {{limit}} characters long',
-        alphanum: 'must only contain alpha-numeric characters',
-        token: 'must only contain alpha-numeric and underscore characters',
-        regex: {
-            base: 'with value "{{!value}}" fails to match the required pattern: {{pattern}}',
-            name: 'with value "{{!value}}" fails to match the {{name}} pattern',
-            invert: {
-                base: 'with value "{{!value}}" matches the inverted pattern: {{pattern}}',
-                name: 'with value "{{!value}}" matches the inverted {{name}} pattern'
-            }
-        },
-        email: 'must be a valid email',
-        uri: 'must be a valid uri',
-        uriRelativeOnly: 'must be a valid relative uri',
-        uriCustomScheme: 'must be a valid uri with a scheme matching the {{scheme}} pattern',
-        isoDate: 'must be a valid ISO 8601 date',
-        guid: 'must be a valid GUID',
-        hex: 'must only contain hexadecimal characters',
-        hexAlign: 'hex decoded representation must be byte aligned',
-        base64: 'must be a valid base64 string',
-        dataUri: 'must be a valid dataUri string',
-        hostname: 'must be a valid hostname',
-        normalize: 'must be unicode normalized in the {{form}} form',
-        lowercase: 'must only contain lowercase characters',
-        uppercase: 'must only contain uppercase characters',
-        trim: 'must not have leading or trailing whitespace',
-        creditCard: 'must be a credit card',
-        ref: 'references "{{ref}}" which is not a number',
-        ip: 'must be a valid ip address with a {{cidr}} CIDR',
-        ipVersion: 'must be a valid ip address of one of the following versions {{version}} with a {{cidr}} CIDR'
-    },
-    symbol: {
-        base: 'must be a symbol',
-        map: 'must be one of {{map}}'
-    }
-};
-
-},{}],113:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-
-const internals = {};
-
-
-exports.create = function (key, options) {
-
-    Hoek.assert(typeof key === 'string', 'Invalid reference key:', key);
-
-    const settings = Hoek.clone(options);         // options can be reused and modified
-
-    const ref = function (value, validationOptions) {
-
-        return Hoek.reach(ref.isContext ? validationOptions.context : value, ref.key, settings);
-    };
-
-    ref.isContext = (key[0] === ((settings && settings.contextPrefix) || '$'));
-    ref.key = (ref.isContext ? key.slice(1) : key);
-    ref.path = ref.key.split((settings && settings.separator) || '.');
-    ref.depth = ref.path.length;
-    ref.root = ref.path[0];
-    ref.isJoi = true;
-
-    ref.toString = function () {
-
-        return (ref.isContext ? 'context:' : 'ref:') + ref.key;
-    };
-
-    return ref;
-};
-
-
-exports.isRef = function (ref) {
-
-    return typeof ref === 'function' && ref.isJoi;
-};
-
-
-exports.push = function (array, ref) {
-
-    if (exports.isRef(ref) &&
-        !ref.isContext) {
-
-        array.push(ref.root);
-    }
-};
-
-},{"@hapi/hoek":98}],114:[function(require,module,exports){
-'use strict';
-
-const Joi = require('./index');
-
-
-const internals = {};
-
-
-exports.options = Joi.object({
-    abortEarly: Joi.boolean(),
-    convert: Joi.boolean(),
-    allowUnknown: Joi.boolean(),
-    skipFunctions: Joi.boolean(),
-    stripUnknown: [Joi.boolean(), Joi.object({ arrays: Joi.boolean(), objects: Joi.boolean() }).or('arrays', 'objects')],
-    language: Joi.object(),
-    presence: Joi.string().only('required', 'optional', 'forbidden', 'ignore'),
-    context: Joi.object(),
-    noDefaults: Joi.boolean(),
-    escapeHtml: Joi.boolean()
-}).strict();
-
-},{"./index":111}],115:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Ref = require('./ref');
-
-
-const internals = {};
-
-
-internals.extendedCheckForValue = function (value, insensitive) {
-
-    const valueType = typeof value;
-
-    if (valueType === 'object') {
-        if (value instanceof Date) {
-            return (item) => {
-
-                return item instanceof Date && value.getTime() === item.getTime();
-            };
-        }
-
-        if (Buffer.isBuffer(value)) {
-            return (item) => {
-
-                return Buffer.isBuffer(item) && value.length === item.length && value.toString('binary') === item.toString('binary');
-            };
-        }
-    }
-    else if (insensitive && valueType === 'string') {
-        const lowercaseValue = value.toLowerCase();
-        return (item) => {
-
-            return typeof item === 'string' && lowercaseValue === item.toLowerCase();
-        };
-    }
-
-    return null;
-};
-
-
-module.exports = class InternalSet {
-
-    constructor(from) {
-
-        this._set = new Set(from);
-        this._hasRef = false;
-    }
-
-    add(value, refs) {
-
-        const isRef = Ref.isRef(value);
-        if (!isRef && this.has(value, null, null, false)) {
-
-            return this;
-        }
-
-        if (refs !== undefined) { // If it's a merge, we don't have any refs
-            Ref.push(refs, value);
-        }
-
-        this._set.add(value);
-
-        this._hasRef |= isRef;
-
-        return this;
-    }
-
-    merge(add, remove) {
-
-        for (const item of add._set) {
-            this.add(item);
-        }
-
-        for (const item of remove._set) {
-            this.remove(item);
-        }
-
-        return this;
-    }
-
-    remove(value) {
-
-        this._set.delete(value);
-        return this;
-    }
-
-    has(value, state, options, insensitive) {
-
-        return !!this.get(value, state, options, insensitive);
-    }
-
-    get(value, state, options, insensitive) {
-
-        if (!this._set.size) {
-            return false;
-        }
-
-        const hasValue = this._set.has(value);
-        if (hasValue) {
-            return { value };
-        }
-
-        const extendedCheck = internals.extendedCheckForValue(value, insensitive);
-        if (!extendedCheck) {
-            if (state && this._hasRef) {
-                for (let item of this._set) {
-                    if (Ref.isRef(item)) {
-                        item = [].concat(item(state.reference || state.parent, options));
-                        const found = item.indexOf(value);
-                        if (found >= 0) {
-                            return { value: item[found] };
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        return this._has(value, state, options, extendedCheck);
-    }
-
-    _has(value, state, options, check) {
-
-        const checkRef = !!(state && this._hasRef);
-
-        const isReallyEqual = function (item) {
-
-            if (value === item) {
-                return true;
-            }
-
-            return check(item);
-        };
-
-        for (let item of this._set) {
-            if (checkRef && Ref.isRef(item)) { // Only resolve references if there is a state, otherwise it's a merge
-                item = item(state.reference || state.parent, options);
-
-                if (Array.isArray(item)) {
-                    const found = item.findIndex(isReallyEqual);
-                    if (found >= 0) {
-                        return {
-                            value: item[found]
-                        };
-                    }
-
-                    continue;
-                }
-            }
-
-            if (isReallyEqual(item)) {
-                return {
-                    value: item
-                };
-            }
-        }
-
-        return false;
-    }
-
-    values(options) {
-
-        if (options && options.stripUndefined) {
-            const values = [];
-
-            for (const item of this._set) {
-                if (item !== undefined) {
-                    values.push(item);
-                }
-            }
-
-            return values;
-        }
-
-        return Array.from(this._set);
-    }
-
-    slice() {
-
-        const set = new InternalSet(this._set);
-        set._hasRef = this._hasRef;
-        return set;
-    }
-
-    concat(source) {
-
-        const set = new InternalSet([...this._set, ...source._set]);
-        set._hasRef = !!(this._hasRef | source._hasRef);
-        return set;
-    }
-};
-
-}).call(this,{"isBuffer":require("../../../../../is-buffer/index.js")})
-},{"../../../../../is-buffer/index.js":59,"./ref":113}],116:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Cast = require('../../cast');
-const Ref = require('../../ref');
-
-
-const internals = {};
-
-
-internals.Alternatives = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'alternatives';
-        this._invalids.remove(null);
-        this._inner.matches = [];
-    }
-
-    _init(...args) {
-
-        return args.length ? this.try(...args) : this;
-    }
-
-    _base(value, state, options) {
-
-        const errors = [];
-        const il = this._inner.matches.length;
-        const baseType = this._baseType;
-
-        for (let i = 0; i < il; ++i) {
-            const item = this._inner.matches[i];
-            if (!item.schema) {
-                const schema = item.peek || item.is;
-                const input = item.is ? item.ref(state.reference || state.parent, options) : value;
-                const failed = schema._validate(input, null, options, state.parent).errors;
-
-                if (failed) {
-                    if (item.otherwise) {
-                        return item.otherwise._validate(value, state, options);
-                    }
-                }
-                else if (item.then) {
-                    return item.then._validate(value, state, options);
-                }
-
-                if (i === (il - 1) && baseType) {
-                    return baseType._validate(value, state, options);
-                }
-
-                continue;
-            }
-
-            const result = item.schema._validate(value, state, options);
-            if (!result.errors) {     // Found a valid match
-                return result;
-            }
-
-            errors.push(...result.errors);
-        }
-
-        if (errors.length) {
-            return { errors: this.createError('alternatives.child', { reason: errors }, state, options) };
-        }
-
-        return { errors: this.createError('alternatives.base', null, state, options) };
-    }
-
-    try(...schemas) {
-
-        schemas = Hoek.flatten(schemas);
-        Hoek.assert(schemas.length, 'Cannot add other alternatives without at least one schema');
-
-        const obj = this.clone();
-
-        for (let i = 0; i < schemas.length; ++i) {
-            const cast = Cast.schema(this._currentJoi, schemas[i]);
-            if (cast._refs.length) {
-                obj._refs.push(...cast._refs);
-            }
-
-            obj._inner.matches.push({ schema: cast });
-        }
-
-        return obj;
-    }
-
-    when(condition, options) {
-
-        let schemaCondition = false;
-        Hoek.assert(Ref.isRef(condition) || typeof condition === 'string' || (schemaCondition = condition instanceof Any), 'Invalid condition:', condition);
-        Hoek.assert(options, 'Missing options');
-        Hoek.assert(typeof options === 'object', 'Invalid options');
-        if (schemaCondition) {
-            Hoek.assert(!options.hasOwnProperty('is'), '"is" can not be used with a schema condition');
-        }
-        else {
-            Hoek.assert(options.hasOwnProperty('is'), 'Missing "is" directive');
-        }
-
-        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
-
-        const obj = this.clone();
-        let is;
-        if (!schemaCondition) {
-            is = Cast.schema(this._currentJoi, options.is);
-
-            if (options.is === null || !(Ref.isRef(options.is) || options.is instanceof Any)) {
-
-                // Only apply required if this wasn't already a schema or a ref, we'll suppose people know what they're doing
-                is = is.required();
-            }
-        }
-
-        const item = {
-            ref: schemaCondition ? null : Cast.ref(condition),
-            peek: schemaCondition ? condition : null,
-            is,
-            then: options.then !== undefined ? Cast.schema(this._currentJoi, options.then) : undefined,
-            otherwise: options.otherwise !== undefined ? Cast.schema(this._currentJoi, options.otherwise) : undefined
-        };
-
-        if (obj._baseType) {
-
-            item.then = item.then && obj._baseType.concat(item.then);
-            item.otherwise = item.otherwise && obj._baseType.concat(item.otherwise);
-        }
-
-        if (!schemaCondition) {
-            Ref.push(obj._refs, item.ref);
-            obj._refs.push(...item.is._refs);
-        }
-
-        if (item.then && item.then._refs.length) {
-            obj._refs.push(...item.then._refs);
-        }
-
-        if (item.otherwise && item.otherwise._refs.length) {
-            obj._refs.push(...item.otherwise._refs);
-        }
-
-        obj._inner.matches.push(item);
-
-        return obj;
-    }
-
-    label(name) {
-
-        const obj = super.label(name);
-        obj._inner.matches = obj._inner.matches.map((match) => {
-
-            if (match.schema) {
-                return { schema: match.schema.label(name) };
-            }
-
-            match = Object.assign({}, match);
-            if (match.then) {
-                match.then = match.then.label(name);
-            }
-
-            if (match.otherwise) {
-                match.otherwise = match.otherwise.label(name);
-            }
-
-            return match;
-        });
-        return obj;
-    }
-
-    describe() {
-
-        const description = super.describe();
-        const alternatives = [];
-        for (let i = 0; i < this._inner.matches.length; ++i) {
-            const item = this._inner.matches[i];
-            if (item.schema) {
-
-                // try()
-
-                alternatives.push(item.schema.describe());
-            }
-            else {
-
-                // when()
-
-                const when = item.is ? {
-                    ref: item.ref.toString(),
-                    is: item.is.describe()
-                } : {
-                    peek: item.peek.describe()
-                };
-
-                if (item.then) {
-                    when.then = item.then.describe();
-                }
-
-                if (item.otherwise) {
-                    when.otherwise = item.otherwise.describe();
-                }
-
-                alternatives.push(when);
-            }
-        }
-
-        description.alternatives = alternatives;
-        return description;
-    }
-
-};
-
-
-module.exports = new internals.Alternatives();
-
-},{"../../cast":109,"../../ref":113,"../any":117,"@hapi/hoek":98}],117:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Cast = require('../../cast');
-const Settings = require('./settings');
-const Ref = require('../../ref');
-const Errors = require('../../errors');
-const State = require('../state');
-const Symbols = require('../symbols');
-
-const Pkg = require('../../../package.json');
-
-let Alternatives = null;                            // Delay-loaded to prevent circular dependencies
-let Schemas = null;
-
-
-const internals = {
-    Set: require('../../set'),
-    symbol: Symbol.for('@hapi/joi/schema')
-};
-
-
-internals.defaults = {
-    abortEarly: true,
-    convert: true,
-    allowUnknown: false,
-    skipFunctions: false,
-    stripUnknown: false,
-    language: {},
-    presence: 'optional',
-    noDefaults: false,
-    escapeHtml: false
-
-    // context: null
-};
-
-
-module.exports = internals.Any = class {
-
-    constructor() {
-
-        this.isJoi = true;
-        this._type = 'any';
-        this._settings = null;
-        this._valids = new internals.Set();
-        this._invalids = new internals.Set();
-        this._tests = [];
-        this._refs = [];
-        this._flags = {
-            /*
-             presence: 'optional',                   // optional, required, forbidden, ignore
-             allowOnly: false,
-             allowUnknown: undefined,
-             default: undefined,
-             forbidden: false,
-             encoding: undefined,
-             insensitive: false,
-             trim: false,
-             normalize: undefined,                   // NFC, NFD, NFKC, NFKD
-             case: undefined,                        // upper, lower
-             empty: undefined,
-             func: false,
-             raw: false
-             */
-        };
-
-        this._description = null;
-        this._unit = null;
-        this._notes = [];
-        this._tags = [];
-        this._examples = [];
-        this._meta = [];
-
-        this._inner = {};                           // Hash of arrays of immutable objects
-    }
-
-    _init() {
-
-        return this;
-    }
-
-    get schemaType() {
-
-        return this._type;
-    }
-
-    createError(type, context, state, options, flags = this._flags) {
-
-        return Errors.create(type, context, state, options, flags);
-    }
-
-    createOverrideError(type, context, state, options, message, template) {
-
-        return Errors.create(type, context, state, options, this._flags, message, template);
-    }
-
-    checkOptions(options) {
-
-        Schemas = Schemas || require('../../schemas');
-
-        const result = Schemas.options.validate(options);
-
-        if (result.error) {
-            throw new Error(result.error.details[0].message);
-        }
-    }
-
-    clone() {
-
-        const obj = Object.create(Object.getPrototypeOf(this));
-
-        obj.isJoi = true;
-        obj._currentJoi = this._currentJoi;
-        obj._type = this._type;
-        obj._settings = this._settings;
-        obj._baseType = this._baseType;
-        obj._valids = this._valids.slice();
-        obj._invalids = this._invalids.slice();
-        obj._tests = this._tests.slice();
-        obj._refs = this._refs.slice();
-        obj._flags = Hoek.clone(this._flags);
-
-        obj._description = this._description;
-        obj._unit = this._unit;
-        obj._notes = this._notes.slice();
-        obj._tags = this._tags.slice();
-        obj._examples = this._examples.slice();
-        obj._meta = this._meta.slice();
-
-        obj._inner = {};
-        const inners = Object.keys(this._inner);
-        for (let i = 0; i < inners.length; ++i) {
-            const key = inners[i];
-            obj._inner[key] = this._inner[key] ? this._inner[key].slice() : null;
-        }
-
-        return obj;
-    }
-
-    concat(schema) {
-
-        Hoek.assert(schema instanceof internals.Any, 'Invalid schema object');
-        Hoek.assert(this._type === 'any' || schema._type === 'any' || schema._type === this._type, 'Cannot merge type', this._type, 'with another type:', schema._type);
-
-        let obj = this.clone();
-
-        if (this._type === 'any' && schema._type !== 'any') {
-
-            // Reset values as if we were "this"
-            const tmpObj = schema.clone();
-            const keysToRestore = ['_settings', '_valids', '_invalids', '_tests', '_refs', '_flags', '_description', '_unit',
-                '_notes', '_tags', '_examples', '_meta', '_inner'];
-
-            for (let i = 0; i < keysToRestore.length; ++i) {
-                tmpObj[keysToRestore[i]] = obj[keysToRestore[i]];
-            }
-
-            obj = tmpObj;
-        }
-
-        obj._settings = obj._settings ? Settings.concat(obj._settings, schema._settings) : schema._settings;
-        obj._valids.merge(schema._valids, schema._invalids);
-        obj._invalids.merge(schema._invalids, schema._valids);
-        obj._tests.push(...schema._tests);
-        obj._refs.push(...schema._refs);
-        if (obj._flags.empty && schema._flags.empty) {
-            obj._flags.empty = obj._flags.empty.concat(schema._flags.empty);
-            const flags = Object.assign({}, schema._flags);
-            delete flags.empty;
-            Hoek.merge(obj._flags, flags);
-        }
-        else if (schema._flags.empty) {
-            obj._flags.empty = schema._flags.empty;
-            const flags = Object.assign({}, schema._flags);
-            delete flags.empty;
-            Hoek.merge(obj._flags, flags);
-        }
-        else {
-            Hoek.merge(obj._flags, schema._flags);
-        }
-
-        obj._description = schema._description || obj._description;
-        obj._unit = schema._unit || obj._unit;
-        obj._notes.push(...schema._notes);
-        obj._tags.push(...schema._tags);
-        obj._examples.push(...schema._examples);
-        obj._meta.push(...schema._meta);
-
-        const inners = Object.keys(schema._inner);
-        const isObject = obj._type === 'object';
-        for (let i = 0; i < inners.length; ++i) {
-            const key = inners[i];
-            const source = schema._inner[key];
-            if (source) {
-                const target = obj._inner[key];
-                if (target) {
-                    if (isObject && key === 'children') {
-                        const keys = {};
-
-                        for (let j = 0; j < target.length; ++j) {
-                            keys[target[j].key] = j;
-                        }
-
-                        for (let j = 0; j < source.length; ++j) {
-                            const sourceKey = source[j].key;
-                            if (keys[sourceKey] >= 0) {
-                                target[keys[sourceKey]] = {
-                                    key: sourceKey,
-                                    schema: target[keys[sourceKey]].schema.concat(source[j].schema)
-                                };
-                            }
-                            else {
-                                target.push(source[j]);
-                            }
-                        }
-                    }
-                    else {
-                        obj._inner[key] = obj._inner[key].concat(source);
-                    }
-                }
-                else {
-                    obj._inner[key] = source.slice();
-                }
-            }
-        }
-
-        return obj;
-    }
-
-    _test(name, arg, func, options) {
-
-        const obj = this.clone();
-        obj._tests.push({ func, name, arg, options });
-        return obj;
-    }
-
-    _testUnique(name, arg, func, options) {
-
-        const obj = this.clone();
-        obj._tests = obj._tests.filter((test) => test.name !== name);
-        obj._tests.push({ func, name, arg, options });
-        return obj;
-    }
-
-    options(options) {
-
-        Hoek.assert(!options.context, 'Cannot override context');
-        this.checkOptions(options);
-
-        const obj = this.clone();
-        obj._settings = Settings.concat(obj._settings, options);
-        return obj;
-    }
-
-    strict(isStrict) {
-
-        const obj = this.clone();
-
-        const convert = isStrict === undefined ? false : !isStrict;
-        obj._settings = Settings.concat(obj._settings, { convert });
-        return obj;
-    }
-
-    raw(isRaw) {
-
-        const value = isRaw === undefined ? true : isRaw;
-
-        if (this._flags.raw === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.raw = value;
-        return obj;
-    }
-
-    error(err, options = { self: false }) {
-
-        Hoek.assert(err && (err instanceof Error || typeof err === 'function'), 'Must provide a valid Error object or a function');
-
-        const unknownKeys = Object.keys(options).filter((k) => !['self'].includes(k));
-        Hoek.assert(unknownKeys.length === 0, `Options ${unknownKeys} are unknown`);
-
-        const obj = this.clone();
-        obj._flags.error = err;
-
-        if (options.self) {
-            obj._flags.selfError = true;
-        }
-
-        return obj;
-    }
-
-    allow(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
-            obj._invalids.remove(value);
-            obj._valids.add(value, obj._refs);
-        }
-
-        return obj;
-    }
-
-    valid(...values) {
-
-        const obj = this.allow(...values);
-        obj._flags.allowOnly = true;
-        return obj;
-    }
-
-    invalid(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
-            obj._valids.remove(value);
-            obj._invalids.add(value, obj._refs);
-        }
-
-        return obj;
-    }
-
-    required() {
-
-        if (this._flags.presence === 'required') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'required';
-        return obj;
-    }
-
-    optional() {
-
-        if (this._flags.presence === 'optional') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'optional';
-        return obj;
-    }
-
-
-    forbidden() {
-
-        if (this._flags.presence === 'forbidden') {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.presence = 'forbidden';
-        return obj;
-    }
-
-
-    strip() {
-
-        if (this._flags.strip) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.strip = true;
-        return obj;
-    }
-
-    applyFunctionToChildren(children, fn, args = [], root) {
-
-        children = [].concat(children);
-
-        if (children.length !== 1 || children[0] !== '') {
-            root = root ? (root + '.') : '';
-
-            const extraChildren = (children[0] === '' ? children.slice(1) : children).map((child) => {
-
-                return root + child;
-            });
-
-            throw new Error('unknown key(s) ' + extraChildren.join(', '));
-        }
-
-        return this[fn](...args);
-    }
-
-    default(value, description) {
-
-        if (typeof value === 'function' &&
-            !Ref.isRef(value)) {
-
-            if (!value.description &&
-                description) {
-
-                value.description = description;
-            }
-
-            if (!this._flags.func) {
-                Hoek.assert(typeof value.description === 'string' && value.description.length > 0, 'description must be provided when default value is a function');
-            }
-        }
-
-        const obj = this.clone();
-        obj._flags.default = value;
-        Ref.push(obj._refs, value);
-        return obj;
-    }
-
-    empty(schema) {
-
-        const obj = this.clone();
-        if (schema === undefined) {
-            delete obj._flags.empty;
-        }
-        else {
-            obj._flags.empty = Cast.schema(this._currentJoi, schema);
-        }
-
-        return obj;
-    }
-
-    when(condition, options) {
-
-        Hoek.assert(options && typeof options === 'object', 'Invalid options');
-        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
-
-        const then = options.hasOwnProperty('then') ? this.concat(Cast.schema(this._currentJoi, options.then)) : undefined;
-        const otherwise = options.hasOwnProperty('otherwise') ? this.concat(Cast.schema(this._currentJoi, options.otherwise)) : undefined;
-
-        Alternatives = Alternatives || require('../alternatives');
-
-        const alternativeOptions = { then, otherwise };
-        if (Object.prototype.hasOwnProperty.call(options, 'is')) {
-            alternativeOptions.is = options.is;
-        }
-
-        const obj = Alternatives.when(condition, alternativeOptions);
-        obj._flags.presence = 'ignore';
-        obj._baseType = this;
-
-        return obj;
-    }
-
-    description(desc) {
-
-        Hoek.assert(desc && typeof desc === 'string', 'Description must be a non-empty string');
-
-        const obj = this.clone();
-        obj._description = desc;
-        return obj;
-    }
-
-    notes(notes) {
-
-        Hoek.assert(notes && (typeof notes === 'string' || Array.isArray(notes)), 'Notes must be a non-empty string or array');
-
-        const obj = this.clone();
-        obj._notes = obj._notes.concat(notes);
-        return obj;
-    }
-
-    tags(tags) {
-
-        Hoek.assert(tags && (typeof tags === 'string' || Array.isArray(tags)), 'Tags must be a non-empty string or array');
-
-        const obj = this.clone();
-        obj._tags = obj._tags.concat(tags);
-        return obj;
-    }
-
-    meta(meta) {
-
-        Hoek.assert(meta !== undefined, 'Meta cannot be undefined');
-
-        const obj = this.clone();
-        obj._meta = obj._meta.concat(meta);
-        return obj;
-    }
-
-    example(...examples) {
-
-        Hoek.assert(examples.length > 0, 'Missing examples');
-
-        const processed = [];
-        for (let i = 0; i < examples.length; ++i) {
-            const example = [].concat(examples[i]);
-            Hoek.assert(example.length <= 2, `Bad example format at index ${i}`);
-
-            const value = example[0];
-            let options = example[1];
-            if (options !== undefined) {
-                Hoek.assert(options && typeof options === 'object', `Options for example at index ${i} must be an object`);
-                const unknownOptions = Object.keys(options).filter((option) => !['parent', 'context'].includes(option));
-                Hoek.assert(unknownOptions.length === 0, `Unknown example options ${unknownOptions} at index ${i}`);
-            }
-            else {
-                options = {};
-            }
-
-            const localState = new State('', [], options.parent || null);
-            const result = this._validate(value, localState, Settings.concat(internals.defaults, options.context ? { context: options.context } : null));
-            Hoek.assert(!result.errors, `Bad example at index ${i}:`, result.errors && Errors.process(result.errors, value));
-
-            const ex = { value };
-            if (Object.keys(options).length) {
-                ex.options = options;
-            }
-
-            processed.push(ex);
-        }
-
-        const obj = this.clone();
-        obj._examples = processed;
-        return obj;
-    }
-
-    unit(name) {
-
-        Hoek.assert(name && typeof name === 'string', 'Unit name must be a non-empty string');
-
-        const obj = this.clone();
-        obj._unit = name;
-        return obj;
-    }
-
-    _prepareEmptyValue(value) {
-
-        if (typeof value === 'string' && this._flags.trim) {
-            return value.trim();
-        }
-
-        return value;
-    }
-
-    _validate(value, state, options, reference) {
-
-        const originalValue = value;
-
-        // Setup state and settings
-
-        state = state || new State('', [], null, reference);
-
-        if (this._settings) {
-            const isDefaultOptions = options === internals.defaults;
-            if (isDefaultOptions && this._settings[Symbols.settingsCache]) {
-                options = this._settings[Symbols.settingsCache];
-            }
-            else {
-                options = Settings.concat(this._language ? Settings.concat({ language: this._language }, options) : options, this._settings);
-                if (isDefaultOptions) {
-                    this._settings[Symbols.settingsCache] = options;
-                }
-            }
-        }
-        else if (this._language) {
-            options = Settings.concat({ language: this._language }, options);
-        }
-
-        let errors = [];
-
-        if (this._coerce) {
-            const coerced = this._coerce(value, state, options);
-            if (coerced.errors) {
-                value = coerced.value;
-                errors = errors.concat(coerced.errors);
-                return this._finalizeValue(value, originalValue, errors, state, options);                            // Coerced error always aborts early
-            }
-
-            value = coerced.value;
-        }
-
-        if (this._flags.empty && !this._flags.empty._validate(this._prepareEmptyValue(value), null, internals.defaults).errors) {
-            value = undefined;
-        }
-
-        // Check presence requirements
-
-        const presence = this._flags.presence || options.presence;
-        if (presence === 'optional') {
-            if (value === undefined) {
-                const isDeepDefault = this._flags.hasOwnProperty('default') && this._flags.default === undefined;
-                if (isDeepDefault && this._type === 'object') {
-                    value = {};
-                }
-                else {
-                    return this._finalizeValue(value, originalValue, errors, state, options);
-                }
-            }
-        }
-        else if (presence === 'required' &&
-            value === undefined) {
-
-            errors.push(this.createError('any.required', null, state, options));
-            return this._finalizeValue(value, originalValue, errors, state, options);
-        }
-        else if (presence === 'forbidden') {
-            if (value === undefined) {
-                return this._finalizeValue(value, originalValue, errors, state, options);
-            }
-
-            errors.push(this.createError('any.unknown', null, state, options));
-            return this._finalizeValue(value, originalValue, errors, state, options);
-        }
-
-        // Check allowed and denied values using the original value
-
-        let match = this._valids.get(value, state, options, this._flags.insensitive);
-        if (match) {
-            if (options.convert) {
-                value = match.value;
-            }
-
-            return this._finalizeValue(value, originalValue, errors, state, options);
-        }
-
-        if (this._invalids.has(value, state, options, this._flags.insensitive)) {
-            errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
-            if (options.abortEarly) {
-
-                return this._finalizeValue(value, originalValue, errors, state, options);
-            }
-        }
-
-        // Convert value and validate type
-
-        if (this._base) {
-            const base = this._base(value, state, options);
-            if (base.errors) {
-                value = base.value;
-                errors = errors.concat(base.errors);
-                return this._finalizeValue(value, originalValue, errors, state, options);                            // Base error always aborts early
-            }
-
-            if (base.value !== value) {
-                value = base.value;
-
-                // Check allowed and denied values using the converted value
-
-                match = this._valids.get(value, state, options, this._flags.insensitive);
-                if (match) {
-                    value = match.value;
-                    return this._finalizeValue(value, originalValue, errors, state, options);
-                }
-
-                if (this._invalids.has(value, state, options, this._flags.insensitive)) {
-                    errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
-                    if (options.abortEarly) {
-                        return this._finalizeValue(value, originalValue, errors, state, options);
-                    }
-                }
-            }
-        }
-
-        // Required values did not match
-
-        if (this._flags.allowOnly) {
-            errors.push(this.createError('any.allowOnly', { value, valids: this._valids.values({ stripUndefined: true }) }, state, options));
-            if (options.abortEarly) {
-                return this._finalizeValue(value, originalValue, errors, state, options);
-            }
-        }
-
-        // Validate tests
-
-        for (let i = 0; i < this._tests.length; ++i) {
-            const test = this._tests[i];
-            const ret = test.func.call(this, value, state, options);
-            if (ret instanceof Errors.Err) {
-                errors.push(ret);
-                if (options.abortEarly) {
-                    return this._finalizeValue(value, originalValue, errors, state, options);
-                }
-            }
-            else {
-                value = ret;
-            }
-        }
-
-        return this._finalizeValue(value, originalValue, errors, state, options);
-    }
-
-    _finalizeValue(value, originalValue, errors, state, options) {
-
-        let finalValue;
-
-        if (value !== undefined) {
-            finalValue = this._flags.raw ? originalValue : value;
-        }
-        else if (options.noDefaults) {
-            finalValue = value;
-        }
-        else if (Ref.isRef(this._flags.default)) {
-            finalValue = this._flags.default(state.parent, options);
-        }
-        else if (typeof this._flags.default === 'function' &&
-            !(this._flags.func && !this._flags.default.description)) {
-
-            let args;
-
-            if (state.parent !== null &&
-                this._flags.default.length > 0) {
-
-                args = [Hoek.clone(state.parent), options];
-            }
-
-            const defaultValue = internals._try(this._flags.default, args);
-            finalValue = defaultValue.value;
-            if (defaultValue.error) {
-                errors.push(this.createError('any.default', { error: defaultValue.error }, state, options));
-            }
-        }
-        else {
-            finalValue = Hoek.clone(this._flags.default);
-        }
-
-        if (errors.length &&
-            typeof this._flags.error === 'function' &&
-            (
-                !this._flags.selfError ||
-                errors.some((e) => state.path.length === e.path.length)
-            )
-        ) {
-            const change = this._flags.error.call(this, errors);
-
-            if (typeof change === 'string') {
-                errors = [this.createOverrideError('override', { reason: errors }, state, options, change)];
-            }
-            else {
-                errors = [].concat(change)
-                    .map((err) => {
-
-                        return err instanceof Error ?
-                            err :
-                            this.createOverrideError(err.type || 'override', err.context, state, options, err.message, err.template);
-                    });
-            }
-        }
-
-        return {
-            value: this._flags.strip ? undefined : finalValue,
-            finalValue,
-            errors: errors.length ? errors : null
-        };
-    }
-
-    _validateWithOptions(value, options, callback) {
-
-        if (options) {
-            this.checkOptions(options);
-        }
-
-        const settings = Settings.concat(internals.defaults, options);
-        const result = this._validate(value, null, settings);
-        const errors = Errors.process(result.errors, value);
-
-        if (callback) {
-            return callback(errors, result.value);
-        }
-
-        return {
-            error: errors,
-            value: result.value,
-            then(resolve, reject) {
-
-                if (errors) {
-                    return Promise.reject(errors).catch(reject);
-                }
-
-                return Promise.resolve(result.value).then(resolve);
-            },
-            catch(reject) {
-
-                if (errors) {
-                    return Promise.reject(errors).catch(reject);
-                }
-
-                return Promise.resolve(result.value);
-            }
-        };
-    }
-
-    validate(value, options, callback) {
-
-        if (typeof options === 'function') {
-            return this._validateWithOptions(value, null, options);
-        }
-
-        return this._validateWithOptions(value, options, callback);
-    }
-
-    describe() {
-
-        const description = {
-            type: this._type
-        };
-
-        const flags = Object.keys(this._flags);
-        if (flags.length) {
-            if (['empty', 'default', 'lazy', 'label'].some((flag) => this._flags.hasOwnProperty(flag))) {
-                description.flags = {};
-                for (let i = 0; i < flags.length; ++i) {
-                    const flag = flags[i];
-                    if (flag === 'empty') {
-                        description.flags[flag] = this._flags[flag].describe();
-                    }
-                    else if (flag === 'default') {
-                        if (Ref.isRef(this._flags[flag])) {
-                            description.flags[flag] = this._flags[flag].toString();
-                        }
-                        else if (typeof this._flags[flag] === 'function') {
-                            description.flags[flag] = {
-                                description: this._flags[flag].description,
-                                function   : this._flags[flag]
-                            };
-                        }
-                        else {
-                            description.flags[flag] = this._flags[flag];
-                        }
-                    }
-                    else if (flag === 'lazy' || flag === 'label') {
-                        // We don't want it in the description
-                    }
-                    else {
-                        description.flags[flag] = this._flags[flag];
-                    }
-                }
-            }
-            else {
-                description.flags = this._flags;
-            }
-        }
-
-        if (this._settings) {
-            description.options = Hoek.clone(this._settings);
-        }
-
-        if (this._baseType) {
-            description.base = this._baseType.describe();
-        }
-
-        if (this._description) {
-            description.description = this._description;
-        }
-
-        if (this._notes.length) {
-            description.notes = this._notes;
-        }
-
-        if (this._tags.length) {
-            description.tags = this._tags;
-        }
-
-        if (this._meta.length) {
-            description.meta = this._meta;
-        }
-
-        if (this._examples.length) {
-            description.examples = this._examples;
-        }
-
-        if (this._unit) {
-            description.unit = this._unit;
-        }
-
-        const valids = this._valids.values();
-        if (valids.length) {
-            description.valids = valids.map((v) => {
-
-                return Ref.isRef(v) ? v.toString() : v;
-            });
-        }
-
-        const invalids = this._invalids.values();
-        if (invalids.length) {
-            description.invalids = invalids.map((v) => {
-
-                return Ref.isRef(v) ? v.toString() : v;
-            });
-        }
-
-        description.rules = [];
-
-        for (let i = 0; i < this._tests.length; ++i) {
-            const validator = this._tests[i];
-            const item = { name: validator.name };
-
-            if (validator.arg !== void 0) {
-                item.arg = Ref.isRef(validator.arg) ? validator.arg.toString() : validator.arg;
-            }
-
-            const options = validator.options;
-            if (options) {
-                if (options.hasRef) {
-                    item.arg = {};
-                    const keys = Object.keys(validator.arg);
-                    for (let j = 0; j < keys.length; ++j) {
-                        const key = keys[j];
-                        const value = validator.arg[key];
-                        item.arg[key] = Ref.isRef(value) ? value.toString() : value;
-                    }
-                }
-
-                if (typeof options.description === 'string') {
-                    item.description = options.description;
-                }
-                else if (typeof options.description === 'function') {
-                    item.description = options.description(item.arg);
-                }
-            }
-
-            description.rules.push(item);
-        }
-
-        if (!description.rules.length) {
-            delete description.rules;
-        }
-
-        const label = this._getLabel();
-        if (label) {
-            description.label = label;
-        }
-
-        return description;
-    }
-
-    label(name) {
-
-        Hoek.assert(name && typeof name === 'string', 'Label name must be a non-empty string');
-
-        const obj = this.clone();
-        obj._flags.label = name;
-        return obj;
-    }
-
-    _getLabel(def) {
-
-        return this._flags.label || def;
-    }
-
-};
-
-
-internals.Any.prototype.isImmutable = true;     // Prevents Hoek from deep cloning schema objects
-
-// Aliases
-
-internals.Any.prototype.only = internals.Any.prototype.equal = internals.Any.prototype.valid;
-internals.Any.prototype.disallow = internals.Any.prototype.not = internals.Any.prototype.invalid;
-internals.Any.prototype.exist = internals.Any.prototype.required;
-
-
-internals.Any.prototype[internals.symbol] = {
-    version: Pkg.version,
-    compile: Cast.schema,
-    root: '_currentJoi'
-};
-
-
-internals._try = function (fn, args = []) {
-
-    let err;
-    let result;
-
-    try {
-        result = fn(...args);
-    }
-    catch (e) {
-        err = e;
-    }
-
-    return {
-        value: result,
-        error: err
-    };
-};
-
-},{"../../../package.json":134,"../../cast":109,"../../errors":110,"../../ref":113,"../../schemas":114,"../../set":115,"../alternatives":116,"../state":127,"../symbols":133,"./settings":118,"@hapi/hoek":98}],118:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Symbols = require('../symbols');
-
-
-const internals = {};
-
-
-exports.concat = function (target, source) {
-
-    if (!source) {
-        return target;
-    }
-
-    const obj = Object.assign({}, target);
-
-    const language = source.language;
-
-    Object.assign(obj, source);
-
-    if (language && target && target.language) {
-        obj.language = Hoek.applyToDefaults(target.language, language);
-    }
-
-    if (obj[Symbols.settingsCache]) {
-        delete obj[Symbols.settingsCache];
-    }
-
-    return obj;
-};
-
-},{"../symbols":133,"@hapi/hoek":98}],119:[function(require,module,exports){
-'use strict';
-
-const Bourne = require('@hapi/bourne');
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Cast = require('../../cast');
-const Ref = require('../../ref');
-const State = require('../state');
-
-
-const internals = {};
-
-
-internals.fastSplice = function (arr, i) {
-
-    let pos = i;
-    while (pos < arr.length) {
-        arr[pos++] = arr[pos];
-    }
-
-    --arr.length;
-};
-
-
-internals.Array = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'array';
-        this._inner.items = [];
-        this._inner.ordereds = [];
-        this._inner.inclusions = [];
-        this._inner.exclusions = [];
-        this._inner.requireds = [];
-        this._flags.sparse = false;
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (value.length > 1 &&
-                (value[0] === '[' || /^\s*\[/.test(value))) {
-
-                try {
-                    result.value = Bourne.parse(value);
-                }
-                catch (e) { }
-            }
-        }
-
-        let isArray = Array.isArray(result.value);
-        const wasArray = isArray;
-        if (options.convert && this._flags.single && !isArray) {
-            result.value = [result.value];
-            isArray = true;
-        }
-
-        if (!isArray) {
-            result.errors = this.createError('array.base', null, state, options);
-            return result;
-        }
-
-        if (this._inner.inclusions.length ||
-            this._inner.exclusions.length ||
-            this._inner.requireds.length ||
-            this._inner.ordereds.length ||
-            !this._flags.sparse) {
-
-            // Clone the array so that we don't modify the original
-            if (wasArray) {
-                result.value = result.value.slice(0);
-            }
-
-            result.errors = this._checkItems(result.value, wasArray, state, options);
-
-            if (result.errors && wasArray && options.convert && this._flags.single) {
-
-                // Attempt a 2nd pass by putting the array inside one.
-                const previousErrors = result.errors;
-
-                result.value = [result.value];
-                result.errors = this._checkItems(result.value, wasArray, state, options);
-
-                if (result.errors) {
-
-                    // Restore previous errors and value since this didn't validate either.
-                    result.errors = previousErrors;
-                    result.value = result.value[0];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    _checkItems(items, wasArray, state, options) {
-
-        const errors = [];
-        let errored;
-
-        const requireds = this._inner.requireds.slice();
-        const ordereds = this._inner.ordereds.slice();
-        const inclusions = [...this._inner.inclusions, ...requireds];
-
-        let il = items.length;
-        for (let i = 0; i < il; ++i) {
-            errored = false;
-            const item = items[i];
-            let isValid = false;
-            const key = wasArray ? i : state.key;
-            const path = wasArray ? [...state.path, i] : state.path;
-            const localState = new State(key, path, state.parent, state.reference);
-            let res;
-
-            // Sparse
-
-            if (!this._flags.sparse && item === undefined) {
-                errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                if (options.abortEarly) {
-                    return errors;
-                }
-
-                ordereds.shift();
-
-                continue;
-            }
-
-            // Exclusions
-
-            for (let j = 0; j < this._inner.exclusions.length; ++j) {
-                res = this._inner.exclusions[j]._validate(item, localState, {});                // Not passing options to use defaults
-
-                if (!res.errors) {
-                    errors.push(this.createError(wasArray ? 'array.excludes' : 'array.excludesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
-                    errored = true;
-
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    ordereds.shift();
-
-                    break;
-                }
-            }
-
-            if (errored) {
-                continue;
-            }
-
-            // Ordered
-            if (this._inner.ordereds.length) {
-                if (ordereds.length > 0) {
-                    const ordered = ordereds.shift();
-                    res = ordered._validate(item, localState, options);
-                    if (!res.errors) {
-                        if (ordered._flags.strip) {
-                            internals.fastSplice(items, i);
-                            --i;
-                            --il;
-                        }
-                        else if (!this._flags.sparse && res.value === undefined) {
-                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                            if (options.abortEarly) {
-                                return errors;
-                            }
-
-                            continue;
-                        }
-                        else {
-                            items[i] = res.value;
-                        }
-                    }
-                    else {
-                        errors.push(this.createError('array.ordered', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
-                        if (options.abortEarly) {
-                            return errors;
-                        }
-                    }
-
-                    continue;
-                }
-                else if (!this._inner.items.length) {
-                    errors.push(this.createError('array.orderedLength', { pos: i, limit: this._inner.ordereds.length }, { key: state.key, path: localState.path }, options));
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    continue;
-                }
-            }
-
-            // Requireds
-
-            const requiredChecks = [];
-            let jl = requireds.length;
-            for (let j = 0; j < jl; ++j) {
-                res = requiredChecks[j] = requireds[j]._validate(item, localState, options);
-                if (!res.errors) {
-                    items[i] = res.value;
-                    isValid = true;
-                    internals.fastSplice(requireds, j);
-                    --j;
-                    --jl;
-
-                    if (!this._flags.sparse && res.value === undefined) {
-                        errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-
-                        if (options.abortEarly) {
-                            return errors;
-                        }
-                    }
-
-                    break;
-                }
-            }
-
-            if (isValid) {
-                continue;
-            }
-
-            // Inclusions
-
-            const stripUnknown = options.stripUnknown && !!options.stripUnknown.arrays || false;
-
-            jl = inclusions.length;
-            for (let j = 0; j < jl; ++j) {
-                const inclusion = inclusions[j];
-
-                // Avoid re-running requireds that already didn't match in the previous loop
-                const previousCheck = requireds.indexOf(inclusion);
-                if (previousCheck !== -1) {
-                    res = requiredChecks[previousCheck];
-                }
-                else {
-                    res = inclusion._validate(item, localState, options);
-
-                    if (!res.errors) {
-                        if (inclusion._flags.strip) {
-                            internals.fastSplice(items, i);
-                            --i;
-                            --il;
-                        }
-                        else if (!this._flags.sparse && res.value === undefined) {
-                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
-                            errored = true;
-                        }
-                        else {
-                            items[i] = res.value;
-                        }
-
-                        isValid = true;
-                        break;
-                    }
-                }
-
-                // Return the actual error if only one inclusion defined
-                if (jl === 1) {
-                    if (stripUnknown) {
-                        internals.fastSplice(items, i);
-                        --i;
-                        --il;
-                        isValid = true;
-                        break;
-                    }
-
-                    errors.push(this.createError(wasArray ? 'array.includesOne' : 'array.includesOneSingle', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
-                    errored = true;
-
-                    if (options.abortEarly) {
-                        return errors;
-                    }
-
-                    break;
-                }
-            }
-
-            if (errored) {
-                continue;
-            }
-
-            if (this._inner.inclusions.length && !isValid) {
-                if (stripUnknown) {
-                    internals.fastSplice(items, i);
-                    --i;
-                    --il;
-                    continue;
-                }
-
-                errors.push(this.createError(wasArray ? 'array.includes' : 'array.includesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
-
-                if (options.abortEarly) {
-                    return errors;
-                }
-            }
-        }
-
-        if (requireds.length) {
-            this._fillMissedErrors(errors, requireds, state, options);
-        }
-
-        if (ordereds.length) {
-            this._fillOrderedErrors(errors, ordereds, state, options);
-        }
-
-        return errors.length ? errors : null;
-    }
-
-    describe() {
-
-        const description = super.describe();
-
-        if (this._inner.ordereds.length) {
-            description.orderedItems = [];
-
-            for (let i = 0; i < this._inner.ordereds.length; ++i) {
-                description.orderedItems.push(this._inner.ordereds[i].describe());
-            }
-        }
-
-        if (this._inner.items.length) {
-            description.items = [];
-
-            for (let i = 0; i < this._inner.items.length; ++i) {
-                description.items.push(this._inner.items[i].describe());
-            }
-        }
-
-        if (description.rules) {
-            for (let i = 0; i < description.rules.length; ++i) {
-                const rule = description.rules[i];
-                if (rule.name === 'has') {
-                    rule.arg = rule.arg.describe();
-                }
-            }
-        }
-
-        return description;
-    }
-
-    items(...schemas) {
-
-        const obj = this.clone();
-
-        Hoek.flatten(schemas).forEach((type, index) => {
-
-            try {
-                type = Cast.schema(this._currentJoi, type);
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = index + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = index;
-                }
-
-                castErr.message = `${castErr.message}(${castErr.path})`;
-                throw castErr;
-            }
-
-            obj._inner.items.push(type);
-
-            if (type._flags.presence === 'required') {
-                obj._inner.requireds.push(type);
-            }
-            else if (type._flags.presence === 'forbidden') {
-                obj._inner.exclusions.push(type.optional());
-            }
-            else {
-                obj._inner.inclusions.push(type);
-            }
-        });
-
-        return obj;
-    }
-
-    ordered(...schemas) {
-
-        const obj = this.clone();
-
-        Hoek.flatten(schemas).forEach((type, index) => {
-
-            try {
-                type = Cast.schema(this._currentJoi, type);
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = index + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = index;
-                }
-
-                castErr.message = `${castErr.message}(${castErr.path})`;
-                throw castErr;
-            }
-
-            obj._inner.ordereds.push(type);
-        });
-
-        return obj;
-    }
-
-    min(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._testUnique('min', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit, value: compareTo }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length >= compareTo) {
-                return value;
-            }
-
-            return this.createError('array.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._testUnique('max', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length <= compareTo) {
-                return value;
-            }
-
-            return this.createError('array.max', { limit, value }, state, options);
-        });
-    }
-
-    length(limit) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-
-        return this._testUnique('length', limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
-                    return this.createError('array.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (value.length === compareTo) {
-                return value;
-            }
-
-            return this.createError('array.length', { limit, value }, state, options);
-        });
-    }
-
-    has(schema) {
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = `${castErr.message}(${castErr.path})`;
-            }
-
-            throw castErr;
-        }
-
-        return this._test('has', schema, function (value, state, options) {
-
-            const isValid = value.some((item, idx) => {
-
-                const localState = new State(idx, [...state.path, idx], state.key, state.reference);
-                return !schema._validate(item, localState, options).errors;
-            });
-
-            if (isValid) {
-                return value;
-            }
-
-            const patternLabel = schema._getLabel();
-            if (patternLabel) {
-                return this.createError('array.hasKnown', { patternLabel }, state, options);
-            }
-
-            return this.createError('array.hasUnknown', null, state, options);
-        });
-    }
-
-    unique(comparator, configs) {
-
-        Hoek.assert(comparator === undefined ||
-            typeof comparator === 'function' ||
-            typeof comparator === 'string', 'comparator must be a function or a string');
-
-        Hoek.assert(configs === undefined ||
-            typeof configs === 'object', 'configs must be an object');
-
-        const settings = {
-            ignoreUndefined: (configs && configs.ignoreUndefined) || false
-        };
-
-
-        if (typeof comparator === 'string') {
-            settings.path = comparator;
-        }
-        else if (typeof comparator === 'function') {
-            settings.comparator = comparator;
-        }
-
-        return this._test('unique', settings, function (value, state, options) {
-
-            const found = {
-                string: Object.create(null),
-                number: Object.create(null),
-                undefined: Object.create(null),
-                boolean: Object.create(null),
-                object: new Map(),
-                function: new Map(),
-                custom: new Map()
-            };
-
-            const compare = settings.comparator || Hoek.deepEqual;
-            const ignoreUndefined = settings.ignoreUndefined;
-
-            for (let i = 0; i < value.length; ++i) {
-                const item = settings.path ? Hoek.reach(value[i], settings.path) : value[i];
-                const records = settings.comparator ? found.custom : found[typeof item];
-
-                // All available types are supported, so it's not possible to reach 100% coverage without ignoring this line.
-                // I still want to keep the test for future js versions with new types (eg. Symbol).
-                if (/* $lab:coverage:off$ */ records /* $lab:coverage:on$ */) {
-                    if (records instanceof Map) {
-                        const entries = records.entries();
-                        let current;
-                        while (!(current = entries.next()).done) {
-                            if (compare(current.value[0], item)) {
-                                const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
-                                const context = {
-                                    pos: i,
-                                    value: value[i],
-                                    dupePos: current.value[1],
-                                    dupeValue: value[current.value[1]]
-                                };
-
-                                if (settings.path) {
-                                    context.path = settings.path;
-                                }
-
-                                return this.createError('array.unique', context, localState, options);
-                            }
-                        }
-
-                        records.set(item, i);
-                    }
-                    else {
-                        if ((!ignoreUndefined || item !== undefined) && records[item] !== undefined) {
-                            const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
-
-                            const context = {
-                                pos: i,
-                                value: value[i],
-                                dupePos: records[item],
-                                dupeValue: value[records[item]]
-                            };
-
-                            if (settings.path) {
-                                context.path = settings.path;
-                            }
-
-                            return this.createError('array.unique', context, localState, options);
-                        }
-
-                        records[item] = i;
-                    }
-                }
-            }
-
-            return value;
-        });
-    }
-
-    sparse(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.sparse === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.sparse = value;
-        return obj;
-    }
-
-    single(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.single === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.single = value;
-        return obj;
-    }
-
-    _fillMissedErrors(errors, requireds, state, options) {
-
-        const knownMisses = [];
-        let unknownMisses = 0;
-        for (let i = 0; i < requireds.length; ++i) {
-            const label = requireds[i]._getLabel();
-            if (label) {
-                knownMisses.push(label);
-            }
-            else {
-                ++unknownMisses;
-            }
-        }
-
-        if (knownMisses.length) {
-            if (unknownMisses) {
-                errors.push(this.createError('array.includesRequiredBoth', { knownMisses, unknownMisses }, { key: state.key, path: state.path }, options));
-            }
-            else {
-                errors.push(this.createError('array.includesRequiredKnowns', { knownMisses }, { key: state.key, path: state.path }, options));
-            }
-        }
-        else {
-            errors.push(this.createError('array.includesRequiredUnknowns', { unknownMisses }, { key: state.key, path: state.path }, options));
-        }
-    }
-
-
-    _fillOrderedErrors(errors, ordereds, state, options) {
-
-        const requiredOrdereds = [];
-
-        for (let i = 0; i < ordereds.length; ++i) {
-            const presence = Hoek.reach(ordereds[i], '_flags.presence');
-            if (presence === 'required') {
-                requiredOrdereds.push(ordereds[i]);
-            }
-        }
-
-        if (requiredOrdereds.length) {
-            this._fillMissedErrors(errors, requiredOrdereds, state, options);
-        }
-    }
-
-};
-
-
-module.exports = new internals.Array();
-
-},{"../../cast":109,"../../ref":113,"../any":117,"../state":127,"@hapi/bourne":83,"@hapi/hoek":98}],120:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {};
-
-
-internals.Binary = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'binary';
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            try {
-                result.value = Buffer.from(value, this._flags.encoding);
-            }
-            catch (e) { }
-        }
-
-        result.errors = Buffer.isBuffer(result.value) ? null : this.createError('binary.base', null, state, options);
-        return result;
-    }
-
-    encoding(encoding) {
-
-        Hoek.assert(Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
-
-        if (this._flags.encoding === encoding) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.encoding = encoding;
-        return obj;
-    }
-
-    min(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            if (value.length >= limit) {
-                return value;
-            }
-
-            return this.createError('binary.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            if (value.length <= limit) {
-                return value;
-            }
-
-            return this.createError('binary.max', { limit, value }, state, options);
-        });
-    }
-
-    length(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            if (value.length === limit) {
-                return value;
-            }
-
-            return this.createError('binary.length', { limit, value }, state, options);
-        });
-    }
-
-};
-
-
-module.exports = new internals.Binary();
-
-}).call(this,require("buffer").Buffer)
-},{"../any":117,"@hapi/hoek":98,"buffer":48}],121:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {
-    Set: require('../../set')
-};
-
-
-internals.Boolean = class extends Any {
-    constructor() {
-
-        super();
-        this._type = 'boolean';
-        this._flags.insensitive = true;
-        this._inner.truthySet = new internals.Set();
-        this._inner.falsySet = new internals.Set();
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            const normalized = this._flags.insensitive ? value.toLowerCase() : value;
-            result.value = (normalized === 'true' ? true
-                : (normalized === 'false' ? false : value));
-        }
-
-        if (typeof result.value !== 'boolean') {
-            result.value = (this._inner.truthySet.has(value, null, null, this._flags.insensitive) ? true
-                : (this._inner.falsySet.has(value, null, null, this._flags.insensitive) ? false : value));
-        }
-
-        result.errors = (typeof result.value === 'boolean') ? null : this.createError('boolean.base', { value }, state, options);
-        return result;
-    }
-
-    truthy(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call truthy with undefined');
-            obj._inner.truthySet.add(value);
-        }
-
-        return obj;
-    }
-
-    falsy(...values) {
-
-        const obj = this.clone();
-        values = Hoek.flatten(values);
-        for (let i = 0; i < values.length; ++i) {
-            const value = values[i];
-
-            Hoek.assert(value !== undefined, 'Cannot call falsy with undefined');
-            obj._inner.falsySet.add(value);
-        }
-
-        return obj;
-    }
-
-    insensitive(enabled) {
-
-        const insensitive = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.insensitive === insensitive) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.insensitive = insensitive;
-        return obj;
-    }
-
-    describe() {
-
-        const description = super.describe();
-        description.truthy = [true, ...this._inner.truthySet.values()];
-        description.falsy = [false, ...this._inner.falsySet.values()];
-        return description;
-    }
-};
-
-
-module.exports = new internals.Boolean();
-
-},{"../../set":115,"../any":117,"@hapi/hoek":98}],122:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Ref = require('../../ref');
-
-
-const internals = {};
-
-internals.isoDate = /^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/;
-internals.invalidDate = new Date('');
-internals.isIsoDate = (() => {
-
-    const isoString = internals.isoDate.toString();
-
-    return (date) => {
-
-        return date && (date.toString() === isoString);
-    };
-})();
-
-internals.Date = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'date';
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            value: (options.convert && internals.Date.toDate(value, this._flags.format, this._flags.timestamp, this._flags.multiplier)) || value
-        };
-
-        if (result.value instanceof Date && !isNaN(result.value.getTime())) {
-            result.errors = null;
-        }
-        else if (!options.convert) {
-            result.errors = this.createError('date.strict', { value }, state, options);
-        }
-        else {
-            let type;
-            if (internals.isIsoDate(this._flags.format)) {
-                type = 'isoDate';
-            }
-            else if (this._flags.timestamp) {
-                type = `timestamp.${this._flags.timestamp}`;
-            }
-            else {
-                type = 'base';
-            }
-
-            result.errors = this.createError(`date.${type}`, { value }, state, options);
-        }
-
-        return result;
-    }
-
-    static toDate(value, format, timestamp, multiplier) {
-
-        if (value instanceof Date) {
-            return value;
-        }
-
-        if (typeof value === 'string' ||
-            (typeof value === 'number' && !isNaN(value) && isFinite(value))) {
-
-            const isIsoDate = format && internals.isIsoDate(format);
-            if (!isIsoDate &&
-                typeof value === 'string' &&
-                /^[+-]?\d+(\.\d+)?$/.test(value)) {
-
-                value = parseFloat(value);
-            }
-
-            let date;
-            if (isIsoDate) {
-                date = format.test(value) ? new Date(value.toString()) : internals.invalidDate;
-            }
-            else if (timestamp) {
-                date = /^\s*$/.test(value) ? internals.invalidDate : new Date(value * multiplier);
-            }
-            else {
-                date = new Date(value);
-            }
-
-            if (!isNaN(date.getTime())) {
-                return date;
-            }
-        }
-
-        return null;
-    }
-
-    iso() {
-
-        if (this._flags.format === internals.isoDate) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.format = internals.isoDate;
-        return obj;
-    }
-
-    timestamp(type = 'javascript') {
-
-        const allowed = ['javascript', 'unix'];
-        Hoek.assert(allowed.includes(type), '"type" must be one of "' + allowed.join('", "') + '"');
-
-        if (this._flags.timestamp === type) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.timestamp = type;
-        obj._flags.multiplier = type === 'unix' ? 1000 : 1;
-        return obj;
-    }
-
-    _isIsoDate(value) {
-
-        return internals.isoDate.test(value);
-    }
-
-};
-
-internals.compare = function (type, compare) {
-
-    return function (date) {
-
-        const isNow = date === 'now';
-        const isRef = Ref.isRef(date);
-
-        if (!isNow && !isRef) {
-            date = internals.Date.toDate(date);
-        }
-
-        Hoek.assert(date, 'Invalid date format');
-
-        return this._test(type, date, function (value, state, options) {
-
-            let compareTo;
-            if (isNow) {
-                compareTo = Date.now();
-            }
-            else if (isRef) {
-                const refValue = date(state.reference || state.parent, options);
-                compareTo = internals.Date.toDate(refValue);
-
-                if (!compareTo) {
-                    return this.createError('date.ref', { ref: date, value: refValue }, state, options);
-                }
-
-                compareTo = compareTo.getTime();
-            }
-            else {
-                compareTo = date.getTime();
-            }
-
-            if (compare(value.getTime(), compareTo)) {
-                return value;
-            }
-
-            return this.createError('date.' + type, { limit: new Date(compareTo), value }, state, options);
-        });
-    };
-};
-
-
-internals.Date.prototype.min = internals.compare('min', (value, date) => value >= date);
-internals.Date.prototype.max = internals.compare('max', (value, date) => value <= date);
-internals.Date.prototype.greater = internals.compare('greater', (value, date) => value > date);
-internals.Date.prototype.less = internals.compare('less', (value, date) => value < date);
-
-
-module.exports = new internals.Date();
-
-},{"../../ref":113,"../any":117,"@hapi/hoek":98}],123:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const ObjectType = require('../object');
-const Ref = require('../../ref');
-
-
-const internals = {};
-
-
-internals.Func = class extends ObjectType.constructor {
-
-    constructor() {
-
-        super();
-        this._flags.func = true;
-    }
-
-    arity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
-
-        return this._test('arity', n, function (value, state, options) {
-
-            if (value.length === n) {
-                return value;
-            }
-
-            return this.createError('function.arity', { n }, state, options);
-        });
-    }
-
-    minArity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n > 0, 'n must be a strict positive integer');
-
-        return this._test('minArity', n, function (value, state, options) {
-
-            if (value.length >= n) {
-                return value;
-            }
-
-            return this.createError('function.minArity', { n }, state, options);
-        });
-    }
-
-    maxArity(n) {
-
-        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
-
-        return this._test('maxArity', n, function (value, state, options) {
-
-            if (value.length <= n) {
-                return value;
-            }
-
-            return this.createError('function.maxArity', { n }, state, options);
-        });
-    }
-
-    ref() {
-
-        return this._test('ref', null, function (value, state, options) {
-
-            if (Ref.isRef(value)) {
-                return value;
-            }
-
-            return this.createError('function.ref', { value }, state, options);
-        });
-    }
-
-    class() {
-
-        return this._test('class', null, function (value, state, options) {
-
-            if ((/^\s*class\s/).test(value.toString())) {
-                return value;
-            }
-
-            return this.createError('function.class', { value }, state, options);
-        });
-    }
-};
-
-module.exports = new internals.Func();
-
-},{"../../ref":113,"../object":126,"@hapi/hoek":98}],124:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {};
-
-
-internals.Lazy = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'lazy';
-        this._flags.once = true;
-        this._cache = null;
-    }
-
-    _init(fn, options) {
-
-        return this.set(fn, options);
-    }
-
-    _base(value, state, options) {
-
-        let schema;
-        if (this._cache) {
-            schema = this._cache;
-        }
-        else {
-            const result = { value };
-            const lazy = this._flags.lazy;
-
-            if (!lazy) {
-                result.errors = this.createError('lazy.base', null, state, options);
-                return result;
-            }
-
-            schema = lazy();
-
-            if (!(schema instanceof Any)) {
-                result.errors = this.createError('lazy.schema', { schema }, state, options);
-                return result;
-            }
-
-            if (this._flags.once) {
-                this._cache = schema;
-            }
-        }
-
-        return schema._validate(value, state, options);
-    }
-
-    set(fn, options) {
-
-        Hoek.assert(typeof fn === 'function', 'You must provide a function as first argument');
-        Hoek.assert(options === undefined || (options && typeof options === 'object' && !Array.isArray(options)), `Options must be an object`);
-
-        if (options) {
-            const unknownOptions = Object.keys(options).filter((key) => !['once'].includes(key));
-            Hoek.assert(unknownOptions.length === 0, `Options contain unknown keys: ${unknownOptions}`);
-            Hoek.assert(options.once === undefined || typeof options.once === 'boolean', 'Option "once" must be a boolean');
-        }
-
-        const obj = this.clone();
-        obj._flags.lazy = fn;
-
-        if (options && options.once !== obj._flags.once) {
-            obj._flags.once = options.once;
-        }
-
-        return obj;
-    }
-
-};
-
-module.exports = new internals.Lazy();
-
-},{"../any":117,"@hapi/hoek":98}],125:[function(require,module,exports){
-'use strict';
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Ref = require('../../ref');
-
-
-const internals = {
-    precisionRx: /(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/,
-    normalizeExponent(str) {
-
-        return str
-            .replace(/\.?0+e/, 'e')
-            .replace(/e\+/, 'e')
-            .replace(/^\+/, '')
-            .replace(/^(-?)0+([1-9])/, '$1$2');
-    },
-    normalizeDecimal(str) {
-
-        str = str
-            .replace(/^\+/, '')
-            .replace(/\.0+$/, '')
-            .replace(/^(-?)0+([1-9])/, '$1$2');
-
-        if (str.includes('.') && str.endsWith('0')) {
-            str = str.replace(/0+$/, '');
-        }
-
-        return str;
-    }
-};
-
-
-internals.Number = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'number';
-        this._flags.unsafe = false;
-        this._invalids.add(Infinity);
-        this._invalids.add(-Infinity);
-    }
-
-    _base(value, state, options) {
-
-        const result = {
-            errors: null,
-            value
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            const matches = value.match(/^\s*[+-]?\d+(?:\.\d+)?(?:e([+-]?\d+))?\s*$/i);
-            if (matches) {
-
-                value = value.trim();
-                result.value = parseFloat(value);
-
-                if (!this._flags.unsafe) {
-                    if (value.includes('e')) {
-                        if (internals.normalizeExponent(`${result.value / Math.pow(10, matches[1])}e${matches[1]}`) !== internals.normalizeExponent(value)) {
-                            result.errors = this.createError('number.unsafe', { value }, state, options);
-                            return result;
-                        }
-                    }
-                    else {
-                        if (result.value.toString() !== internals.normalizeDecimal(value)) {
-                            result.errors = this.createError('number.unsafe', { value }, state, options);
-                            return result;
-                        }
-                    }
-                }
-            }
-        }
-
-        const isNumber = typeof result.value === 'number' && !isNaN(result.value);
-
-        if (options.convert && 'precision' in this._flags && isNumber) {
-
-            // This is conceptually equivalent to using toFixed but it should be much faster
-            const precision = Math.pow(10, this._flags.precision);
-            result.value = Math.round(result.value * precision) / precision;
-        }
-
-        if (isNumber) {
-            if (!this._flags.unsafe &&
-                (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) {
-                result.errors = this.createError('number.unsafe', { value }, state, options);
-            }
-        }
-        else {
-            result.errors = this.createError('number.base', { value }, state, options);
-        }
-
-        return result;
-    }
-
-    multiple(base) {
-
-        const isRef = Ref.isRef(base);
-
-        if (!isRef) {
-            Hoek.assert(typeof base === 'number' && isFinite(base), 'multiple must be a number');
-            Hoek.assert(base > 0, 'multiple must be greater than 0');
-        }
-
-        return this._test('multiple', base, function (value, state, options) {
-
-            const divisor = isRef ? base(state.reference || state.parent, options) : base;
-
-            if (isRef && (typeof divisor !== 'number' || !isFinite(divisor))) {
-                return this.createError('number.ref', { ref: base.key }, state, options);
-            }
-
-            if (value % divisor === 0) {
-                return value;
-            }
-
-            return this.createError('number.multiple', { multiple: base, value }, state, options);
-        });
-    }
-
-    integer() {
-
-        return this._test('integer', undefined, function (value, state, options) {
-
-            return Math.trunc(value) - value === 0 ? value : this.createError('number.integer', { value }, state, options);
-        });
-    }
-
-    unsafe(enabled = true) {
-
-        Hoek.assert(typeof enabled === 'boolean', 'enabled must be a boolean');
-
-        if (this._flags.unsafe === enabled) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.unsafe = enabled;
-        return obj;
-    }
-
-    negative() {
-
-        return this._test('negative', undefined, function (value, state, options) {
-
-            if (value < 0) {
-                return value;
-            }
-
-            return this.createError('number.negative', { value }, state, options);
-        });
-    }
-
-    positive() {
-
-        return this._test('positive', undefined, function (value, state, options) {
-
-            if (value > 0) {
-                return value;
-            }
-
-            return this.createError('number.positive', { value }, state, options);
-        });
-    }
-
-    precision(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit), 'limit must be an integer');
-        Hoek.assert(!('precision' in this._flags), 'precision already set');
-
-        const obj = this._test('precision', limit, function (value, state, options) {
-
-            const places = value.toString().match(internals.precisionRx);
-            const decimals = Math.max((places[1] ? places[1].length : 0) - (places[2] ? parseInt(places[2], 10) : 0), 0);
-            if (decimals <= limit) {
-                return value;
-            }
-
-            return this.createError('number.precision', { limit, value }, state, options);
-        });
-
-        obj._flags.precision = limit;
-        return obj;
-    }
-
-    port() {
-
-        return this._test('port', undefined, function (value, state, options) {
-
-            if (!Number.isSafeInteger(value) || value < 0 || value > 65535) {
-                return this.createError('number.port', { value }, state, options);
-            }
-
-            return value;
-        });
-    }
-
-};
-
-
-internals.compare = function (type, compare) {
-
-    return function (limit) {
-
-        const isRef = Ref.isRef(limit);
-        const isNumber = typeof limit === 'number' && !isNaN(limit);
-
-        Hoek.assert(isNumber || isRef, 'limit must be a number or reference');
-
-        return this._test(type, limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!(typeof compareTo === 'number' && !isNaN(compareTo))) {
-                    return this.createError('number.ref', { ref: limit.key }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (compare(value, compareTo)) {
-                return value;
-            }
-
-            return this.createError('number.' + type, { limit: compareTo, value }, state, options);
-        });
-    };
-};
-
-
-internals.Number.prototype.min = internals.compare('min', (value, limit) => value >= limit);
-internals.Number.prototype.max = internals.compare('max', (value, limit) => value <= limit);
-internals.Number.prototype.greater = internals.compare('greater', (value, limit) => value > limit);
-internals.Number.prototype.less = internals.compare('less', (value, limit) => value < limit);
-
-
-module.exports = new internals.Number();
-
-},{"../../ref":113,"../any":117,"@hapi/hoek":98}],126:[function(require,module,exports){
-'use strict';
-
-const Bourne = require('@hapi/bourne');
-const Hoek = require('@hapi/hoek');
-const Topo = require('@hapi/topo');
-
-const Any = require('../any');
-const Errors = require('../../errors');
-const Cast = require('../../cast');
-const State = require('../state');
-
-
-const internals = {};
-
-
-internals.Object = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'object';
-        this._inner.children = null;
-        this._inner.renames = [];
-        this._inner.dependencies = [];
-        this._inner.patterns = [];
-    }
-
-    _init(...args) {
-
-        return args.length ? this.keys(...args) : this;
-    }
-
-    _base(value, state, options) {
-
-        let target = value;
-        const errors = [];
-        const finish = () => {
-
-            return {
-                value: target,
-                errors: errors.length ? errors : null
-            };
-        };
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (value.length > 1 &&
-                (value[0] === '{' || /^\s*\{/.test(value))) {
-
-                try {
-                    value = Bourne.parse(value);
-                }
-                catch (e) { }
-            }
-        }
-
-        const type = this._flags.func ? 'function' : 'object';
-        if (!value ||
-            typeof value !== type ||
-            Array.isArray(value)) {
-
-            errors.push(this.createError(type + '.base', { value }, state, options));
-            return finish();
-        }
-
-        // Skip if there are no other rules to test
-
-        if (!this._inner.renames.length &&
-            !this._inner.dependencies.length &&
-            !this._inner.children &&                    // null allows any keys
-            !this._inner.patterns.length) {
-
-            target = value;
-            return finish();
-        }
-
-        // Ensure target is a local copy (parsed) or shallow copy
-
-        if (target === value) {
-            if (type === 'object') {
-                target = Object.create(Object.getPrototypeOf(value));
-            }
-            else {
-                target = function (...args) {
-
-                    return value.apply(this, args);
-                };
-
-                target.prototype = Hoek.clone(value.prototype);
-            }
-
-            const valueKeys = Object.keys(value);
-            for (let i = 0; i < valueKeys.length; ++i) {
-                target[valueKeys[i]] = value[valueKeys[i]];
-            }
-        }
-        else {
-            target = value;
-        }
-
-        // Rename keys
-
-        const renamed = {};
-        for (let i = 0; i < this._inner.renames.length; ++i) {
-            const rename = this._inner.renames[i];
-
-            if (rename.isRegExp) {
-                const targetKeys = Object.keys(target);
-                const matchedTargetKeys = [];
-
-                for (let j = 0; j < targetKeys.length; ++j) {
-                    if (rename.from.test(targetKeys[j])) {
-                        matchedTargetKeys.push(targetKeys[j]);
-                    }
-                }
-
-                const allUndefined = matchedTargetKeys.every((key) => target[key] === undefined);
-                if (rename.options.ignoreUndefined && allUndefined) {
-                    continue;
-                }
-
-                if (!rename.options.multiple &&
-                    renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.regex.multiple', { from: matchedTargetKeys, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
-                    !rename.options.override &&
-                    !renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.regex.override', { from: matchedTargetKeys, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (allUndefined) {
-                    delete target[rename.to];
-                }
-                else {
-                    target[rename.to] = target[matchedTargetKeys[matchedTargetKeys.length - 1]];
-                }
-
-                renamed[rename.to] = true;
-
-                if (!rename.options.alias) {
-                    for (let j = 0; j < matchedTargetKeys.length; ++j) {
-                        delete target[matchedTargetKeys[j]];
-                    }
-                }
-            }
-            else {
-                if (rename.options.ignoreUndefined && target[rename.from] === undefined) {
-                    continue;
-                }
-
-                if (!rename.options.multiple &&
-                    renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.multiple', { from: rename.from, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
-                    !rename.options.override &&
-                    !renamed[rename.to]) {
-
-                    errors.push(this.createError('object.rename.override', { from: rename.from, to: rename.to }, state, options));
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-
-                if (target[rename.from] === undefined) {
-                    delete target[rename.to];
-                }
-                else {
-                    target[rename.to] = target[rename.from];
-                }
-
-                renamed[rename.to] = true;
-
-                if (!rename.options.alias) {
-                    delete target[rename.from];
-                }
-            }
-        }
-
-        // Validate schema
-
-        if (!this._inner.children &&            // null allows any keys
-            !this._inner.patterns.length &&
-            !this._inner.dependencies.length) {
-
-            return finish();
-        }
-
-        const unprocessed = new Set(Object.keys(target));
-
-        if (this._inner.children) {
-            const stripProps = [];
-
-            for (let i = 0; i < this._inner.children.length; ++i) {
-                const child = this._inner.children[i];
-                const key = child.key;
-                const item = target[key];
-
-                unprocessed.delete(key);
-
-                const localState = new State(key, [...state.path, key], target, state.reference);
-                const result = child.schema._validate(item, localState, options);
-                if (result.errors) {
-                    errors.push(this.createError('object.child', { key, child: child.schema._getLabel(key), reason: result.errors }, localState, options));
-
-                    if (options.abortEarly) {
-                        return finish();
-                    }
-                }
-                else {
-                    if (child.schema._flags.strip || (result.value === undefined && result.value !== item)) {
-                        stripProps.push(key);
-                        target[key] = result.finalValue;
-                    }
-                    else if (result.value !== undefined) {
-                        target[key] = result.value;
-                    }
-                }
-            }
-
-            for (let i = 0; i < stripProps.length; ++i) {
-                delete target[stripProps[i]];
-            }
-        }
-
-        // Unknown keys
-
-        if (unprocessed.size && this._inner.patterns.length) {
-
-            for (const key of unprocessed) {
-                const localState = new State(key, [...state.path, key], target, state.reference);
-                const item = target[key];
-
-                for (let i = 0; i < this._inner.patterns.length; ++i) {
-                    const pattern = this._inner.patterns[i];
-
-                    if (pattern.regex ?
-                        pattern.regex.test(key) :
-                        !pattern.schema._validate(key, state, { ...options, abortEarly:true }).errors) {
-
-                        unprocessed.delete(key);
-
-                        const result = pattern.rule._validate(item, localState, options);
-                        if (result.errors) {
-                            errors.push(this.createError('object.child', {
-                                key,
-                                child: pattern.rule._getLabel(key),
-                                reason: result.errors
-                            }, localState, options));
-
-                            if (options.abortEarly) {
-                                return finish();
-                            }
-                        }
-
-                        target[key] = result.value;
-                    }
-                }
-            }
-        }
-
-        if (unprocessed.size && (this._inner.children || this._inner.patterns.length)) {
-            if ((options.stripUnknown && this._flags.allowUnknown !== true) ||
-                options.skipFunctions) {
-
-                const stripUnknown = options.stripUnknown
-                    ? (options.stripUnknown === true ? true : !!options.stripUnknown.objects)
-                    : false;
-
-
-                for (const key of unprocessed) {
-                    if (stripUnknown) {
-                        delete target[key];
-                        unprocessed.delete(key);
-                    }
-                    else if (typeof target[key] === 'function') {
-                        unprocessed.delete(key);
-                    }
-                }
-            }
-
-            if ((this._flags.allowUnknown !== undefined ? !this._flags.allowUnknown : !options.allowUnknown)) {
-
-                for (const unprocessedKey of unprocessed) {
-                    errors.push(this.createError('object.allowUnknown', { child: unprocessedKey, value: target[unprocessedKey] }, {
-                        key: unprocessedKey,
-                        path: [...state.path, unprocessedKey]
-                    }, options, {}));
-                }
-            }
-        }
-
-        // Validate dependencies
-
-        for (let i = 0; i < this._inner.dependencies.length; ++i) {
-            const dep = this._inner.dependencies[i];
-            const hasKey = dep.key !== null;
-            const splitKey = hasKey && dep.key.split('.');
-            const localState = hasKey ? new State(splitKey[splitKey.length - 1], [...state.path, ...splitKey]) : new State(null, state.path);
-            const err = internals[dep.type].call(this, dep.key, hasKey && Hoek.reach(target, dep.key, { functions: true }), dep.peers, target, localState, options);
-            if (err instanceof Errors.Err) {
-                errors.push(err);
-                if (options.abortEarly) {
-                    return finish();
-                }
-            }
-        }
-
-        return finish();
-    }
-
-    keys(schema) {
-
-        Hoek.assert(schema === null || schema === undefined || typeof schema === 'object', 'Object schema must be a valid object');
-        Hoek.assert(!schema || !(schema instanceof Any), 'Object schema cannot be a joi schema');
-
-        const obj = this.clone();
-
-        if (!schema) {
-            obj._inner.children = null;
-            return obj;
-        }
-
-        const children = Object.keys(schema);
-
-        if (!children.length) {
-            obj._inner.children = [];
-            return obj;
-        }
-
-        const topo = new Topo();
-        if (obj._inner.children) {
-            for (let i = 0; i < obj._inner.children.length; ++i) {
-                const child = obj._inner.children[i];
-
-                // Only add the key if we are not going to replace it later
-                if (!children.includes(child.key)) {
-                    topo.add(child, { after: child._refs, group: child.key });
-                }
-            }
-        }
-
-        for (let i = 0; i < children.length; ++i) {
-            const key = children[i];
-            const child = schema[key];
-            try {
-                const cast = Cast.schema(this._currentJoi, child);
-                topo.add({ key, schema: cast }, { after: cast._refs, group: key });
-            }
-            catch (castErr) {
-                if (castErr.hasOwnProperty('path')) {
-                    castErr.path = key + '.' + castErr.path;
-                }
-                else {
-                    castErr.path = key;
-                }
-
-                throw castErr;
-            }
-        }
-
-        obj._inner.children = topo.nodes;
-
-        return obj;
-    }
-
-    append(schema) {
-        // Skip any changes
-        if (schema === null || schema === undefined || Object.keys(schema).length === 0) {
-            return this;
-        }
-
-        return this.keys(schema);
-    }
-
-    unknown(allow) {
-
-        const value = allow !== false;
-
-        if (this._flags.allowUnknown === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.allowUnknown = value;
-        return obj;
-    }
-
-    length(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('length', limit, function (value, state, options) {
-
-            if (Object.keys(value).length === limit) {
-                return value;
-            }
-
-            return this.createError('object.length', { limit, value }, state, options);
-        });
-    }
-
-    min(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('min', limit, function (value, state, options) {
-
-            if (Object.keys(value).length >= limit) {
-                return value;
-            }
-
-            return this.createError('object.min', { limit, value }, state, options);
-        });
-    }
-
-    max(limit) {
-
-        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
-
-        return this._test('max', limit, function (value, state, options) {
-
-            if (Object.keys(value).length <= limit) {
-                return value;
-            }
-
-            return this.createError('object.max', { limit, value }, state, options);
-        });
-    }
-
-    pattern(pattern, schema) {
-
-        const isRegExp = pattern instanceof RegExp;
-        Hoek.assert(isRegExp || pattern instanceof Any, 'pattern must be a regex or schema');
-        Hoek.assert(schema !== undefined, 'Invalid rule');
-
-        if (isRegExp) {
-            Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
-        }
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = `${castErr.message}(${castErr.path})`;
-            }
-
-            throw castErr;
-        }
-
-        const obj = this.clone();
-        if (isRegExp) {
-            obj._inner.patterns.push({ regex: pattern, rule: schema });
-        }
-        else {
-            obj._inner.patterns.push({ schema: pattern, rule: schema });
-        }
-
-        return obj;
-    }
-
-    schema() {
-
-        return this._test('schema', null, function (value, state, options) {
-
-            if (value instanceof Any) {
-                return value;
-            }
-
-            return this.createError('object.schema', null, state, options);
-        });
-    }
-
-    with(key, peers) {
-
-        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
-
-        return this._dependency('with', key, peers);
-    }
-
-    without(key, peers) {
-
-        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
-
-        return this._dependency('without', key, peers);
-    }
-
-    xor(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('xor', null, peers);
-    }
-
-    oxor(...peers) {
-
-        return this._dependency('oxor', null, peers);
-    }
-
-    or(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('or', null, peers);
-    }
-
-    and(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('and', null, peers);
-    }
-
-    nand(...peers) {
-
-        peers = Hoek.flatten(peers);
-        return this._dependency('nand', null, peers);
-    }
-
-    requiredKeys(...children) {
-
-        children = Hoek.flatten(children);
-        return this.applyFunctionToChildren(children, 'required');
-    }
-
-    optionalKeys(...children) {
-
-        children = Hoek.flatten(children);
-        return this.applyFunctionToChildren(children, 'optional');
-    }
-
-    forbiddenKeys(...children) {
-
-        children = Hoek.flatten(children);
-        return this.applyFunctionToChildren(children, 'forbidden');
-    }
-
-    rename(from, to, options) {
-
-        Hoek.assert(typeof from === 'string' || from instanceof RegExp, 'Rename missing the from argument');
-        Hoek.assert(typeof to === 'string', 'Rename missing the to argument');
-        Hoek.assert(to !== from, 'Cannot rename key to same name:', from);
-
-        for (let i = 0; i < this._inner.renames.length; ++i) {
-            Hoek.assert(this._inner.renames[i].from !== from, 'Cannot rename the same key multiple times');
-        }
-
-        const obj = this.clone();
-
-        obj._inner.renames.push({
-            from,
-            to,
-            options: Hoek.applyToDefaults(internals.renameDefaults, options || {}),
-            isRegExp: from instanceof RegExp
-        });
-
-        return obj;
-    }
-
-    applyFunctionToChildren(children, fn, args = [], root) {
-
-        children = [].concat(children);
-        Hoek.assert(children.length > 0, 'expected at least one children');
-
-        const groupedChildren = internals.groupChildren(children);
-        let obj;
-
-        if ('' in groupedChildren) {
-            obj = this[fn](...args);
-            delete groupedChildren[''];
-        }
-        else {
-            obj = this.clone();
-        }
-
-        if (obj._inner.children) {
-            root = root ? (root + '.') : '';
-
-            for (let i = 0; i < obj._inner.children.length; ++i) {
-                const child = obj._inner.children[i];
-                const group = groupedChildren[child.key];
-
-                if (group) {
-                    obj._inner.children[i] = {
-                        key: child.key,
-                        _refs: child._refs,
-                        schema: child.schema.applyFunctionToChildren(group, fn, args, root + child.key)
-                    };
-
-                    delete groupedChildren[child.key];
-                }
-            }
-        }
-
-        const remaining = Object.keys(groupedChildren);
-        Hoek.assert(remaining.length === 0, 'unknown key(s)', remaining.join(', '));
-
-        return obj;
-    }
-
-    _dependency(type, key, peers) {
-
-        peers = [].concat(peers);
-        for (let i = 0; i < peers.length; ++i) {
-            Hoek.assert(typeof peers[i] === 'string', type, 'peers must be a string or array of strings');
-        }
-
-        const obj = this.clone();
-        obj._inner.dependencies.push({ type, key, peers });
-        return obj;
-    }
-
-    describe(shallow) {
-
-        const description = super.describe();
-
-        if (description.rules) {
-            for (let i = 0; i < description.rules.length; ++i) {
-                const rule = description.rules[i];
-                // Coverage off for future-proof descriptions, only object().assert() is use right now
-                if (/* $lab:coverage:off$ */rule.arg &&
-                    typeof rule.arg === 'object' &&
-                    rule.arg.schema &&
-                    rule.arg.ref /* $lab:coverage:on$ */) {
-                    rule.arg = {
-                        schema: rule.arg.schema.describe(),
-                        ref: rule.arg.ref.toString()
-                    };
-                }
-            }
-        }
-
-        if (this._inner.children &&
-            !shallow) {
-
-            description.children = {};
-            for (let i = 0; i < this._inner.children.length; ++i) {
-                const child = this._inner.children[i];
-                description.children[child.key] = child.schema.describe();
-            }
-        }
-
-        if (this._inner.dependencies.length) {
-            description.dependencies = Hoek.clone(this._inner.dependencies);
-        }
-
-        if (this._inner.patterns.length) {
-            description.patterns = [];
-
-            for (let i = 0; i < this._inner.patterns.length; ++i) {
-                const pattern = this._inner.patterns[i];
-                if (pattern.regex) {
-                    description.patterns.push({ regex: pattern.regex.toString(), rule: pattern.rule.describe() });
-                }
-                else {
-                    description.patterns.push({ schema: pattern.schema.describe(), rule: pattern.rule.describe() });
-                }
-            }
-        }
-
-        if (this._inner.renames.length > 0) {
-            description.renames = Hoek.clone(this._inner.renames);
-        }
-
-        return description;
-    }
-
-    assert(ref, schema, message) {
-
-        ref = Cast.ref(ref);
-        Hoek.assert(ref.isContext || ref.depth > 1, 'Cannot use assertions for root level references - use direct key rules instead');
-        message = message || 'pass the assertion test';
-        Hoek.assert(typeof message === 'string', 'Message must be a string');
-
-        try {
-            schema = Cast.schema(this._currentJoi, schema);
-        }
-        catch (castErr) {
-            if (castErr.hasOwnProperty('path')) {
-                castErr.message = `${castErr.message}(${castErr.path})`;
-            }
-
-            throw castErr;
-        }
-
-        const key = ref.path[ref.path.length - 1];
-        const path = ref.path.join('.');
-
-        return this._test('assert', { schema, ref }, function (value, state, options) {
-
-            const result = schema._validate(ref(value), null, options, value);
-            if (!result.errors) {
-                return value;
-            }
-
-            const localState = new State(key, ref.path, state.parent, state.reference);
-            return this.createError('object.assert', { ref: path, message }, localState, options);
-        });
-    }
-
-    type(constructor, name = constructor.name) {
-
-        Hoek.assert(typeof constructor === 'function', 'type must be a constructor function');
-        const typeData = {
-            name,
-            ctor: constructor
-        };
-
-        return this._test('type', typeData, function (value, state, options) {
-
-            if (value instanceof constructor) {
-                return value;
-            }
-
-            return this.createError('object.type', { type: typeData.name, value }, state, options);
-        });
-    }
-};
-
-
-internals.renameDefaults = {
-    alias: false,                   // Keep old value in place
-    multiple: false,                // Allow renaming multiple keys into the same target
-    override: false                 // Overrides an existing key
-};
-
-
-internals.groupChildren = function (children) {
-
-    children.sort();
-
-    const grouped = {};
-
-    for (let i = 0; i < children.length; ++i) {
-        const child = children[i];
-        Hoek.assert(typeof child === 'string', 'children must be strings');
-        const group = child.split('.')[0];
-        const childGroup = grouped[group] = (grouped[group] || []);
-        childGroup.push(child.substring(group.length + 1));
-    }
-
-    return grouped;
-};
-
-
-internals.keysToLabels = function (schema, keys) {
-
-    const children = schema._inner.children;
-
-    if (!children) {
-        return keys;
-    }
-
-    const findLabel = function (key) {
-
-        const matchingChild = schema._currentJoi.reach(schema, key);
-        return matchingChild ? matchingChild._getLabel(key) : key;
-    };
-
-    if (Array.isArray(keys)) {
-        return keys.map(findLabel);
-    }
-
-    return findLabel(keys);
-};
-
-
-internals.with = function (key, value, peers, parent, state, options) {
-
-    if (value === undefined) {
-        return;
-    }
-
-    for (let i = 0; i < peers.length; ++i) {
-
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist === undefined) {
-
-            return this.createError('object.with', {
-                main: key,
-                mainWithLabel: internals.keysToLabels(this, key),
-                peer,
-                peerWithLabel: internals.keysToLabels(this, peer)
-            }, state, options);
-        }
-    }
-};
-
-
-internals.without = function (key, value, peers, parent, state, options) {
-
-    if (value === undefined) {
-        return;
-    }
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-
-            return this.createError('object.without', {
-                main: key,
-                mainWithLabel: internals.keysToLabels(this, key),
-                peer,
-                peerWithLabel: internals.keysToLabels(this, peer)
-            }, state, options);
-        }
-    }
-};
-
-
-internals.xor = function (key, value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-            present.push(peer);
-        }
-    }
-
-    if (present.length === 1) {
-        return;
-    }
-
-    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
-
-    if (present.length === 0) {
-        return this.createError('object.missing', context, state, options);
-    }
-
-    context.present = present;
-    context.presentWithLabels = internals.keysToLabels(this, present);
-
-    return this.createError('object.xor', context, state, options);
-};
-
-
-internals.oxor = function (key, value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-            present.push(peer);
-        }
-    }
-
-    if (!present.length ||
-        present.length === 1) {
-
-        return;
-    }
-
-    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
-    context.present = present;
-    context.presentWithLabels = internals.keysToLabels(this, present);
-
-    return this.createError('object.oxor', context, state, options);
-};
-
-
-internals.or = function (key, value, peers, parent, state, options) {
-
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-            return;
-        }
-    }
-
-    return this.createError('object.missing', {
-        peers,
-        peersWithLabels: internals.keysToLabels(this, peers)
-    }, state, options);
-};
-
-
-internals.and = function (key, value, peers, parent, state, options) {
-
-    const missing = [];
-    const present = [];
-    const count = peers.length;
-    for (let i = 0; i < count; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist === undefined) {
-
-            missing.push(peer);
-        }
-        else {
-            present.push(peer);
-        }
-    }
-
-    const aon = (missing.length === count || present.length === count);
-
-    if (!aon) {
-
-        return this.createError('object.and', {
-            present,
-            presentWithLabels: internals.keysToLabels(this, present),
-            missing,
-            missingWithLabels: internals.keysToLabels(this, missing)
-        }, state, options);
-    }
-};
-
-
-internals.nand = function (key, value, peers, parent, state, options) {
-
-    const present = [];
-    for (let i = 0; i < peers.length; ++i) {
-        const peer = peers[i];
-        const keysExist = Hoek.reach(parent, peer, { functions: true });
-        if (keysExist !== undefined) {
-
-            present.push(peer);
-        }
-    }
-
-    const main = peers[0];
-    const values = peers.slice(1);
-    const allPresent = (present.length === peers.length);
-    return allPresent ? this.createError('object.nand', {
-        main,
-        mainWithLabel: internals.keysToLabels(this, main),
-        peers: values,
-        peersWithLabels: internals.keysToLabels(this, values)
-    }, state, options) : null;
-};
-
-
-module.exports = new internals.Object();
-
-},{"../../cast":109,"../../errors":110,"../any":117,"../state":127,"@hapi/bourne":83,"@hapi/hoek":98,"@hapi/topo":135}],127:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-module.exports = class {
-    constructor(key, path, parent, reference) {
-
-        this.key = key;
-        this.path = path;
-        this.parent = parent;
-        this.reference = reference;
-    }
-};
-
-},{}],128:[function(require,module,exports){
-(function (Buffer){
-'use strict';
-
-const Net = require('net');
-
-const Address = require('@hapi/address');
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-const Ref = require('../../ref');
-const JoiDate = require('../date');
-
-const Uri = require('./uri');
-const Ip = require('./ip');
-
-
-const internals = {
-    uriRegex: Uri.createUriRegex(),
-    ipRegex: Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], 'optional'),
-    guidBrackets: {
-        '{': '}', '[': ']', '(': ')', '': ''
-    },
-    guidVersions: {
-        uuidv1: '1',
-        uuidv2: '2',
-        uuidv3: '3',
-        uuidv4: '4',
-        uuidv5: '5'
-    },
-    cidrPresences: ['required', 'optional', 'forbidden'],
-    normalizationForms: ['NFC', 'NFD', 'NFKC', 'NFKD']
-};
-
-
-internals.String = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'string';
-        this._invalids.add('');
-    }
-
-    _base(value, state, options) {
-
-        if (typeof value === 'string' &&
-            options.convert) {
-
-            if (this._flags.normalize) {
-                value = value.normalize(this._flags.normalize);
-            }
-
-            if (this._flags.case) {
-                value = (this._flags.case === 'upper' ? value.toLocaleUpperCase() : value.toLocaleLowerCase());
-            }
-
-            if (this._flags.trim) {
-                value = value.trim();
-            }
-
-            if (this._inner.replacements) {
-
-                for (let i = 0; i < this._inner.replacements.length; ++i) {
-                    const replacement = this._inner.replacements[i];
-                    value = value.replace(replacement.pattern, replacement.replacement);
-                }
-            }
-
-            if (this._flags.truncate) {
-                for (let i = 0; i < this._tests.length; ++i) {
-                    const test = this._tests[i];
-                    if (test.name === 'max') {
-                        value = value.slice(0, test.arg);
-                        break;
-                    }
-                }
-            }
-
-            if (this._flags.byteAligned && value.length % 2 !== 0) {
-                value = `0${value}`;
-            }
-        }
-
-        return {
-            value,
-            errors: (typeof value === 'string') ? null : this.createError('string.base', { value }, state, options)
-        };
-    }
-
-    insensitive() {
-
-        if (this._flags.insensitive) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.insensitive = true;
-        return obj;
-    }
-
-    creditCard() {
-
-        return this._test('creditCard', undefined, function (value, state, options) {
-
-            let i = value.length;
-            let sum = 0;
-            let mul = 1;
-
-            while (i--) {
-                const char = value.charAt(i) * mul;
-                sum = sum + (char - (char > 9) * 9);
-                mul = mul ^ 3;
-            }
-
-            const check = (sum % 10 === 0) && (sum > 0);
-            return check ? value : this.createError('string.creditCard', { value }, state, options);
-        });
-    }
-
-    regex(pattern, patternOptions) {
-
-        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
-        Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
-
-        const patternObject = { pattern };
-
-        if (typeof patternOptions === 'string') {
-            patternObject.name = patternOptions;
-        }
-        else if (typeof patternOptions === 'object') {
-            patternObject.invert = !!patternOptions.invert;
-
-            if (patternOptions.name) {
-                patternObject.name = patternOptions.name;
-            }
-        }
-
-        const errorCode = ['string.regex', patternObject.invert ? '.invert' : '', patternObject.name ? '.name' : '.base'].join('');
-
-        return this._test('regex', patternObject, function (value, state, options) {
-
-            const patternMatch = patternObject.pattern.test(value);
-
-            if (patternMatch ^ patternObject.invert) {
-                return value;
-            }
-
-            return this.createError(errorCode, { name: patternObject.name, pattern: patternObject.pattern, value }, state, options);
-        });
-    }
-
-    alphanum() {
-
-        return this._test('alphanum', undefined, function (value, state, options) {
-
-            if (/^[a-zA-Z0-9]+$/.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.alphanum', { value }, state, options);
-        });
-    }
-
-    token() {
-
-        return this._test('token', undefined, function (value, state, options) {
-
-            if (/^\w+$/.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.token', { value }, state, options);
-        });
-    }
-
-    email(validationOptions) {
-
-        if (validationOptions) {
-            Hoek.assert(typeof validationOptions === 'object', 'email options must be an object');
-
-            // Migration validation for unsupported options
-
-            Hoek.assert(validationOptions.checkDNS === undefined, 'checkDNS option is not supported');
-            Hoek.assert(validationOptions.errorLevel === undefined, 'errorLevel option is not supported');
-            Hoek.assert(validationOptions.minDomainAtoms === undefined, 'minDomainAtoms option is not supported, use minDomainSegments instead');
-            Hoek.assert(validationOptions.tldBlacklist === undefined, 'tldBlacklist option is not supported, use tlds.deny instead');
-            Hoek.assert(validationOptions.tldWhitelist === undefined, 'tldWhitelist option is not supported, use tlds.allow instead');
-
-            // Validate options
-
-            if (validationOptions.tlds &&
-                typeof validationOptions.tlds === 'object') {
-
-                Hoek.assert(validationOptions.tlds.allow === undefined ||
-                    validationOptions.tlds.allow === false ||
-                    validationOptions.tlds.allow === true ||
-                    Array.isArray(validationOptions.tlds.allow) ||
-                    validationOptions.tlds.allow instanceof Set, 'tlds.allow must be an array, Set, or boolean');
-
-                Hoek.assert(validationOptions.tlds.deny === undefined ||
-                    Array.isArray(validationOptions.tlds.deny) ||
-                    validationOptions.tlds.deny instanceof Set, 'tlds.deny must be an array or Set');
-
-                const normalizeTable = (table) => {
-
-                    if (table === undefined ||
-                        typeof table === 'boolean' ||
-                        table instanceof Set) {
-
-                        return table;
-                    }
-
-                    return new Set(table);
-                };
-
-                validationOptions = Object.assign({}, validationOptions);       // Shallow cloned
-                validationOptions.tlds = {
-                    allow: normalizeTable(validationOptions.tlds.allow),
-                    deny: normalizeTable(validationOptions.tlds.deny)
-                };
-            }
-
-            Hoek.assert(validationOptions.minDomainSegments === undefined ||
-                Number.isSafeInteger(validationOptions.minDomainSegments) && validationOptions.minDomainSegments > 0, 'minDomainSegments must be a positive integer');
-        }
-
-        return this._test('email', validationOptions, function (value, state, options) {
-
-            if (Address.email.isValid(value, validationOptions)) {
-                return value;
-            }
-
-            return this.createError('string.email', { value }, state, options);
-        });
-    }
-
-    ip(ipOptions = {}) {
-
-        let regex = internals.ipRegex;
-        Hoek.assert(typeof ipOptions === 'object', 'options must be an object');
-
-        if (ipOptions.cidr) {
-            Hoek.assert(typeof ipOptions.cidr === 'string', 'cidr must be a string');
-            ipOptions.cidr = ipOptions.cidr.toLowerCase();
-
-            Hoek.assert(Hoek.contain(internals.cidrPresences, ipOptions.cidr), 'cidr must be one of ' + internals.cidrPresences.join(', '));
-
-            // If we only received a `cidr` setting, create a regex for it. But we don't need to create one if `cidr` is "optional" since that is the default
-            if (!ipOptions.version && ipOptions.cidr !== 'optional') {
-                regex = Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], ipOptions.cidr);
-            }
-        }
-        else {
-
-            // Set our default cidr strategy
-            ipOptions.cidr = 'optional';
-        }
-
-        let versions;
-        if (ipOptions.version) {
-            if (!Array.isArray(ipOptions.version)) {
-                ipOptions.version = [ipOptions.version];
-            }
-
-            Hoek.assert(ipOptions.version.length >= 1, 'version must have at least 1 version specified');
-
-            versions = [];
-            for (let i = 0; i < ipOptions.version.length; ++i) {
-                let version = ipOptions.version[i];
-                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
-                version = version.toLowerCase();
-                Hoek.assert(Ip.versions[version], 'version at position ' + i + ' must be one of ' + Object.keys(Ip.versions).join(', '));
-                versions.push(version);
-            }
-
-            // Make sure we have a set of versions
-            versions = Array.from(new Set(versions));
-
-            regex = Ip.createIpRegex(versions, ipOptions.cidr);
-        }
-
-        return this._test('ip', ipOptions, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            if (versions) {
-                return this.createError('string.ipVersion', { value, cidr: ipOptions.cidr, version: versions }, state, options);
-            }
-
-            return this.createError('string.ip', { value, cidr: ipOptions.cidr }, state, options);
-        });
-    }
-
-    uri(uriOptions) {
-
-        let customScheme = '';
-        let allowRelative = false;
-        let relativeOnly = false;
-        let allowQuerySquareBrackets = false;
-        let regex = internals.uriRegex;
-
-        if (uriOptions) {
-            Hoek.assert(typeof uriOptions === 'object', 'options must be an object');
-
-            const unknownOptions = Object.keys(uriOptions).filter((key) => !['scheme', 'allowRelative', 'relativeOnly', 'allowQuerySquareBrackets'].includes(key));
-            Hoek.assert(unknownOptions.length === 0, `options contain unknown keys: ${unknownOptions}`);
-
-            if (uriOptions.scheme) {
-                Hoek.assert(uriOptions.scheme instanceof RegExp || typeof uriOptions.scheme === 'string' || Array.isArray(uriOptions.scheme), 'scheme must be a RegExp, String, or Array');
-
-                if (!Array.isArray(uriOptions.scheme)) {
-                    uriOptions.scheme = [uriOptions.scheme];
-                }
-
-                Hoek.assert(uriOptions.scheme.length >= 1, 'scheme must have at least 1 scheme specified');
-
-                // Flatten the array into a string to be used to match the schemes.
-                for (let i = 0; i < uriOptions.scheme.length; ++i) {
-                    const scheme = uriOptions.scheme[i];
-                    Hoek.assert(scheme instanceof RegExp || typeof scheme === 'string', 'scheme at position ' + i + ' must be a RegExp or String');
-
-                    // Add OR separators if a value already exists
-                    customScheme = customScheme + (customScheme ? '|' : '');
-
-                    // If someone wants to match HTTP or HTTPS for example then we need to support both RegExp and String so we don't escape their pattern unknowingly.
-                    if (scheme instanceof RegExp) {
-                        customScheme = customScheme + scheme.source;
-                    }
-                    else {
-                        Hoek.assert(/[a-zA-Z][a-zA-Z0-9+-\.]*/.test(scheme), 'scheme at position ' + i + ' must be a valid scheme');
-                        customScheme = customScheme + Hoek.escapeRegex(scheme);
-                    }
-                }
-            }
-
-            if (uriOptions.allowRelative) {
-                allowRelative = true;
-            }
-
-            if (uriOptions.relativeOnly) {
-                relativeOnly = true;
-            }
-
-            if (uriOptions.allowQuerySquareBrackets) {
-                allowQuerySquareBrackets = true;
-            }
-        }
-
-        if (customScheme || allowRelative || relativeOnly || allowQuerySquareBrackets) {
-            regex = Uri.createUriRegex(customScheme, allowRelative, relativeOnly, allowQuerySquareBrackets);
-        }
-
-        return this._test('uri', uriOptions, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            if (relativeOnly) {
-                return this.createError('string.uriRelativeOnly', { value }, state, options);
-            }
-
-            if (customScheme) {
-                return this.createError('string.uriCustomScheme', { scheme: customScheme, value }, state, options);
-            }
-
-            return this.createError('string.uri', { value }, state, options);
-        });
-    }
-
-    isoDate() {
-
-        return this._test('isoDate', undefined, function (value, state, options) {
-
-            if (JoiDate._isIsoDate(value)) {
-                if (!options.convert) {
-                    return value;
-                }
-
-                const d = new Date(value);
-                if (!isNaN(d.getTime())) {
-                    return d.toISOString();
-                }
-            }
-
-            return this.createError('string.isoDate', { value }, state, options);
-        });
-    }
-
-    guid(guidOptions) {
-
-        let versionNumbers = '';
-
-        if (guidOptions && guidOptions.version) {
-            if (!Array.isArray(guidOptions.version)) {
-                guidOptions.version = [guidOptions.version];
-            }
-
-            Hoek.assert(guidOptions.version.length >= 1, 'version must have at least 1 valid version specified');
-            const versions = new Set();
-
-            for (let i = 0; i < guidOptions.version.length; ++i) {
-                let version = guidOptions.version[i];
-                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
-                version = version.toLowerCase();
-                const versionNumber = internals.guidVersions[version];
-                Hoek.assert(versionNumber, 'version at position ' + i + ' must be one of ' + Object.keys(internals.guidVersions).join(', '));
-                Hoek.assert(!(versions.has(versionNumber)), 'version at position ' + i + ' must not be a duplicate.');
-
-                versionNumbers += versionNumber;
-                versions.add(versionNumber);
-            }
-        }
-
-        const guidRegex = new RegExp(`^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[${versionNumbers || '0-9A-F'}][0-9A-F]{3}\\2?[${versionNumbers ? '89AB' : '0-9A-F'}][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$`, 'i');
-
-        return this._test('guid', guidOptions, function (value, state, options) {
-
-            const results = guidRegex.exec(value);
-
-            if (!results) {
-                return this.createError('string.guid', { value }, state, options);
-            }
-
-            // Matching braces
-            if (internals.guidBrackets[results[1]] !== results[results.length - 1]) {
-                return this.createError('string.guid', { value }, state, options);
-            }
-
-            return value;
-        });
-    }
-
-    hex(hexOptions = {}) {
-
-        Hoek.assert(typeof hexOptions === 'object', 'hex options must be an object');
-        Hoek.assert(typeof hexOptions.byteAligned === 'undefined' || typeof hexOptions.byteAligned === 'boolean',
-            'byteAligned must be boolean');
-
-        const byteAligned = hexOptions.byteAligned === true;
-        const regex = /^[a-f0-9]+$/i;
-
-        const obj = this._test('hex', regex, function (value, state, options) {
-
-            if (regex.test(value)) {
-                if (byteAligned && value.length % 2 !== 0) {
-                    return this.createError('string.hexAlign', { value }, state, options);
-                }
-
-                return value;
-            }
-
-            return this.createError('string.hex', { value }, state, options);
-        });
-
-        if (byteAligned) {
-            obj._flags.byteAligned = true;
-        }
-
-        return obj;
-    }
-
-    base64(base64Options = {}) {
-
-        // Validation.
-        Hoek.assert(typeof base64Options === 'object', 'base64 options must be an object');
-        Hoek.assert(typeof base64Options.paddingRequired === 'undefined' || typeof base64Options.paddingRequired === 'boolean',
-            'paddingRequired must be boolean');
-
-        // Determine if padding is required.
-        const paddingRequired = base64Options.paddingRequired === false ?
-            base64Options.paddingRequired
-            : base64Options.paddingRequired || true;
-
-        // Set validation based on preference.
-        const regex = paddingRequired ?
-            // Padding is required.
-            /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
-            // Padding is optional.
-            : /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
-
-        return this._test('base64', regex, function (value, state, options) {
-
-            if (regex.test(value)) {
-                return value;
-            }
-
-            return this.createError('string.base64', { value }, state, options);
-        });
-    }
-
-    dataUri(dataUriOptions = {}) {
-
-        const regex = /^data:[\w+.-]+\/[\w+.-]+;((charset=[\w-]+|base64),)?(.*)$/;
-
-        // Determine if padding is required.
-        const paddingRequired = dataUriOptions.paddingRequired === false ?
-            dataUriOptions.paddingRequired
-            : dataUriOptions.paddingRequired || true;
-
-        const base64regex = paddingRequired ?
-            /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
-            : /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
-
-        return this._test('dataUri', regex, function (value, state, options) {
-
-            const matches = value.match(regex);
-
-            if (matches) {
-                if (!matches[2]) {
-                    return value;
-                }
-
-                if (matches[2] !== 'base64') {
-                    return value;
-                }
-
-                if (base64regex.test(matches[3])) {
-                    return value;
-                }
-            }
-
-            return this.createError('string.dataUri', { value }, state, options);
-        });
-    }
-
-    hostname() {
-
-        const regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
-
-        return this._test('hostname', undefined, function (value, state, options) {
-
-            if ((value.length <= 255 && regex.test(value)) ||
-                Net.isIPv6(value)) {
-
-                return value;
-            }
-
-            return this.createError('string.hostname', { value }, state, options);
-        });
-    }
-
-    normalize(form = 'NFC') {
-
-        Hoek.assert(Hoek.contain(internals.normalizationForms, form), 'normalization form must be one of ' + internals.normalizationForms.join(', '));
-
-        const obj = this._test('normalize', form, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.normalize(form)) {
-
-                return value;
-            }
-
-            return this.createError('string.normalize', { value, form }, state, options);
-        });
-
-        obj._flags.normalize = form;
-        return obj;
-    }
-
-    lowercase() {
-
-        const obj = this._test('lowercase', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.toLocaleLowerCase()) {
-
-                return value;
-            }
-
-            return this.createError('string.lowercase', { value }, state, options);
-        });
-
-        obj._flags.case = 'lower';
-        return obj;
-    }
-
-    uppercase() {
-
-        const obj = this._test('uppercase', undefined, function (value, state, options) {
-
-            if (options.convert ||
-                value === value.toLocaleUpperCase()) {
-
-                return value;
-            }
-
-            return this.createError('string.uppercase', { value }, state, options);
-        });
-
-        obj._flags.case = 'upper';
-        return obj;
-    }
-
-    trim(enabled = true) {
-
-        Hoek.assert(typeof enabled === 'boolean', 'option must be a boolean');
-
-        if ((this._flags.trim && enabled) || (!this._flags.trim && !enabled)) {
-            return this;
-        }
-
-        let obj;
-        if (enabled) {
-            obj = this._test('trim', undefined, function (value, state, options) {
-
-                if (options.convert ||
-                    value === value.trim()) {
-
-                    return value;
-                }
-
-                return this.createError('string.trim', { value }, state, options);
-            });
-        }
-        else {
-            obj = this.clone();
-            obj._tests = obj._tests.filter((test) => test.name !== 'trim');
-        }
-
-        obj._flags.trim = enabled;
-        return obj;
-    }
-
-    replace(pattern, replacement) {
-
-        if (typeof pattern === 'string') {
-            pattern = new RegExp(Hoek.escapeRegex(pattern), 'g');
-        }
-
-        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
-        Hoek.assert(typeof replacement === 'string', 'replacement must be a String');
-
-        // This can not be considere a test like trim, we can't "reject"
-        // anything from this rule, so just clone the current object
-        const obj = this.clone();
-
-        if (!obj._inner.replacements) {
-            obj._inner.replacements = [];
-        }
-
-        obj._inner.replacements.push({
-            pattern,
-            replacement
-        });
-
-        return obj;
-    }
-
-    truncate(enabled) {
-
-        const value = enabled === undefined ? true : !!enabled;
-
-        if (this._flags.truncate === value) {
-            return this;
-        }
-
-        const obj = this.clone();
-        obj._flags.truncate = value;
-        return obj;
-    }
-
-};
-
-internals.compare = function (type, compare) {
-
-    return function (limit, encoding) {
-
-        const isRef = Ref.isRef(limit);
-
-        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
-        Hoek.assert(!encoding || Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
-
-        return this._test(type, limit, function (value, state, options) {
-
-            let compareTo;
-            if (isRef) {
-                compareTo = limit(state.reference || state.parent, options);
-
-                if (!Number.isSafeInteger(compareTo)) {
-                    return this.createError('string.ref', { ref: limit, value: compareTo }, state, options);
-                }
-            }
-            else {
-                compareTo = limit;
-            }
-
-            if (compare(value, compareTo, encoding)) {
-                return value;
-            }
-
-            return this.createError('string.' + type, { limit: compareTo, value, encoding }, state, options);
-        });
-    };
-};
-
-
-internals.String.prototype.min = internals.compare('min', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length >= limit;
-});
-
-
-internals.String.prototype.max = internals.compare('max', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length <= limit;
-});
-
-
-internals.String.prototype.length = internals.compare('length', (value, limit, encoding) => {
-
-    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
-    return length === limit;
-});
-
-// Aliases
-
-internals.String.prototype.uuid = internals.String.prototype.guid;
-
-module.exports = new internals.String();
-
-}).call(this,require("buffer").Buffer)
-},{"../../ref":113,"../any":117,"../date":122,"./ip":129,"./uri":131,"@hapi/address":81,"@hapi/hoek":98,"buffer":48,"net":46}],129:[function(require,module,exports){
-'use strict';
-
-const RFC3986 = require('./rfc3986');
-
-
-const internals = {
-    Ip: {
-        cidrs: {
-            ipv4: {
-                required: '\\/(?:' + RFC3986.ipv4Cidr + ')',
-                optional: '(?:\\/(?:' + RFC3986.ipv4Cidr + '))?',
-                forbidden: ''
-            },
-            ipv6: {
-                required: '\\/' + RFC3986.ipv6Cidr,
-                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
-                forbidden: ''
-            },
-            ipvfuture: {
-                required: '\\/' + RFC3986.ipv6Cidr,
-                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
-                forbidden: ''
-            }
-        },
-        versions: {
-            ipv4: RFC3986.IPv4address,
-            ipv6: RFC3986.IPv6address,
-            ipvfuture: RFC3986.IPvFuture
-        }
-    }
-};
-
-
-internals.Ip.createIpRegex = function (versions, cidr) {
-
-    let regex;
-    for (let i = 0; i < versions.length; ++i) {
-        const version = versions[i];
-        if (!regex) {
-            regex = '^(?:' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
-        }
-        else {
-            regex += '|' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
-        }
-    }
-
-    return new RegExp(regex + ')$');
-};
-
-module.exports = internals.Ip;
-
-},{"./rfc3986":130}],130:[function(require,module,exports){
-'use strict';
-
-const internals = {
-    rfc3986: {}
-};
-
-
-internals.generate = function () {
-
-    /**
-     * elements separated by forward slash ("/") are alternatives.
-     */
-    const or = '|';
-
-    /**
-     * Rule to support zero-padded addresses.
-     */
-    const zeroPad = '0?';
-
-    /**
-     * DIGIT = %x30-39 ; 0-9
-     */
-    const digit = '0-9';
-    const digitOnly = '[' + digit + ']';
-
-    /**
-     * ALPHA = %x41-5A / %x61-7A   ; A-Z / a-z
-     */
-    const alpha = 'a-zA-Z';
-    const alphaOnly = '[' + alpha + ']';
-
-    /**
-     * IPv4
-     * cidr       = DIGIT                ; 0-9
-     *            / %x31-32 DIGIT         ; 10-29
-     *            / "3" %x30-32           ; 30-32
-     */
-    internals.rfc3986.ipv4Cidr = digitOnly + or + '[1-2]' + digitOnly + or + '3' + '[0-2]';
-
-    /**
-     * IPv6
-     * cidr       = DIGIT                 ; 0-9
-     *            / %x31-39 DIGIT         ; 10-99
-     *            / "1" %x0-1 DIGIT       ; 100-119
-     *            / "12" %x0-8            ; 120-128
-     */
-    internals.rfc3986.ipv6Cidr = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + '[01]' + digitOnly + or + '12[0-8])';
-
-    /**
-     * HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
-     */
-    const hexDigit = digit + 'A-Fa-f';
-    const hexDigitOnly = '[' + hexDigit + ']';
-
-    /**
-     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-     */
-    const unreserved = alpha + digit + '-\\._~';
-
-    /**
-     * sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
-     */
-    const subDelims = '!\\$&\'\\(\\)\\*\\+,;=';
-
-    /**
-     * pct-encoded = "%" HEXDIG HEXDIG
-     */
-    const pctEncoded = '%' + hexDigit;
-
-    /**
-     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
-     */
-    const pchar = unreserved + pctEncoded + subDelims + ':@';
-    const pcharOnly = '[' + pchar + ']';
-
-    /**
-     * squareBrackets example: []
-     */
-    const squareBrackets = '\\[\\]';
-
-    /**
-     * dec-octet   = DIGIT                 ; 0-9
-     *            / %x31-39 DIGIT         ; 10-99
-     *            / "1" 2DIGIT            ; 100-199
-     *            / "2" %x30-34 DIGIT     ; 200-249
-     *            / "25" %x30-35          ; 250-255
-     */
-    const decOctect = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + digitOnly + digitOnly + or + '2' + '[0-4]' + digitOnly + or + '25' + '[0-5])';
-
-    /**
-     * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
-     */
-    internals.rfc3986.IPv4address = '(?:' + decOctect + '\\.){3}' + decOctect;
-
-    /**
-     * h16 = 1*4HEXDIG ; 16 bits of address represented in hexadecimal
-     * ls32 = ( h16 ":" h16 ) / IPv4address ; least-significant 32 bits of address
-     * IPv6address =                            6( h16 ":" ) ls32
-     *             /                       "::" 5( h16 ":" ) ls32
-     *             / [               h16 ] "::" 4( h16 ":" ) ls32
-     *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-     *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-     *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
-     *             / [ *4( h16 ":" ) h16 ] "::"              ls32
-     *             / [ *5( h16 ":" ) h16 ] "::"              h16
-     *             / [ *6( h16 ":" ) h16 ] "::"
-     */
-    const h16 = hexDigitOnly + '{1,4}';
-    const ls32 = '(?:' + h16 + ':' + h16 + '|' + internals.rfc3986.IPv4address + ')';
-    const IPv6SixHex = '(?:' + h16 + ':){6}' + ls32;
-    const IPv6FiveHex = '::(?:' + h16 + ':){5}' + ls32;
-    const IPv6FourHex = '(?:' + h16 + ')?::(?:' + h16 + ':){4}' + ls32;
-    const IPv6ThreeHex = '(?:(?:' + h16 + ':){0,1}' + h16 + ')?::(?:' + h16 + ':){3}' + ls32;
-    const IPv6TwoHex = '(?:(?:' + h16 + ':){0,2}' + h16 + ')?::(?:' + h16 + ':){2}' + ls32;
-    const IPv6OneHex = '(?:(?:' + h16 + ':){0,3}' + h16 + ')?::' + h16 + ':' + ls32;
-    const IPv6NoneHex = '(?:(?:' + h16 + ':){0,4}' + h16 + ')?::' + ls32;
-    const IPv6NoneHex2 = '(?:(?:' + h16 + ':){0,5}' + h16 + ')?::' + h16;
-    const IPv6NoneHex3 = '(?:(?:' + h16 + ':){0,6}' + h16 + ')?::';
-    internals.rfc3986.IPv6address = '(?:' + IPv6SixHex + or + IPv6FiveHex + or + IPv6FourHex + or + IPv6ThreeHex + or + IPv6TwoHex + or + IPv6OneHex + or + IPv6NoneHex + or + IPv6NoneHex2 + or + IPv6NoneHex3 + ')';
-
-    /**
-     * IPvFuture = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
-     */
-    internals.rfc3986.IPvFuture = 'v' + hexDigitOnly + '+\\.[' + unreserved + subDelims + ':]+';
-
-    /**
-     * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-     */
-    internals.rfc3986.scheme = alphaOnly + '[' + alpha + digit + '+-\\.]*';
-
-    /**
-     * userinfo = *( unreserved / pct-encoded / sub-delims / ":" )
-     */
-    const userinfo = '[' + unreserved + pctEncoded + subDelims + ':]*';
-
-    /**
-     * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
-     */
-    const IPLiteral = '\\[(?:' + internals.rfc3986.IPv6address + or + internals.rfc3986.IPvFuture + ')\\]';
-
-    /**
-     * reg-name = *( unreserved / pct-encoded / sub-delims )
-     */
-    const regName = '[' + unreserved + pctEncoded + subDelims + ']{0,255}';
-
-    /**
-     * host = IP-literal / IPv4address / reg-name
-     */
-    const host = '(?:' + IPLiteral + or + internals.rfc3986.IPv4address + or + regName + ')';
-
-    /**
-     * port = *DIGIT
-     */
-    const port = digitOnly + '*';
-
-    /**
-     * authority   = [ userinfo "@" ] host [ ":" port ]
-     */
-    const authority = '(?:' + userinfo + '@)?' + host + '(?::' + port + ')?';
-
-    /**
-     * segment       = *pchar
-     * segment-nz    = 1*pchar
-     * path          = path-abempty    ; begins with "/" or is empty
-     *               / path-absolute   ; begins with "/" but not "//"
-     *               / path-noscheme   ; begins with a non-colon segment
-     *               / path-rootless   ; begins with a segment
-     *               / path-empty      ; zero characters
-     * path-abempty  = *( "/" segment )
-     * path-absolute = "/" [ segment-nz *( "/" segment ) ]
-     * path-rootless = segment-nz *( "/" segment )
-     */
-    const segment = pcharOnly + '*';
-    const segmentNz = pcharOnly + '+';
-    const segmentNzNc = '[' + unreserved + pctEncoded + subDelims + '@' + ']+';
-    const pathEmpty = '';
-    const pathAbEmpty = '(?:\\/' + segment + ')*';
-    const pathAbsolute = '\\/(?:' + segmentNz + pathAbEmpty + ')?';
-    const pathRootless = segmentNz + pathAbEmpty;
-    const pathNoScheme = segmentNzNc + pathAbEmpty;
-
-    /**
-     * hier-part = "//" authority path
-     */
-    internals.rfc3986.hierPart = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty + ')' + or + pathAbsolute + or + pathRootless + ')';
-
-    /**
-     * relative-part = "//" authority path-abempty
-     *                 / path-absolute
-     *                 / path-noscheme
-     *                 / path-empty
-     */
-    internals.rfc3986.relativeRef = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty  + ')' + or + pathAbsolute + or + pathNoScheme + or + pathEmpty + ')';
-
-    /**
-     * query = *( pchar / "/" / "?" )
-     */
-    internals.rfc3986.query = '[' + pchar + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
-
-    /**
-     * query = *( pchar / "[" / "]" / "/" / "?" )
-     */
-    internals.rfc3986.queryWithSquareBrackets = '[' + pchar + squareBrackets + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
-
-    /**
-     * fragment = *( pchar / "/" / "?" )
-     */
-    internals.rfc3986.fragment = '[' + pchar + '\\/\\?]*';
-};
-
-
-internals.generate();
-
-module.exports = internals.rfc3986;
-
-},{}],131:[function(require,module,exports){
-'use strict';
-
-const RFC3986 = require('./rfc3986');
-
-
-const internals = {
-    Uri: {
-        createUriRegex: function (optionalScheme, allowRelative, relativeOnly, allowQuerySquareBrackets) {
-
-            let scheme = RFC3986.scheme;
-            let prefix;
-
-            if (relativeOnly) {
-                prefix = '(?:' + RFC3986.relativeRef + ')';
-            }
-            else {
-                // If we were passed a scheme, use it instead of the generic one
-                if (optionalScheme) {
-
-                    // Have to put this in a non-capturing group to handle the OR statements
-                    scheme = '(?:' + optionalScheme + ')';
-                }
-
-                const withScheme = '(?:' + scheme + ':' + RFC3986.hierPart + ')';
-
-                prefix = allowRelative ? '(?:' + withScheme + '|' + RFC3986.relativeRef + ')' : withScheme;
-            }
-
-            /**
-             * URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-             *
-             * OR
-             *
-             * relative-ref = relative-part [ "?" query ] [ "#" fragment ]
-             */
-            return new RegExp('^' + prefix + '(?:\\?' + (allowQuerySquareBrackets ? RFC3986.queryWithSquareBrackets : RFC3986.query) + ')?' + '(?:#' + RFC3986.fragment + ')?$');
-        }
-    }
-};
-
-module.exports = internals.Uri;
-
-},{"./rfc3986":130}],132:[function(require,module,exports){
-'use strict';
-
-const Util = require('util');
-
-const Hoek = require('@hapi/hoek');
-
-const Any = require('../any');
-
-
-const internals = {};
-
-
-internals.Map = class extends Map {
-
-    slice() {
-
-        return new internals.Map(this);
-    }
-
-    toString() {
-
-        return Util.inspect(this);
-    }
-};
-
-
-internals.Symbol = class extends Any {
-
-    constructor() {
-
-        super();
-        this._type = 'symbol';
-        this._inner.map = new internals.Map();
-    }
-
-    _base(value, state, options) {
-
-        if (options.convert) {
-            const lookup = this._inner.map.get(value);
-            if (lookup) {
-                value = lookup;
-            }
-
-            if (this._flags.allowOnly) {
-                return {
-                    value,
-                    errors: (typeof value === 'symbol') ? null : this.createError('symbol.map', { value, map: this._inner.map }, state, options)
-                };
-            }
-        }
-
-        return {
-            value,
-            errors: (typeof value === 'symbol') ? null : this.createError('symbol.base', { value }, state, options)
-        };
-    }
-
-    map(iterable) {
-
-        if (iterable && !iterable[Symbol.iterator] && typeof iterable === 'object') {
-            iterable = Object.entries(iterable);
-        }
-
-        Hoek.assert(iterable && iterable[Symbol.iterator], 'Iterable must be an iterable or object');
-        const obj = this.clone();
-
-        const symbols = [];
-        for (const entry of iterable) {
-            Hoek.assert(entry && entry[Symbol.iterator], 'Entry must be an iterable');
-            const [key, value] = entry;
-
-            Hoek.assert(typeof key !== 'object' && typeof key !== 'function' && typeof key !== 'symbol', 'Key must not be an object, function, or Symbol');
-            Hoek.assert(typeof value === 'symbol', 'Value must be a Symbol');
-            obj._inner.map.set(key, value);
-            symbols.push(value);
-        }
-
-        return obj.valid(...symbols);
-    }
-
-    describe() {
-
-        const description = super.describe();
-        description.map = new Map(this._inner.map);
-        return description;
-    }
-};
-
-
-module.exports = new internals.Symbol();
-
-},{"../any":117,"@hapi/hoek":98,"util":325}],133:[function(require,module,exports){
-'use strict';
-
-const internals = {};
-
-
-module.exports = {
-    settingsCache: Symbol('settingsCache')
-};
-
-},{}],134:[function(require,module,exports){
-module.exports={
-  "_from": "@hapi/joi@^15.1.1",
-  "_id": "@hapi/joi@15.1.1",
-  "_inBundle": false,
-  "_integrity": "sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==",
-  "_location": "/optioner/@hapi/joi",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "range",
-    "registry": true,
-    "raw": "@hapi/joi@^15.1.1",
-    "name": "@hapi/joi",
-    "escapedName": "@hapi%2fjoi",
-    "scope": "@hapi",
-    "rawSpec": "^15.1.1",
-    "saveSpec": null,
-    "fetchSpec": "^15.1.1"
-  },
-  "_requiredBy": [
-    "/optioner"
-  ],
-  "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.1.1.tgz",
-  "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
-  "_spec": "@hapi/joi@^15.1.1",
-  "_where": "/Users/richard/Projects/seneca/browser/node_modules/optioner",
-  "bugs": {
-    "url": "https://github.com/hapijs/joi/issues"
-  },
-  "bundleDependencies": false,
-  "dependencies": {
-    "@hapi/address": "2.x.x",
-    "@hapi/bourne": "1.x.x",
-    "@hapi/hoek": "8.x.x",
-    "@hapi/topo": "3.x.x"
-  },
-  "deprecated": false,
-  "description": "Object schema validation",
-  "devDependencies": {
-    "@hapi/code": "6.x.x",
-    "@hapi/lab": "20.x.x"
-  },
-  "homepage": "https://github.com/hapijs/joi",
-  "keywords": [
-    "schema",
-    "validation"
-  ],
-  "license": "BSD-3-Clause",
-  "main": "lib/index.js",
-  "name": "@hapi/joi",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/hapijs/joi.git"
-  },
-  "scripts": {
-    "test": "lab -t 100 -a @hapi/code -L",
-    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code"
-  },
-  "version": "15.1.1"
-}
-
-},{}],135:[function(require,module,exports){
-'use strict';
-
-const Assert = require('@hapi/hoek/lib/assert');
-
-
-const internals = {};
-
-
-module.exports = class Topo {
-
-    constructor() {
-
-        this._items = [];
-        this.nodes = [];
-    }
-
-    add(nodes, options) {
-
-        options = options || {};
-
-        // Validate rules
-
-        const before = [].concat(options.before || []);
-        const after = [].concat(options.after || []);
-        const group = options.group || '?';
-        const sort = options.sort || 0;                   // Used for merging only
-
-        Assert(!before.includes(group), `Item cannot come before itself: ${group}`);
-        Assert(!before.includes('?'), 'Item cannot come before unassociated items');
-        Assert(!after.includes(group), `Item cannot come after itself: ${group}`);
-        Assert(!after.includes('?'), 'Item cannot come after unassociated items');
-
-        if (!Array.isArray(nodes)) {
-            nodes = [nodes];
-        }
-
-        for (const node of nodes) {
-            const item = {
-                seq: this._items.length,
-                sort,
-                before,
-                after,
-                group,
-                node
-            };
-
-            this._items.push(item);
-        }
-
-        // Insert event
-
-        const valid = this._sort();
-        Assert(valid, 'item', group !== '?' ? `added into group ${group}` : '', 'created a dependencies error');
-
-        return this.nodes;
-    }
-
-    merge(others) {
-
-        if (!Array.isArray(others)) {
-            others = [others];
-        }
-
-        for (const other of others) {
-            if (other) {
-                for (const item of other._items) {
-                    this._items.push(Object.assign({}, item));      // Shallow cloned
-                }
-            }
-        }
-
-        // Sort items
-
-        this._items.sort(internals.mergeSort);
-        for (let i = 0; i < this._items.length; ++i) {
-            this._items[i].seq = i;
-        }
-
-        const valid = this._sort();
-        Assert(valid, 'merge created a dependencies error');
-
-        return this.nodes;
-    }
-
-    _sort() {
-
-        // Construct graph
-
-        const graph = {};
-        const graphAfters = Object.create(null);            // A prototype can bungle lookups w/ false positives
-        const groups = Object.create(null);
-
-        for (const item of this._items) {
-            const seq = item.seq;                           // Unique across all items
-            const group = item.group;
-
-            // Determine Groups
-
-            groups[group] = groups[group] || [];
-            groups[group].push(seq);
-
-            // Build intermediary graph using 'before'
-
-            graph[seq] = item.before;
-
-            // Build second intermediary graph with 'after'
-
-            for (const after of item.after) {
-                graphAfters[after] = graphAfters[after] || [];
-                graphAfters[after].push(seq);
-            }
-        }
-
-        // Expand intermediary graph
-
-        for (const node in graph) {
-            const expandedGroups = [];
-
-            for (const graphNodeItem in graph[node]) {
-                const group = graph[node][graphNodeItem];
-                groups[group] = groups[group] || [];
-                expandedGroups.push(...groups[group]);
-            }
-
-            graph[node] = expandedGroups;
-        }
-
-        // Merge intermediary graph using graphAfters into final graph
-
-        for (const group in graphAfters) {
-            if (groups[group]) {
-                for (const node of groups[group]) {
-                    graph[node].push(...graphAfters[group]);
-                }
-            }
-        }
-
-        // Compile ancestors
-
-        const ancestors = {};
-        for (const node in graph) {
-            const children = graph[node];
-            for (const child of children) {
-                ancestors[child] = ancestors[child] || [];
-                ancestors[child].push(node);
-            }
-        }
-
-        // Topo sort
-
-        const visited = {};
-        const sorted = [];
-
-        for (let i = 0; i < this._items.length; ++i) {          // Looping through item.seq values out of order
-            let next = i;
-
-            if (ancestors[i]) {
-                next = null;
-                for (let j = 0; j < this._items.length; ++j) {  // As above, these are item.seq values
-                    if (visited[j] === true) {
-                        continue;
-                    }
-
-                    if (!ancestors[j]) {
-                        ancestors[j] = [];
-                    }
-
-                    const shouldSeeCount = ancestors[j].length;
-                    let seenCount = 0;
-                    for (let k = 0; k < shouldSeeCount; ++k) {
-                        if (visited[ancestors[j][k]]) {
-                            ++seenCount;
-                        }
-                    }
-
-                    if (seenCount === shouldSeeCount) {
-                        next = j;
-                        break;
-                    }
-                }
-            }
-
-            if (next !== null) {
-                visited[next] = true;
-                sorted.push(next);
-            }
-        }
-
-        if (sorted.length !== this._items.length) {
-            return false;
-        }
-
-        const seqIndex = {};
-        for (const item of this._items) {
-            seqIndex[item.seq] = item;
-        }
-
-        this._items = [];
-        this.nodes = [];
-
-        for (const value of sorted) {
-            const sortedItem = seqIndex[value];
-            this.nodes.push(sortedItem.node);
-            this._items.push(sortedItem);
-        }
-
-        return true;
-    }
-};
-
-
-internals.mergeSort = (a, b) => {
-
-    return a.sort === b.sort ? 0 : (a.sort < b.sort ? -1 : 1);
-};
-
-},{"@hapi/hoek/lib/assert":85}],136:[function(require,module,exports){
-/* Copyright (c) 2017-2019 Richard Rodger and other contributors, MIT License */
+},{}],80:[function(require,module,exports){
+/* Copyright (c) 2017-2020 Richard Rodger and other contributors, MIT License. */
 'use strict'
-
-var Util = require('util')
 
 var Joi = require('@hapi/joi')
 var Hoek = require('@hapi/hoek')
@@ -44945,14 +36076,15 @@ function make_optioner(spec, options) {
     // per-element basis
     work = arr2obj(work, ctxt)
 
-    if (null == done) {
-      var result = Joi.validate(work, schema)
+    var result = schema.validate(work)
+    if (!result.error) {
       result.value = obj2arr(result.value, ctxt)
+    }
+
+    if (null == done) {
       return result
     } else {
-      Joi.validate(work, schema, function(err, out) {
-        done(err, obj2arr(out, ctxt))
-      })
+      return done(result.error, result.value)
     }
   }
 
@@ -44973,25 +36105,27 @@ function prepare_spec(spec, opts, ctxt) {
   }
 
   var joi = walk(joiobj, spec, '', opts, ctxt, function(valspec) {
-    if (valspec && valspec.isJoi) {
+    if (valspec && Joi.isSchema(valspec)) {
       return valspec
     } else {
       var typecheck = typeof valspec
-      typecheck = 'function' === typecheck ? 'func' : typecheck
+      //typecheck = 'function' === typecheck ? 'func' : typecheck
 
       if (opts.must_match_literals) {
         return Joi.any()
           .required()
           .valid(valspec)
       } else {
-        if (null == valspec) {
-          return Joi.default(valspec)
+        if (void 0 === valspec) {
+          return Joi.any().optional()
+        } else if (null == valspec) {
+          return Joi.any().default(null)
         } else if ('number' === typecheck && Number.isInteger(valspec)) {
           return Joi.number()
             .integer()
             .default(valspec)
         } else {
-          return Joi[typecheck]().default(valspec)
+          return Joi[typecheck]().default(() => valspec)
         }
       }
     }
@@ -45001,7 +36135,7 @@ function prepare_spec(spec, opts, ctxt) {
 }
 
 function walk(joi, obj, path, opts, ctxt, mod) {
-  if (Util.isArray(obj)) {
+  if (Array.isArray(obj)) {
     ctxt.arrpaths.push(path)
   }
 
@@ -45011,7 +36145,7 @@ function walk(joi, obj, path, opts, ctxt, mod) {
 
     var kv = {}
 
-    if (null != v && !v.isJoi && 'object' === t) {
+    if (null != v && !Joi.isSchema(v) && 'object' === t) {
       var np = '' === path ? p : path + '.' + p
 
       var joiobj = Joi.object().default()
@@ -45062,7 +36196,7 @@ function arr2obj(work, ctxt) {
     var ap = ctxt.arrpaths[apI]
     var arr = '' === ap ? work : Hoek.reach(work, ap)
 
-    if (Util.isArray(arr)) {
+    if (Array.isArray(arr)) {
       var obj = {}
 
       for (var i = 0; i < arr.length; ++i) {
@@ -45083,7 +36217,7 @@ function obj2arr(work, ctxt) {
     var ap = ctxt.arrpaths[apI]
     var obj = '' === ap ? work : Hoek.reach(work, ap)
 
-    if (!Util.isArray(obj)) {
+    if (!Array.isArray(obj)) {
       var arr = []
 
       for (var p in obj) {
@@ -45100,7 +36234,7 @@ function obj2arr(work, ctxt) {
   return work
 }
 
-},{"@hapi/hoek":98,"@hapi/joi":111,"util":325}],137:[function(require,module,exports){
+},{"@hapi/hoek":17,"@hapi/joi":28}],81:[function(require,module,exports){
 /* Copyright (c) 2016 Richard Rodger and other contributors, MIT License */
 'use strict'
 
@@ -45233,7 +36367,7 @@ function contains (all, some) {
   return true
 }
 
-},{"assert":32}],138:[function(require,module,exports){
+},{"assert":33}],82:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -45284,7 +36418,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],139:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 'use strict';
 
 
@@ -45391,7 +36525,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],140:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -45444,7 +36578,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],141:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -45514,7 +36648,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],142:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -45575,7 +36709,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],143:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -47451,7 +38585,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":139,"./adler32":140,"./crc32":142,"./messages":147,"./trees":148}],144:[function(require,module,exports){
+},{"../utils/common":83,"./adler32":84,"./crc32":86,"./messages":91,"./trees":92}],88:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -47798,7 +38932,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],145:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -49356,7 +40490,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":139,"./adler32":140,"./crc32":142,"./inffast":144,"./inftrees":146}],146:[function(require,module,exports){
+},{"../utils/common":83,"./adler32":84,"./crc32":86,"./inffast":88,"./inftrees":90}],90:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -49701,7 +40835,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":139}],147:[function(require,module,exports){
+},{"../utils/common":83}],91:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -49735,7 +40869,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],148:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -50959,7 +42093,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":139}],149:[function(require,module,exports){
+},{"../utils/common":83}],93:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -51008,7 +42142,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],150:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 (function (process){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -51314,7 +42448,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":156}],151:[function(require,module,exports){
+},{"_process":100}],95:[function(require,module,exports){
 /* Copyright (c) 2013-2020 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
 
 ;(function() {
@@ -51748,14 +42882,14 @@ var substr = 'ab'.substr(-1) === 'b'
   }
 }.call(this))
 
-},{"gex":55}],152:[function(require,module,exports){
+},{"gex":56}],96:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
  */
 
 module.exports = require('./lib/checks');
-},{"./lib/checks":153}],153:[function(require,module,exports){
+},{"./lib/checks":97}],97:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -51851,7 +42985,7 @@ module.exports.checkIsBoolean = typeCheck('boolean');
 module.exports.checkIsFunction = typeCheck('function');
 module.exports.checkIsObject = typeCheck('object');
 
-},{"./errors":154,"util":325}],154:[function(require,module,exports){
+},{"./errors":98,"util":270}],98:[function(require,module,exports){
 /*
  * Copyright (c) 2012 Mathieu Turcotte
  * Licensed under the MIT license.
@@ -51877,7 +43011,7 @@ IllegalStateError.prototype.name = 'IllegalStateError';
 
 module.exports.IllegalStateError = IllegalStateError;
 module.exports.IllegalArgumentError = IllegalArgumentError;
-},{"util":325}],155:[function(require,module,exports){
+},{"util":270}],99:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -51926,7 +43060,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 
 }).call(this,require('_process'))
-},{"_process":156}],156:[function(require,module,exports){
+},{"_process":100}],100:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -52112,7 +43246,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],157:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 'use strict';
 
 var replace = String.prototype.replace;
@@ -52140,7 +43274,7 @@ module.exports = util.assign(
     Format
 );
 
-},{"./utils":161}],158:[function(require,module,exports){
+},{"./utils":105}],102:[function(require,module,exports){
 'use strict';
 
 var stringify = require('./stringify');
@@ -52153,7 +43287,7 @@ module.exports = {
     stringify: stringify
 };
 
-},{"./formats":157,"./parse":159,"./stringify":160}],159:[function(require,module,exports){
+},{"./formats":101,"./parse":103,"./stringify":104}],103:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -52403,7 +43537,7 @@ module.exports = function (str, opts) {
     return utils.compact(obj);
 };
 
-},{"./utils":161}],160:[function(require,module,exports){
+},{"./utils":105}],104:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -52684,7 +43818,7 @@ module.exports = function (object, opts) {
     return joined.length > 0 ? prefix + joined : '';
 };
 
-},{"./formats":157,"./utils":161}],161:[function(require,module,exports){
+},{"./formats":101,"./utils":105}],105:[function(require,module,exports){
 'use strict';
 
 var has = Object.prototype.hasOwnProperty;
@@ -52922,7 +44056,7 @@ module.exports = {
     merge: merge
 };
 
-},{}],162:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -53008,7 +44142,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],163:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -53095,16 +44229,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],164:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":162,"./encode":163}],165:[function(require,module,exports){
+},{"./decode":106,"./encode":107}],109:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":166}],166:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":110}],110:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -53236,7 +44370,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":168,"./_stream_writable":170,"core-util-is":50,"inherits":58,"process-nextick-args":155}],167:[function(require,module,exports){
+},{"./_stream_readable":112,"./_stream_writable":114,"core-util-is":51,"inherits":59,"process-nextick-args":99}],111:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -53284,7 +44418,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":169,"core-util-is":50,"inherits":58}],168:[function(require,module,exports){
+},{"./_stream_transform":113,"core-util-is":51,"inherits":59}],112:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -54306,7 +45440,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":166,"./internal/streams/BufferList":171,"./internal/streams/destroy":172,"./internal/streams/stream":173,"_process":156,"core-util-is":50,"events":52,"inherits":58,"isarray":60,"process-nextick-args":155,"safe-buffer":174,"string_decoder/":175,"util":43}],169:[function(require,module,exports){
+},{"./_stream_duplex":110,"./internal/streams/BufferList":115,"./internal/streams/destroy":116,"./internal/streams/stream":117,"_process":100,"core-util-is":51,"events":53,"inherits":59,"isarray":61,"process-nextick-args":99,"safe-buffer":118,"string_decoder/":119,"util":44}],113:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -54521,7 +45655,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":166,"core-util-is":50,"inherits":58}],170:[function(require,module,exports){
+},{"./_stream_duplex":110,"core-util-is":51,"inherits":59}],114:[function(require,module,exports){
 (function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -55211,7 +46345,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":166,"./internal/streams/destroy":172,"./internal/streams/stream":173,"_process":156,"core-util-is":50,"inherits":58,"process-nextick-args":155,"safe-buffer":174,"timers":318,"util-deprecate":322}],171:[function(require,module,exports){
+},{"./_stream_duplex":110,"./internal/streams/destroy":116,"./internal/streams/stream":117,"_process":100,"core-util-is":51,"inherits":59,"process-nextick-args":99,"safe-buffer":118,"timers":205,"util-deprecate":267}],115:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -55291,7 +46425,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":174,"util":43}],172:[function(require,module,exports){
+},{"safe-buffer":118,"util":44}],116:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -55366,10 +46500,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":155}],173:[function(require,module,exports){
+},{"process-nextick-args":99}],117:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":52}],174:[function(require,module,exports){
+},{"events":53}],118:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -55433,7 +46567,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":48}],175:[function(require,module,exports){
+},{"buffer":49}],119:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -55730,10 +46864,10 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":174}],176:[function(require,module,exports){
+},{"safe-buffer":118}],120:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":177}],177:[function(require,module,exports){
+},{"./readable":121}],121:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -55742,13 +46876,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":166,"./lib/_stream_passthrough.js":167,"./lib/_stream_readable.js":168,"./lib/_stream_transform.js":169,"./lib/_stream_writable.js":170}],178:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":110,"./lib/_stream_passthrough.js":111,"./lib/_stream_readable.js":112,"./lib/_stream_transform.js":113,"./lib/_stream_writable.js":114}],122:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":177}],179:[function(require,module,exports){
+},{"./readable":121}],123:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":170}],180:[function(require,module,exports){
+},{"./lib/_stream_writable.js":114}],124:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 var backoff = require('backoff')
 
@@ -55883,7 +47017,7 @@ function (createConnection) {
 
 }
 
-},{"backoff":36,"events":52}],181:[function(require,module,exports){
+},{"backoff":37,"events":53}],125:[function(require,module,exports){
 /* Copyright (c) 2013-2014 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 "use strict";
@@ -56054,7 +47188,7 @@ module.exports = function( size, duration, clock ) {
 module.exports.Stats      = Stats
 module.exports.NamedStats = NamedStats
 
-},{}],182:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -56120,7 +47254,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":48}],183:[function(require,module,exports){
+},{"buffer":49}],127:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -56483,7 +47617,7 @@ internals.timeout = function(listenOptions, req, res) {
   res.socket.once('data', clearTimeoutId)
 }
 
-},{"@hapi/wreck":213,"buffer":48,"http":297,"https":56,"jsonic":62,"lodash.omit":69,"qs":158,"url":319}],184:[function(require,module,exports){
+},{"@hapi/wreck":157,"buffer":49,"http":184,"https":57,"jsonic":63,"lodash.omit":70,"qs":102,"url":206}],128:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -56752,7 +47886,7 @@ internals.reconnect = Reconnect(function() {
   return Net.connect.apply(null, args)
 })
 
-},{"ndjson":74,"net":46,"reconnect-core":180,"stream":296}],185:[function(require,module,exports){
+},{"ndjson":75,"net":47,"reconnect-core":124,"stream":183}],129:[function(require,module,exports){
 /* Copyright (c) 2015-2017 Richard Rodger, MIT License */
 'use strict'
 
@@ -57399,7 +48533,7 @@ internals.Utils.prototype.resolveDynamicValue = function(value, options) {
   return value
 }
 
-},{"eraro":51,"jsonic":62,"lodash.foreach":64,"nid":75,"patrun":217,"util":325}],186:[function(require,module,exports){
+},{"eraro":52,"jsonic":63,"lodash.foreach":65,"nid":76,"patrun":161,"util":270}],130:[function(require,module,exports){
 'use strict';
 
 const Hoek = require('@hapi/hoek');
@@ -57829,59 +48963,500 @@ internals.serverError = function (message, data, statusCode, ctor) {
     return new internals.Boom(message, { statusCode, data, ctor });
 };
 
-},{"@hapi/hoek":202}],187:[function(require,module,exports){
-arguments[4][83][0].apply(exports,arguments)
-},{"dup":83}],188:[function(require,module,exports){
-arguments[4][84][0].apply(exports,arguments)
-},{"./assert":189,"./clone":192,"./merge":205,"./utils":211,"dup":84}],189:[function(require,module,exports){
+},{"@hapi/hoek":146}],131:[function(require,module,exports){
+'use strict';
+
+
+const internals = {
+    suspectRx: /"(?:_|\\u005[Ff])(?:_|\\u005[Ff])(?:p|\\u0070)(?:r|\\u0072)(?:o|\\u006[Ff])(?:t|\\u0074)(?:o|\\u006[Ff])(?:_|\\u005[Ff])(?:_|\\u005[Ff])"\s*\:/
+};
+
+
+exports.parse = function (text, reviver, options) {
+
+    // Normalize arguments
+
+    if (!options) {
+        if (reviver &&
+            typeof reviver === 'object') {
+
+            options = reviver;
+            reviver = undefined;
+        }
+        else {
+            options = {};
+        }
+    }
+
+    // Parse normally, allowing exceptions
+
+    const obj = JSON.parse(text, reviver);
+
+    // options.protoAction: 'error' (default) / 'remove' / 'ignore'
+
+    if (options.protoAction === 'ignore') {
+        return obj;
+    }
+
+    // Ignore null and non-objects
+
+    if (!obj ||
+        typeof obj !== 'object') {
+
+        return obj;
+    }
+
+    // Check original string for potential exploit
+
+    if (!text.match(internals.suspectRx)) {
+        return obj;
+    }
+
+    // Scan result for proto keys
+
+    exports.scan(obj, options);
+
+    return obj;
+};
+
+
+exports.scan = function (obj, options) {
+
+    options = options || {};
+
+    let next = [obj];
+
+    while (next.length) {
+        const nodes = next;
+        next = [];
+
+        for (const node of nodes) {
+            if (Object.prototype.hasOwnProperty.call(node, '__proto__')) {      // Avoid calling node.hasOwnProperty directly
+                if (options.protoAction !== 'remove') {
+                    throw new SyntaxError('Object contains forbidden prototype property');
+                }
+
+                delete node.__proto__;
+            }
+
+            for (const key in node) {
+                const value = node[key];
+                if (value &&
+                    typeof value === 'object') {
+
+                    next.push(node[key]);
+                }
+            }
+        }
+    }
+};
+
+
+exports.safeParse = function (text, reviver) {
+
+    try {
+        return exports.parse(text, reviver);
+    }
+    catch (ignoreError) {
+        return null;
+    }
+};
+
+},{}],132:[function(require,module,exports){
+'use strict';
+
+const Assert = require('./assert');
+const Clone = require('./clone');
+const Merge = require('./merge');
+const Utils = require('./utils');
+
+
+const internals = {};
+
+
+module.exports = function (defaults, source, options = {}) {
+
+    Assert(defaults && typeof defaults === 'object', 'Invalid defaults value: must be an object');
+    Assert(!source || source === true || typeof source === 'object', 'Invalid source value: must be true, falsy or an object');
+    Assert(typeof options === 'object', 'Invalid options: must be an object');
+
+    if (!source) {                                                  // If no source, return null
+        return null;
+    }
+
+    if (options.shallow) {
+        return internals.applyToDefaultsWithShallow(defaults, source, options);
+    }
+
+    const copy = Clone(defaults);
+
+    if (source === true) {                                          // If source is set to true, use defaults
+        return copy;
+    }
+
+    const nullOverride = options.nullOverride !== undefined ? options.nullOverride : false;
+    return Merge(copy, source, { nullOverride, mergeArrays: false });
+};
+
+
+internals.applyToDefaultsWithShallow = function (defaults, source, options) {
+
+    const keys = options.shallow;
+    Assert(Array.isArray(keys), 'Invalid keys');
+
+    options = Object.assign({}, options);
+    options.shallow = false;
+
+    const copy = Clone(defaults, { shallow: keys });
+
+    if (source === true) {                                                      // If source is set to true, use defaults
+        return copy;
+    }
+
+    const storage = Utils.store(source, keys);                              // Move shallow copy items to storage
+    Merge(copy, source, { mergeArrays: false, nullOverride: false });   // Deep copy the rest
+    Utils.restore(copy, source, storage);                                   // Shallow copy the stored items and restore
+    return copy;
+};
+
+},{"./assert":133,"./clone":136,"./merge":149,"./utils":155}],133:[function(require,module,exports){
 arguments[4][4][0].apply(exports,arguments)
-},{"./error":195,"dup":4}],190:[function(require,module,exports){
+},{"./error":139,"dup":4}],134:[function(require,module,exports){
 arguments[4][5][0].apply(exports,arguments)
-},{"_process":156,"dup":5}],191:[function(require,module,exports){
+},{"_process":100,"dup":5}],135:[function(require,module,exports){
 arguments[4][6][0].apply(exports,arguments)
-},{"./ignore":201,"dup":6}],192:[function(require,module,exports){
-arguments[4][88][0].apply(exports,arguments)
-},{"./types":210,"./utils":211,"buffer":48,"dup":88}],193:[function(require,module,exports){
+},{"./ignore":145,"dup":6}],136:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Types = require('./types');
+const Utils = require('./utils');
+
+
+const internals = {
+    needsProtoHack: new Set([Types.set, Types.map, Types.weakSet, Types.weakMap])
+};
+
+
+module.exports = internals.clone = function (obj, options = {}, _seen = null) {
+
+    if (typeof obj !== 'object' ||
+        obj === null) {
+
+        return obj;
+    }
+
+    let clone = internals.clone;
+    let seen = _seen;
+
+    if (options.shallow) {
+        if (options.shallow !== true) {
+            return internals.cloneWithShallow(obj, options);
+        }
+
+        clone = (value) => value;
+    }
+    else {
+        seen = seen || new Map();
+
+        const lookup = seen.get(obj);
+        if (lookup) {
+            return lookup;
+        }
+    }
+
+    // Built-in object types
+
+    const baseProto = Types.getInternalProto(obj);
+    if (baseProto === Types.buffer) {
+        return Buffer && Buffer.from(obj);              // $lab:coverage:ignore$
+    }
+
+    if (baseProto === Types.date) {
+        return new Date(obj.getTime());
+    }
+
+    if (baseProto === Types.regex) {
+        return new RegExp(obj);
+    }
+
+    // Generic objects
+
+    const newObj = internals.base(obj, baseProto, options);
+    if (newObj === obj) {
+        return obj;
+    }
+
+    if (seen) {
+        seen.set(obj, newObj);                              // Set seen, since obj could recurse
+    }
+
+    if (baseProto === Types.set) {
+        for (const value of obj) {
+            newObj.add(clone(value, options, seen));
+        }
+    }
+    else if (baseProto === Types.map) {
+        for (const [key, value] of obj) {
+            newObj.set(key, clone(value, options, seen));
+        }
+    }
+
+    const keys = Utils.keys(obj, options);
+    for (const key of keys) {
+        if (baseProto === Types.array &&
+            key === 'length') {
+
+            newObj.length = obj.length;
+            continue;
+        }
+
+        const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+        if (descriptor) {
+            if (descriptor.get ||
+                descriptor.set) {
+
+                Object.defineProperty(newObj, key, descriptor);
+            }
+            else if (descriptor.enumerable) {
+                newObj[key] = clone(obj[key], options, seen);
+            }
+            else {
+                Object.defineProperty(newObj, key, { enumerable: false, writable: true, configurable: true, value: clone(obj[key], options, seen) });
+            }
+        }
+        else {
+            Object.defineProperty(newObj, key, {
+                enumerable: true,
+                writable: true,
+                configurable: true,
+                value: clone(obj[key], options, seen)
+            });
+        }
+    }
+
+    return newObj;
+};
+
+
+internals.cloneWithShallow = function (source, options) {
+
+    const keys = options.shallow;
+    options = Object.assign({}, options);
+    options.shallow = false;
+
+    const storage = Utils.store(source, keys);    // Move shallow copy items to storage
+    const copy = internals.clone(source, options);      // Deep copy the rest
+    Utils.restore(copy, source, storage);         // Shallow copy the stored items and restore
+    return copy;
+};
+
+
+internals.base = function (obj, baseProto, options) {
+
+    if (baseProto === Types.array) {
+        return [];
+    }
+
+    if (options.prototype === false) {                  // Defaults to true
+        if (internals.needsProtoHack.has(baseProto)) {
+            return new baseProto.constructor();
+        }
+
+        return {};
+    }
+
+    const proto = Object.getPrototypeOf(obj);
+    if (proto &&
+        proto.isImmutable) {
+
+        return obj;
+    }
+
+    if (internals.needsProtoHack.has(baseProto)) {
+        const newObj = new proto.constructor();
+        if (proto !== baseProto) {
+            Object.setPrototypeOf(newObj, proto);
+        }
+
+        return newObj;
+    }
+
+    return Object.create(proto);
+};
+
+}).call(this,require("buffer").Buffer)
+},{"./types":154,"./utils":155,"buffer":49}],137:[function(require,module,exports){
 arguments[4][8][0].apply(exports,arguments)
-},{"./assert":189,"./deepEqual":194,"./escapeRegex":199,"./utils":211,"dup":8}],194:[function(require,module,exports){
+},{"./assert":133,"./deepEqual":138,"./escapeRegex":143,"./utils":155,"dup":8}],138:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
-},{"./types":210,"buffer":48,"dup":9}],195:[function(require,module,exports){
+},{"./types":154,"buffer":49,"dup":9}],139:[function(require,module,exports){
 arguments[4][10][0].apply(exports,arguments)
-},{"./stringify":209,"dup":10}],196:[function(require,module,exports){
+},{"./stringify":153,"dup":10}],140:[function(require,module,exports){
 arguments[4][11][0].apply(exports,arguments)
-},{"./assert":189,"dup":11}],197:[function(require,module,exports){
+},{"./assert":133,"dup":11}],141:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],198:[function(require,module,exports){
+},{"dup":12}],142:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13}],199:[function(require,module,exports){
+},{"dup":13}],143:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],200:[function(require,module,exports){
+},{"dup":14}],144:[function(require,module,exports){
 arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],201:[function(require,module,exports){
+},{"dup":15}],145:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"dup":16}],202:[function(require,module,exports){
+},{"dup":16}],146:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./applyToDefaults":188,"./assert":189,"./bench":190,"./block":191,"./clone":192,"./contain":193,"./deepEqual":194,"./error":195,"./escapeHeaderAttribute":196,"./escapeHtml":197,"./escapeJson":198,"./escapeRegex":199,"./flatten":200,"./ignore":201,"./intersect":203,"./isPromise":204,"./merge":205,"./once":206,"./reach":207,"./reachTemplate":208,"./stringify":209,"./wait":212,"dup":17}],203:[function(require,module,exports){
+},{"./applyToDefaults":132,"./assert":133,"./bench":134,"./block":135,"./clone":136,"./contain":137,"./deepEqual":138,"./error":139,"./escapeHeaderAttribute":140,"./escapeHtml":141,"./escapeJson":142,"./escapeRegex":143,"./flatten":144,"./ignore":145,"./intersect":147,"./isPromise":148,"./merge":149,"./once":150,"./reach":151,"./reachTemplate":152,"./stringify":153,"./wait":156,"dup":17}],147:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"dup":18}],204:[function(require,module,exports){
+},{"dup":18}],148:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"dup":19}],205:[function(require,module,exports){
-arguments[4][101][0].apply(exports,arguments)
-},{"./assert":189,"./clone":192,"./utils":211,"buffer":48,"dup":101}],206:[function(require,module,exports){
+},{"dup":19}],149:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Assert = require('./assert');
+const Clone = require('./clone');
+const Utils = require('./utils');
+
+
+const internals = {};
+
+
+module.exports = internals.merge = function (target, source, options) {
+
+    Assert(target && typeof target === 'object', 'Invalid target value: must be an object');
+    Assert(source === null || source === undefined || typeof source === 'object', 'Invalid source value: must be null, undefined, or an object');
+
+    if (!source) {
+        return target;
+    }
+
+    options = Object.assign({ nullOverride: true, mergeArrays: true }, options);
+
+    if (Array.isArray(source)) {
+        Assert(Array.isArray(target), 'Cannot merge array onto an object');
+        if (!options.mergeArrays) {
+            target.length = 0;                                                          // Must not change target assignment
+        }
+
+        for (let i = 0; i < source.length; ++i) {
+            target.push(Clone(source[i], { symbols: options.symbols }));
+        }
+
+        return target;
+    }
+
+    const keys = Utils.keys(source, options);
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        if (key === '__proto__' ||
+            !Object.prototype.propertyIsEnumerable.call(source, key)) {
+
+            continue;
+        }
+
+        const value = source[key];
+        if (value &&
+            typeof value === 'object') {
+
+            if (!target[key] ||
+                typeof target[key] !== 'object' ||
+                (Array.isArray(target[key]) !== Array.isArray(value)) ||
+                value instanceof Date ||
+                (Buffer && Buffer.isBuffer(value)) ||               // $lab:coverage:ignore$
+                value instanceof RegExp) {
+
+                target[key] = Clone(value, { symbols: options.symbols });
+            }
+            else {
+                internals.merge(target[key], value, options);
+            }
+        }
+        else {
+            if (value !== null &&
+                value !== undefined) {                              // Explicit to preserve empty strings
+
+                target[key] = value;
+            }
+            else if (options.nullOverride) {
+                target[key] = value;
+            }
+        }
+    }
+
+    return target;
+};
+
+}).call(this,require("buffer").Buffer)
+},{"./assert":133,"./clone":136,"./utils":155,"buffer":49}],150:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"dup":21}],207:[function(require,module,exports){
+},{"dup":21}],151:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"./assert":189,"dup":22}],208:[function(require,module,exports){
+},{"./assert":133,"dup":22}],152:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"./reach":207,"dup":23}],209:[function(require,module,exports){
+},{"./reach":151,"dup":23}],153:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"dup":24}],210:[function(require,module,exports){
+},{"dup":24}],154:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"buffer":48,"dup":25}],211:[function(require,module,exports){
-arguments[4][107][0].apply(exports,arguments)
-},{"./reach":207,"dup":107}],212:[function(require,module,exports){
+},{"buffer":49,"dup":25}],155:[function(require,module,exports){
+'use strict';
+
+const Reach = require('./reach');
+
+
+const internals = {};
+
+
+exports.keys = function (obj, options = {}) {
+
+    return options.symbols !== false ? Reflect.ownKeys(obj) : Object.getOwnPropertyNames(obj);  // Defaults to true
+};
+
+
+exports.store = function (source, keys) {
+
+    const storage = new Map();
+    for (let i = 0; i < keys.length; ++i) {
+        const key = keys[i];
+        const value = Reach(source, key);
+        if (typeof value === 'object' ||
+            typeof value === 'function') {
+
+            storage.set(key, value);
+            internals.reachSet(source, key, undefined);
+        }
+    }
+
+    return storage;
+};
+
+
+exports.restore = function (copy, source, storage) {
+
+    for (const [key, value] of storage) {
+        internals.reachSet(copy, key, value);
+        internals.reachSet(source, key, value);
+    }
+};
+
+
+internals.reachSet = function (obj, key, value) {
+
+    const path = Array.isArray(key) ? key : key.split('.');
+    let ref = obj;
+    for (let i = 0; i < path.length; ++i) {
+        const segment = path[i];
+        if (i + 1 === path.length) {
+            ref[segment] = value;
+        }
+
+        ref = ref[segment];
+    }
+};
+
+},{"./reach":151}],156:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],213:[function(require,module,exports){
+},{"dup":27}],157:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 
@@ -58584,13 +50159,13 @@ internals.applyUrlToOptions = (options, url) => {
 module.exports = new internals.Client();
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./payload":214,"./recorder":215,"./tap":216,"@hapi/boom":186,"@hapi/bourne":187,"@hapi/hoek":202,"_process":156,"buffer":48,"events":52,"http":297,"https":56,"stream":296,"url":319,"zlib":45}],214:[function(require,module,exports){
-arguments[4][29][0].apply(exports,arguments)
-},{"buffer":48,"dup":29,"stream":296}],215:[function(require,module,exports){
+},{"./payload":158,"./recorder":159,"./tap":160,"@hapi/boom":130,"@hapi/bourne":131,"@hapi/hoek":146,"_process":100,"buffer":49,"events":53,"http":184,"https":57,"stream":183,"url":206,"zlib":46}],158:[function(require,module,exports){
 arguments[4][30][0].apply(exports,arguments)
-},{"@hapi/boom":186,"buffer":48,"dup":30,"stream":296}],216:[function(require,module,exports){
+},{"buffer":49,"dup":30,"stream":183}],159:[function(require,module,exports){
 arguments[4][31][0].apply(exports,arguments)
-},{"./payload":214,"dup":31,"stream":296}],217:[function(require,module,exports){
+},{"@hapi/boom":130,"buffer":49,"dup":31,"stream":183}],160:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"./payload":158,"dup":32,"stream":183}],161:[function(require,module,exports){
 /* Copyright (c) 2013-2019 Richard Rodger, MIT License, https://github.com/rjrodger/patrun */
 
 ;(function() {
@@ -59008,7 +50583,7 @@ arguments[4][31][0].apply(exports,arguments)
   }
 }.call(this))
 
-},{"gex":55,"lodash":72}],218:[function(require,module,exports){
+},{"gex":56,"lodash":73}],162:[function(require,module,exports){
 /* Copyright (c) 2013-2015 Richard Rodger & other contributors, MIT License */
 /* jshint node:true, asi:true, eqnull:true */
 'use strict'
@@ -59193,7 +50768,7 @@ internals.legacyError = function(seneca, type) {
   }
 }
 
-},{"./lib/http":183,"./lib/tcp":184,"./lib/transport-utils.js":185,"lru-cache":73}],219:[function(require,module,exports){
+},{"./lib/http":127,"./lib/tcp":128,"./lib/transport-utils.js":129,"lru-cache":74}],163:[function(require,module,exports){
 /* Copyright © 2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -59690,7 +51265,7 @@ const intern = (module.exports.intern = {
   }
 })
 
-},{"./common":223,"util":325}],220:[function(require,module,exports){
+},{"./common":167,"util":270}],164:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -59782,7 +51357,7 @@ function action_options_get(msg, reply) {
   reply(Common.copydata(val))
 }
 
-},{"./common":223,"lodash":72}],221:[function(require,module,exports){
+},{"./common":167,"lodash":73}],165:[function(require,module,exports){
 (function (setImmediate){
 /* Copyright © 2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -59954,7 +51529,7 @@ const intern = (module.exports.intern = {
 })
 
 }).call(this,require("timers").setImmediate)
-},{"./common":223,"timers":318}],222:[function(require,module,exports){
+},{"./common":167,"timers":205}],166:[function(require,module,exports){
 (function (process){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -60176,19 +51751,22 @@ exports.delegate = function(fixedargs, fixedmeta) {
   fixedmeta = fixedmeta || {}
 
   var delegate = Object.create(self)
+
   delegate.private$ = Object.create(self.private$)
 
   delegate.did =
     (delegate.did ? delegate.did + '/' : '') + self.private$.didnid()
 
-  delegate.log = function log() {
+  function delegate_log() {
     return root.log.apply(delegate, arguments)
   }
-  Object.assign(delegate.log, root.log)
-  delegate.log.self = () => delegate
+
+  Object.assign(delegate_log, root.log)
+  delegate_log.self = () => delegate
 
   var strdesc
-  delegate.toString = function toString() {
+
+  function delegate_toString() {
     if (strdesc) return strdesc
     var vfa = {}
     _.each(fixedargs, function(v, k) {
@@ -60202,15 +51780,15 @@ exports.delegate = function(fixedargs, fixedmeta) {
     return strdesc
   }
 
-  delegate.fixedargs = opts.strict.fixedargs
+  var delegate_fixedargs = opts.strict.fixedargs
     ? Object.assign({}, fixedargs, self.fixedargs)
     : Object.assign({}, self.fixedargs, fixedargs)
 
-  delegate.fixedmeta = opts.strict.fixedmeta
+  var delegate_fixedmeta = opts.strict.fixedmeta
     ? Object.assign({}, fixedmeta, self.fixedmeta)
     : Object.assign({}, self.fixedmeta, fixedmeta)
 
-  delegate.delegate = function delegate(further_fixedargs, further_fixedmeta) {
+  function delegate_delegate(further_fixedargs, further_fixedmeta) {
     var args = Object.assign({}, delegate.fixedargs, further_fixedargs || {})
     var meta = Object.assign({}, delegate.fixedmeta, further_fixedmeta || {})
     return self.delegate.call(this, args, meta)
@@ -60218,8 +51796,17 @@ exports.delegate = function(fixedargs, fixedmeta) {
 
   // Somewhere to put contextual data for this delegate.
   // For example, data for individual web requests.
-  // TODO: works better if prototype with Object.create
-  delegate.context = Object.assign({}, self.context)
+  var delegate_context = Object.assign({}, self.context)
+
+  // Prevents incorrect prototype properties in mocha test contexts
+  Object.defineProperties(delegate, {
+    log: { value: delegate_log },
+    toString: { value: delegate_toString },
+    fixedargs: { value: delegate_fixedargs },
+    fixedmeta: { value: delegate_fixedmeta },
+    delegate: { value: delegate_delegate },
+    context: { value: delegate_context }
+  })
 
   return delegate
 }
@@ -60953,7 +52540,7 @@ intern.fix_args = function(origargs, patargs, msgargs, custom) {
 }
 
 }).call(this,require('_process'))
-},{"./common":223,"./plugins":230,"_process":156,"assert":32,"jsonic":62,"lodash":72,"norma":77}],223:[function(require,module,exports){
+},{"./common":167,"./plugins":174,"_process":100,"assert":33,"jsonic":63,"lodash":73,"norma":78}],167:[function(require,module,exports){
 (function (process){
 /* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -61685,7 +53272,7 @@ History.prototype.toString = function toString() {
 History.prototype[Util.inspect.custom] = History.prototype.toString
 
 }).call(this,require('_process'))
-},{"./errors":224,"./print":231,"_process":156,"assert":32,"eraro":51,"fast-safe-stringify":53,"jsonic":62,"lodash":72,"nid":75,"norma":77,"util":325}],224:[function(require,module,exports){
+},{"./errors":168,"./print":175,"_process":100,"assert":33,"eraro":52,"fast-safe-stringify":54,"jsonic":63,"lodash":73,"nid":76,"norma":78,"util":270}],168:[function(require,module,exports){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -61847,7 +53434,7 @@ module.exports.deprecation = {
   seneca_next_act: 'Seneca.next_act will be removed in Seneca 3.x'
 }
 
-},{}],225:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 /* Copyright © 2010-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -62267,7 +53854,7 @@ intern.explain = function(meta, entry) {
   return explain && this.explain
 }
 
-},{"./common":223,"lodash":72,"util":325}],226:[function(require,module,exports){
+},{"./common":167,"lodash":73,"util":270}],170:[function(require,module,exports){
 /* Copyright © 2010-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -62410,7 +53997,7 @@ exports.make_legacy_fail = function make_legacy_fail(so) {
   }
 }
 
-},{"./common":223,"./errors":224,"eraro":51,"jsonic":62,"lodash":72,"norma":77}],227:[function(require,module,exports){
+},{"./common":167,"./errors":168,"eraro":52,"jsonic":63,"lodash":73,"norma":78}],171:[function(require,module,exports){
 /* Copyright © 2016-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -62863,7 +54450,7 @@ var intern = (module.exports.intern = {
   }
 })
 
-},{"./common":223,"util":325}],228:[function(require,module,exports){
+},{"./common":167,"util":270}],172:[function(require,module,exports){
 (function (process){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -63148,7 +54735,7 @@ function ERRMSGMAP() {
 }
 
 }).call(this,require('_process'))
-},{"./common":223,"_process":156,"eraro":51,"fs":46,"jsonic":62,"lodash":72,"minimist":292}],229:[function(require,module,exports){
+},{"./common":167,"_process":100,"eraro":52,"fs":47,"jsonic":63,"lodash":73,"minimist":179}],173:[function(require,module,exports){
 /* Copyright © 2014-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -63503,7 +55090,7 @@ intern.act_error = function(instance, ctxt, data) {
   }
 }
 
-},{"./common":223,"assert":32,"lodash":72,"util":325}],230:[function(require,module,exports){
+},{"./common":167,"assert":33,"lodash":73,"util":270}],174:[function(require,module,exports){
 /* Copyright © 2014-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -63961,7 +55548,7 @@ function resolve_plugin_exports(seneca, fullname, meta) {
   return exports
 }
 
-},{"./common":223,"./print":231,"eraro":51,"lodash":72}],231:[function(require,module,exports){
+},{"./common":167,"./print":175,"eraro":52,"lodash":73}],175:[function(require,module,exports){
 /* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -64034,7 +55621,7 @@ module.exports.plugin_options = function plugin_options(
   instance.private$.print.log('')
 }
 
-},{"minimist":292,"util":325}],232:[function(require,module,exports){
+},{"minimist":179,"util":270}],176:[function(require,module,exports){
 /* Copyright © 2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -64130,7 +55717,7 @@ function execute_ready(instance, ready_func) {
   }
 }
 
-},{"./common":223}],233:[function(require,module,exports){
+},{"./common":167}],177:[function(require,module,exports){
 /* Copyright © 2020 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -64172,7 +55759,7 @@ exports.api_sub = function() {
   return self
 }
 
-},{"./common":223}],234:[function(require,module,exports){
+},{"./common":167}],178:[function(require,module,exports){
 (function (Buffer){
 /* Copyright © 2015-2018 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -64625,180 +56212,7 @@ function web_modify_request(seneca, spec) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./common":223,"@hapi/wreck":28,"buffer":48,"http":297,"https":56,"jsonic":62,"lodash":72,"qs":158,"url":319}],235:[function(require,module,exports){
-arguments[4][79][0].apply(exports,arguments)
-},{"dup":79,"url":319}],236:[function(require,module,exports){
-arguments[4][80][0].apply(exports,arguments)
-},{"./domain":235,"dup":80,"util":325}],237:[function(require,module,exports){
-arguments[4][81][0].apply(exports,arguments)
-},{"./domain":235,"./email":236,"./tlds":238,"dup":81}],238:[function(require,module,exports){
-arguments[4][82][0].apply(exports,arguments)
-},{"dup":82}],239:[function(require,module,exports){
-arguments[4][83][0].apply(exports,arguments)
-},{"dup":83}],240:[function(require,module,exports){
-arguments[4][84][0].apply(exports,arguments)
-},{"./assert":241,"./clone":244,"./merge":257,"./utils":263,"dup":84}],241:[function(require,module,exports){
-arguments[4][4][0].apply(exports,arguments)
-},{"./error":247,"dup":4}],242:[function(require,module,exports){
-arguments[4][5][0].apply(exports,arguments)
-},{"_process":156,"dup":5}],243:[function(require,module,exports){
-arguments[4][6][0].apply(exports,arguments)
-},{"./ignore":253,"dup":6}],244:[function(require,module,exports){
-arguments[4][88][0].apply(exports,arguments)
-},{"./types":262,"./utils":263,"buffer":48,"dup":88}],245:[function(require,module,exports){
-arguments[4][8][0].apply(exports,arguments)
-},{"./assert":241,"./deepEqual":246,"./escapeRegex":251,"./utils":263,"dup":8}],246:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"./types":262,"buffer":48,"dup":9}],247:[function(require,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"./stringify":261,"dup":10}],248:[function(require,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"./assert":241,"dup":11}],249:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],250:[function(require,module,exports){
-arguments[4][13][0].apply(exports,arguments)
-},{"dup":13}],251:[function(require,module,exports){
-arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],252:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],253:[function(require,module,exports){
-arguments[4][16][0].apply(exports,arguments)
-},{"dup":16}],254:[function(require,module,exports){
-arguments[4][17][0].apply(exports,arguments)
-},{"./applyToDefaults":240,"./assert":241,"./bench":242,"./block":243,"./clone":244,"./contain":245,"./deepEqual":246,"./error":247,"./escapeHeaderAttribute":248,"./escapeHtml":249,"./escapeJson":250,"./escapeRegex":251,"./flatten":252,"./ignore":253,"./intersect":255,"./isPromise":256,"./merge":257,"./once":258,"./reach":259,"./reachTemplate":260,"./stringify":261,"./wait":264,"dup":17}],255:[function(require,module,exports){
-arguments[4][18][0].apply(exports,arguments)
-},{"dup":18}],256:[function(require,module,exports){
-arguments[4][19][0].apply(exports,arguments)
-},{"dup":19}],257:[function(require,module,exports){
-arguments[4][101][0].apply(exports,arguments)
-},{"./assert":241,"./clone":244,"./utils":263,"buffer":48,"dup":101}],258:[function(require,module,exports){
-arguments[4][21][0].apply(exports,arguments)
-},{"dup":21}],259:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"./assert":241,"dup":22}],260:[function(require,module,exports){
-arguments[4][23][0].apply(exports,arguments)
-},{"./reach":259,"dup":23}],261:[function(require,module,exports){
-arguments[4][24][0].apply(exports,arguments)
-},{"dup":24}],262:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"buffer":48,"dup":25}],263:[function(require,module,exports){
-arguments[4][107][0].apply(exports,arguments)
-},{"./reach":259,"dup":107}],264:[function(require,module,exports){
-arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],265:[function(require,module,exports){
-arguments[4][109][0].apply(exports,arguments)
-},{"./ref":269,"@hapi/hoek":254,"dup":109}],266:[function(require,module,exports){
-arguments[4][110][0].apply(exports,arguments)
-},{"./language":268,"@hapi/hoek":254,"dup":110}],267:[function(require,module,exports){
-arguments[4][111][0].apply(exports,arguments)
-},{"../package.json":290,"./cast":265,"./errors":266,"./ref":269,"./types/alternatives":272,"./types/any":273,"./types/array":275,"./types/binary":276,"./types/boolean":277,"./types/date":278,"./types/func":279,"./types/lazy":280,"./types/number":281,"./types/object":282,"./types/string":284,"./types/symbol":288,"@hapi/hoek":254,"dup":111}],268:[function(require,module,exports){
-arguments[4][112][0].apply(exports,arguments)
-},{"dup":112}],269:[function(require,module,exports){
-arguments[4][113][0].apply(exports,arguments)
-},{"@hapi/hoek":254,"dup":113}],270:[function(require,module,exports){
-arguments[4][114][0].apply(exports,arguments)
-},{"./index":267,"dup":114}],271:[function(require,module,exports){
-arguments[4][115][0].apply(exports,arguments)
-},{"../../../../../is-buffer/index.js":59,"./ref":269,"dup":115}],272:[function(require,module,exports){
-arguments[4][116][0].apply(exports,arguments)
-},{"../../cast":265,"../../ref":269,"../any":273,"@hapi/hoek":254,"dup":116}],273:[function(require,module,exports){
-arguments[4][117][0].apply(exports,arguments)
-},{"../../../package.json":290,"../../cast":265,"../../errors":266,"../../ref":269,"../../schemas":270,"../../set":271,"../alternatives":272,"../state":283,"../symbols":289,"./settings":274,"@hapi/hoek":254,"dup":117}],274:[function(require,module,exports){
-arguments[4][118][0].apply(exports,arguments)
-},{"../symbols":289,"@hapi/hoek":254,"dup":118}],275:[function(require,module,exports){
-arguments[4][119][0].apply(exports,arguments)
-},{"../../cast":265,"../../ref":269,"../any":273,"../state":283,"@hapi/bourne":239,"@hapi/hoek":254,"dup":119}],276:[function(require,module,exports){
-arguments[4][120][0].apply(exports,arguments)
-},{"../any":273,"@hapi/hoek":254,"buffer":48,"dup":120}],277:[function(require,module,exports){
-arguments[4][121][0].apply(exports,arguments)
-},{"../../set":271,"../any":273,"@hapi/hoek":254,"dup":121}],278:[function(require,module,exports){
-arguments[4][122][0].apply(exports,arguments)
-},{"../../ref":269,"../any":273,"@hapi/hoek":254,"dup":122}],279:[function(require,module,exports){
-arguments[4][123][0].apply(exports,arguments)
-},{"../../ref":269,"../object":282,"@hapi/hoek":254,"dup":123}],280:[function(require,module,exports){
-arguments[4][124][0].apply(exports,arguments)
-},{"../any":273,"@hapi/hoek":254,"dup":124}],281:[function(require,module,exports){
-arguments[4][125][0].apply(exports,arguments)
-},{"../../ref":269,"../any":273,"@hapi/hoek":254,"dup":125}],282:[function(require,module,exports){
-arguments[4][126][0].apply(exports,arguments)
-},{"../../cast":265,"../../errors":266,"../any":273,"../state":283,"@hapi/bourne":239,"@hapi/hoek":254,"@hapi/topo":291,"dup":126}],283:[function(require,module,exports){
-arguments[4][127][0].apply(exports,arguments)
-},{"dup":127}],284:[function(require,module,exports){
-arguments[4][128][0].apply(exports,arguments)
-},{"../../ref":269,"../any":273,"../date":278,"./ip":285,"./uri":287,"@hapi/address":237,"@hapi/hoek":254,"buffer":48,"dup":128,"net":46}],285:[function(require,module,exports){
-arguments[4][129][0].apply(exports,arguments)
-},{"./rfc3986":286,"dup":129}],286:[function(require,module,exports){
-arguments[4][130][0].apply(exports,arguments)
-},{"dup":130}],287:[function(require,module,exports){
-arguments[4][131][0].apply(exports,arguments)
-},{"./rfc3986":286,"dup":131}],288:[function(require,module,exports){
-arguments[4][132][0].apply(exports,arguments)
-},{"../any":273,"@hapi/hoek":254,"dup":132,"util":325}],289:[function(require,module,exports){
-arguments[4][133][0].apply(exports,arguments)
-},{"dup":133}],290:[function(require,module,exports){
-module.exports={
-  "_from": "@hapi/joi@^15.1.1",
-  "_id": "@hapi/joi@15.1.1",
-  "_inBundle": false,
-  "_integrity": "sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==",
-  "_location": "/seneca/@hapi/joi",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "range",
-    "registry": true,
-    "raw": "@hapi/joi@^15.1.1",
-    "name": "@hapi/joi",
-    "escapedName": "@hapi%2fjoi",
-    "scope": "@hapi",
-    "rawSpec": "^15.1.1",
-    "saveSpec": null,
-    "fetchSpec": "^15.1.1"
-  },
-  "_requiredBy": [
-    "/seneca"
-  ],
-  "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.1.1.tgz",
-  "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
-  "_spec": "@hapi/joi@^15.1.1",
-  "_where": "/Users/richard/Projects/seneca/browser/node_modules/seneca",
-  "bugs": {
-    "url": "https://github.com/hapijs/joi/issues"
-  },
-  "bundleDependencies": false,
-  "dependencies": {
-    "@hapi/address": "2.x.x",
-    "@hapi/bourne": "1.x.x",
-    "@hapi/hoek": "8.x.x",
-    "@hapi/topo": "3.x.x"
-  },
-  "deprecated": false,
-  "description": "Object schema validation",
-  "devDependencies": {
-    "@hapi/code": "6.x.x",
-    "@hapi/lab": "20.x.x"
-  },
-  "homepage": "https://github.com/hapijs/joi",
-  "keywords": [
-    "schema",
-    "validation"
-  ],
-  "license": "BSD-3-Clause",
-  "main": "lib/index.js",
-  "name": "@hapi/joi",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/hapijs/joi.git"
-  },
-  "scripts": {
-    "test": "lab -t 100 -a @hapi/code -L",
-    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code"
-  },
-  "version": "15.1.1"
-}
-
-},{}],291:[function(require,module,exports){
-arguments[4][135][0].apply(exports,arguments)
-},{"@hapi/hoek/lib/assert":241,"dup":135}],292:[function(require,module,exports){
+},{"./common":167,"@hapi/wreck":29,"buffer":49,"http":184,"https":57,"jsonic":63,"lodash":73,"qs":102,"url":206}],179:[function(require,module,exports){
 module.exports = function (args, opts) {
     if (!opts) opts = {};
     
@@ -65036,30 +56450,30 @@ function isNumber (x) {
 }
 
 
-},{}],293:[function(require,module,exports){
+},{}],180:[function(require,module,exports){
 module.exports={
-  "_from": "seneca@^3.18.0",
-  "_id": "seneca@3.18.0",
+  "_from": "seneca@^3.19.0",
+  "_id": "seneca@3.19.0",
   "_inBundle": false,
-  "_integrity": "sha512-sNsrhMPcAfssklrkekJbFXlwYgStxiC/eEx4vqfVNQyilh4RyVlJ4xu1eNAS9npz523KXogdB9IRzltSJAnajg==",
+  "_integrity": "sha512-TgB82um4aFmPXfRIzqczgeup8/xy9qLfcX1zLAYxEeV+6uaguSEdYq9e2XRN0a/fUNeQtnsnGy5Q9blx+1K+jA==",
   "_location": "/seneca",
   "_phantomChildren": {},
   "_requested": {
     "type": "range",
     "registry": true,
-    "raw": "seneca@^3.18.0",
+    "raw": "seneca@^3.19.0",
     "name": "seneca",
     "escapedName": "seneca",
-    "rawSpec": "^3.18.0",
+    "rawSpec": "^3.19.0",
     "saveSpec": null,
-    "fetchSpec": "^3.18.0"
+    "fetchSpec": "^3.19.0"
   },
   "_requiredBy": [
     "#DEV:/"
   ],
-  "_resolved": "https://registry.npmjs.org/seneca/-/seneca-3.18.0.tgz",
-  "_shasum": "a67d6a97f0cfc5434dd2e57e5889c1d7ab052c41",
-  "_spec": "seneca@^3.18.0",
+  "_resolved": "http://localhost:4873/seneca/-/seneca-3.19.0.tgz",
+  "_shasum": "96541197f71980f0d5056bf3b86635e4040b70b7",
+  "_spec": "seneca@^3.19.0",
   "_where": "/Users/richard/Projects/seneca/browser",
   "author": {
     "name": "Richard Rodger",
@@ -65188,7 +56602,7 @@ module.exports={
     }
   ],
   "dependencies": {
-    "@hapi/joi": "^15.1.1",
+    "@hapi/joi": "^17.1.0",
     "@hapi/wreck": "^17.0.0",
     "eraro": "^2.1.0",
     "fast-safe-stringify": "^2.0.7",
@@ -65199,7 +56613,7 @@ module.exports={
     "minimist": "^1.2.0",
     "nid": "^0.3.2",
     "norma": "^2.0.2",
-    "optioner": "^4.2.0",
+    "optioner": "^5.0.0",
     "ordu": "^0.1.1",
     "patrun": "^3.0.0",
     "qs": "^6.9.1",
@@ -65212,10 +56626,10 @@ module.exports={
   "devDependencies": {
     "@hapi/code": "^8.0.1",
     "@hapi/hoek": "^9.0.2",
-    "@hapi/lab": "^21.0.0",
+    "@hapi/lab": "^22.0.3",
     "@seneca/test-plugin": "0.0.1",
     "acorn": "^7.1.0",
-    "async": "^3.1.0",
+    "async": "^3.1.1",
     "bench": "^0.3.6",
     "coveralls": "^3.0.9",
     "handlebars": "^4.7.2",
@@ -65223,7 +56637,7 @@ module.exports={
     "prettier": "^1.19.1",
     "seneca-entity": "^6.0.0",
     "seneca-error-test": "^0.2.2",
-    "seneca-joi": "^6.0.0",
+    "seneca-joi": "^7.0.0",
     "seneca-promisify": "^1.1.0"
   },
   "engines": {
@@ -65272,10 +56686,10 @@ module.exports={
     "smoke": "node test/stubs/launch.js",
     "test": "lab -v -P test -L -t 90"
   },
-  "version": "3.18.0"
+  "version": "3.19.0"
 }
 
-},{}],294:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 (function (process){
 /* Copyright © 2010-2020 Richard Rodger and other contributors, MIT License. */
 'use strict'
@@ -66026,7 +57440,7 @@ function make_callpoint(active) {
 }
 
 }).call(this,require('_process'))
-},{"./lib/act":219,"./lib/actions":220,"./lib/add":221,"./lib/api":222,"./lib/common":223,"./lib/inward":225,"./lib/legacy":226,"./lib/logging":227,"./lib/options":228,"./lib/outward":229,"./lib/plugins":230,"./lib/print":231,"./lib/ready":232,"./lib/sub":233,"./lib/transport":234,"./package.json":293,"@hapi/joi":267,"_process":156,"eraro":51,"events":52,"gate-executor":54,"jsonic":62,"nid":75,"optioner":136,"ordu":137,"patrun":151,"rolling-stats":181,"seneca-transport":218,"use-plugin":321,"util":325}],295:[function(require,module,exports){
+},{"./lib/act":163,"./lib/actions":164,"./lib/add":165,"./lib/api":166,"./lib/common":167,"./lib/inward":169,"./lib/legacy":170,"./lib/logging":171,"./lib/options":172,"./lib/outward":173,"./lib/plugins":174,"./lib/print":175,"./lib/ready":176,"./lib/sub":177,"./lib/transport":178,"./package.json":180,"@hapi/joi":28,"_process":100,"eraro":52,"events":53,"gate-executor":55,"jsonic":63,"nid":76,"optioner":80,"ordu":81,"patrun":95,"rolling-stats":125,"seneca-transport":162,"use-plugin":266,"util":270}],182:[function(require,module,exports){
 /*
 Copyright (c) 2014-2016, Matteo Collina <hello@matteocollina.com>
 
@@ -66140,7 +57554,7 @@ function split (matcher, mapper, options) {
 
 module.exports = split
 
-},{"string_decoder":316,"through2":317}],296:[function(require,module,exports){
+},{"string_decoder":203,"through2":204}],183:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66269,7 +57683,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":52,"inherits":58,"readable-stream/duplex.js":165,"readable-stream/passthrough.js":176,"readable-stream/readable.js":177,"readable-stream/transform.js":178,"readable-stream/writable.js":179}],297:[function(require,module,exports){
+},{"events":53,"inherits":59,"readable-stream/duplex.js":109,"readable-stream/passthrough.js":120,"readable-stream/readable.js":121,"readable-stream/transform.js":122,"readable-stream/writable.js":123}],184:[function(require,module,exports){
 (function (global){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -66357,7 +57771,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":299,"./lib/response":300,"builtin-status-codes":49,"url":319,"xtend":326}],298:[function(require,module,exports){
+},{"./lib/request":186,"./lib/response":187,"builtin-status-codes":50,"url":206,"xtend":271}],185:[function(require,module,exports){
 (function (global){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -66420,7 +57834,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],299:[function(require,module,exports){
+},{}],186:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -66739,7 +58153,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":298,"./response":300,"_process":156,"buffer":48,"inherits":58,"readable-stream":315}],300:[function(require,module,exports){
+},{"./capability":185,"./response":187,"_process":100,"buffer":49,"inherits":59,"readable-stream":202}],187:[function(require,module,exports){
 (function (process,global,Buffer){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -66950,7 +58364,7 @@ IncomingMessage.prototype._onXHRProgress = function () {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":298,"_process":156,"buffer":48,"inherits":58,"readable-stream":315}],301:[function(require,module,exports){
+},{"./capability":185,"_process":100,"buffer":49,"inherits":59,"readable-stream":202}],188:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -67079,28 +58493,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],302:[function(require,module,exports){
-(function (process){
-'use strict'
-
-var experimentalWarnings = new Set();
-
-function emitExperimentalWarning(feature) {
-  if (experimentalWarnings.has(feature)) return;
-  var msg = feature + ' is an experimental feature. This feature could ' +
-       'change at any time';
-  experimentalWarnings.add(feature);
-  process.emitWarning(msg, 'ExperimentalWarning');
-}
-
-function noop() {}
-
-module.exports.emitExperimentalWarning = process.emitWarning
-  ? emitExperimentalWarning
-  : noop;
-
-}).call(this,require('_process'))
-},{"_process":156}],303:[function(require,module,exports){
+},{}],189:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -67242,7 +58635,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this,require('_process'))
-},{"./_stream_readable":305,"./_stream_writable":307,"_process":156,"inherits":58}],304:[function(require,module,exports){
+},{"./_stream_readable":191,"./_stream_writable":193,"_process":100,"inherits":59}],190:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -67282,7 +58675,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":306,"inherits":58}],305:[function(require,module,exports){
+},{"./_stream_transform":192,"inherits":59}],191:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -67366,17 +58759,16 @@ var _require$codes = require('../errors').codes,
     ERR_INVALID_ARG_TYPE = _require$codes.ERR_INVALID_ARG_TYPE,
     ERR_STREAM_PUSH_AFTER_EOF = _require$codes.ERR_STREAM_PUSH_AFTER_EOF,
     ERR_METHOD_NOT_IMPLEMENTED = _require$codes.ERR_METHOD_NOT_IMPLEMENTED,
-    ERR_STREAM_UNSHIFT_AFTER_END_EVENT = _require$codes.ERR_STREAM_UNSHIFT_AFTER_END_EVENT;
-
-var _require2 = require('../experimentalWarning'),
-    emitExperimentalWarning = _require2.emitExperimentalWarning; // Lazy loaded to improve the startup performance.
+    ERR_STREAM_UNSHIFT_AFTER_END_EVENT = _require$codes.ERR_STREAM_UNSHIFT_AFTER_END_EVENT; // Lazy loaded to improve the startup performance.
 
 
 var StringDecoder;
 var createReadableStreamAsyncIterator;
+var from;
 
 require('inherits')(Readable, Stream);
 
+var errorOrDestroy = destroyImpl.errorOrDestroy;
 var kProxyEvents = ['error', 'close', 'destroy', 'pause', 'resume'];
 
 function prependListener(emitter, event, fn) {
@@ -67430,7 +58822,9 @@ function ReadableState(options, stream, isDuplex) {
   this.resumeScheduled = false;
   this.paused = true; // Should close be emitted on destroy. Defaults to true.
 
-  this.emitClose = options.emitClose !== false; // has it been destroyed
+  this.emitClose = options.emitClose !== false; // Should .destroy() be called after 'end' (and potentially 'finish')
+
+  this.autoDestroy = !!options.autoDestroy; // has it been destroyed
 
   this.destroyed = false; // Crypto is kind of old and crusty.  Historically, its default string
   // encoding is 'binary' so we have to make this configurable.
@@ -67543,16 +58937,16 @@ function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
     if (!skipChunkCheck) er = chunkInvalid(state, chunk);
 
     if (er) {
-      stream.emit('error', er);
+      errorOrDestroy(stream, er);
     } else if (state.objectMode || chunk && chunk.length > 0) {
       if (typeof chunk !== 'string' && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer.prototype) {
         chunk = _uint8ArrayToBuffer(chunk);
       }
 
       if (addToFront) {
-        if (state.endEmitted) stream.emit('error', new ERR_STREAM_UNSHIFT_AFTER_END_EVENT());else addChunk(stream, state, chunk, true);
+        if (state.endEmitted) errorOrDestroy(stream, new ERR_STREAM_UNSHIFT_AFTER_END_EVENT());else addChunk(stream, state, chunk, true);
       } else if (state.ended) {
-        stream.emit('error', new ERR_STREAM_PUSH_AFTER_EOF());
+        errorOrDestroy(stream, new ERR_STREAM_PUSH_AFTER_EOF());
       } else if (state.destroyed) {
         return false;
       } else {
@@ -67608,17 +59002,32 @@ Readable.prototype.isPaused = function () {
 
 Readable.prototype.setEncoding = function (enc) {
   if (!StringDecoder) StringDecoder = require('string_decoder/').StringDecoder;
-  this._readableState.decoder = new StringDecoder(enc); // if setEncoding(null), decoder.encoding equals utf8
+  var decoder = new StringDecoder(enc);
+  this._readableState.decoder = decoder; // If setEncoding(null), decoder.encoding equals utf8
 
-  this._readableState.encoding = this._readableState.decoder.encoding;
+  this._readableState.encoding = this._readableState.decoder.encoding; // Iterate over current buffer to convert already stored Buffers:
+
+  var p = this._readableState.buffer.head;
+  var content = '';
+
+  while (p !== null) {
+    content += decoder.write(p.data);
+    p = p.next;
+  }
+
+  this._readableState.buffer.clear();
+
+  if (content !== '') this._readableState.buffer.push(content);
+  this._readableState.length = content.length;
   return this;
-}; // Don't raise the hwm > 8MB
+}; // Don't raise the hwm > 1GB
 
 
-var MAX_HWM = 0x800000;
+var MAX_HWM = 0x40000000;
 
 function computeNewHighWaterMark(n) {
   if (n >= MAX_HWM) {
+    // TODO(ronag): Throw ERR_VALUE_OUT_OF_RANGE.
     n = MAX_HWM;
   } else {
     // Get the next highest power of 2 to prevent increasing hwm excessively in
@@ -67735,7 +59144,7 @@ Readable.prototype.read = function (n) {
   if (n > 0) ret = fromList(n, state);else ret = null;
 
   if (ret === null) {
-    state.needReadable = true;
+    state.needReadable = state.length <= state.highWaterMark;
     n = 0;
   } else {
     state.length -= n;
@@ -67755,6 +59164,7 @@ Readable.prototype.read = function (n) {
 };
 
 function onEofChunk(stream, state) {
+  debug('onEofChunk');
   if (state.ended) return;
 
   if (state.decoder) {
@@ -67789,6 +59199,7 @@ function onEofChunk(stream, state) {
 
 function emitReadable(stream) {
   var state = stream._readableState;
+  debug('emitReadable', state.needReadable, state.emittedReadable);
   state.needReadable = false;
 
   if (!state.emittedReadable) {
@@ -67804,6 +59215,7 @@ function emitReadable_(stream) {
 
   if (!state.destroyed && (state.length || state.ended)) {
     stream.emit('readable');
+    state.emittedReadable = false;
   } // The stream needs another readable event if
   // 1. It is not flowing, as the flow mechanism will take
   //    care of it.
@@ -67869,7 +59281,7 @@ function maybeReadMore_(stream, state) {
 
 
 Readable.prototype._read = function (n) {
-  this.emit('error', new ERR_METHOD_NOT_IMPLEMENTED('_read()'));
+  errorOrDestroy(this, new ERR_METHOD_NOT_IMPLEMENTED('_read()'));
 };
 
 Readable.prototype.pipe = function (dest, pipeOpts) {
@@ -67968,7 +59380,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
     debug('onerror', er);
     unpipe();
     dest.removeListener('error', onerror);
-    if (EElistenerCount(dest, 'error') === 0) dest.emit('error', er);
+    if (EElistenerCount(dest, 'error') === 0) errorOrDestroy(dest, er);
   } // Make sure our error handler is attached before userland ones.
 
 
@@ -68272,8 +59684,6 @@ Readable.prototype.wrap = function (stream) {
 
 if (typeof Symbol === 'function') {
   Readable.prototype[Symbol.asyncIterator] = function () {
-    emitExperimentalWarning('Readable[Symbol.asyncIterator]');
-
     if (createReadableStreamAsyncIterator === undefined) {
       createReadableStreamAsyncIterator = require('./internal/streams/async_iterator');
     }
@@ -68361,7 +59771,27 @@ function endReadableNT(state, stream) {
     state.endEmitted = true;
     stream.readable = false;
     stream.emit('end');
+
+    if (state.autoDestroy) {
+      // In case of duplex streams we need a way to detect
+      // if the writable side is ready for autoDestroy as well
+      var wState = stream._writableState;
+
+      if (!wState || wState.autoDestroy && wState.finished) {
+        stream.destroy();
+      }
+    }
   }
+}
+
+if (typeof Symbol === 'function') {
+  Readable.from = function (iterable, opts) {
+    if (from === undefined) {
+      from = require('./internal/streams/from');
+    }
+
+    return from(Readable, iterable, opts);
+  };
 }
 
 function indexOf(xs, x) {
@@ -68372,7 +59802,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":301,"../experimentalWarning":302,"./_stream_duplex":303,"./internal/streams/async_iterator":308,"./internal/streams/buffer_list":309,"./internal/streams/destroy":310,"./internal/streams/state":313,"./internal/streams/stream":314,"_process":156,"buffer":48,"events":52,"inherits":58,"string_decoder/":316,"util":43}],306:[function(require,module,exports){
+},{"../errors":188,"./_stream_duplex":189,"./internal/streams/async_iterator":194,"./internal/streams/buffer_list":195,"./internal/streams/destroy":196,"./internal/streams/from":198,"./internal/streams/state":200,"./internal/streams/stream":201,"_process":100,"buffer":49,"events":53,"inherits":59,"string_decoder/":203,"util":44}],192:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -68574,7 +60004,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":301,"./_stream_duplex":303,"inherits":58}],307:[function(require,module,exports){
+},{"../errors":188,"./_stream_duplex":189,"inherits":59}],193:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -68672,6 +60102,8 @@ var _require$codes = require('../errors').codes,
     ERR_STREAM_WRITE_AFTER_END = _require$codes.ERR_STREAM_WRITE_AFTER_END,
     ERR_UNKNOWN_ENCODING = _require$codes.ERR_UNKNOWN_ENCODING;
 
+var errorOrDestroy = destroyImpl.errorOrDestroy;
+
 require('inherits')(Writable, Stream);
 
 function nop() {}
@@ -68751,7 +60183,9 @@ function WritableState(options, stream, isDuplex) {
 
   this.errorEmitted = false; // Should close be emitted on destroy. Defaults to true.
 
-  this.emitClose = options.emitClose !== false; // count buffered requests
+  this.emitClose = options.emitClose !== false; // Should .destroy() be called after 'finish' (and potentially 'end')
+
+  this.autoDestroy = !!options.autoDestroy; // count buffered requests
 
   this.bufferedRequestCount = 0; // allocate the first CorkedRequest, there is always
   // one allocated and free to use, and we maintain at most two
@@ -68828,13 +60262,13 @@ function Writable(options) {
 
 
 Writable.prototype.pipe = function () {
-  this.emit('error', new ERR_STREAM_CANNOT_PIPE());
+  errorOrDestroy(this, new ERR_STREAM_CANNOT_PIPE());
 };
 
 function writeAfterEnd(stream, cb) {
   var er = new ERR_STREAM_WRITE_AFTER_END(); // TODO: defer error events consistently everywhere, not just the cb
 
-  stream.emit('error', er);
+  errorOrDestroy(stream, er);
   process.nextTick(cb, er);
 } // Checks that a user-supplied chunk is valid, especially for the particular
 // mode the stream is in. Currently this means that `null` is never accepted
@@ -68851,7 +60285,7 @@ function validChunk(stream, state, chunk, cb) {
   }
 
   if (er) {
-    stream.emit('error', er);
+    errorOrDestroy(stream, er);
     process.nextTick(cb, er);
     return false;
   }
@@ -68995,13 +60429,13 @@ function onwriteError(stream, state, sync, er, cb) {
 
     process.nextTick(finishMaybe, stream, state);
     stream._writableState.errorEmitted = true;
-    stream.emit('error', er);
+    errorOrDestroy(stream, er);
   } else {
     // the caller expect this to happen before if
     // it is async
     cb(er);
     stream._writableState.errorEmitted = true;
-    stream.emit('error', er); // this can emit finish, but finish must
+    errorOrDestroy(stream, er); // this can emit finish, but finish must
     // always follow error
 
     finishMaybe(stream, state);
@@ -69165,7 +60599,7 @@ function callFinal(stream, state) {
     state.pendingcb--;
 
     if (err) {
-      stream.emit('error', err);
+      errorOrDestroy(stream, err);
     }
 
     state.prefinished = true;
@@ -69196,6 +60630,16 @@ function finishMaybe(stream, state) {
     if (state.pendingcb === 0) {
       state.finished = true;
       stream.emit('finish');
+
+      if (state.autoDestroy) {
+        // In case of duplex streams we need a way to detect
+        // if the readable side is ready for autoDestroy as well
+        var rState = stream._readableState;
+
+        if (!rState || rState.autoDestroy && rState.endEmitted) {
+          stream.destroy();
+        }
+      }
     }
   }
 
@@ -69260,7 +60704,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":301,"./_stream_duplex":303,"./internal/streams/destroy":310,"./internal/streams/state":313,"./internal/streams/stream":314,"_process":156,"buffer":48,"inherits":58,"util-deprecate":322}],308:[function(require,module,exports){
+},{"../errors":188,"./_stream_duplex":189,"./internal/streams/destroy":196,"./internal/streams/state":200,"./internal/streams/stream":201,"_process":100,"buffer":49,"inherits":59,"util-deprecate":267}],194:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -69470,10 +60914,12 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this,require('_process'))
-},{"./end-of-stream":311,"_process":156}],309:[function(require,module,exports){
+},{"./end-of-stream":197,"_process":100}],195:[function(require,module,exports){
 'use strict';
 
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; var ownKeys = Object.keys(source); if (typeof Object.getOwnPropertySymbols === 'function') { ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) { return Object.getOwnPropertyDescriptor(source, sym).enumerable; })); } ownKeys.forEach(function (key) { _defineProperty(target, key, source[key]); }); } return target; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
@@ -69660,7 +61106,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":48,"util":43}],310:[function(require,module,exports){
+},{"buffer":49,"util":44}],196:[function(require,module,exports){
 (function (process){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -69673,8 +61119,13 @@ function destroy(err, cb) {
   if (readableDestroyed || writableDestroyed) {
     if (cb) {
       cb(err);
-    } else if (err && (!this._writableState || !this._writableState.errorEmitted)) {
-      process.nextTick(emitErrorNT, this, err);
+    } else if (err) {
+      if (!this._writableState) {
+        process.nextTick(emitErrorNT, this, err);
+      } else if (!this._writableState.errorEmitted) {
+        this._writableState.errorEmitted = true;
+        process.nextTick(emitErrorNT, this, err);
+      }
     }
 
     return this;
@@ -69693,10 +61144,13 @@ function destroy(err, cb) {
 
   this._destroy(err || null, function (err) {
     if (!cb && err) {
-      process.nextTick(emitErrorAndCloseNT, _this, err);
-
-      if (_this._writableState) {
+      if (!_this._writableState) {
+        process.nextTick(emitErrorAndCloseNT, _this, err);
+      } else if (!_this._writableState.errorEmitted) {
         _this._writableState.errorEmitted = true;
+        process.nextTick(emitErrorAndCloseNT, _this, err);
+      } else {
+        process.nextTick(emitCloseNT, _this);
       }
     } else if (cb) {
       process.nextTick(emitCloseNT, _this);
@@ -69743,12 +61197,24 @@ function emitErrorNT(self, err) {
   self.emit('error', err);
 }
 
+function errorOrDestroy(stream, err) {
+  // We have tests that rely on errors being emitted
+  // in the same tick, so changing this is semver major.
+  // For now when you opt-in to autoDestroy we allow
+  // the error to be emitted nextTick. In a future
+  // semver major update we should change the default to this.
+  var rState = stream._readableState;
+  var wState = stream._writableState;
+  if (rState && rState.autoDestroy || wState && wState.autoDestroy) stream.destroy(err);else stream.emit('error', err);
+}
+
 module.exports = {
   destroy: destroy,
-  undestroy: undestroy
+  undestroy: undestroy,
+  errorOrDestroy: errorOrDestroy
 };
 }).call(this,require('_process'))
-},{"_process":156}],311:[function(require,module,exports){
+},{"_process":100}],197:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -69853,7 +61319,12 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":301}],312:[function(require,module,exports){
+},{"../../../errors":188}],198:[function(require,module,exports){
+module.exports = function () {
+  throw new Error('Readable.from is not available in the browser')
+};
+
+},{}],199:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -69951,7 +61422,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":301,"./end-of-stream":311}],313:[function(require,module,exports){
+},{"../../../errors":188,"./end-of-stream":197}],200:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -69979,9 +61450,9 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":301}],314:[function(require,module,exports){
-arguments[4][173][0].apply(exports,arguments)
-},{"dup":173,"events":52}],315:[function(require,module,exports){
+},{"../../../errors":188}],201:[function(require,module,exports){
+arguments[4][117][0].apply(exports,arguments)
+},{"dup":117,"events":53}],202:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -69992,9 +61463,9 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":303,"./lib/_stream_passthrough.js":304,"./lib/_stream_readable.js":305,"./lib/_stream_transform.js":306,"./lib/_stream_writable.js":307,"./lib/internal/streams/end-of-stream.js":311,"./lib/internal/streams/pipeline.js":312}],316:[function(require,module,exports){
-arguments[4][175][0].apply(exports,arguments)
-},{"dup":175,"safe-buffer":182}],317:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":189,"./lib/_stream_passthrough.js":190,"./lib/_stream_readable.js":191,"./lib/_stream_transform.js":192,"./lib/_stream_writable.js":193,"./lib/internal/streams/end-of-stream.js":197,"./lib/internal/streams/pipeline.js":199}],203:[function(require,module,exports){
+arguments[4][119][0].apply(exports,arguments)
+},{"dup":119,"safe-buffer":126}],204:[function(require,module,exports){
 (function (process){
 var Transform = require('readable-stream').Transform
   , inherits  = require('util').inherits
@@ -70094,7 +61565,7 @@ module.exports.obj = through2(function (options, transform, flush) {
 })
 
 }).call(this,require('_process'))
-},{"_process":156,"readable-stream":177,"util":325,"xtend":326}],318:[function(require,module,exports){
+},{"_process":100,"readable-stream":121,"util":270,"xtend":271}],205:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -70173,7 +61644,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":156,"timers":318}],319:[function(require,module,exports){
+},{"process/browser.js":100,"timers":205}],206:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -70907,7 +62378,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":320,"punycode":47,"querystring":164}],320:[function(require,module,exports){
+},{"./util":207,"punycode":48,"querystring":108}],207:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -70925,7 +62396,8622 @@ module.exports = {
   }
 };
 
-},{}],321:[function(require,module,exports){
+},{}],208:[function(require,module,exports){
+'use strict';
+
+const Url = require('url');
+
+
+const internals = {
+    minDomainSegments: 2,
+    nonAsciiRx: /[^\x00-\x7f]/,
+    domainControlRx: /[\x00-\x20@\:\/]/,                                                // Control + space + separators
+    tldSegmentRx: /^[a-zA-Z](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
+    domainSegmentRx: /^[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?$/,
+    URL: Url.URL || URL                                                                 // $lab:coverage:ignore$
+};
+
+
+exports.analyze = function (domain, options = {}) {
+
+    if (typeof domain !== 'string') {
+        throw new Error('Invalid input: domain must be a string');
+    }
+
+    if (!domain) {
+        return { error: 'Domain must be a non-empty string' };
+    }
+
+    if (domain.length > 256) {
+        return { error: 'Domain too long' };
+    }
+
+    const ascii = !internals.nonAsciiRx.test(domain);
+    if (!ascii) {
+        if (options.allowUnicode === false) {                                           // Defaults to true
+            return { error: 'Domain contains forbidden Unicode characters' };
+        }
+
+        domain = domain.normalize('NFC');
+    }
+
+    if (internals.domainControlRx.test(domain)) {
+        return { error: 'Domain contains invalid character' };
+    }
+
+    domain = internals.punycode(domain);
+
+    // https://tools.ietf.org/html/rfc1035 section 2.3.1
+
+    const minDomainSegments = options.minDomainSegments || internals.minDomainSegments;
+
+    const segments = domain.split('.');
+    if (segments.length < minDomainSegments) {
+        return { error: 'Domain lacks the minimum required number of segments' };
+    }
+
+    const tlds = options.tlds;
+    if (tlds) {
+        const tld = segments[segments.length - 1].toLowerCase();
+        if (tlds.deny && tlds.deny.has(tld) ||
+            tlds.allow && !tlds.allow.has(tld)) {
+
+            return { error: 'Domain uses forbidden TLD' };
+        }
+    }
+
+    for (let i = 0; i < segments.length; ++i) {
+        const segment = segments[i];
+
+        if (!segment.length) {
+            return { error: 'Domain contains empty dot-separated segment' };
+        }
+
+        if (segment.length > 63) {
+            return { error: 'Domain contains dot-separated segment that is too long' };
+        }
+
+        if (i < segments.length - 1) {
+            if (!internals.domainSegmentRx.test(segment)) {
+                return { error: 'Domain contains invalid character' };
+            }
+        }
+        else {
+            if (!internals.tldSegmentRx.test(segment)) {
+                return { error: 'Domain contains invalid tld character' };
+            }
+        }
+    }
+};
+
+
+exports.isValid = function (domain, options) {
+
+    return !exports.analyze(domain, options);
+};
+
+
+internals.punycode = function (domain) {
+
+    try {
+        return new internals.URL(`http://${domain}`).host;
+    }
+    catch (err) {
+        return domain;
+    }
+};
+
+},{"url":206}],209:[function(require,module,exports){
+'use strict';
+
+const Util = require('util');
+
+const Domain = require('./domain');
+
+
+const internals = {
+    nonAsciiRx: /[^\x00-\x7f]/,
+    encoder: new (Util.TextEncoder || TextEncoder)()                                            // $lab:coverage:ignore$
+};
+
+
+exports.analyze = function (email, options) {
+
+    return internals.email(email, options);
+};
+
+
+exports.isValid = function (email, options) {
+
+    return !internals.email(email, options);
+};
+
+
+internals.email = function (email, options = {}) {
+
+    if (typeof email !== 'string') {
+        throw new Error('Invalid input: email must be a string');
+    }
+
+    if (!email) {
+        return { error: 'Address must be a non-empty string' };
+    }
+
+    // Unicode
+
+    const ascii = !internals.nonAsciiRx.test(email);
+    if (!ascii) {
+        if (options.allowUnicode === false) {                                                   // Defaults to true
+            return { error: 'Address contains forbidden Unicode characters' };
+        }
+
+        email = email.normalize('NFC');
+    }
+
+    // Basic structure
+
+    const parts = email.split('@');
+    if (parts.length !== 2) {
+        return { error: parts.length > 2 ? 'Address cannot contain more than one @ character' : 'Address must contain one @ character' };
+    }
+
+    const [local, domain] = parts;
+
+    if (!local) {
+        return { error: 'Address local part cannot be empty' };
+    }
+
+    if (!options.ignoreLength) {
+        if (email.length > 254) {                                           // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.3
+            return { error: 'Address too long' };
+        }
+
+        if (internals.encoder.encode(local).length > 64) {                  // http://tools.ietf.org/html/rfc5321#section-4.5.3.1.1
+            return { error: 'Address local part too long' };
+        }
+    }
+
+    // Validate parts
+
+    return internals.local(local, ascii) || Domain.analyze(domain, options);
+};
+
+
+internals.local = function (local, ascii) {
+
+    const segments = local.split('.');
+    for (const segment of segments) {
+        if (!segment.length) {
+            return { error: 'Address local part contains empty dot-separated segment' };
+        }
+
+        if (ascii) {
+            if (!internals.atextRx.test(segment)) {
+                return { error: 'Address local part contains invalid character' };
+            }
+
+            continue;
+        }
+
+        for (const char of segment) {
+            if (internals.atextRx.test(char)) {
+                continue;
+            }
+
+            const binary = internals.binary(char);
+            if (!internals.atomRx.test(binary)) {
+                return { error: 'Address local part contains invalid character' };
+            }
+        }
+    }
+};
+
+
+internals.binary = function (char) {
+
+    return Array.from(internals.encoder.encode(char)).map((v) => String.fromCharCode(v)).join('');
+};
+
+
+/*
+    From RFC 5321:
+
+        Mailbox         =   Local-part "@" ( Domain / address-literal )
+
+        Local-part      =   Dot-string / Quoted-string
+        Dot-string      =   Atom *("."  Atom)
+        Atom            =   1*atext
+        atext           =   ALPHA / DIGIT / "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
+
+        Domain          =   sub-domain *("." sub-domain)
+        sub-domain      =   Let-dig [Ldh-str]
+        Let-dig         =   ALPHA / DIGIT
+        Ldh-str         =   *( ALPHA / DIGIT / "-" ) Let-dig
+
+        ALPHA           =   %x41-5A / %x61-7A        ; a-z, A-Z
+        DIGIT           =   %x30-39                  ; 0-9
+
+    From RFC 6531:
+
+        sub-domain      =/  U-label
+        atext           =/  UTF8-non-ascii
+
+        UTF8-non-ascii  =   UTF8-2 / UTF8-3 / UTF8-4
+
+        UTF8-2          =   %xC2-DF UTF8-tail
+        UTF8-3          =   %xE0 %xA0-BF UTF8-tail /
+                            %xE1-EC 2( UTF8-tail ) /
+                            %xED %x80-9F UTF8-tail /
+                            %xEE-EF 2( UTF8-tail )
+        UTF8-4          =   %xF0 %x90-BF 2( UTF8-tail ) /
+                            %xF1-F3 3( UTF8-tail ) /
+                            %xF4 %x80-8F 2( UTF8-tail )
+
+        UTF8-tail       =   %x80-BF
+
+    Note: The following are not supported:
+
+        RFC 5321: address-literal, Quoted-string
+        RFC 5322: obs-*, CFWS
+*/
+
+
+internals.atextRx = /^[\w!#\$%&'\*\+\-/=\?\^`\{\|\}~]+$/;               // _ included in \w
+
+
+internals.atomRx = new RegExp([
+
+    //  %xC2-DF UTF8-tail
+    '(?:[\\xc2-\\xdf][\\x80-\\xbf])',
+
+    //  %xE0 %xA0-BF UTF8-tail              %xE1-EC 2( UTF8-tail )            %xED %x80-9F UTF8-tail              %xEE-EF 2( UTF8-tail )
+    '(?:\\xe0[\\xa0-\\xbf][\\x80-\\xbf])|(?:[\\xe1-\\xec][\\x80-\\xbf]{2})|(?:\\xed[\\x80-\\x9f][\\x80-\\xbf])|(?:[\\xee-\\xef][\\x80-\\xbf]{2})',
+
+    //  %xF0 %x90-BF 2( UTF8-tail )            %xF1-F3 3( UTF8-tail )            %xF4 %x80-8F 2( UTF8-tail )
+    '(?:\\xf0[\\x90-\\xbf][\\x80-\\xbf]{2})|(?:[\\xf1-\\xf3][\\x80-\\xbf]{3})|(?:\\xf4[\\x80-\\x8f][\\x80-\\xbf]{2})'
+
+].join('|'));
+
+},{"./domain":208,"util":270}],210:[function(require,module,exports){
+'use strict';
+
+const Domain = require('./domain');
+const Email = require('./email');
+const Tlds = require('./tlds');
+
+
+const internals = {
+    defaultTlds: { allow: Tlds, deny: null }
+};
+
+
+module.exports = {
+    domain: {
+        analyze(domain, options) {
+
+            options = internals.options(options);
+            return Domain.analyze(domain, options);
+        },
+
+        isValid(domain, options) {
+
+            options = internals.options(options);
+            return Domain.isValid(domain, options);
+        }
+    },
+    email: {
+        analyze(email, options) {
+
+            options = internals.options(options);
+            return Email.analyze(email, options);
+        },
+
+        isValid(email, options) {
+
+            options = internals.options(options);
+            return Email.isValid(email, options);
+        }
+    }
+};
+
+
+internals.options = function (options) {
+
+    if (!options) {
+        return { tlds: internals.defaultTlds };
+    }
+
+    if (options.tlds === false) {                // Defaults to true
+        return options;
+    }
+
+    if (!options.tlds ||
+        options.tlds === true) {
+
+        return Object.assign({}, options, { tlds: internals.defaultTlds });
+    }
+
+    if (typeof options.tlds !== 'object') {
+        throw new Error('Invalid options: tlds must be a boolean or an object');
+    }
+
+    if (options.tlds.deny) {
+        if (options.tlds.deny instanceof Set === false) {
+            throw new Error('Invalid options: tlds.deny must be a Set object');
+        }
+
+        if (options.tlds.allow) {
+            throw new Error('Invalid options: cannot specify both tlds.allow and tlds.deny lists');
+        }
+
+        return options;
+    }
+
+    if (options.tlds.allow === true) {
+        return Object.assign({}, options, { tlds: internals.defaultTlds });
+    }
+
+    if (options.tlds.allow instanceof Set === false) {
+        throw new Error('Invalid options: tlds.allow must be a Set object or true');
+    }
+
+    return options;
+};
+
+},{"./domain":208,"./email":209,"./tlds":211}],211:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+// http://data.iana.org/TLD/tlds-alpha-by-domain.txt
+// # Version 2019091902, Last Updated Fri Sep 20 07: 07: 02 2019 UTC
+
+
+internals.tlds = [
+    'AAA',
+    'AARP',
+    'ABARTH',
+    'ABB',
+    'ABBOTT',
+    'ABBVIE',
+    'ABC',
+    'ABLE',
+    'ABOGADO',
+    'ABUDHABI',
+    'AC',
+    'ACADEMY',
+    'ACCENTURE',
+    'ACCOUNTANT',
+    'ACCOUNTANTS',
+    'ACO',
+    'ACTOR',
+    'AD',
+    'ADAC',
+    'ADS',
+    'ADULT',
+    'AE',
+    'AEG',
+    'AERO',
+    'AETNA',
+    'AF',
+    'AFAMILYCOMPANY',
+    'AFL',
+    'AFRICA',
+    'AG',
+    'AGAKHAN',
+    'AGENCY',
+    'AI',
+    'AIG',
+    'AIGO',
+    'AIRBUS',
+    'AIRFORCE',
+    'AIRTEL',
+    'AKDN',
+    'AL',
+    'ALFAROMEO',
+    'ALIBABA',
+    'ALIPAY',
+    'ALLFINANZ',
+    'ALLSTATE',
+    'ALLY',
+    'ALSACE',
+    'ALSTOM',
+    'AM',
+    'AMERICANEXPRESS',
+    'AMERICANFAMILY',
+    'AMEX',
+    'AMFAM',
+    'AMICA',
+    'AMSTERDAM',
+    'ANALYTICS',
+    'ANDROID',
+    'ANQUAN',
+    'ANZ',
+    'AO',
+    'AOL',
+    'APARTMENTS',
+    'APP',
+    'APPLE',
+    'AQ',
+    'AQUARELLE',
+    'AR',
+    'ARAB',
+    'ARAMCO',
+    'ARCHI',
+    'ARMY',
+    'ARPA',
+    'ART',
+    'ARTE',
+    'AS',
+    'ASDA',
+    'ASIA',
+    'ASSOCIATES',
+    'AT',
+    'ATHLETA',
+    'ATTORNEY',
+    'AU',
+    'AUCTION',
+    'AUDI',
+    'AUDIBLE',
+    'AUDIO',
+    'AUSPOST',
+    'AUTHOR',
+    'AUTO',
+    'AUTOS',
+    'AVIANCA',
+    'AW',
+    'AWS',
+    'AX',
+    'AXA',
+    'AZ',
+    'AZURE',
+    'BA',
+    'BABY',
+    'BAIDU',
+    'BANAMEX',
+    'BANANAREPUBLIC',
+    'BAND',
+    'BANK',
+    'BAR',
+    'BARCELONA',
+    'BARCLAYCARD',
+    'BARCLAYS',
+    'BAREFOOT',
+    'BARGAINS',
+    'BASEBALL',
+    'BASKETBALL',
+    'BAUHAUS',
+    'BAYERN',
+    'BB',
+    'BBC',
+    'BBT',
+    'BBVA',
+    'BCG',
+    'BCN',
+    'BD',
+    'BE',
+    'BEATS',
+    'BEAUTY',
+    'BEER',
+    'BENTLEY',
+    'BERLIN',
+    'BEST',
+    'BESTBUY',
+    'BET',
+    'BF',
+    'BG',
+    'BH',
+    'BHARTI',
+    'BI',
+    'BIBLE',
+    'BID',
+    'BIKE',
+    'BING',
+    'BINGO',
+    'BIO',
+    'BIZ',
+    'BJ',
+    'BLACK',
+    'BLACKFRIDAY',
+    'BLOCKBUSTER',
+    'BLOG',
+    'BLOOMBERG',
+    'BLUE',
+    'BM',
+    'BMS',
+    'BMW',
+    'BN',
+    'BNPPARIBAS',
+    'BO',
+    'BOATS',
+    'BOEHRINGER',
+    'BOFA',
+    'BOM',
+    'BOND',
+    'BOO',
+    'BOOK',
+    'BOOKING',
+    'BOSCH',
+    'BOSTIK',
+    'BOSTON',
+    'BOT',
+    'BOUTIQUE',
+    'BOX',
+    'BR',
+    'BRADESCO',
+    'BRIDGESTONE',
+    'BROADWAY',
+    'BROKER',
+    'BROTHER',
+    'BRUSSELS',
+    'BS',
+    'BT',
+    'BUDAPEST',
+    'BUGATTI',
+    'BUILD',
+    'BUILDERS',
+    'BUSINESS',
+    'BUY',
+    'BUZZ',
+    'BV',
+    'BW',
+    'BY',
+    'BZ',
+    'BZH',
+    'CA',
+    'CAB',
+    'CAFE',
+    'CAL',
+    'CALL',
+    'CALVINKLEIN',
+    'CAM',
+    'CAMERA',
+    'CAMP',
+    'CANCERRESEARCH',
+    'CANON',
+    'CAPETOWN',
+    'CAPITAL',
+    'CAPITALONE',
+    'CAR',
+    'CARAVAN',
+    'CARDS',
+    'CARE',
+    'CAREER',
+    'CAREERS',
+    'CARS',
+    'CARTIER',
+    'CASA',
+    'CASE',
+    'CASEIH',
+    'CASH',
+    'CASINO',
+    'CAT',
+    'CATERING',
+    'CATHOLIC',
+    'CBA',
+    'CBN',
+    'CBRE',
+    'CBS',
+    'CC',
+    'CD',
+    'CEB',
+    'CENTER',
+    'CEO',
+    'CERN',
+    'CF',
+    'CFA',
+    'CFD',
+    'CG',
+    'CH',
+    'CHANEL',
+    'CHANNEL',
+    'CHARITY',
+    'CHASE',
+    'CHAT',
+    'CHEAP',
+    'CHINTAI',
+    'CHRISTMAS',
+    'CHROME',
+    'CHRYSLER',
+    'CHURCH',
+    'CI',
+    'CIPRIANI',
+    'CIRCLE',
+    'CISCO',
+    'CITADEL',
+    'CITI',
+    'CITIC',
+    'CITY',
+    'CITYEATS',
+    'CK',
+    'CL',
+    'CLAIMS',
+    'CLEANING',
+    'CLICK',
+    'CLINIC',
+    'CLINIQUE',
+    'CLOTHING',
+    'CLOUD',
+    'CLUB',
+    'CLUBMED',
+    'CM',
+    'CN',
+    'CO',
+    'COACH',
+    'CODES',
+    'COFFEE',
+    'COLLEGE',
+    'COLOGNE',
+    'COM',
+    'COMCAST',
+    'COMMBANK',
+    'COMMUNITY',
+    'COMPANY',
+    'COMPARE',
+    'COMPUTER',
+    'COMSEC',
+    'CONDOS',
+    'CONSTRUCTION',
+    'CONSULTING',
+    'CONTACT',
+    'CONTRACTORS',
+    'COOKING',
+    'COOKINGCHANNEL',
+    'COOL',
+    'COOP',
+    'CORSICA',
+    'COUNTRY',
+    'COUPON',
+    'COUPONS',
+    'COURSES',
+    'CR',
+    'CREDIT',
+    'CREDITCARD',
+    'CREDITUNION',
+    'CRICKET',
+    'CROWN',
+    'CRS',
+    'CRUISE',
+    'CRUISES',
+    'CSC',
+    'CU',
+    'CUISINELLA',
+    'CV',
+    'CW',
+    'CX',
+    'CY',
+    'CYMRU',
+    'CYOU',
+    'CZ',
+    'DABUR',
+    'DAD',
+    'DANCE',
+    'DATA',
+    'DATE',
+    'DATING',
+    'DATSUN',
+    'DAY',
+    'DCLK',
+    'DDS',
+    'DE',
+    'DEAL',
+    'DEALER',
+    'DEALS',
+    'DEGREE',
+    'DELIVERY',
+    'DELL',
+    'DELOITTE',
+    'DELTA',
+    'DEMOCRAT',
+    'DENTAL',
+    'DENTIST',
+    'DESI',
+    'DESIGN',
+    'DEV',
+    'DHL',
+    'DIAMONDS',
+    'DIET',
+    'DIGITAL',
+    'DIRECT',
+    'DIRECTORY',
+    'DISCOUNT',
+    'DISCOVER',
+    'DISH',
+    'DIY',
+    'DJ',
+    'DK',
+    'DM',
+    'DNP',
+    'DO',
+    'DOCS',
+    'DOCTOR',
+    'DODGE',
+    'DOG',
+    'DOMAINS',
+    'DOT',
+    'DOWNLOAD',
+    'DRIVE',
+    'DTV',
+    'DUBAI',
+    'DUCK',
+    'DUNLOP',
+    'DUPONT',
+    'DURBAN',
+    'DVAG',
+    'DVR',
+    'DZ',
+    'EARTH',
+    'EAT',
+    'EC',
+    'ECO',
+    'EDEKA',
+    'EDU',
+    'EDUCATION',
+    'EE',
+    'EG',
+    'EMAIL',
+    'EMERCK',
+    'ENERGY',
+    'ENGINEER',
+    'ENGINEERING',
+    'ENTERPRISES',
+    'EPSON',
+    'EQUIPMENT',
+    'ER',
+    'ERICSSON',
+    'ERNI',
+    'ES',
+    'ESQ',
+    'ESTATE',
+    'ESURANCE',
+    'ET',
+    'ETISALAT',
+    'EU',
+    'EUROVISION',
+    'EUS',
+    'EVENTS',
+    'EVERBANK',
+    'EXCHANGE',
+    'EXPERT',
+    'EXPOSED',
+    'EXPRESS',
+    'EXTRASPACE',
+    'FAGE',
+    'FAIL',
+    'FAIRWINDS',
+    'FAITH',
+    'FAMILY',
+    'FAN',
+    'FANS',
+    'FARM',
+    'FARMERS',
+    'FASHION',
+    'FAST',
+    'FEDEX',
+    'FEEDBACK',
+    'FERRARI',
+    'FERRERO',
+    'FI',
+    'FIAT',
+    'FIDELITY',
+    'FIDO',
+    'FILM',
+    'FINAL',
+    'FINANCE',
+    'FINANCIAL',
+    'FIRE',
+    'FIRESTONE',
+    'FIRMDALE',
+    'FISH',
+    'FISHING',
+    'FIT',
+    'FITNESS',
+    'FJ',
+    'FK',
+    'FLICKR',
+    'FLIGHTS',
+    'FLIR',
+    'FLORIST',
+    'FLOWERS',
+    'FLY',
+    'FM',
+    'FO',
+    'FOO',
+    'FOOD',
+    'FOODNETWORK',
+    'FOOTBALL',
+    'FORD',
+    'FOREX',
+    'FORSALE',
+    'FORUM',
+    'FOUNDATION',
+    'FOX',
+    'FR',
+    'FREE',
+    'FRESENIUS',
+    'FRL',
+    'FROGANS',
+    'FRONTDOOR',
+    'FRONTIER',
+    'FTR',
+    'FUJITSU',
+    'FUJIXEROX',
+    'FUN',
+    'FUND',
+    'FURNITURE',
+    'FUTBOL',
+    'FYI',
+    'GA',
+    'GAL',
+    'GALLERY',
+    'GALLO',
+    'GALLUP',
+    'GAME',
+    'GAMES',
+    'GAP',
+    'GARDEN',
+    'GAY',
+    'GB',
+    'GBIZ',
+    'GD',
+    'GDN',
+    'GE',
+    'GEA',
+    'GENT',
+    'GENTING',
+    'GEORGE',
+    'GF',
+    'GG',
+    'GGEE',
+    'GH',
+    'GI',
+    'GIFT',
+    'GIFTS',
+    'GIVES',
+    'GIVING',
+    'GL',
+    'GLADE',
+    'GLASS',
+    'GLE',
+    'GLOBAL',
+    'GLOBO',
+    'GM',
+    'GMAIL',
+    'GMBH',
+    'GMO',
+    'GMX',
+    'GN',
+    'GODADDY',
+    'GOLD',
+    'GOLDPOINT',
+    'GOLF',
+    'GOO',
+    'GOODYEAR',
+    'GOOG',
+    'GOOGLE',
+    'GOP',
+    'GOT',
+    'GOV',
+    'GP',
+    'GQ',
+    'GR',
+    'GRAINGER',
+    'GRAPHICS',
+    'GRATIS',
+    'GREEN',
+    'GRIPE',
+    'GROCERY',
+    'GROUP',
+    'GS',
+    'GT',
+    'GU',
+    'GUARDIAN',
+    'GUCCI',
+    'GUGE',
+    'GUIDE',
+    'GUITARS',
+    'GURU',
+    'GW',
+    'GY',
+    'HAIR',
+    'HAMBURG',
+    'HANGOUT',
+    'HAUS',
+    'HBO',
+    'HDFC',
+    'HDFCBANK',
+    'HEALTH',
+    'HEALTHCARE',
+    'HELP',
+    'HELSINKI',
+    'HERE',
+    'HERMES',
+    'HGTV',
+    'HIPHOP',
+    'HISAMITSU',
+    'HITACHI',
+    'HIV',
+    'HK',
+    'HKT',
+    'HM',
+    'HN',
+    'HOCKEY',
+    'HOLDINGS',
+    'HOLIDAY',
+    'HOMEDEPOT',
+    'HOMEGOODS',
+    'HOMES',
+    'HOMESENSE',
+    'HONDA',
+    'HORSE',
+    'HOSPITAL',
+    'HOST',
+    'HOSTING',
+    'HOT',
+    'HOTELES',
+    'HOTELS',
+    'HOTMAIL',
+    'HOUSE',
+    'HOW',
+    'HR',
+    'HSBC',
+    'HT',
+    'HU',
+    'HUGHES',
+    'HYATT',
+    'HYUNDAI',
+    'IBM',
+    'ICBC',
+    'ICE',
+    'ICU',
+    'ID',
+    'IE',
+    'IEEE',
+    'IFM',
+    'IKANO',
+    'IL',
+    'IM',
+    'IMAMAT',
+    'IMDB',
+    'IMMO',
+    'IMMOBILIEN',
+    'IN',
+    'INC',
+    'INDUSTRIES',
+    'INFINITI',
+    'INFO',
+    'ING',
+    'INK',
+    'INSTITUTE',
+    'INSURANCE',
+    'INSURE',
+    'INT',
+    'INTEL',
+    'INTERNATIONAL',
+    'INTUIT',
+    'INVESTMENTS',
+    'IO',
+    'IPIRANGA',
+    'IQ',
+    'IR',
+    'IRISH',
+    'IS',
+    'ISMAILI',
+    'IST',
+    'ISTANBUL',
+    'IT',
+    'ITAU',
+    'ITV',
+    'IVECO',
+    'JAGUAR',
+    'JAVA',
+    'JCB',
+    'JCP',
+    'JE',
+    'JEEP',
+    'JETZT',
+    'JEWELRY',
+    'JIO',
+    'JLL',
+    'JM',
+    'JMP',
+    'JNJ',
+    'JO',
+    'JOBS',
+    'JOBURG',
+    'JOT',
+    'JOY',
+    'JP',
+    'JPMORGAN',
+    'JPRS',
+    'JUEGOS',
+    'JUNIPER',
+    'KAUFEN',
+    'KDDI',
+    'KE',
+    'KERRYHOTELS',
+    'KERRYLOGISTICS',
+    'KERRYPROPERTIES',
+    'KFH',
+    'KG',
+    'KH',
+    'KI',
+    'KIA',
+    'KIM',
+    'KINDER',
+    'KINDLE',
+    'KITCHEN',
+    'KIWI',
+    'KM',
+    'KN',
+    'KOELN',
+    'KOMATSU',
+    'KOSHER',
+    'KP',
+    'KPMG',
+    'KPN',
+    'KR',
+    'KRD',
+    'KRED',
+    'KUOKGROUP',
+    'KW',
+    'KY',
+    'KYOTO',
+    'KZ',
+    'LA',
+    'LACAIXA',
+    'LADBROKES',
+    'LAMBORGHINI',
+    'LAMER',
+    'LANCASTER',
+    'LANCIA',
+    'LANCOME',
+    'LAND',
+    'LANDROVER',
+    'LANXESS',
+    'LASALLE',
+    'LAT',
+    'LATINO',
+    'LATROBE',
+    'LAW',
+    'LAWYER',
+    'LB',
+    'LC',
+    'LDS',
+    'LEASE',
+    'LECLERC',
+    'LEFRAK',
+    'LEGAL',
+    'LEGO',
+    'LEXUS',
+    'LGBT',
+    'LI',
+    'LIAISON',
+    'LIDL',
+    'LIFE',
+    'LIFEINSURANCE',
+    'LIFESTYLE',
+    'LIGHTING',
+    'LIKE',
+    'LILLY',
+    'LIMITED',
+    'LIMO',
+    'LINCOLN',
+    'LINDE',
+    'LINK',
+    'LIPSY',
+    'LIVE',
+    'LIVING',
+    'LIXIL',
+    'LK',
+    'LLC',
+    'LOAN',
+    'LOANS',
+    'LOCKER',
+    'LOCUS',
+    'LOFT',
+    'LOL',
+    'LONDON',
+    'LOTTE',
+    'LOTTO',
+    'LOVE',
+    'LPL',
+    'LPLFINANCIAL',
+    'LR',
+    'LS',
+    'LT',
+    'LTD',
+    'LTDA',
+    'LU',
+    'LUNDBECK',
+    'LUPIN',
+    'LUXE',
+    'LUXURY',
+    'LV',
+    'LY',
+    'MA',
+    'MACYS',
+    'MADRID',
+    'MAIF',
+    'MAISON',
+    'MAKEUP',
+    'MAN',
+    'MANAGEMENT',
+    'MANGO',
+    'MAP',
+    'MARKET',
+    'MARKETING',
+    'MARKETS',
+    'MARRIOTT',
+    'MARSHALLS',
+    'MASERATI',
+    'MATTEL',
+    'MBA',
+    'MC',
+    'MCKINSEY',
+    'MD',
+    'ME',
+    'MED',
+    'MEDIA',
+    'MEET',
+    'MELBOURNE',
+    'MEME',
+    'MEMORIAL',
+    'MEN',
+    'MENU',
+    'MERCKMSD',
+    'METLIFE',
+    'MG',
+    'MH',
+    'MIAMI',
+    'MICROSOFT',
+    'MIL',
+    'MINI',
+    'MINT',
+    'MIT',
+    'MITSUBISHI',
+    'MK',
+    'ML',
+    'MLB',
+    'MLS',
+    'MM',
+    'MMA',
+    'MN',
+    'MO',
+    'MOBI',
+    'MOBILE',
+    'MODA',
+    'MOE',
+    'MOI',
+    'MOM',
+    'MONASH',
+    'MONEY',
+    'MONSTER',
+    'MOPAR',
+    'MORMON',
+    'MORTGAGE',
+    'MOSCOW',
+    'MOTO',
+    'MOTORCYCLES',
+    'MOV',
+    'MOVIE',
+    'MOVISTAR',
+    'MP',
+    'MQ',
+    'MR',
+    'MS',
+    'MSD',
+    'MT',
+    'MTN',
+    'MTR',
+    'MU',
+    'MUSEUM',
+    'MUTUAL',
+    'MV',
+    'MW',
+    'MX',
+    'MY',
+    'MZ',
+    'NA',
+    'NAB',
+    'NADEX',
+    'NAGOYA',
+    'NAME',
+    'NATIONWIDE',
+    'NATURA',
+    'NAVY',
+    'NBA',
+    'NC',
+    'NE',
+    'NEC',
+    'NET',
+    'NETBANK',
+    'NETFLIX',
+    'NETWORK',
+    'NEUSTAR',
+    'NEW',
+    'NEWHOLLAND',
+    'NEWS',
+    'NEXT',
+    'NEXTDIRECT',
+    'NEXUS',
+    'NF',
+    'NFL',
+    'NG',
+    'NGO',
+    'NHK',
+    'NI',
+    'NICO',
+    'NIKE',
+    'NIKON',
+    'NINJA',
+    'NISSAN',
+    'NISSAY',
+    'NL',
+    'NO',
+    'NOKIA',
+    'NORTHWESTERNMUTUAL',
+    'NORTON',
+    'NOW',
+    'NOWRUZ',
+    'NOWTV',
+    'NP',
+    'NR',
+    'NRA',
+    'NRW',
+    'NTT',
+    'NU',
+    'NYC',
+    'NZ',
+    'OBI',
+    'OBSERVER',
+    'OFF',
+    'OFFICE',
+    'OKINAWA',
+    'OLAYAN',
+    'OLAYANGROUP',
+    'OLDNAVY',
+    'OLLO',
+    'OM',
+    'OMEGA',
+    'ONE',
+    'ONG',
+    'ONL',
+    'ONLINE',
+    'ONYOURSIDE',
+    'OOO',
+    'OPEN',
+    'ORACLE',
+    'ORANGE',
+    'ORG',
+    'ORGANIC',
+    'ORIGINS',
+    'OSAKA',
+    'OTSUKA',
+    'OTT',
+    'OVH',
+    'PA',
+    'PAGE',
+    'PANASONIC',
+    'PARIS',
+    'PARS',
+    'PARTNERS',
+    'PARTS',
+    'PARTY',
+    'PASSAGENS',
+    'PAY',
+    'PCCW',
+    'PE',
+    'PET',
+    'PF',
+    'PFIZER',
+    'PG',
+    'PH',
+    'PHARMACY',
+    'PHD',
+    'PHILIPS',
+    'PHONE',
+    'PHOTO',
+    'PHOTOGRAPHY',
+    'PHOTOS',
+    'PHYSIO',
+    'PIAGET',
+    'PICS',
+    'PICTET',
+    'PICTURES',
+    'PID',
+    'PIN',
+    'PING',
+    'PINK',
+    'PIONEER',
+    'PIZZA',
+    'PK',
+    'PL',
+    'PLACE',
+    'PLAY',
+    'PLAYSTATION',
+    'PLUMBING',
+    'PLUS',
+    'PM',
+    'PN',
+    'PNC',
+    'POHL',
+    'POKER',
+    'POLITIE',
+    'PORN',
+    'POST',
+    'PR',
+    'PRAMERICA',
+    'PRAXI',
+    'PRESS',
+    'PRIME',
+    'PRO',
+    'PROD',
+    'PRODUCTIONS',
+    'PROF',
+    'PROGRESSIVE',
+    'PROMO',
+    'PROPERTIES',
+    'PROPERTY',
+    'PROTECTION',
+    'PRU',
+    'PRUDENTIAL',
+    'PS',
+    'PT',
+    'PUB',
+    'PW',
+    'PWC',
+    'PY',
+    'QA',
+    'QPON',
+    'QUEBEC',
+    'QUEST',
+    'QVC',
+    'RACING',
+    'RADIO',
+    'RAID',
+    'RE',
+    'READ',
+    'REALESTATE',
+    'REALTOR',
+    'REALTY',
+    'RECIPES',
+    'RED',
+    'REDSTONE',
+    'REDUMBRELLA',
+    'REHAB',
+    'REISE',
+    'REISEN',
+    'REIT',
+    'RELIANCE',
+    'REN',
+    'RENT',
+    'RENTALS',
+    'REPAIR',
+    'REPORT',
+    'REPUBLICAN',
+    'REST',
+    'RESTAURANT',
+    'REVIEW',
+    'REVIEWS',
+    'REXROTH',
+    'RICH',
+    'RICHARDLI',
+    'RICOH',
+    'RIGHTATHOME',
+    'RIL',
+    'RIO',
+    'RIP',
+    'RMIT',
+    'RO',
+    'ROCHER',
+    'ROCKS',
+    'RODEO',
+    'ROGERS',
+    'ROOM',
+    'RS',
+    'RSVP',
+    'RU',
+    'RUGBY',
+    'RUHR',
+    'RUN',
+    'RW',
+    'RWE',
+    'RYUKYU',
+    'SA',
+    'SAARLAND',
+    'SAFE',
+    'SAFETY',
+    'SAKURA',
+    'SALE',
+    'SALON',
+    'SAMSCLUB',
+    'SAMSUNG',
+    'SANDVIK',
+    'SANDVIKCOROMANT',
+    'SANOFI',
+    'SAP',
+    'SARL',
+    'SAS',
+    'SAVE',
+    'SAXO',
+    'SB',
+    'SBI',
+    'SBS',
+    'SC',
+    'SCA',
+    'SCB',
+    'SCHAEFFLER',
+    'SCHMIDT',
+    'SCHOLARSHIPS',
+    'SCHOOL',
+    'SCHULE',
+    'SCHWARZ',
+    'SCIENCE',
+    'SCJOHNSON',
+    'SCOR',
+    'SCOT',
+    'SD',
+    'SE',
+    'SEARCH',
+    'SEAT',
+    'SECURE',
+    'SECURITY',
+    'SEEK',
+    'SELECT',
+    'SENER',
+    'SERVICES',
+    'SES',
+    'SEVEN',
+    'SEW',
+    'SEX',
+    'SEXY',
+    'SFR',
+    'SG',
+    'SH',
+    'SHANGRILA',
+    'SHARP',
+    'SHAW',
+    'SHELL',
+    'SHIA',
+    'SHIKSHA',
+    'SHOES',
+    'SHOP',
+    'SHOPPING',
+    'SHOUJI',
+    'SHOW',
+    'SHOWTIME',
+    'SHRIRAM',
+    'SI',
+    'SILK',
+    'SINA',
+    'SINGLES',
+    'SITE',
+    'SJ',
+    'SK',
+    'SKI',
+    'SKIN',
+    'SKY',
+    'SKYPE',
+    'SL',
+    'SLING',
+    'SM',
+    'SMART',
+    'SMILE',
+    'SN',
+    'SNCF',
+    'SO',
+    'SOCCER',
+    'SOCIAL',
+    'SOFTBANK',
+    'SOFTWARE',
+    'SOHU',
+    'SOLAR',
+    'SOLUTIONS',
+    'SONG',
+    'SONY',
+    'SOY',
+    'SPACE',
+    'SPORT',
+    'SPOT',
+    'SPREADBETTING',
+    'SR',
+    'SRL',
+    'SRT',
+    'SS',
+    'ST',
+    'STADA',
+    'STAPLES',
+    'STAR',
+    'STATEBANK',
+    'STATEFARM',
+    'STC',
+    'STCGROUP',
+    'STOCKHOLM',
+    'STORAGE',
+    'STORE',
+    'STREAM',
+    'STUDIO',
+    'STUDY',
+    'STYLE',
+    'SU',
+    'SUCKS',
+    'SUPPLIES',
+    'SUPPLY',
+    'SUPPORT',
+    'SURF',
+    'SURGERY',
+    'SUZUKI',
+    'SV',
+    'SWATCH',
+    'SWIFTCOVER',
+    'SWISS',
+    'SX',
+    'SY',
+    'SYDNEY',
+    'SYMANTEC',
+    'SYSTEMS',
+    'SZ',
+    'TAB',
+    'TAIPEI',
+    'TALK',
+    'TAOBAO',
+    'TARGET',
+    'TATAMOTORS',
+    'TATAR',
+    'TATTOO',
+    'TAX',
+    'TAXI',
+    'TC',
+    'TCI',
+    'TD',
+    'TDK',
+    'TEAM',
+    'TECH',
+    'TECHNOLOGY',
+    'TEL',
+    'TELEFONICA',
+    'TEMASEK',
+    'TENNIS',
+    'TEVA',
+    'TF',
+    'TG',
+    'TH',
+    'THD',
+    'THEATER',
+    'THEATRE',
+    'TIAA',
+    'TICKETS',
+    'TIENDA',
+    'TIFFANY',
+    'TIPS',
+    'TIRES',
+    'TIROL',
+    'TJ',
+    'TJMAXX',
+    'TJX',
+    'TK',
+    'TKMAXX',
+    'TL',
+    'TM',
+    'TMALL',
+    'TN',
+    'TO',
+    'TODAY',
+    'TOKYO',
+    'TOOLS',
+    'TOP',
+    'TORAY',
+    'TOSHIBA',
+    'TOTAL',
+    'TOURS',
+    'TOWN',
+    'TOYOTA',
+    'TOYS',
+    'TR',
+    'TRADE',
+    'TRADING',
+    'TRAINING',
+    'TRAVEL',
+    'TRAVELCHANNEL',
+    'TRAVELERS',
+    'TRAVELERSINSURANCE',
+    'TRUST',
+    'TRV',
+    'TT',
+    'TUBE',
+    'TUI',
+    'TUNES',
+    'TUSHU',
+    'TV',
+    'TVS',
+    'TW',
+    'TZ',
+    'UA',
+    'UBANK',
+    'UBS',
+    'UCONNECT',
+    'UG',
+    'UK',
+    'UNICOM',
+    'UNIVERSITY',
+    'UNO',
+    'UOL',
+    'UPS',
+    'US',
+    'UY',
+    'UZ',
+    'VA',
+    'VACATIONS',
+    'VANA',
+    'VANGUARD',
+    'VC',
+    'VE',
+    'VEGAS',
+    'VENTURES',
+    'VERISIGN',
+    'VERSICHERUNG',
+    'VET',
+    'VG',
+    'VI',
+    'VIAJES',
+    'VIDEO',
+    'VIG',
+    'VIKING',
+    'VILLAS',
+    'VIN',
+    'VIP',
+    'VIRGIN',
+    'VISA',
+    'VISION',
+    'VISTAPRINT',
+    'VIVA',
+    'VIVO',
+    'VLAANDEREN',
+    'VN',
+    'VODKA',
+    'VOLKSWAGEN',
+    'VOLVO',
+    'VOTE',
+    'VOTING',
+    'VOTO',
+    'VOYAGE',
+    'VU',
+    'VUELOS',
+    'WALES',
+    'WALMART',
+    'WALTER',
+    'WANG',
+    'WANGGOU',
+    'WARMAN',
+    'WATCH',
+    'WATCHES',
+    'WEATHER',
+    'WEATHERCHANNEL',
+    'WEBCAM',
+    'WEBER',
+    'WEBSITE',
+    'WED',
+    'WEDDING',
+    'WEIBO',
+    'WEIR',
+    'WF',
+    'WHOSWHO',
+    'WIEN',
+    'WIKI',
+    'WILLIAMHILL',
+    'WIN',
+    'WINDOWS',
+    'WINE',
+    'WINNERS',
+    'WME',
+    'WOLTERSKLUWER',
+    'WOODSIDE',
+    'WORK',
+    'WORKS',
+    'WORLD',
+    'WOW',
+    'WS',
+    'WTC',
+    'WTF',
+    'XBOX',
+    'XEROX',
+    'XFINITY',
+    'XIHUAN',
+    'XIN',
+    'XN--11B4C3D',
+    'XN--1CK2E1B',
+    'XN--1QQW23A',
+    'XN--2SCRJ9C',
+    'XN--30RR7Y',
+    'XN--3BST00M',
+    'XN--3DS443G',
+    'XN--3E0B707E',
+    'XN--3HCRJ9C',
+    'XN--3OQ18VL8PN36A',
+    'XN--3PXU8K',
+    'XN--42C2D9A',
+    'XN--45BR5CYL',
+    'XN--45BRJ9C',
+    'XN--45Q11C',
+    'XN--4GBRIM',
+    'XN--54B7FTA0CC',
+    'XN--55QW42G',
+    'XN--55QX5D',
+    'XN--5SU34J936BGSG',
+    'XN--5TZM5G',
+    'XN--6FRZ82G',
+    'XN--6QQ986B3XL',
+    'XN--80ADXHKS',
+    'XN--80AO21A',
+    'XN--80AQECDR1A',
+    'XN--80ASEHDB',
+    'XN--80ASWG',
+    'XN--8Y0A063A',
+    'XN--90A3AC',
+    'XN--90AE',
+    'XN--90AIS',
+    'XN--9DBQ2A',
+    'XN--9ET52U',
+    'XN--9KRT00A',
+    'XN--B4W605FERD',
+    'XN--BCK1B9A5DRE4C',
+    'XN--C1AVG',
+    'XN--C2BR7G',
+    'XN--CCK2B3B',
+    'XN--CG4BKI',
+    'XN--CLCHC0EA0B2G2A9GCD',
+    'XN--CZR694B',
+    'XN--CZRS0T',
+    'XN--CZRU2D',
+    'XN--D1ACJ3B',
+    'XN--D1ALF',
+    'XN--E1A4C',
+    'XN--ECKVDTC9D',
+    'XN--EFVY88H',
+    'XN--ESTV75G',
+    'XN--FCT429K',
+    'XN--FHBEI',
+    'XN--FIQ228C5HS',
+    'XN--FIQ64B',
+    'XN--FIQS8S',
+    'XN--FIQZ9S',
+    'XN--FJQ720A',
+    'XN--FLW351E',
+    'XN--FPCRJ9C3D',
+    'XN--FZC2C9E2C',
+    'XN--FZYS8D69UVGM',
+    'XN--G2XX48C',
+    'XN--GCKR3F0F',
+    'XN--GECRJ9C',
+    'XN--GK3AT1E',
+    'XN--H2BREG3EVE',
+    'XN--H2BRJ9C',
+    'XN--H2BRJ9C8C',
+    'XN--HXT814E',
+    'XN--I1B6B1A6A2E',
+    'XN--IMR513N',
+    'XN--IO0A7I',
+    'XN--J1AEF',
+    'XN--J1AMH',
+    'XN--J6W193G',
+    'XN--JLQ61U9W7B',
+    'XN--JVR189M',
+    'XN--KCRX77D1X4A',
+    'XN--KPRW13D',
+    'XN--KPRY57D',
+    'XN--KPU716F',
+    'XN--KPUT3I',
+    'XN--L1ACC',
+    'XN--LGBBAT1AD8J',
+    'XN--MGB9AWBF',
+    'XN--MGBA3A3EJT',
+    'XN--MGBA3A4F16A',
+    'XN--MGBA7C0BBN0A',
+    'XN--MGBAAKC7DVF',
+    'XN--MGBAAM7A8H',
+    'XN--MGBAB2BD',
+    'XN--MGBAH1A3HJKRD',
+    'XN--MGBAI9AZGQP6J',
+    'XN--MGBAYH7GPA',
+    'XN--MGBBH1A',
+    'XN--MGBBH1A71E',
+    'XN--MGBC0A9AZCG',
+    'XN--MGBCA7DZDO',
+    'XN--MGBERP4A5D4AR',
+    'XN--MGBGU82A',
+    'XN--MGBI4ECEXP',
+    'XN--MGBPL2FH',
+    'XN--MGBT3DHD',
+    'XN--MGBTX2B',
+    'XN--MGBX4CD0AB',
+    'XN--MIX891F',
+    'XN--MK1BU44C',
+    'XN--MXTQ1M',
+    'XN--NGBC5AZD',
+    'XN--NGBE9E0A',
+    'XN--NGBRX',
+    'XN--NODE',
+    'XN--NQV7F',
+    'XN--NQV7FS00EMA',
+    'XN--NYQY26A',
+    'XN--O3CW4H',
+    'XN--OGBPF8FL',
+    'XN--OTU796D',
+    'XN--P1ACF',
+    'XN--P1AI',
+    'XN--PBT977C',
+    'XN--PGBS0DH',
+    'XN--PSSY2U',
+    'XN--Q9JYB4C',
+    'XN--QCKA1PMC',
+    'XN--QXA6A',
+    'XN--QXAM',
+    'XN--RHQV96G',
+    'XN--ROVU88B',
+    'XN--RVC1E0AM3E',
+    'XN--S9BRJ9C',
+    'XN--SES554G',
+    'XN--T60B56A',
+    'XN--TCKWE',
+    'XN--TIQ49XQYJ',
+    'XN--UNUP4Y',
+    'XN--VERMGENSBERATER-CTB',
+    'XN--VERMGENSBERATUNG-PWB',
+    'XN--VHQUV',
+    'XN--VUQ861B',
+    'XN--W4R85EL8FHU5DNRA',
+    'XN--W4RS40L',
+    'XN--WGBH1C',
+    'XN--WGBL6A',
+    'XN--XHQ521B',
+    'XN--XKC2AL3HYE2A',
+    'XN--XKC2DL3A5EE0H',
+    'XN--Y9A3AQ',
+    'XN--YFRO4I67O',
+    'XN--YGBI2AMMX',
+    'XN--ZFR164B',
+    'XXX',
+    'XYZ',
+    'YACHTS',
+    'YAHOO',
+    'YAMAXUN',
+    'YANDEX',
+    'YE',
+    'YODOBASHI',
+    'YOGA',
+    'YOKOHAMA',
+    'YOU',
+    'YOUTUBE',
+    'YT',
+    'YUN',
+    'ZA',
+    'ZAPPOS',
+    'ZARA',
+    'ZERO',
+    'ZIP',
+    'ZM',
+    'ZONE',
+    'ZUERICH',
+    'ZW'
+];
+
+
+// Keep as upper-case to make updating from source easier
+
+module.exports = new Set(internals.tlds.map((tld) => tld.toLowerCase()));
+
+},{}],212:[function(require,module,exports){
+arguments[4][131][0].apply(exports,arguments)
+},{"dup":131}],213:[function(require,module,exports){
+arguments[4][132][0].apply(exports,arguments)
+},{"./assert":214,"./clone":217,"./merge":230,"./utils":236,"dup":132}],214:[function(require,module,exports){
+arguments[4][4][0].apply(exports,arguments)
+},{"./error":220,"dup":4}],215:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"_process":100,"dup":5}],216:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"./ignore":226,"dup":6}],217:[function(require,module,exports){
+arguments[4][136][0].apply(exports,arguments)
+},{"./types":235,"./utils":236,"buffer":49,"dup":136}],218:[function(require,module,exports){
+arguments[4][8][0].apply(exports,arguments)
+},{"./assert":214,"./deepEqual":219,"./escapeRegex":224,"./utils":236,"dup":8}],219:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"./types":235,"buffer":49,"dup":9}],220:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"./stringify":234,"dup":10}],221:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"./assert":214,"dup":11}],222:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],223:[function(require,module,exports){
+arguments[4][13][0].apply(exports,arguments)
+},{"dup":13}],224:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"dup":14}],225:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],226:[function(require,module,exports){
+arguments[4][16][0].apply(exports,arguments)
+},{"dup":16}],227:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"./applyToDefaults":213,"./assert":214,"./bench":215,"./block":216,"./clone":217,"./contain":218,"./deepEqual":219,"./error":220,"./escapeHeaderAttribute":221,"./escapeHtml":222,"./escapeJson":223,"./escapeRegex":224,"./flatten":225,"./ignore":226,"./intersect":228,"./isPromise":229,"./merge":230,"./once":231,"./reach":232,"./reachTemplate":233,"./stringify":234,"./wait":237,"dup":17}],228:[function(require,module,exports){
+arguments[4][18][0].apply(exports,arguments)
+},{"dup":18}],229:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19}],230:[function(require,module,exports){
+arguments[4][149][0].apply(exports,arguments)
+},{"./assert":214,"./clone":217,"./utils":236,"buffer":49,"dup":149}],231:[function(require,module,exports){
+arguments[4][21][0].apply(exports,arguments)
+},{"dup":21}],232:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"./assert":214,"dup":22}],233:[function(require,module,exports){
+arguments[4][23][0].apply(exports,arguments)
+},{"./reach":232,"dup":23}],234:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"dup":24}],235:[function(require,module,exports){
+arguments[4][25][0].apply(exports,arguments)
+},{"buffer":49,"dup":25}],236:[function(require,module,exports){
+arguments[4][155][0].apply(exports,arguments)
+},{"./reach":232,"dup":155}],237:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"dup":27}],238:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Ref = require('./ref');
+
+
+const internals = {};
+
+
+exports.schema = function (Joi, config) {
+
+    if (config !== undefined && config !== null && typeof config === 'object') {
+
+        if (config.isJoi) {
+            return config;
+        }
+
+        if (Array.isArray(config)) {
+            return Joi.alternatives().try(config);
+        }
+
+        if (config instanceof RegExp) {
+            return Joi.string().regex(config);
+        }
+
+        if (config instanceof Date) {
+            return Joi.date().valid(config);
+        }
+
+        return Joi.object().keys(config);
+    }
+
+    if (typeof config === 'string') {
+        return Joi.string().valid(config);
+    }
+
+    if (typeof config === 'number') {
+        return Joi.number().valid(config);
+    }
+
+    if (typeof config === 'boolean') {
+        return Joi.boolean().valid(config);
+    }
+
+    if (Ref.isRef(config)) {
+        return Joi.valid(config);
+    }
+
+    Hoek.assert(config === null, 'Invalid schema content:', config);
+
+    return Joi.valid(null);
+};
+
+
+exports.ref = function (id) {
+
+    return Ref.isRef(id) ? id : Ref.create(id);
+};
+
+},{"./ref":242,"@hapi/hoek":227}],239:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Language = require('./language');
+
+
+const internals = {
+    annotations: Symbol('joi-annotations')
+};
+
+
+internals.stringify = function (value, wrapArrays) {
+
+    const type = typeof value;
+
+    if (value === null) {
+        return 'null';
+    }
+
+    if (type === 'string') {
+        return value;
+    }
+
+    if (value instanceof exports.Err || type === 'function' || type === 'symbol') {
+        return value.toString();
+    }
+
+    if (type === 'object') {
+        if (Array.isArray(value)) {
+            let partial = '';
+
+            for (let i = 0; i < value.length; ++i) {
+                partial = partial + (partial.length ? ', ' : '') + internals.stringify(value[i], wrapArrays);
+            }
+
+            return wrapArrays ? '[' + partial + ']' : partial;
+        }
+
+        return value.toString();
+    }
+
+    return JSON.stringify(value);
+};
+
+
+exports.Err = class {
+
+    constructor(type, context, state, options, flags, message, template) {
+
+        this.isJoi = true;
+        this.type = type;
+        this.context = context || {};
+        this.context.key = state.path[state.path.length - 1];
+        this.context.label = state.key;
+        this.path = state.path;
+        this.options = options;
+        this.flags = flags;
+        this.message = message;
+        this.template = template;
+
+        const localized = this.options.language;
+
+        if (this.flags.label) {
+            this.context.label = this.flags.label;
+        }
+        else if (localized &&                   // language can be null for arrays exclusion check
+            (this.context.label === '' ||
+            this.context.label === null)) {
+            this.context.label = localized.root || Language.errors.root;
+        }
+    }
+
+    toString() {
+
+        if (this.message) {
+            return this.message;
+        }
+
+        let format;
+
+        if (this.template) {
+            format = this.template;
+        }
+
+        const localized = this.options.language;
+
+        format = format || Hoek.reach(localized, this.type) || Hoek.reach(Language.errors, this.type);
+
+        if (format === undefined) {
+            return `Error code "${this.type}" is not defined, your custom type is missing the correct language definition`;
+        }
+
+        let wrapArrays = Hoek.reach(localized, 'messages.wrapArrays');
+        if (typeof wrapArrays !== 'boolean') {
+            wrapArrays = Language.errors.messages.wrapArrays;
+        }
+
+        if (format === null) {
+            const childrenString = internals.stringify(this.context.reason, wrapArrays);
+            if (wrapArrays) {
+                return childrenString.slice(1, -1);
+            }
+
+            return childrenString;
+        }
+
+        const hasKey = /{{!?label}}/.test(format);
+        const skipKey = format.length > 2 && format[0] === '!' && format[1] === '!';
+
+        if (skipKey) {
+            format = format.slice(2);
+        }
+
+        if (!hasKey && !skipKey) {
+            const localizedKey = Hoek.reach(localized, 'key');
+            if (typeof localizedKey === 'string') {
+                format = localizedKey + format;
+            }
+            else {
+                format = Hoek.reach(Language.errors, 'key') + format;
+            }
+        }
+
+        const message =  format.replace(/{{(!?)([^}]+)}}/g, ($0, isSecure, name) => {
+
+            const value = Hoek.reach(this.context, name);
+            const normalized = internals.stringify(value, wrapArrays);
+            return (isSecure && this.options.escapeHtml ? Hoek.escapeHtml(normalized) : normalized);
+        });
+
+        this.toString = () => message;  // Persist result of last toString call, it won't change
+
+        return message;
+    }
+
+};
+
+
+exports.create = function (type, context, state, options, flags, message, template) {
+
+    return new exports.Err(type, context, state, options, flags, message, template);
+};
+
+
+exports.process = function (errors, object) {
+
+    if (!errors) {
+        return null;
+    }
+
+    // Construct error
+
+    let message = '';
+    const details = [];
+
+    const processErrors = function (localErrors, parent, overrideMessage) {
+
+        for (let i = 0; i < localErrors.length; ++i) {
+            const item = localErrors[i];
+
+            if (item instanceof Error) {
+                return item;
+            }
+
+            if (item.flags.error && typeof item.flags.error !== 'function') {
+                if (!item.flags.selfError || !item.context.reason) {
+                    return item.flags.error;
+                }
+            }
+
+            let itemMessage;
+            if (parent === undefined) {
+                itemMessage = item.toString();
+                message = message + (message ? '. ' : '') + itemMessage;
+            }
+
+            // Do not push intermediate errors, we're only interested in leafs
+
+            if (item.context.reason) {
+                const override = processErrors(item.context.reason, item.path, item.type === 'override' ? item.message : null);
+                if (override) {
+                    return override;
+                }
+            }
+            else {
+                details.push({
+                    message: overrideMessage || itemMessage || item.toString(),
+                    path: item.path,
+                    type: item.type,
+                    context: item.context
+                });
+            }
+        }
+    };
+
+    const override = processErrors(errors);
+    if (override) {
+        return override;
+    }
+
+    const error = new Error(message);
+    error.isJoi = true;
+    error.name = 'ValidationError';
+    error.details = details;
+    error._object = object;
+    error.annotate = internals.annotate;
+    return error;
+};
+
+
+// Inspired by json-stringify-safe
+
+internals.safeStringify = function (obj, spaces) {
+
+    return JSON.stringify(obj, internals.serializer(), spaces);
+};
+
+
+internals.serializer = function () {
+
+    const keys = [];
+    const stack = [];
+
+    const cycleReplacer = (key, value) => {
+
+        if (stack[0] === value) {
+            return '[Circular ~]';
+        }
+
+        return '[Circular ~.' + keys.slice(0, stack.indexOf(value)).join('.') + ']';
+    };
+
+    return function (key, value) {
+
+        if (stack.length > 0) {
+            const thisPos = stack.indexOf(this);
+            if (~thisPos) {
+                stack.length = thisPos + 1;
+                keys.length = thisPos + 1;
+                keys[thisPos] = key;
+            }
+            else {
+                stack.push(this);
+                keys.push(key);
+            }
+
+            if (~stack.indexOf(value)) {
+                value = cycleReplacer.call(this, key, value);
+            }
+        }
+        else {
+            stack.push(value);
+        }
+
+        if (value) {
+            const annotations = value[internals.annotations];
+            if (annotations) {
+                if (Array.isArray(value)) {
+                    const annotated = [];
+
+                    for (let i = 0; i < value.length; ++i) {
+                        if (annotations.errors[i]) {
+                            annotated.push(`_$idx$_${annotations.errors[i].sort().join(', ')}_$end$_`);
+                        }
+
+                        annotated.push(value[i]);
+                    }
+
+                    value = annotated;
+                }
+                else {
+                    const errorKeys = Object.keys(annotations.errors);
+                    for (let i = 0; i < errorKeys.length; ++i) {
+                        const errorKey = errorKeys[i];
+                        value[`${errorKey}_$key$_${annotations.errors[errorKey].sort().join(', ')}_$end$_`] = value[errorKey];
+                        value[errorKey] = undefined;
+                    }
+
+                    const missingKeys = Object.keys(annotations.missing);
+                    for (let i = 0; i < missingKeys.length; ++i) {
+                        const missingKey = missingKeys[i];
+                        value[`_$miss$_${missingKey}|${annotations.missing[missingKey]}_$end$_`] = '__missing__';
+                    }
+                }
+
+                return value;
+            }
+        }
+
+        if (value === Infinity || value === -Infinity || Number.isNaN(value) ||
+            typeof value === 'function' || typeof value === 'symbol') {
+            return '[' + value.toString() + ']';
+        }
+
+        return value;
+    };
+};
+
+
+internals.annotate = function (stripColorCodes) {
+
+    const redFgEscape = stripColorCodes ? '' : '\u001b[31m';
+    const redBgEscape = stripColorCodes ? '' : '\u001b[41m';
+    const endColor = stripColorCodes ? '' : '\u001b[0m';
+
+    if (typeof this._object !== 'object') {
+        return this.details[0].message;
+    }
+
+    const obj = Hoek.clone(this._object || {});
+
+    for (let i = this.details.length - 1; i >= 0; --i) {        // Reverse order to process deepest child first
+        const pos = i + 1;
+        const error = this.details[i];
+        const path = error.path;
+        let ref = obj;
+        for (let j = 0; ; ++j) {
+            const seg = path[j];
+
+            if (ref.isImmutable) {
+                ref = ref.clone();                              // joi schemas are not cloned by hoek, we have to take this extra step
+            }
+
+            if (j + 1 < path.length &&
+                ref[seg] &&
+                typeof ref[seg] !== 'string') {
+
+                ref = ref[seg];
+            }
+            else {
+                const refAnnotations = ref[internals.annotations] = ref[internals.annotations] || { errors: {}, missing: {} };
+                const value = ref[seg];
+                const cacheKey = seg || error.context.label;
+
+                if (value !== undefined) {
+                    refAnnotations.errors[cacheKey] = refAnnotations.errors[cacheKey] || [];
+                    refAnnotations.errors[cacheKey].push(pos);
+                }
+                else {
+                    refAnnotations.missing[cacheKey] = pos;
+                }
+
+                break;
+            }
+        }
+    }
+
+    const replacers = {
+        key: /_\$key\$_([, \d]+)_\$end\$_"/g,
+        missing: /"_\$miss\$_([^|]+)\|(\d+)_\$end\$_": "__missing__"/g,
+        arrayIndex: /\s*"_\$idx\$_([, \d]+)_\$end\$_",?\n(.*)/g,
+        specials: /"\[(NaN|Symbol.*|-?Infinity|function.*|\(.*)]"/g
+    };
+
+    let message = internals.safeStringify(obj, 2)
+        .replace(replacers.key, ($0, $1) => `" ${redFgEscape}[${$1}]${endColor}`)
+        .replace(replacers.missing, ($0, $1, $2) => `${redBgEscape}"${$1}"${endColor}${redFgEscape} [${$2}]: -- missing --${endColor}`)
+        .replace(replacers.arrayIndex, ($0, $1, $2) => `\n${$2} ${redFgEscape}[${$1}]${endColor}`)
+        .replace(replacers.specials, ($0, $1) => $1);
+
+    message = `${message}\n${redFgEscape}`;
+
+    for (let i = 0; i < this.details.length; ++i) {
+        const pos = i + 1;
+        message = `${message}\n[${pos}] ${this.details[i].message}`;
+    }
+
+    message = message + endColor;
+
+    return message;
+};
+
+},{"./language":241,"@hapi/hoek":227}],240:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('./types/any');
+const Cast = require('./cast');
+const Errors = require('./errors');
+const Lazy = require('./types/lazy');
+const Ref = require('./ref');
+
+
+const internals = {
+    alternatives: require('./types/alternatives'),
+    array: require('./types/array'),
+    boolean: require('./types/boolean'),
+    binary: require('./types/binary'),
+    date: require('./types/date'),
+    func: require('./types/func'),
+    number: require('./types/number'),
+    object: require('./types/object'),
+    string: require('./types/string'),
+    symbol: require('./types/symbol')
+};
+
+
+internals.callWithDefaults = function (schema, args) {
+
+    Hoek.assert(this, 'Must be invoked on a Joi instance.');
+
+    if (this._defaults) {
+        schema = this._defaults(schema);
+    }
+
+    schema._currentJoi = this;
+
+    return schema._init(...args);
+};
+
+
+internals.root = function () {
+
+    const any = new Any();
+
+    const root = any.clone();
+    Any.prototype._currentJoi = root;
+    root._currentJoi = root;
+    root._binds = new Set(['any', 'alternatives', 'alt', 'array', 'bool', 'boolean', 'binary', 'date', 'func', 'number', 'object', 'string', 'symbol', 'validate', 'describe', 'compile', 'assert', 'attempt', 'lazy', 'defaults', 'extend', 'allow', 'valid', 'only', 'equal', 'invalid', 'disallow', 'not', 'required', 'exist', 'optional', 'forbidden', 'strip', 'when', 'empty', 'default']);
+
+    root.any = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.any() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, any, args);
+    };
+
+    root.alternatives = root.alt = function (...args) {
+
+        return internals.callWithDefaults.call(this, internals.alternatives, args);
+    };
+
+    root.array = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.array() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.array, args);
+    };
+
+    root.boolean = root.bool = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.boolean() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.boolean, args);
+    };
+
+    root.binary = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.binary() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.binary, args);
+    };
+
+    root.date = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.date() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.date, args);
+    };
+
+    root.func = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.func() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.func, args);
+    };
+
+    root.number = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.number() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.number, args);
+    };
+
+    root.object = function (...args) {
+
+        return internals.callWithDefaults.call(this, internals.object, args);
+    };
+
+    root.string = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.string() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.string, args);
+    };
+
+    root.symbol = function (...args) {
+
+        Hoek.assert(args.length === 0, 'Joi.symbol() does not allow arguments.');
+
+        return internals.callWithDefaults.call(this, internals.symbol, args);
+    };
+
+    root.ref = function (...args) {
+
+        return Ref.create(...args);
+    };
+
+    root.isRef = function (ref) {
+
+        return Ref.isRef(ref);
+    };
+
+    root.validate = function (value, ...args /*, [schema], [options], callback */) {
+
+        const last = args[args.length - 1];
+        const callback = typeof last === 'function' ? last : null;
+
+        const count = args.length - (callback ? 1 : 0);
+        if (count === 0) {
+            return any.validate(value, callback);
+        }
+
+        const options = count === 2 ? args[1] : undefined;
+        const schema = this.compile(args[0]);
+
+        return schema._validateWithOptions(value, options, callback);
+    };
+
+    root.describe = function (...args) {
+
+        const schema = args.length ? this.compile(args[0]) : any;
+        return schema.describe();
+    };
+
+    root.compile = function (schema) {
+
+        try {
+            return Cast.schema(this, schema);
+        }
+        catch (err) {
+            if (err.hasOwnProperty('path')) {
+                err.message = err.message + '(' + err.path + ')';
+            }
+
+            throw err;
+        }
+    };
+
+    root.assert = function (value, schema, message) {
+
+        this.attempt(value, schema, message);
+    };
+
+    root.attempt = function (value, schema, message) {
+
+        const result = this.validate(value, schema);
+        const error = result.error;
+        if (error) {
+            if (!message) {
+                if (typeof error.annotate === 'function') {
+                    error.message = error.annotate();
+                }
+
+                throw error;
+            }
+
+            if (!(message instanceof Error)) {
+                if (typeof error.annotate === 'function') {
+                    error.message = `${message} ${error.annotate()}`;
+                }
+
+                throw error;
+            }
+
+            throw message;
+        }
+
+        return result.value;
+    };
+
+    root.reach = function (schema, path) {
+
+        Hoek.assert(schema && schema instanceof Any, 'you must provide a joi schema');
+        Hoek.assert(Array.isArray(path) || typeof path === 'string', 'path must be a string or an array of strings');
+
+        const reach = (sourceSchema, schemaPath) => {
+
+            if (!schemaPath.length) {
+                return sourceSchema;
+            }
+
+            const children = sourceSchema._inner.children;
+            if (!children) {
+                return;
+            }
+
+            const key = schemaPath.shift();
+            for (let i = 0; i < children.length; ++i) {
+                const child = children[i];
+                if (child.key === key) {
+                    return reach(child.schema, schemaPath);
+                }
+            }
+        };
+
+        const schemaPath = typeof path === 'string' ? (path ? path.split('.') : []) : path.slice();
+
+        return reach(schema, schemaPath);
+    };
+
+    root.lazy = function (...args) {
+
+        return internals.callWithDefaults.call(this, Lazy, args);
+    };
+
+    root.defaults = function (fn) {
+
+        Hoek.assert(typeof fn === 'function', 'Defaults must be a function');
+
+        let joi = Object.create(this.any());
+        joi = fn(joi);
+
+        Hoek.assert(joi && joi instanceof this.constructor, 'defaults() must return a schema');
+
+        Object.assign(joi, this, joi.clone()); // Re-add the types from `this` but also keep the settings from joi's potential new defaults
+
+        joi._defaults = (schema) => {
+
+            if (this._defaults) {
+                schema = this._defaults(schema);
+                Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
+            }
+
+            schema = fn(schema);
+            Hoek.assert(schema instanceof this.constructor, 'defaults() must return a schema');
+            return schema;
+        };
+
+        return joi;
+    };
+
+    root.bind = function () {
+
+        const joi = Object.create(this);
+
+        joi._binds.forEach((bind) => {
+
+            joi[bind] = joi[bind].bind(joi);
+        });
+
+        return joi;
+    };
+
+    root.extend = function (...args) {
+
+        const extensions = Hoek.flatten(args);
+        Hoek.assert(extensions.length > 0, 'You need to provide at least one extension');
+
+        this.assert(extensions, root.extensionsSchema);
+
+        const joi = Object.create(this.any());
+        Object.assign(joi, this);
+        joi._currentJoi = joi;
+        joi._binds = new Set(joi._binds);
+
+        for (let i = 0; i < extensions.length; ++i) {
+            let extension = extensions[i];
+
+            if (typeof extension === 'function') {
+                extension = extension(joi);
+            }
+
+            this.assert(extension, root.extensionSchema);
+
+            const base = (extension.base || this.any()).clone(); // Cloning because we're going to override language afterwards
+            const ctor = base.constructor;
+            const type = class extends ctor { // eslint-disable-line no-loop-func
+
+                constructor() {
+
+                    super();
+                    if (extension.base) {
+                        Object.assign(this, base);
+                    }
+
+                    this._type = extension.name;
+                }
+
+            };
+
+            if (extension.language) {
+                const lang = {
+                    [extension.name]: extension.language
+                };
+                type.prototype._language = Hoek.applyToDefaults(type.prototype._language || (base._settings && base._settings.language) || {}, lang);
+            }
+
+
+            if (extension.coerce) {
+                type.prototype._coerce = function (value, state, options) {
+
+                    if (ctor.prototype._coerce) {
+                        const baseRet = ctor.prototype._coerce.call(this, value, state, options);
+
+                        if (baseRet.errors) {
+                            return baseRet;
+                        }
+
+                        value = baseRet.value;
+                    }
+
+                    const ret = extension.coerce.call(this, value, state, options);
+                    if (ret instanceof Errors.Err) {
+                        return { value, errors: ret };
+                    }
+
+                    return { value: ret };
+                };
+            }
+
+            if (extension.pre) {
+                type.prototype._base = function (value, state, options) {
+
+                    if (ctor.prototype._base) {
+                        const baseRet = ctor.prototype._base.call(this, value, state, options);
+
+                        if (baseRet.errors) {
+                            return baseRet;
+                        }
+
+                        value = baseRet.value;
+                    }
+
+                    const ret = extension.pre.call(this, value, state, options);
+                    if (ret instanceof Errors.Err) {
+                        return { value, errors: ret };
+                    }
+
+                    return { value: ret };
+                };
+            }
+
+            if (extension.rules) {
+                for (let j = 0; j < extension.rules.length; ++j) {
+                    const rule = extension.rules[j];
+                    const ruleArgs = rule.params ?
+                        (rule.params instanceof Any ? rule.params._inner.children.map((k) => k.key) : Object.keys(rule.params)) :
+                        [];
+                    const validateArgs = rule.params ? Cast.schema(this, rule.params) : null;
+
+                    type.prototype[rule.name] = function (...rArgs) { // eslint-disable-line no-loop-func
+
+                        if (rArgs.length > ruleArgs.length) {
+                            throw new Error('Unexpected number of arguments');
+                        }
+
+                        let hasRef = false;
+                        let arg = {};
+
+                        for (let k = 0; k < ruleArgs.length; ++k) {
+                            arg[ruleArgs[k]] = rArgs[k];
+                            if (!hasRef && Ref.isRef(rArgs[k])) {
+                                hasRef = true;
+                            }
+                        }
+
+                        if (validateArgs) {
+                            arg = joi.attempt(arg, validateArgs);
+                        }
+
+                        let schema;
+                        if (rule.validate && !rule.setup) {
+                            const validate = function (value, state, options) {
+
+                                return rule.validate.call(this, arg, value, state, options);
+                            };
+
+                            schema = this._test(rule.name, arg, validate, {
+                                description: rule.description,
+                                hasRef
+                            });
+                        }
+                        else {
+                            schema = this.clone();
+                        }
+
+                        if (rule.setup) {
+                            const newSchema = rule.setup.call(schema, arg);
+                            if (newSchema !== undefined) {
+                                Hoek.assert(newSchema instanceof Any, `Setup of extension Joi.${this._type}().${rule.name}() must return undefined or a Joi object`);
+                                schema = newSchema;
+                            }
+
+                            if (rule.validate) {
+                                const validate = function (value, state, options) {
+
+                                    return rule.validate.call(this, arg, value, state, options);
+                                };
+
+                                schema = schema._test(rule.name, arg, validate, {
+                                    description: rule.description,
+                                    hasRef
+                                });
+                            }
+                        }
+
+                        return schema;
+                    };
+                }
+            }
+
+            if (extension.describe) {
+                type.prototype.describe = function () {
+
+                    const description = ctor.prototype.describe.call(this);
+                    return extension.describe.call(this, description);
+                };
+            }
+
+            const instance = new type();
+            joi[extension.name] = function (...extArgs) {
+
+                return internals.callWithDefaults.call(this, instance, extArgs);
+            };
+
+            joi._binds.add(extension.name);
+        }
+
+        return joi;
+    };
+
+    root.extensionSchema = internals.object.keys({
+        base: internals.object.type(Any, 'Joi object'),
+        name: internals.string.required(),
+        coerce: internals.func.arity(3),
+        pre: internals.func.arity(3),
+        language: internals.object,
+        describe: internals.func.arity(1),
+        rules: internals.array.items(internals.object.keys({
+            name: internals.string.required(),
+            setup: internals.func.arity(1),
+            validate: internals.func.arity(4),
+            params: [
+                internals.object.pattern(/.*/, internals.object.type(Any, 'Joi object')),
+                internals.object.type(internals.object.constructor, 'Joi object')
+            ],
+            description: [internals.string, internals.func.arity(1)]
+        }).or('setup', 'validate'))
+    }).strict();
+
+    root.extensionsSchema = internals.array.items([internals.object, internals.func.arity(1)]).strict();
+
+    root.version = require('../package.json').version;
+
+    return root;
+};
+
+
+module.exports = internals.root();
+
+},{"../package.json":263,"./cast":238,"./errors":239,"./ref":242,"./types/alternatives":245,"./types/any":246,"./types/array":248,"./types/binary":249,"./types/boolean":250,"./types/date":251,"./types/func":252,"./types/lazy":253,"./types/number":254,"./types/object":255,"./types/string":257,"./types/symbol":261,"@hapi/hoek":227}],241:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+exports.errors = {
+    root: 'value',
+    key: '"{{!label}}" ',
+    messages: {
+        wrapArrays: true
+    },
+    any: {
+        unknown: 'is not allowed',
+        invalid: 'contains an invalid value',
+        empty: 'is not allowed to be empty',
+        required: 'is required',
+        allowOnly: 'must be one of {{valids}}',
+        default: 'threw an error when running default method'
+    },
+    alternatives: {
+        base: 'not matching any of the allowed alternatives',
+        child: null
+    },
+    array: {
+        base: 'must be an array',
+        includes: 'at position {{pos}} does not match any of the allowed types',
+        includesSingle: 'single value of "{{!label}}" does not match any of the allowed types',
+        includesOne: 'at position {{pos}} fails because {{reason}}',
+        includesOneSingle: 'single value of "{{!label}}" fails because {{reason}}',
+        includesRequiredUnknowns: 'does not contain {{unknownMisses}} required value(s)',
+        includesRequiredKnowns: 'does not contain {{knownMisses}}',
+        includesRequiredBoth: 'does not contain {{knownMisses}} and {{unknownMisses}} other required value(s)',
+        excludes: 'at position {{pos}} contains an excluded value',
+        excludesSingle: 'single value of "{{!label}}" contains an excluded value',
+        hasKnown: 'does not contain at least one required match for type "{{!patternLabel}}"',
+        hasUnknown: 'does not contain at least one required match',
+        min: 'must contain at least {{limit}} items',
+        max: 'must contain less than or equal to {{limit}} items',
+        length: 'must contain {{limit}} items',
+        ordered: 'at position {{pos}} fails because {{reason}}',
+        orderedLength: 'at position {{pos}} fails because array must contain at most {{limit}} items',
+        ref: 'references "{{ref}}" which is not a positive integer',
+        sparse: 'must not be a sparse array',
+        unique: 'position {{pos}} contains a duplicate value'
+    },
+    boolean: {
+        base: 'must be a boolean'
+    },
+    binary: {
+        base: 'must be a buffer or a string',
+        min: 'must be at least {{limit}} bytes',
+        max: 'must be less than or equal to {{limit}} bytes',
+        length: 'must be {{limit}} bytes'
+    },
+    date: {
+        base: 'must be a number of milliseconds or valid date string',
+        strict: 'must be a valid date',
+        min: 'must be larger than or equal to "{{limit}}"',
+        max: 'must be less than or equal to "{{limit}}"',
+        less: 'must be less than "{{limit}}"',
+        greater: 'must be greater than "{{limit}}"',
+        isoDate: 'must be a valid ISO 8601 date',
+        timestamp: {
+            javascript: 'must be a valid timestamp or number of milliseconds',
+            unix: 'must be a valid timestamp or number of seconds'
+        },
+        ref: 'references "{{ref}}" which is not a date'
+    },
+    function: {
+        base: 'must be a Function',
+        arity: 'must have an arity of {{n}}',
+        minArity: 'must have an arity greater or equal to {{n}}',
+        maxArity: 'must have an arity lesser or equal to {{n}}',
+        ref: 'must be a Joi reference',
+        class: 'must be a class'
+    },
+    lazy: {
+        base: '!!schema error: lazy schema must be set',
+        schema: '!!schema error: lazy schema function must return a schema'
+    },
+    object: {
+        base: 'must be an object',
+        child: '!!child "{{!child}}" fails because {{reason}}',
+        min: 'must have at least {{limit}} children',
+        max: 'must have less than or equal to {{limit}} children',
+        length: 'must have {{limit}} children',
+        allowUnknown: '!!"{{!child}}" is not allowed',
+        with: '!!"{{mainWithLabel}}" missing required peer "{{peerWithLabel}}"',
+        without: '!!"{{mainWithLabel}}" conflict with forbidden peer "{{peerWithLabel}}"',
+        missing: 'must contain at least one of {{peersWithLabels}}',
+        xor: 'contains a conflict between exclusive peers {{peersWithLabels}}',
+        oxor: 'contains a conflict between optional exclusive peers {{peersWithLabels}}',
+        and: 'contains {{presentWithLabels}} without its required peers {{missingWithLabels}}',
+        nand: '!!"{{mainWithLabel}}" must not exist simultaneously with {{peersWithLabels}}',
+        assert: '!!"{{ref}}" validation failed because "{{ref}}" failed to {{message}}',
+        rename: {
+            multiple: 'cannot rename child "{{from}}" because multiple renames are disabled and another key was already renamed to "{{to}}"',
+            override: 'cannot rename child "{{from}}" because override is disabled and target "{{to}}" exists',
+            regex: {
+                multiple: 'cannot rename children {{from}} because multiple renames are disabled and another key was already renamed to "{{to}}"',
+                override: 'cannot rename children {{from}} because override is disabled and target "{{to}}" exists'
+            }
+        },
+        type: 'must be an instance of "{{type}}"',
+        schema: 'must be a Joi instance'
+    },
+    number: {
+        base: 'must be a number',
+        unsafe: 'must be a safe number',
+        min: 'must be larger than or equal to {{limit}}',
+        max: 'must be less than or equal to {{limit}}',
+        less: 'must be less than {{limit}}',
+        greater: 'must be greater than {{limit}}',
+        integer: 'must be an integer',
+        negative: 'must be a negative number',
+        positive: 'must be a positive number',
+        precision: 'must have no more than {{limit}} decimal places',
+        ref: 'references "{{ref}}" which is not a number',
+        multiple: 'must be a multiple of {{multiple}}',
+        port: 'must be a valid port'
+    },
+    string: {
+        base: 'must be a string',
+        min: 'length must be at least {{limit}} characters long',
+        max: 'length must be less than or equal to {{limit}} characters long',
+        length: 'length must be {{limit}} characters long',
+        alphanum: 'must only contain alpha-numeric characters',
+        token: 'must only contain alpha-numeric and underscore characters',
+        regex: {
+            base: 'with value "{{!value}}" fails to match the required pattern: {{pattern}}',
+            name: 'with value "{{!value}}" fails to match the {{name}} pattern',
+            invert: {
+                base: 'with value "{{!value}}" matches the inverted pattern: {{pattern}}',
+                name: 'with value "{{!value}}" matches the inverted {{name}} pattern'
+            }
+        },
+        email: 'must be a valid email',
+        uri: 'must be a valid uri',
+        uriRelativeOnly: 'must be a valid relative uri',
+        uriCustomScheme: 'must be a valid uri with a scheme matching the {{scheme}} pattern',
+        isoDate: 'must be a valid ISO 8601 date',
+        guid: 'must be a valid GUID',
+        hex: 'must only contain hexadecimal characters',
+        hexAlign: 'hex decoded representation must be byte aligned',
+        base64: 'must be a valid base64 string',
+        dataUri: 'must be a valid dataUri string',
+        hostname: 'must be a valid hostname',
+        normalize: 'must be unicode normalized in the {{form}} form',
+        lowercase: 'must only contain lowercase characters',
+        uppercase: 'must only contain uppercase characters',
+        trim: 'must not have leading or trailing whitespace',
+        creditCard: 'must be a credit card',
+        ref: 'references "{{ref}}" which is not a number',
+        ip: 'must be a valid ip address with a {{cidr}} CIDR',
+        ipVersion: 'must be a valid ip address of one of the following versions {{version}} with a {{cidr}} CIDR'
+    },
+    symbol: {
+        base: 'must be a symbol',
+        map: 'must be one of {{map}}'
+    }
+};
+
+},{}],242:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+
+const internals = {};
+
+
+exports.create = function (key, options) {
+
+    Hoek.assert(typeof key === 'string', 'Invalid reference key:', key);
+
+    const settings = Hoek.clone(options);         // options can be reused and modified
+
+    const ref = function (value, validationOptions) {
+
+        return Hoek.reach(ref.isContext ? validationOptions.context : value, ref.key, settings);
+    };
+
+    ref.isContext = (key[0] === ((settings && settings.contextPrefix) || '$'));
+    ref.key = (ref.isContext ? key.slice(1) : key);
+    ref.path = ref.key.split((settings && settings.separator) || '.');
+    ref.depth = ref.path.length;
+    ref.root = ref.path[0];
+    ref.isJoi = true;
+
+    ref.toString = function () {
+
+        return (ref.isContext ? 'context:' : 'ref:') + ref.key;
+    };
+
+    return ref;
+};
+
+
+exports.isRef = function (ref) {
+
+    return typeof ref === 'function' && ref.isJoi;
+};
+
+
+exports.push = function (array, ref) {
+
+    if (exports.isRef(ref) &&
+        !ref.isContext) {
+
+        array.push(ref.root);
+    }
+};
+
+},{"@hapi/hoek":227}],243:[function(require,module,exports){
+'use strict';
+
+const Joi = require('./index');
+
+
+const internals = {};
+
+
+exports.options = Joi.object({
+    abortEarly: Joi.boolean(),
+    convert: Joi.boolean(),
+    allowUnknown: Joi.boolean(),
+    skipFunctions: Joi.boolean(),
+    stripUnknown: [Joi.boolean(), Joi.object({ arrays: Joi.boolean(), objects: Joi.boolean() }).or('arrays', 'objects')],
+    language: Joi.object(),
+    presence: Joi.string().only('required', 'optional', 'forbidden', 'ignore'),
+    context: Joi.object(),
+    noDefaults: Joi.boolean(),
+    escapeHtml: Joi.boolean()
+}).strict();
+
+},{"./index":240}],244:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Ref = require('./ref');
+
+
+const internals = {};
+
+
+internals.extendedCheckForValue = function (value, insensitive) {
+
+    const valueType = typeof value;
+
+    if (valueType === 'object') {
+        if (value instanceof Date) {
+            return (item) => {
+
+                return item instanceof Date && value.getTime() === item.getTime();
+            };
+        }
+
+        if (Buffer.isBuffer(value)) {
+            return (item) => {
+
+                return Buffer.isBuffer(item) && value.length === item.length && value.toString('binary') === item.toString('binary');
+            };
+        }
+    }
+    else if (insensitive && valueType === 'string') {
+        const lowercaseValue = value.toLowerCase();
+        return (item) => {
+
+            return typeof item === 'string' && lowercaseValue === item.toLowerCase();
+        };
+    }
+
+    return null;
+};
+
+
+module.exports = class InternalSet {
+
+    constructor(from) {
+
+        this._set = new Set(from);
+        this._hasRef = false;
+    }
+
+    add(value, refs) {
+
+        const isRef = Ref.isRef(value);
+        if (!isRef && this.has(value, null, null, false)) {
+
+            return this;
+        }
+
+        if (refs !== undefined) { // If it's a merge, we don't have any refs
+            Ref.push(refs, value);
+        }
+
+        this._set.add(value);
+
+        this._hasRef |= isRef;
+
+        return this;
+    }
+
+    merge(add, remove) {
+
+        for (const item of add._set) {
+            this.add(item);
+        }
+
+        for (const item of remove._set) {
+            this.remove(item);
+        }
+
+        return this;
+    }
+
+    remove(value) {
+
+        this._set.delete(value);
+        return this;
+    }
+
+    has(value, state, options, insensitive) {
+
+        return !!this.get(value, state, options, insensitive);
+    }
+
+    get(value, state, options, insensitive) {
+
+        if (!this._set.size) {
+            return false;
+        }
+
+        const hasValue = this._set.has(value);
+        if (hasValue) {
+            return { value };
+        }
+
+        const extendedCheck = internals.extendedCheckForValue(value, insensitive);
+        if (!extendedCheck) {
+            if (state && this._hasRef) {
+                for (let item of this._set) {
+                    if (Ref.isRef(item)) {
+                        item = [].concat(item(state.reference || state.parent, options));
+                        const found = item.indexOf(value);
+                        if (found >= 0) {
+                            return { value: item[found] };
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        return this._has(value, state, options, extendedCheck);
+    }
+
+    _has(value, state, options, check) {
+
+        const checkRef = !!(state && this._hasRef);
+
+        const isReallyEqual = function (item) {
+
+            if (value === item) {
+                return true;
+            }
+
+            return check(item);
+        };
+
+        for (let item of this._set) {
+            if (checkRef && Ref.isRef(item)) { // Only resolve references if there is a state, otherwise it's a merge
+                item = item(state.reference || state.parent, options);
+
+                if (Array.isArray(item)) {
+                    const found = item.findIndex(isReallyEqual);
+                    if (found >= 0) {
+                        return {
+                            value: item[found]
+                        };
+                    }
+
+                    continue;
+                }
+            }
+
+            if (isReallyEqual(item)) {
+                return {
+                    value: item
+                };
+            }
+        }
+
+        return false;
+    }
+
+    values(options) {
+
+        if (options && options.stripUndefined) {
+            const values = [];
+
+            for (const item of this._set) {
+                if (item !== undefined) {
+                    values.push(item);
+                }
+            }
+
+            return values;
+        }
+
+        return Array.from(this._set);
+    }
+
+    slice() {
+
+        const set = new InternalSet(this._set);
+        set._hasRef = this._hasRef;
+        return set;
+    }
+
+    concat(source) {
+
+        const set = new InternalSet([...this._set, ...source._set]);
+        set._hasRef = !!(this._hasRef | source._hasRef);
+        return set;
+    }
+};
+
+}).call(this,{"isBuffer":require("../../../../../is-buffer/index.js")})
+},{"../../../../../is-buffer/index.js":60,"./ref":242}],245:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Cast = require('../../cast');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+
+internals.Alternatives = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'alternatives';
+        this._invalids.remove(null);
+        this._inner.matches = [];
+    }
+
+    _init(...args) {
+
+        return args.length ? this.try(...args) : this;
+    }
+
+    _base(value, state, options) {
+
+        const errors = [];
+        const il = this._inner.matches.length;
+        const baseType = this._baseType;
+
+        for (let i = 0; i < il; ++i) {
+            const item = this._inner.matches[i];
+            if (!item.schema) {
+                const schema = item.peek || item.is;
+                const input = item.is ? item.ref(state.reference || state.parent, options) : value;
+                const failed = schema._validate(input, null, options, state.parent).errors;
+
+                if (failed) {
+                    if (item.otherwise) {
+                        return item.otherwise._validate(value, state, options);
+                    }
+                }
+                else if (item.then) {
+                    return item.then._validate(value, state, options);
+                }
+
+                if (i === (il - 1) && baseType) {
+                    return baseType._validate(value, state, options);
+                }
+
+                continue;
+            }
+
+            const result = item.schema._validate(value, state, options);
+            if (!result.errors) {     // Found a valid match
+                return result;
+            }
+
+            errors.push(...result.errors);
+        }
+
+        if (errors.length) {
+            return { errors: this.createError('alternatives.child', { reason: errors }, state, options) };
+        }
+
+        return { errors: this.createError('alternatives.base', null, state, options) };
+    }
+
+    try(...schemas) {
+
+        schemas = Hoek.flatten(schemas);
+        Hoek.assert(schemas.length, 'Cannot add other alternatives without at least one schema');
+
+        const obj = this.clone();
+
+        for (let i = 0; i < schemas.length; ++i) {
+            const cast = Cast.schema(this._currentJoi, schemas[i]);
+            if (cast._refs.length) {
+                obj._refs.push(...cast._refs);
+            }
+
+            obj._inner.matches.push({ schema: cast });
+        }
+
+        return obj;
+    }
+
+    when(condition, options) {
+
+        let schemaCondition = false;
+        Hoek.assert(Ref.isRef(condition) || typeof condition === 'string' || (schemaCondition = condition instanceof Any), 'Invalid condition:', condition);
+        Hoek.assert(options, 'Missing options');
+        Hoek.assert(typeof options === 'object', 'Invalid options');
+        if (schemaCondition) {
+            Hoek.assert(!options.hasOwnProperty('is'), '"is" can not be used with a schema condition');
+        }
+        else {
+            Hoek.assert(options.hasOwnProperty('is'), 'Missing "is" directive');
+        }
+
+        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
+
+        const obj = this.clone();
+        let is;
+        if (!schemaCondition) {
+            is = Cast.schema(this._currentJoi, options.is);
+
+            if (options.is === null || !(Ref.isRef(options.is) || options.is instanceof Any)) {
+
+                // Only apply required if this wasn't already a schema or a ref, we'll suppose people know what they're doing
+                is = is.required();
+            }
+        }
+
+        const item = {
+            ref: schemaCondition ? null : Cast.ref(condition),
+            peek: schemaCondition ? condition : null,
+            is,
+            then: options.then !== undefined ? Cast.schema(this._currentJoi, options.then) : undefined,
+            otherwise: options.otherwise !== undefined ? Cast.schema(this._currentJoi, options.otherwise) : undefined
+        };
+
+        if (obj._baseType) {
+
+            item.then = item.then && obj._baseType.concat(item.then);
+            item.otherwise = item.otherwise && obj._baseType.concat(item.otherwise);
+        }
+
+        if (!schemaCondition) {
+            Ref.push(obj._refs, item.ref);
+            obj._refs.push(...item.is._refs);
+        }
+
+        if (item.then && item.then._refs.length) {
+            obj._refs.push(...item.then._refs);
+        }
+
+        if (item.otherwise && item.otherwise._refs.length) {
+            obj._refs.push(...item.otherwise._refs);
+        }
+
+        obj._inner.matches.push(item);
+
+        return obj;
+    }
+
+    label(name) {
+
+        const obj = super.label(name);
+        obj._inner.matches = obj._inner.matches.map((match) => {
+
+            if (match.schema) {
+                return { schema: match.schema.label(name) };
+            }
+
+            match = Object.assign({}, match);
+            if (match.then) {
+                match.then = match.then.label(name);
+            }
+
+            if (match.otherwise) {
+                match.otherwise = match.otherwise.label(name);
+            }
+
+            return match;
+        });
+        return obj;
+    }
+
+    describe() {
+
+        const description = super.describe();
+        const alternatives = [];
+        for (let i = 0; i < this._inner.matches.length; ++i) {
+            const item = this._inner.matches[i];
+            if (item.schema) {
+
+                // try()
+
+                alternatives.push(item.schema.describe());
+            }
+            else {
+
+                // when()
+
+                const when = item.is ? {
+                    ref: item.ref.toString(),
+                    is: item.is.describe()
+                } : {
+                    peek: item.peek.describe()
+                };
+
+                if (item.then) {
+                    when.then = item.then.describe();
+                }
+
+                if (item.otherwise) {
+                    when.otherwise = item.otherwise.describe();
+                }
+
+                alternatives.push(when);
+            }
+        }
+
+        description.alternatives = alternatives;
+        return description;
+    }
+
+};
+
+
+module.exports = new internals.Alternatives();
+
+},{"../../cast":238,"../../ref":242,"../any":246,"@hapi/hoek":227}],246:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Cast = require('../../cast');
+const Settings = require('./settings');
+const Ref = require('../../ref');
+const Errors = require('../../errors');
+const State = require('../state');
+const Symbols = require('../symbols');
+
+const Pkg = require('../../../package.json');
+
+let Alternatives = null;                            // Delay-loaded to prevent circular dependencies
+let Schemas = null;
+
+
+const internals = {
+    Set: require('../../set'),
+    symbol: Symbol.for('@hapi/joi/schema')
+};
+
+
+internals.defaults = {
+    abortEarly: true,
+    convert: true,
+    allowUnknown: false,
+    skipFunctions: false,
+    stripUnknown: false,
+    language: {},
+    presence: 'optional',
+    noDefaults: false,
+    escapeHtml: false
+
+    // context: null
+};
+
+
+module.exports = internals.Any = class {
+
+    constructor() {
+
+        this.isJoi = true;
+        this._type = 'any';
+        this._settings = null;
+        this._valids = new internals.Set();
+        this._invalids = new internals.Set();
+        this._tests = [];
+        this._refs = [];
+        this._flags = {
+            /*
+             presence: 'optional',                   // optional, required, forbidden, ignore
+             allowOnly: false,
+             allowUnknown: undefined,
+             default: undefined,
+             forbidden: false,
+             encoding: undefined,
+             insensitive: false,
+             trim: false,
+             normalize: undefined,                   // NFC, NFD, NFKC, NFKD
+             case: undefined,                        // upper, lower
+             empty: undefined,
+             func: false,
+             raw: false
+             */
+        };
+
+        this._description = null;
+        this._unit = null;
+        this._notes = [];
+        this._tags = [];
+        this._examples = [];
+        this._meta = [];
+
+        this._inner = {};                           // Hash of arrays of immutable objects
+    }
+
+    _init() {
+
+        return this;
+    }
+
+    get schemaType() {
+
+        return this._type;
+    }
+
+    createError(type, context, state, options, flags = this._flags) {
+
+        return Errors.create(type, context, state, options, flags);
+    }
+
+    createOverrideError(type, context, state, options, message, template) {
+
+        return Errors.create(type, context, state, options, this._flags, message, template);
+    }
+
+    checkOptions(options) {
+
+        Schemas = Schemas || require('../../schemas');
+
+        const result = Schemas.options.validate(options);
+
+        if (result.error) {
+            throw new Error(result.error.details[0].message);
+        }
+    }
+
+    clone() {
+
+        const obj = Object.create(Object.getPrototypeOf(this));
+
+        obj.isJoi = true;
+        obj._currentJoi = this._currentJoi;
+        obj._type = this._type;
+        obj._settings = this._settings;
+        obj._baseType = this._baseType;
+        obj._valids = this._valids.slice();
+        obj._invalids = this._invalids.slice();
+        obj._tests = this._tests.slice();
+        obj._refs = this._refs.slice();
+        obj._flags = Hoek.clone(this._flags);
+
+        obj._description = this._description;
+        obj._unit = this._unit;
+        obj._notes = this._notes.slice();
+        obj._tags = this._tags.slice();
+        obj._examples = this._examples.slice();
+        obj._meta = this._meta.slice();
+
+        obj._inner = {};
+        const inners = Object.keys(this._inner);
+        for (let i = 0; i < inners.length; ++i) {
+            const key = inners[i];
+            obj._inner[key] = this._inner[key] ? this._inner[key].slice() : null;
+        }
+
+        return obj;
+    }
+
+    concat(schema) {
+
+        Hoek.assert(schema instanceof internals.Any, 'Invalid schema object');
+        Hoek.assert(this._type === 'any' || schema._type === 'any' || schema._type === this._type, 'Cannot merge type', this._type, 'with another type:', schema._type);
+
+        let obj = this.clone();
+
+        if (this._type === 'any' && schema._type !== 'any') {
+
+            // Reset values as if we were "this"
+            const tmpObj = schema.clone();
+            const keysToRestore = ['_settings', '_valids', '_invalids', '_tests', '_refs', '_flags', '_description', '_unit',
+                '_notes', '_tags', '_examples', '_meta', '_inner'];
+
+            for (let i = 0; i < keysToRestore.length; ++i) {
+                tmpObj[keysToRestore[i]] = obj[keysToRestore[i]];
+            }
+
+            obj = tmpObj;
+        }
+
+        obj._settings = obj._settings ? Settings.concat(obj._settings, schema._settings) : schema._settings;
+        obj._valids.merge(schema._valids, schema._invalids);
+        obj._invalids.merge(schema._invalids, schema._valids);
+        obj._tests.push(...schema._tests);
+        obj._refs.push(...schema._refs);
+        if (obj._flags.empty && schema._flags.empty) {
+            obj._flags.empty = obj._flags.empty.concat(schema._flags.empty);
+            const flags = Object.assign({}, schema._flags);
+            delete flags.empty;
+            Hoek.merge(obj._flags, flags);
+        }
+        else if (schema._flags.empty) {
+            obj._flags.empty = schema._flags.empty;
+            const flags = Object.assign({}, schema._flags);
+            delete flags.empty;
+            Hoek.merge(obj._flags, flags);
+        }
+        else {
+            Hoek.merge(obj._flags, schema._flags);
+        }
+
+        obj._description = schema._description || obj._description;
+        obj._unit = schema._unit || obj._unit;
+        obj._notes.push(...schema._notes);
+        obj._tags.push(...schema._tags);
+        obj._examples.push(...schema._examples);
+        obj._meta.push(...schema._meta);
+
+        const inners = Object.keys(schema._inner);
+        const isObject = obj._type === 'object';
+        for (let i = 0; i < inners.length; ++i) {
+            const key = inners[i];
+            const source = schema._inner[key];
+            if (source) {
+                const target = obj._inner[key];
+                if (target) {
+                    if (isObject && key === 'children') {
+                        const keys = {};
+
+                        for (let j = 0; j < target.length; ++j) {
+                            keys[target[j].key] = j;
+                        }
+
+                        for (let j = 0; j < source.length; ++j) {
+                            const sourceKey = source[j].key;
+                            if (keys[sourceKey] >= 0) {
+                                target[keys[sourceKey]] = {
+                                    key: sourceKey,
+                                    schema: target[keys[sourceKey]].schema.concat(source[j].schema)
+                                };
+                            }
+                            else {
+                                target.push(source[j]);
+                            }
+                        }
+                    }
+                    else {
+                        obj._inner[key] = obj._inner[key].concat(source);
+                    }
+                }
+                else {
+                    obj._inner[key] = source.slice();
+                }
+            }
+        }
+
+        return obj;
+    }
+
+    _test(name, arg, func, options) {
+
+        const obj = this.clone();
+        obj._tests.push({ func, name, arg, options });
+        return obj;
+    }
+
+    _testUnique(name, arg, func, options) {
+
+        const obj = this.clone();
+        obj._tests = obj._tests.filter((test) => test.name !== name);
+        obj._tests.push({ func, name, arg, options });
+        return obj;
+    }
+
+    options(options) {
+
+        Hoek.assert(!options.context, 'Cannot override context');
+        this.checkOptions(options);
+
+        const obj = this.clone();
+        obj._settings = Settings.concat(obj._settings, options);
+        return obj;
+    }
+
+    strict(isStrict) {
+
+        const obj = this.clone();
+
+        const convert = isStrict === undefined ? false : !isStrict;
+        obj._settings = Settings.concat(obj._settings, { convert });
+        return obj;
+    }
+
+    raw(isRaw) {
+
+        const value = isRaw === undefined ? true : isRaw;
+
+        if (this._flags.raw === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.raw = value;
+        return obj;
+    }
+
+    error(err, options = { self: false }) {
+
+        Hoek.assert(err && (err instanceof Error || typeof err === 'function'), 'Must provide a valid Error object or a function');
+
+        const unknownKeys = Object.keys(options).filter((k) => !['self'].includes(k));
+        Hoek.assert(unknownKeys.length === 0, `Options ${unknownKeys} are unknown`);
+
+        const obj = this.clone();
+        obj._flags.error = err;
+
+        if (options.self) {
+            obj._flags.selfError = true;
+        }
+
+        return obj;
+    }
+
+    allow(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
+            obj._invalids.remove(value);
+            obj._valids.add(value, obj._refs);
+        }
+
+        return obj;
+    }
+
+    valid(...values) {
+
+        const obj = this.allow(...values);
+        obj._flags.allowOnly = true;
+        return obj;
+    }
+
+    invalid(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call allow/valid/invalid with undefined');
+            obj._valids.remove(value);
+            obj._invalids.add(value, obj._refs);
+        }
+
+        return obj;
+    }
+
+    required() {
+
+        if (this._flags.presence === 'required') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'required';
+        return obj;
+    }
+
+    optional() {
+
+        if (this._flags.presence === 'optional') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'optional';
+        return obj;
+    }
+
+
+    forbidden() {
+
+        if (this._flags.presence === 'forbidden') {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.presence = 'forbidden';
+        return obj;
+    }
+
+
+    strip() {
+
+        if (this._flags.strip) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.strip = true;
+        return obj;
+    }
+
+    applyFunctionToChildren(children, fn, args = [], root) {
+
+        children = [].concat(children);
+
+        if (children.length !== 1 || children[0] !== '') {
+            root = root ? (root + '.') : '';
+
+            const extraChildren = (children[0] === '' ? children.slice(1) : children).map((child) => {
+
+                return root + child;
+            });
+
+            throw new Error('unknown key(s) ' + extraChildren.join(', '));
+        }
+
+        return this[fn](...args);
+    }
+
+    default(value, description) {
+
+        if (typeof value === 'function' &&
+            !Ref.isRef(value)) {
+
+            if (!value.description &&
+                description) {
+
+                value.description = description;
+            }
+
+            if (!this._flags.func) {
+                Hoek.assert(typeof value.description === 'string' && value.description.length > 0, 'description must be provided when default value is a function');
+            }
+        }
+
+        const obj = this.clone();
+        obj._flags.default = value;
+        Ref.push(obj._refs, value);
+        return obj;
+    }
+
+    empty(schema) {
+
+        const obj = this.clone();
+        if (schema === undefined) {
+            delete obj._flags.empty;
+        }
+        else {
+            obj._flags.empty = Cast.schema(this._currentJoi, schema);
+        }
+
+        return obj;
+    }
+
+    when(condition, options) {
+
+        Hoek.assert(options && typeof options === 'object', 'Invalid options');
+        Hoek.assert(options.then !== undefined || options.otherwise !== undefined, 'options must have at least one of "then" or "otherwise"');
+
+        const then = options.hasOwnProperty('then') ? this.concat(Cast.schema(this._currentJoi, options.then)) : undefined;
+        const otherwise = options.hasOwnProperty('otherwise') ? this.concat(Cast.schema(this._currentJoi, options.otherwise)) : undefined;
+
+        Alternatives = Alternatives || require('../alternatives');
+
+        const alternativeOptions = { then, otherwise };
+        if (Object.prototype.hasOwnProperty.call(options, 'is')) {
+            alternativeOptions.is = options.is;
+        }
+
+        const obj = Alternatives.when(condition, alternativeOptions);
+        obj._flags.presence = 'ignore';
+        obj._baseType = this;
+
+        return obj;
+    }
+
+    description(desc) {
+
+        Hoek.assert(desc && typeof desc === 'string', 'Description must be a non-empty string');
+
+        const obj = this.clone();
+        obj._description = desc;
+        return obj;
+    }
+
+    notes(notes) {
+
+        Hoek.assert(notes && (typeof notes === 'string' || Array.isArray(notes)), 'Notes must be a non-empty string or array');
+
+        const obj = this.clone();
+        obj._notes = obj._notes.concat(notes);
+        return obj;
+    }
+
+    tags(tags) {
+
+        Hoek.assert(tags && (typeof tags === 'string' || Array.isArray(tags)), 'Tags must be a non-empty string or array');
+
+        const obj = this.clone();
+        obj._tags = obj._tags.concat(tags);
+        return obj;
+    }
+
+    meta(meta) {
+
+        Hoek.assert(meta !== undefined, 'Meta cannot be undefined');
+
+        const obj = this.clone();
+        obj._meta = obj._meta.concat(meta);
+        return obj;
+    }
+
+    example(...examples) {
+
+        Hoek.assert(examples.length > 0, 'Missing examples');
+
+        const processed = [];
+        for (let i = 0; i < examples.length; ++i) {
+            const example = [].concat(examples[i]);
+            Hoek.assert(example.length <= 2, `Bad example format at index ${i}`);
+
+            const value = example[0];
+            let options = example[1];
+            if (options !== undefined) {
+                Hoek.assert(options && typeof options === 'object', `Options for example at index ${i} must be an object`);
+                const unknownOptions = Object.keys(options).filter((option) => !['parent', 'context'].includes(option));
+                Hoek.assert(unknownOptions.length === 0, `Unknown example options ${unknownOptions} at index ${i}`);
+            }
+            else {
+                options = {};
+            }
+
+            const localState = new State('', [], options.parent || null);
+            const result = this._validate(value, localState, Settings.concat(internals.defaults, options.context ? { context: options.context } : null));
+            Hoek.assert(!result.errors, `Bad example at index ${i}:`, result.errors && Errors.process(result.errors, value));
+
+            const ex = { value };
+            if (Object.keys(options).length) {
+                ex.options = options;
+            }
+
+            processed.push(ex);
+        }
+
+        const obj = this.clone();
+        obj._examples = processed;
+        return obj;
+    }
+
+    unit(name) {
+
+        Hoek.assert(name && typeof name === 'string', 'Unit name must be a non-empty string');
+
+        const obj = this.clone();
+        obj._unit = name;
+        return obj;
+    }
+
+    _prepareEmptyValue(value) {
+
+        if (typeof value === 'string' && this._flags.trim) {
+            return value.trim();
+        }
+
+        return value;
+    }
+
+    _validate(value, state, options, reference) {
+
+        const originalValue = value;
+
+        // Setup state and settings
+
+        state = state || new State('', [], null, reference);
+
+        if (this._settings) {
+            const isDefaultOptions = options === internals.defaults;
+            if (isDefaultOptions && this._settings[Symbols.settingsCache]) {
+                options = this._settings[Symbols.settingsCache];
+            }
+            else {
+                options = Settings.concat(this._language ? Settings.concat({ language: this._language }, options) : options, this._settings);
+                if (isDefaultOptions) {
+                    this._settings[Symbols.settingsCache] = options;
+                }
+            }
+        }
+        else if (this._language) {
+            options = Settings.concat({ language: this._language }, options);
+        }
+
+        let errors = [];
+
+        if (this._coerce) {
+            const coerced = this._coerce(value, state, options);
+            if (coerced.errors) {
+                value = coerced.value;
+                errors = errors.concat(coerced.errors);
+                return this._finalizeValue(value, originalValue, errors, state, options);                            // Coerced error always aborts early
+            }
+
+            value = coerced.value;
+        }
+
+        if (this._flags.empty && !this._flags.empty._validate(this._prepareEmptyValue(value), null, internals.defaults).errors) {
+            value = undefined;
+        }
+
+        // Check presence requirements
+
+        const presence = this._flags.presence || options.presence;
+        if (presence === 'optional') {
+            if (value === undefined) {
+                const isDeepDefault = this._flags.hasOwnProperty('default') && this._flags.default === undefined;
+                if (isDeepDefault && this._type === 'object') {
+                    value = {};
+                }
+                else {
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+            }
+        }
+        else if (presence === 'required' &&
+            value === undefined) {
+
+            errors.push(this.createError('any.required', null, state, options));
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+        else if (presence === 'forbidden') {
+            if (value === undefined) {
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+
+            errors.push(this.createError('any.unknown', null, state, options));
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+
+        // Check allowed and denied values using the original value
+
+        let match = this._valids.get(value, state, options, this._flags.insensitive);
+        if (match) {
+            if (options.convert) {
+                value = match.value;
+            }
+
+            return this._finalizeValue(value, originalValue, errors, state, options);
+        }
+
+        if (this._invalids.has(value, state, options, this._flags.insensitive)) {
+            errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
+            if (options.abortEarly) {
+
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+        }
+
+        // Convert value and validate type
+
+        if (this._base) {
+            const base = this._base(value, state, options);
+            if (base.errors) {
+                value = base.value;
+                errors = errors.concat(base.errors);
+                return this._finalizeValue(value, originalValue, errors, state, options);                            // Base error always aborts early
+            }
+
+            if (base.value !== value) {
+                value = base.value;
+
+                // Check allowed and denied values using the converted value
+
+                match = this._valids.get(value, state, options, this._flags.insensitive);
+                if (match) {
+                    value = match.value;
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+
+                if (this._invalids.has(value, state, options, this._flags.insensitive)) {
+                    errors.push(this.createError(value === '' ? 'any.empty' : 'any.invalid', { value, invalids: this._invalids.values({ stripUndefined: true }) }, state, options));
+                    if (options.abortEarly) {
+                        return this._finalizeValue(value, originalValue, errors, state, options);
+                    }
+                }
+            }
+        }
+
+        // Required values did not match
+
+        if (this._flags.allowOnly) {
+            errors.push(this.createError('any.allowOnly', { value, valids: this._valids.values({ stripUndefined: true }) }, state, options));
+            if (options.abortEarly) {
+                return this._finalizeValue(value, originalValue, errors, state, options);
+            }
+        }
+
+        // Validate tests
+
+        for (let i = 0; i < this._tests.length; ++i) {
+            const test = this._tests[i];
+            const ret = test.func.call(this, value, state, options);
+            if (ret instanceof Errors.Err) {
+                errors.push(ret);
+                if (options.abortEarly) {
+                    return this._finalizeValue(value, originalValue, errors, state, options);
+                }
+            }
+            else {
+                value = ret;
+            }
+        }
+
+        return this._finalizeValue(value, originalValue, errors, state, options);
+    }
+
+    _finalizeValue(value, originalValue, errors, state, options) {
+
+        let finalValue;
+
+        if (value !== undefined) {
+            finalValue = this._flags.raw ? originalValue : value;
+        }
+        else if (options.noDefaults) {
+            finalValue = value;
+        }
+        else if (Ref.isRef(this._flags.default)) {
+            finalValue = this._flags.default(state.parent, options);
+        }
+        else if (typeof this._flags.default === 'function' &&
+            !(this._flags.func && !this._flags.default.description)) {
+
+            let args;
+
+            if (state.parent !== null &&
+                this._flags.default.length > 0) {
+
+                args = [Hoek.clone(state.parent), options];
+            }
+
+            const defaultValue = internals._try(this._flags.default, args);
+            finalValue = defaultValue.value;
+            if (defaultValue.error) {
+                errors.push(this.createError('any.default', { error: defaultValue.error }, state, options));
+            }
+        }
+        else {
+            finalValue = Hoek.clone(this._flags.default);
+        }
+
+        if (errors.length &&
+            typeof this._flags.error === 'function' &&
+            (
+                !this._flags.selfError ||
+                errors.some((e) => state.path.length === e.path.length)
+            )
+        ) {
+            const change = this._flags.error.call(this, errors);
+
+            if (typeof change === 'string') {
+                errors = [this.createOverrideError('override', { reason: errors }, state, options, change)];
+            }
+            else {
+                errors = [].concat(change)
+                    .map((err) => {
+
+                        return err instanceof Error ?
+                            err :
+                            this.createOverrideError(err.type || 'override', err.context, state, options, err.message, err.template);
+                    });
+            }
+        }
+
+        return {
+            value: this._flags.strip ? undefined : finalValue,
+            finalValue,
+            errors: errors.length ? errors : null
+        };
+    }
+
+    _validateWithOptions(value, options, callback) {
+
+        if (options) {
+            this.checkOptions(options);
+        }
+
+        const settings = Settings.concat(internals.defaults, options);
+        const result = this._validate(value, null, settings);
+        const errors = Errors.process(result.errors, value);
+
+        if (callback) {
+            return callback(errors, result.value);
+        }
+
+        return {
+            error: errors,
+            value: result.value,
+            then(resolve, reject) {
+
+                if (errors) {
+                    return Promise.reject(errors).catch(reject);
+                }
+
+                return Promise.resolve(result.value).then(resolve);
+            },
+            catch(reject) {
+
+                if (errors) {
+                    return Promise.reject(errors).catch(reject);
+                }
+
+                return Promise.resolve(result.value);
+            }
+        };
+    }
+
+    validate(value, options, callback) {
+
+        if (typeof options === 'function') {
+            return this._validateWithOptions(value, null, options);
+        }
+
+        return this._validateWithOptions(value, options, callback);
+    }
+
+    describe() {
+
+        const description = {
+            type: this._type
+        };
+
+        const flags = Object.keys(this._flags);
+        if (flags.length) {
+            if (['empty', 'default', 'lazy', 'label'].some((flag) => this._flags.hasOwnProperty(flag))) {
+                description.flags = {};
+                for (let i = 0; i < flags.length; ++i) {
+                    const flag = flags[i];
+                    if (flag === 'empty') {
+                        description.flags[flag] = this._flags[flag].describe();
+                    }
+                    else if (flag === 'default') {
+                        if (Ref.isRef(this._flags[flag])) {
+                            description.flags[flag] = this._flags[flag].toString();
+                        }
+                        else if (typeof this._flags[flag] === 'function') {
+                            description.flags[flag] = {
+                                description: this._flags[flag].description,
+                                function   : this._flags[flag]
+                            };
+                        }
+                        else {
+                            description.flags[flag] = this._flags[flag];
+                        }
+                    }
+                    else if (flag === 'lazy' || flag === 'label') {
+                        // We don't want it in the description
+                    }
+                    else {
+                        description.flags[flag] = this._flags[flag];
+                    }
+                }
+            }
+            else {
+                description.flags = this._flags;
+            }
+        }
+
+        if (this._settings) {
+            description.options = Hoek.clone(this._settings);
+        }
+
+        if (this._baseType) {
+            description.base = this._baseType.describe();
+        }
+
+        if (this._description) {
+            description.description = this._description;
+        }
+
+        if (this._notes.length) {
+            description.notes = this._notes;
+        }
+
+        if (this._tags.length) {
+            description.tags = this._tags;
+        }
+
+        if (this._meta.length) {
+            description.meta = this._meta;
+        }
+
+        if (this._examples.length) {
+            description.examples = this._examples;
+        }
+
+        if (this._unit) {
+            description.unit = this._unit;
+        }
+
+        const valids = this._valids.values();
+        if (valids.length) {
+            description.valids = valids.map((v) => {
+
+                return Ref.isRef(v) ? v.toString() : v;
+            });
+        }
+
+        const invalids = this._invalids.values();
+        if (invalids.length) {
+            description.invalids = invalids.map((v) => {
+
+                return Ref.isRef(v) ? v.toString() : v;
+            });
+        }
+
+        description.rules = [];
+
+        for (let i = 0; i < this._tests.length; ++i) {
+            const validator = this._tests[i];
+            const item = { name: validator.name };
+
+            if (validator.arg !== void 0) {
+                item.arg = Ref.isRef(validator.arg) ? validator.arg.toString() : validator.arg;
+            }
+
+            const options = validator.options;
+            if (options) {
+                if (options.hasRef) {
+                    item.arg = {};
+                    const keys = Object.keys(validator.arg);
+                    for (let j = 0; j < keys.length; ++j) {
+                        const key = keys[j];
+                        const value = validator.arg[key];
+                        item.arg[key] = Ref.isRef(value) ? value.toString() : value;
+                    }
+                }
+
+                if (typeof options.description === 'string') {
+                    item.description = options.description;
+                }
+                else if (typeof options.description === 'function') {
+                    item.description = options.description(item.arg);
+                }
+            }
+
+            description.rules.push(item);
+        }
+
+        if (!description.rules.length) {
+            delete description.rules;
+        }
+
+        const label = this._getLabel();
+        if (label) {
+            description.label = label;
+        }
+
+        return description;
+    }
+
+    label(name) {
+
+        Hoek.assert(name && typeof name === 'string', 'Label name must be a non-empty string');
+
+        const obj = this.clone();
+        obj._flags.label = name;
+        return obj;
+    }
+
+    _getLabel(def) {
+
+        return this._flags.label || def;
+    }
+
+};
+
+
+internals.Any.prototype.isImmutable = true;     // Prevents Hoek from deep cloning schema objects
+
+// Aliases
+
+internals.Any.prototype.only = internals.Any.prototype.equal = internals.Any.prototype.valid;
+internals.Any.prototype.disallow = internals.Any.prototype.not = internals.Any.prototype.invalid;
+internals.Any.prototype.exist = internals.Any.prototype.required;
+
+
+internals.Any.prototype[internals.symbol] = {
+    version: Pkg.version,
+    compile: Cast.schema,
+    root: '_currentJoi'
+};
+
+
+internals._try = function (fn, args = []) {
+
+    let err;
+    let result;
+
+    try {
+        result = fn(...args);
+    }
+    catch (e) {
+        err = e;
+    }
+
+    return {
+        value: result,
+        error: err
+    };
+};
+
+},{"../../../package.json":263,"../../cast":238,"../../errors":239,"../../ref":242,"../../schemas":243,"../../set":244,"../alternatives":245,"../state":256,"../symbols":262,"./settings":247,"@hapi/hoek":227}],247:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Symbols = require('../symbols');
+
+
+const internals = {};
+
+
+exports.concat = function (target, source) {
+
+    if (!source) {
+        return target;
+    }
+
+    const obj = Object.assign({}, target);
+
+    const language = source.language;
+
+    Object.assign(obj, source);
+
+    if (language && target && target.language) {
+        obj.language = Hoek.applyToDefaults(target.language, language);
+    }
+
+    if (obj[Symbols.settingsCache]) {
+        delete obj[Symbols.settingsCache];
+    }
+
+    return obj;
+};
+
+},{"../symbols":262,"@hapi/hoek":227}],248:[function(require,module,exports){
+'use strict';
+
+const Bourne = require('@hapi/bourne');
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Cast = require('../../cast');
+const Ref = require('../../ref');
+const State = require('../state');
+
+
+const internals = {};
+
+
+internals.fastSplice = function (arr, i) {
+
+    let pos = i;
+    while (pos < arr.length) {
+        arr[pos++] = arr[pos];
+    }
+
+    --arr.length;
+};
+
+
+internals.Array = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'array';
+        this._inner.items = [];
+        this._inner.ordereds = [];
+        this._inner.inclusions = [];
+        this._inner.exclusions = [];
+        this._inner.requireds = [];
+        this._flags.sparse = false;
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (value.length > 1 &&
+                (value[0] === '[' || /^\s*\[/.test(value))) {
+
+                try {
+                    result.value = Bourne.parse(value);
+                }
+                catch (e) { }
+            }
+        }
+
+        let isArray = Array.isArray(result.value);
+        const wasArray = isArray;
+        if (options.convert && this._flags.single && !isArray) {
+            result.value = [result.value];
+            isArray = true;
+        }
+
+        if (!isArray) {
+            result.errors = this.createError('array.base', null, state, options);
+            return result;
+        }
+
+        if (this._inner.inclusions.length ||
+            this._inner.exclusions.length ||
+            this._inner.requireds.length ||
+            this._inner.ordereds.length ||
+            !this._flags.sparse) {
+
+            // Clone the array so that we don't modify the original
+            if (wasArray) {
+                result.value = result.value.slice(0);
+            }
+
+            result.errors = this._checkItems(result.value, wasArray, state, options);
+
+            if (result.errors && wasArray && options.convert && this._flags.single) {
+
+                // Attempt a 2nd pass by putting the array inside one.
+                const previousErrors = result.errors;
+
+                result.value = [result.value];
+                result.errors = this._checkItems(result.value, wasArray, state, options);
+
+                if (result.errors) {
+
+                    // Restore previous errors and value since this didn't validate either.
+                    result.errors = previousErrors;
+                    result.value = result.value[0];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    _checkItems(items, wasArray, state, options) {
+
+        const errors = [];
+        let errored;
+
+        const requireds = this._inner.requireds.slice();
+        const ordereds = this._inner.ordereds.slice();
+        const inclusions = [...this._inner.inclusions, ...requireds];
+
+        let il = items.length;
+        for (let i = 0; i < il; ++i) {
+            errored = false;
+            const item = items[i];
+            let isValid = false;
+            const key = wasArray ? i : state.key;
+            const path = wasArray ? [...state.path, i] : state.path;
+            const localState = new State(key, path, state.parent, state.reference);
+            let res;
+
+            // Sparse
+
+            if (!this._flags.sparse && item === undefined) {
+                errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                if (options.abortEarly) {
+                    return errors;
+                }
+
+                ordereds.shift();
+
+                continue;
+            }
+
+            // Exclusions
+
+            for (let j = 0; j < this._inner.exclusions.length; ++j) {
+                res = this._inner.exclusions[j]._validate(item, localState, {});                // Not passing options to use defaults
+
+                if (!res.errors) {
+                    errors.push(this.createError(wasArray ? 'array.excludes' : 'array.excludesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
+                    errored = true;
+
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    ordereds.shift();
+
+                    break;
+                }
+            }
+
+            if (errored) {
+                continue;
+            }
+
+            // Ordered
+            if (this._inner.ordereds.length) {
+                if (ordereds.length > 0) {
+                    const ordered = ordereds.shift();
+                    res = ordered._validate(item, localState, options);
+                    if (!res.errors) {
+                        if (ordered._flags.strip) {
+                            internals.fastSplice(items, i);
+                            --i;
+                            --il;
+                        }
+                        else if (!this._flags.sparse && res.value === undefined) {
+                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                            if (options.abortEarly) {
+                                return errors;
+                            }
+
+                            continue;
+                        }
+                        else {
+                            items[i] = res.value;
+                        }
+                    }
+                    else {
+                        errors.push(this.createError('array.ordered', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
+                        if (options.abortEarly) {
+                            return errors;
+                        }
+                    }
+
+                    continue;
+                }
+                else if (!this._inner.items.length) {
+                    errors.push(this.createError('array.orderedLength', { pos: i, limit: this._inner.ordereds.length }, { key: state.key, path: localState.path }, options));
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    continue;
+                }
+            }
+
+            // Requireds
+
+            const requiredChecks = [];
+            let jl = requireds.length;
+            for (let j = 0; j < jl; ++j) {
+                res = requiredChecks[j] = requireds[j]._validate(item, localState, options);
+                if (!res.errors) {
+                    items[i] = res.value;
+                    isValid = true;
+                    internals.fastSplice(requireds, j);
+                    --j;
+                    --jl;
+
+                    if (!this._flags.sparse && res.value === undefined) {
+                        errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+
+                        if (options.abortEarly) {
+                            return errors;
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            if (isValid) {
+                continue;
+            }
+
+            // Inclusions
+
+            const stripUnknown = options.stripUnknown && !!options.stripUnknown.arrays || false;
+
+            jl = inclusions.length;
+            for (let j = 0; j < jl; ++j) {
+                const inclusion = inclusions[j];
+
+                // Avoid re-running requireds that already didn't match in the previous loop
+                const previousCheck = requireds.indexOf(inclusion);
+                if (previousCheck !== -1) {
+                    res = requiredChecks[previousCheck];
+                }
+                else {
+                    res = inclusion._validate(item, localState, options);
+
+                    if (!res.errors) {
+                        if (inclusion._flags.strip) {
+                            internals.fastSplice(items, i);
+                            --i;
+                            --il;
+                        }
+                        else if (!this._flags.sparse && res.value === undefined) {
+                            errors.push(this.createError('array.sparse', null, { key: state.key, path: localState.path, pos: i }, options));
+                            errored = true;
+                        }
+                        else {
+                            items[i] = res.value;
+                        }
+
+                        isValid = true;
+                        break;
+                    }
+                }
+
+                // Return the actual error if only one inclusion defined
+                if (jl === 1) {
+                    if (stripUnknown) {
+                        internals.fastSplice(items, i);
+                        --i;
+                        --il;
+                        isValid = true;
+                        break;
+                    }
+
+                    errors.push(this.createError(wasArray ? 'array.includesOne' : 'array.includesOneSingle', { pos: i, reason: res.errors, value: item }, { key: state.key, path: localState.path }, options));
+                    errored = true;
+
+                    if (options.abortEarly) {
+                        return errors;
+                    }
+
+                    break;
+                }
+            }
+
+            if (errored) {
+                continue;
+            }
+
+            if (this._inner.inclusions.length && !isValid) {
+                if (stripUnknown) {
+                    internals.fastSplice(items, i);
+                    --i;
+                    --il;
+                    continue;
+                }
+
+                errors.push(this.createError(wasArray ? 'array.includes' : 'array.includesSingle', { pos: i, value: item }, { key: state.key, path: localState.path }, options));
+
+                if (options.abortEarly) {
+                    return errors;
+                }
+            }
+        }
+
+        if (requireds.length) {
+            this._fillMissedErrors(errors, requireds, state, options);
+        }
+
+        if (ordereds.length) {
+            this._fillOrderedErrors(errors, ordereds, state, options);
+        }
+
+        return errors.length ? errors : null;
+    }
+
+    describe() {
+
+        const description = super.describe();
+
+        if (this._inner.ordereds.length) {
+            description.orderedItems = [];
+
+            for (let i = 0; i < this._inner.ordereds.length; ++i) {
+                description.orderedItems.push(this._inner.ordereds[i].describe());
+            }
+        }
+
+        if (this._inner.items.length) {
+            description.items = [];
+
+            for (let i = 0; i < this._inner.items.length; ++i) {
+                description.items.push(this._inner.items[i].describe());
+            }
+        }
+
+        if (description.rules) {
+            for (let i = 0; i < description.rules.length; ++i) {
+                const rule = description.rules[i];
+                if (rule.name === 'has') {
+                    rule.arg = rule.arg.describe();
+                }
+            }
+        }
+
+        return description;
+    }
+
+    items(...schemas) {
+
+        const obj = this.clone();
+
+        Hoek.flatten(schemas).forEach((type, index) => {
+
+            try {
+                type = Cast.schema(this._currentJoi, type);
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = index + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = index;
+                }
+
+                castErr.message = `${castErr.message}(${castErr.path})`;
+                throw castErr;
+            }
+
+            obj._inner.items.push(type);
+
+            if (type._flags.presence === 'required') {
+                obj._inner.requireds.push(type);
+            }
+            else if (type._flags.presence === 'forbidden') {
+                obj._inner.exclusions.push(type.optional());
+            }
+            else {
+                obj._inner.inclusions.push(type);
+            }
+        });
+
+        return obj;
+    }
+
+    ordered(...schemas) {
+
+        const obj = this.clone();
+
+        Hoek.flatten(schemas).forEach((type, index) => {
+
+            try {
+                type = Cast.schema(this._currentJoi, type);
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = index + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = index;
+                }
+
+                castErr.message = `${castErr.message}(${castErr.path})`;
+                throw castErr;
+            }
+
+            obj._inner.ordereds.push(type);
+        });
+
+        return obj;
+    }
+
+    min(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('min', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit, value: compareTo }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length >= compareTo) {
+                return value;
+            }
+
+            return this.createError('array.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('max', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length <= compareTo) {
+                return value;
+            }
+
+            return this.createError('array.max', { limit, value }, state, options);
+        });
+    }
+
+    length(limit) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+
+        return this._testUnique('length', limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(Number.isSafeInteger(compareTo) && compareTo >= 0)) {
+                    return this.createError('array.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (value.length === compareTo) {
+                return value;
+            }
+
+            return this.createError('array.length', { limit, value }, state, options);
+        });
+    }
+
+    has(schema) {
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        return this._test('has', schema, function (value, state, options) {
+
+            const isValid = value.some((item, idx) => {
+
+                const localState = new State(idx, [...state.path, idx], state.key, state.reference);
+                return !schema._validate(item, localState, options).errors;
+            });
+
+            if (isValid) {
+                return value;
+            }
+
+            const patternLabel = schema._getLabel();
+            if (patternLabel) {
+                return this.createError('array.hasKnown', { patternLabel }, state, options);
+            }
+
+            return this.createError('array.hasUnknown', null, state, options);
+        });
+    }
+
+    unique(comparator, configs) {
+
+        Hoek.assert(comparator === undefined ||
+            typeof comparator === 'function' ||
+            typeof comparator === 'string', 'comparator must be a function or a string');
+
+        Hoek.assert(configs === undefined ||
+            typeof configs === 'object', 'configs must be an object');
+
+        const settings = {
+            ignoreUndefined: (configs && configs.ignoreUndefined) || false
+        };
+
+
+        if (typeof comparator === 'string') {
+            settings.path = comparator;
+        }
+        else if (typeof comparator === 'function') {
+            settings.comparator = comparator;
+        }
+
+        return this._test('unique', settings, function (value, state, options) {
+
+            const found = {
+                string: Object.create(null),
+                number: Object.create(null),
+                undefined: Object.create(null),
+                boolean: Object.create(null),
+                object: new Map(),
+                function: new Map(),
+                custom: new Map()
+            };
+
+            const compare = settings.comparator || Hoek.deepEqual;
+            const ignoreUndefined = settings.ignoreUndefined;
+
+            for (let i = 0; i < value.length; ++i) {
+                const item = settings.path ? Hoek.reach(value[i], settings.path) : value[i];
+                const records = settings.comparator ? found.custom : found[typeof item];
+
+                // All available types are supported, so it's not possible to reach 100% coverage without ignoring this line.
+                // I still want to keep the test for future js versions with new types (eg. Symbol).
+                if (/* $lab:coverage:off$ */ records /* $lab:coverage:on$ */) {
+                    if (records instanceof Map) {
+                        const entries = records.entries();
+                        let current;
+                        while (!(current = entries.next()).done) {
+                            if (compare(current.value[0], item)) {
+                                const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
+                                const context = {
+                                    pos: i,
+                                    value: value[i],
+                                    dupePos: current.value[1],
+                                    dupeValue: value[current.value[1]]
+                                };
+
+                                if (settings.path) {
+                                    context.path = settings.path;
+                                }
+
+                                return this.createError('array.unique', context, localState, options);
+                            }
+                        }
+
+                        records.set(item, i);
+                    }
+                    else {
+                        if ((!ignoreUndefined || item !== undefined) && records[item] !== undefined) {
+                            const localState = new State(state.key, [...state.path, i], state.parent, state.reference);
+
+                            const context = {
+                                pos: i,
+                                value: value[i],
+                                dupePos: records[item],
+                                dupeValue: value[records[item]]
+                            };
+
+                            if (settings.path) {
+                                context.path = settings.path;
+                            }
+
+                            return this.createError('array.unique', context, localState, options);
+                        }
+
+                        records[item] = i;
+                    }
+                }
+            }
+
+            return value;
+        });
+    }
+
+    sparse(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.sparse === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.sparse = value;
+        return obj;
+    }
+
+    single(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.single === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.single = value;
+        return obj;
+    }
+
+    _fillMissedErrors(errors, requireds, state, options) {
+
+        const knownMisses = [];
+        let unknownMisses = 0;
+        for (let i = 0; i < requireds.length; ++i) {
+            const label = requireds[i]._getLabel();
+            if (label) {
+                knownMisses.push(label);
+            }
+            else {
+                ++unknownMisses;
+            }
+        }
+
+        if (knownMisses.length) {
+            if (unknownMisses) {
+                errors.push(this.createError('array.includesRequiredBoth', { knownMisses, unknownMisses }, { key: state.key, path: state.path }, options));
+            }
+            else {
+                errors.push(this.createError('array.includesRequiredKnowns', { knownMisses }, { key: state.key, path: state.path }, options));
+            }
+        }
+        else {
+            errors.push(this.createError('array.includesRequiredUnknowns', { unknownMisses }, { key: state.key, path: state.path }, options));
+        }
+    }
+
+
+    _fillOrderedErrors(errors, ordereds, state, options) {
+
+        const requiredOrdereds = [];
+
+        for (let i = 0; i < ordereds.length; ++i) {
+            const presence = Hoek.reach(ordereds[i], '_flags.presence');
+            if (presence === 'required') {
+                requiredOrdereds.push(ordereds[i]);
+            }
+        }
+
+        if (requiredOrdereds.length) {
+            this._fillMissedErrors(errors, requiredOrdereds, state, options);
+        }
+    }
+
+};
+
+
+module.exports = new internals.Array();
+
+},{"../../cast":238,"../../ref":242,"../any":246,"../state":256,"@hapi/bourne":212,"@hapi/hoek":227}],249:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Binary = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'binary';
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            try {
+                result.value = Buffer.from(value, this._flags.encoding);
+            }
+            catch (e) { }
+        }
+
+        result.errors = Buffer.isBuffer(result.value) ? null : this.createError('binary.base', null, state, options);
+        return result;
+    }
+
+    encoding(encoding) {
+
+        Hoek.assert(Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
+
+        if (this._flags.encoding === encoding) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.encoding = encoding;
+        return obj;
+    }
+
+    min(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('min', limit, function (value, state, options) {
+
+            if (value.length >= limit) {
+                return value;
+            }
+
+            return this.createError('binary.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('max', limit, function (value, state, options) {
+
+            if (value.length <= limit) {
+                return value;
+            }
+
+            return this.createError('binary.max', { limit, value }, state, options);
+        });
+    }
+
+    length(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('length', limit, function (value, state, options) {
+
+            if (value.length === limit) {
+                return value;
+            }
+
+            return this.createError('binary.length', { limit, value }, state, options);
+        });
+    }
+
+};
+
+
+module.exports = new internals.Binary();
+
+}).call(this,require("buffer").Buffer)
+},{"../any":246,"@hapi/hoek":227,"buffer":49}],250:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {
+    Set: require('../../set')
+};
+
+
+internals.Boolean = class extends Any {
+    constructor() {
+
+        super();
+        this._type = 'boolean';
+        this._flags.insensitive = true;
+        this._inner.truthySet = new internals.Set();
+        this._inner.falsySet = new internals.Set();
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            const normalized = this._flags.insensitive ? value.toLowerCase() : value;
+            result.value = (normalized === 'true' ? true
+                : (normalized === 'false' ? false : value));
+        }
+
+        if (typeof result.value !== 'boolean') {
+            result.value = (this._inner.truthySet.has(value, null, null, this._flags.insensitive) ? true
+                : (this._inner.falsySet.has(value, null, null, this._flags.insensitive) ? false : value));
+        }
+
+        result.errors = (typeof result.value === 'boolean') ? null : this.createError('boolean.base', { value }, state, options);
+        return result;
+    }
+
+    truthy(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call truthy with undefined');
+            obj._inner.truthySet.add(value);
+        }
+
+        return obj;
+    }
+
+    falsy(...values) {
+
+        const obj = this.clone();
+        values = Hoek.flatten(values);
+        for (let i = 0; i < values.length; ++i) {
+            const value = values[i];
+
+            Hoek.assert(value !== undefined, 'Cannot call falsy with undefined');
+            obj._inner.falsySet.add(value);
+        }
+
+        return obj;
+    }
+
+    insensitive(enabled) {
+
+        const insensitive = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.insensitive === insensitive) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.insensitive = insensitive;
+        return obj;
+    }
+
+    describe() {
+
+        const description = super.describe();
+        description.truthy = [true, ...this._inner.truthySet.values()];
+        description.falsy = [false, ...this._inner.falsySet.values()];
+        return description;
+    }
+};
+
+
+module.exports = new internals.Boolean();
+
+},{"../../set":244,"../any":246,"@hapi/hoek":227}],251:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+internals.isoDate = /^(?:[-+]\d{2})?(?:\d{4}(?!\d{2}\b))(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-2])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?![T]$|[T][\d]+Z$)(?:[T\s](?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24\:?00)(?:[.,]\d+(?!:))?)(?:\2[0-5]\d(?:[.,]\d+)?)?(?:[Z]|(?:[+-])(?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?)?$/;
+internals.invalidDate = new Date('');
+internals.isIsoDate = (() => {
+
+    const isoString = internals.isoDate.toString();
+
+    return (date) => {
+
+        return date && (date.toString() === isoString);
+    };
+})();
+
+internals.Date = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'date';
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            value: (options.convert && internals.Date.toDate(value, this._flags.format, this._flags.timestamp, this._flags.multiplier)) || value
+        };
+
+        if (result.value instanceof Date && !isNaN(result.value.getTime())) {
+            result.errors = null;
+        }
+        else if (!options.convert) {
+            result.errors = this.createError('date.strict', { value }, state, options);
+        }
+        else {
+            let type;
+            if (internals.isIsoDate(this._flags.format)) {
+                type = 'isoDate';
+            }
+            else if (this._flags.timestamp) {
+                type = `timestamp.${this._flags.timestamp}`;
+            }
+            else {
+                type = 'base';
+            }
+
+            result.errors = this.createError(`date.${type}`, { value }, state, options);
+        }
+
+        return result;
+    }
+
+    static toDate(value, format, timestamp, multiplier) {
+
+        if (value instanceof Date) {
+            return value;
+        }
+
+        if (typeof value === 'string' ||
+            (typeof value === 'number' && !isNaN(value) && isFinite(value))) {
+
+            const isIsoDate = format && internals.isIsoDate(format);
+            if (!isIsoDate &&
+                typeof value === 'string' &&
+                /^[+-]?\d+(\.\d+)?$/.test(value)) {
+
+                value = parseFloat(value);
+            }
+
+            let date;
+            if (isIsoDate) {
+                date = format.test(value) ? new Date(value.toString()) : internals.invalidDate;
+            }
+            else if (timestamp) {
+                date = /^\s*$/.test(value) ? internals.invalidDate : new Date(value * multiplier);
+            }
+            else {
+                date = new Date(value);
+            }
+
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+        }
+
+        return null;
+    }
+
+    iso() {
+
+        if (this._flags.format === internals.isoDate) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.format = internals.isoDate;
+        return obj;
+    }
+
+    timestamp(type = 'javascript') {
+
+        const allowed = ['javascript', 'unix'];
+        Hoek.assert(allowed.includes(type), '"type" must be one of "' + allowed.join('", "') + '"');
+
+        if (this._flags.timestamp === type) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.timestamp = type;
+        obj._flags.multiplier = type === 'unix' ? 1000 : 1;
+        return obj;
+    }
+
+    _isIsoDate(value) {
+
+        return internals.isoDate.test(value);
+    }
+
+};
+
+internals.compare = function (type, compare) {
+
+    return function (date) {
+
+        const isNow = date === 'now';
+        const isRef = Ref.isRef(date);
+
+        if (!isNow && !isRef) {
+            date = internals.Date.toDate(date);
+        }
+
+        Hoek.assert(date, 'Invalid date format');
+
+        return this._test(type, date, function (value, state, options) {
+
+            let compareTo;
+            if (isNow) {
+                compareTo = Date.now();
+            }
+            else if (isRef) {
+                const refValue = date(state.reference || state.parent, options);
+                compareTo = internals.Date.toDate(refValue);
+
+                if (!compareTo) {
+                    return this.createError('date.ref', { ref: date, value: refValue }, state, options);
+                }
+
+                compareTo = compareTo.getTime();
+            }
+            else {
+                compareTo = date.getTime();
+            }
+
+            if (compare(value.getTime(), compareTo)) {
+                return value;
+            }
+
+            return this.createError('date.' + type, { limit: new Date(compareTo), value }, state, options);
+        });
+    };
+};
+
+
+internals.Date.prototype.min = internals.compare('min', (value, date) => value >= date);
+internals.Date.prototype.max = internals.compare('max', (value, date) => value <= date);
+internals.Date.prototype.greater = internals.compare('greater', (value, date) => value > date);
+internals.Date.prototype.less = internals.compare('less', (value, date) => value < date);
+
+
+module.exports = new internals.Date();
+
+},{"../../ref":242,"../any":246,"@hapi/hoek":227}],252:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const ObjectType = require('../object');
+const Ref = require('../../ref');
+
+
+const internals = {};
+
+
+internals.Func = class extends ObjectType.constructor {
+
+    constructor() {
+
+        super();
+        this._flags.func = true;
+    }
+
+    arity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
+
+        return this._test('arity', n, function (value, state, options) {
+
+            if (value.length === n) {
+                return value;
+            }
+
+            return this.createError('function.arity', { n }, state, options);
+        });
+    }
+
+    minArity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n > 0, 'n must be a strict positive integer');
+
+        return this._test('minArity', n, function (value, state, options) {
+
+            if (value.length >= n) {
+                return value;
+            }
+
+            return this.createError('function.minArity', { n }, state, options);
+        });
+    }
+
+    maxArity(n) {
+
+        Hoek.assert(Number.isSafeInteger(n) && n >= 0, 'n must be a positive integer');
+
+        return this._test('maxArity', n, function (value, state, options) {
+
+            if (value.length <= n) {
+                return value;
+            }
+
+            return this.createError('function.maxArity', { n }, state, options);
+        });
+    }
+
+    ref() {
+
+        return this._test('ref', null, function (value, state, options) {
+
+            if (Ref.isRef(value)) {
+                return value;
+            }
+
+            return this.createError('function.ref', { value }, state, options);
+        });
+    }
+
+    class() {
+
+        return this._test('class', null, function (value, state, options) {
+
+            if ((/^\s*class\s/).test(value.toString())) {
+                return value;
+            }
+
+            return this.createError('function.class', { value }, state, options);
+        });
+    }
+};
+
+module.exports = new internals.Func();
+
+},{"../../ref":242,"../object":255,"@hapi/hoek":227}],253:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Lazy = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'lazy';
+        this._flags.once = true;
+        this._cache = null;
+    }
+
+    _init(fn, options) {
+
+        return this.set(fn, options);
+    }
+
+    _base(value, state, options) {
+
+        let schema;
+        if (this._cache) {
+            schema = this._cache;
+        }
+        else {
+            const result = { value };
+            const lazy = this._flags.lazy;
+
+            if (!lazy) {
+                result.errors = this.createError('lazy.base', null, state, options);
+                return result;
+            }
+
+            schema = lazy();
+
+            if (!(schema instanceof Any)) {
+                result.errors = this.createError('lazy.schema', { schema }, state, options);
+                return result;
+            }
+
+            if (this._flags.once) {
+                this._cache = schema;
+            }
+        }
+
+        return schema._validate(value, state, options);
+    }
+
+    set(fn, options) {
+
+        Hoek.assert(typeof fn === 'function', 'You must provide a function as first argument');
+        Hoek.assert(options === undefined || (options && typeof options === 'object' && !Array.isArray(options)), `Options must be an object`);
+
+        if (options) {
+            const unknownOptions = Object.keys(options).filter((key) => !['once'].includes(key));
+            Hoek.assert(unknownOptions.length === 0, `Options contain unknown keys: ${unknownOptions}`);
+            Hoek.assert(options.once === undefined || typeof options.once === 'boolean', 'Option "once" must be a boolean');
+        }
+
+        const obj = this.clone();
+        obj._flags.lazy = fn;
+
+        if (options && options.once !== obj._flags.once) {
+            obj._flags.once = options.once;
+        }
+
+        return obj;
+    }
+
+};
+
+module.exports = new internals.Lazy();
+
+},{"../any":246,"@hapi/hoek":227}],254:[function(require,module,exports){
+'use strict';
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+
+
+const internals = {
+    precisionRx: /(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/,
+    normalizeExponent(str) {
+
+        return str
+            .replace(/\.?0+e/, 'e')
+            .replace(/e\+/, 'e')
+            .replace(/^\+/, '')
+            .replace(/^(-?)0+([1-9])/, '$1$2');
+    },
+    normalizeDecimal(str) {
+
+        str = str
+            .replace(/^\+/, '')
+            .replace(/\.0+$/, '')
+            .replace(/^(-?)0+([1-9])/, '$1$2');
+
+        if (str.includes('.') && str.endsWith('0')) {
+            str = str.replace(/0+$/, '');
+        }
+
+        return str;
+    }
+};
+
+
+internals.Number = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'number';
+        this._flags.unsafe = false;
+        this._invalids.add(Infinity);
+        this._invalids.add(-Infinity);
+    }
+
+    _base(value, state, options) {
+
+        const result = {
+            errors: null,
+            value
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            const matches = value.match(/^\s*[+-]?\d+(?:\.\d+)?(?:e([+-]?\d+))?\s*$/i);
+            if (matches) {
+
+                value = value.trim();
+                result.value = parseFloat(value);
+
+                if (!this._flags.unsafe) {
+                    if (value.includes('e')) {
+                        if (internals.normalizeExponent(`${result.value / Math.pow(10, matches[1])}e${matches[1]}`) !== internals.normalizeExponent(value)) {
+                            result.errors = this.createError('number.unsafe', { value }, state, options);
+                            return result;
+                        }
+                    }
+                    else {
+                        if (result.value.toString() !== internals.normalizeDecimal(value)) {
+                            result.errors = this.createError('number.unsafe', { value }, state, options);
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        const isNumber = typeof result.value === 'number' && !isNaN(result.value);
+
+        if (options.convert && 'precision' in this._flags && isNumber) {
+
+            // This is conceptually equivalent to using toFixed but it should be much faster
+            const precision = Math.pow(10, this._flags.precision);
+            result.value = Math.round(result.value * precision) / precision;
+        }
+
+        if (isNumber) {
+            if (!this._flags.unsafe &&
+                (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) {
+                result.errors = this.createError('number.unsafe', { value }, state, options);
+            }
+        }
+        else {
+            result.errors = this.createError('number.base', { value }, state, options);
+        }
+
+        return result;
+    }
+
+    multiple(base) {
+
+        const isRef = Ref.isRef(base);
+
+        if (!isRef) {
+            Hoek.assert(typeof base === 'number' && isFinite(base), 'multiple must be a number');
+            Hoek.assert(base > 0, 'multiple must be greater than 0');
+        }
+
+        return this._test('multiple', base, function (value, state, options) {
+
+            const divisor = isRef ? base(state.reference || state.parent, options) : base;
+
+            if (isRef && (typeof divisor !== 'number' || !isFinite(divisor))) {
+                return this.createError('number.ref', { ref: base.key }, state, options);
+            }
+
+            if (value % divisor === 0) {
+                return value;
+            }
+
+            return this.createError('number.multiple', { multiple: base, value }, state, options);
+        });
+    }
+
+    integer() {
+
+        return this._test('integer', undefined, function (value, state, options) {
+
+            return Math.trunc(value) - value === 0 ? value : this.createError('number.integer', { value }, state, options);
+        });
+    }
+
+    unsafe(enabled = true) {
+
+        Hoek.assert(typeof enabled === 'boolean', 'enabled must be a boolean');
+
+        if (this._flags.unsafe === enabled) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.unsafe = enabled;
+        return obj;
+    }
+
+    negative() {
+
+        return this._test('negative', undefined, function (value, state, options) {
+
+            if (value < 0) {
+                return value;
+            }
+
+            return this.createError('number.negative', { value }, state, options);
+        });
+    }
+
+    positive() {
+
+        return this._test('positive', undefined, function (value, state, options) {
+
+            if (value > 0) {
+                return value;
+            }
+
+            return this.createError('number.positive', { value }, state, options);
+        });
+    }
+
+    precision(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit), 'limit must be an integer');
+        Hoek.assert(!('precision' in this._flags), 'precision already set');
+
+        const obj = this._test('precision', limit, function (value, state, options) {
+
+            const places = value.toString().match(internals.precisionRx);
+            const decimals = Math.max((places[1] ? places[1].length : 0) - (places[2] ? parseInt(places[2], 10) : 0), 0);
+            if (decimals <= limit) {
+                return value;
+            }
+
+            return this.createError('number.precision', { limit, value }, state, options);
+        });
+
+        obj._flags.precision = limit;
+        return obj;
+    }
+
+    port() {
+
+        return this._test('port', undefined, function (value, state, options) {
+
+            if (!Number.isSafeInteger(value) || value < 0 || value > 65535) {
+                return this.createError('number.port', { value }, state, options);
+            }
+
+            return value;
+        });
+    }
+
+};
+
+
+internals.compare = function (type, compare) {
+
+    return function (limit) {
+
+        const isRef = Ref.isRef(limit);
+        const isNumber = typeof limit === 'number' && !isNaN(limit);
+
+        Hoek.assert(isNumber || isRef, 'limit must be a number or reference');
+
+        return this._test(type, limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!(typeof compareTo === 'number' && !isNaN(compareTo))) {
+                    return this.createError('number.ref', { ref: limit.key }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (compare(value, compareTo)) {
+                return value;
+            }
+
+            return this.createError('number.' + type, { limit: compareTo, value }, state, options);
+        });
+    };
+};
+
+
+internals.Number.prototype.min = internals.compare('min', (value, limit) => value >= limit);
+internals.Number.prototype.max = internals.compare('max', (value, limit) => value <= limit);
+internals.Number.prototype.greater = internals.compare('greater', (value, limit) => value > limit);
+internals.Number.prototype.less = internals.compare('less', (value, limit) => value < limit);
+
+
+module.exports = new internals.Number();
+
+},{"../../ref":242,"../any":246,"@hapi/hoek":227}],255:[function(require,module,exports){
+'use strict';
+
+const Bourne = require('@hapi/bourne');
+const Hoek = require('@hapi/hoek');
+const Topo = require('@hapi/topo');
+
+const Any = require('../any');
+const Errors = require('../../errors');
+const Cast = require('../../cast');
+const State = require('../state');
+
+
+const internals = {};
+
+
+internals.Object = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'object';
+        this._inner.children = null;
+        this._inner.renames = [];
+        this._inner.dependencies = [];
+        this._inner.patterns = [];
+    }
+
+    _init(...args) {
+
+        return args.length ? this.keys(...args) : this;
+    }
+
+    _base(value, state, options) {
+
+        let target = value;
+        const errors = [];
+        const finish = () => {
+
+            return {
+                value: target,
+                errors: errors.length ? errors : null
+            };
+        };
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (value.length > 1 &&
+                (value[0] === '{' || /^\s*\{/.test(value))) {
+
+                try {
+                    value = Bourne.parse(value);
+                }
+                catch (e) { }
+            }
+        }
+
+        const type = this._flags.func ? 'function' : 'object';
+        if (!value ||
+            typeof value !== type ||
+            Array.isArray(value)) {
+
+            errors.push(this.createError(type + '.base', { value }, state, options));
+            return finish();
+        }
+
+        // Skip if there are no other rules to test
+
+        if (!this._inner.renames.length &&
+            !this._inner.dependencies.length &&
+            !this._inner.children &&                    // null allows any keys
+            !this._inner.patterns.length) {
+
+            target = value;
+            return finish();
+        }
+
+        // Ensure target is a local copy (parsed) or shallow copy
+
+        if (target === value) {
+            if (type === 'object') {
+                target = Object.create(Object.getPrototypeOf(value));
+            }
+            else {
+                target = function (...args) {
+
+                    return value.apply(this, args);
+                };
+
+                target.prototype = Hoek.clone(value.prototype);
+            }
+
+            const valueKeys = Object.keys(value);
+            for (let i = 0; i < valueKeys.length; ++i) {
+                target[valueKeys[i]] = value[valueKeys[i]];
+            }
+        }
+        else {
+            target = value;
+        }
+
+        // Rename keys
+
+        const renamed = {};
+        for (let i = 0; i < this._inner.renames.length; ++i) {
+            const rename = this._inner.renames[i];
+
+            if (rename.isRegExp) {
+                const targetKeys = Object.keys(target);
+                const matchedTargetKeys = [];
+
+                for (let j = 0; j < targetKeys.length; ++j) {
+                    if (rename.from.test(targetKeys[j])) {
+                        matchedTargetKeys.push(targetKeys[j]);
+                    }
+                }
+
+                const allUndefined = matchedTargetKeys.every((key) => target[key] === undefined);
+                if (rename.options.ignoreUndefined && allUndefined) {
+                    continue;
+                }
+
+                if (!rename.options.multiple &&
+                    renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.regex.multiple', { from: matchedTargetKeys, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
+                    !rename.options.override &&
+                    !renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.regex.override', { from: matchedTargetKeys, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (allUndefined) {
+                    delete target[rename.to];
+                }
+                else {
+                    target[rename.to] = target[matchedTargetKeys[matchedTargetKeys.length - 1]];
+                }
+
+                renamed[rename.to] = true;
+
+                if (!rename.options.alias) {
+                    for (let j = 0; j < matchedTargetKeys.length; ++j) {
+                        delete target[matchedTargetKeys[j]];
+                    }
+                }
+            }
+            else {
+                if (rename.options.ignoreUndefined && target[rename.from] === undefined) {
+                    continue;
+                }
+
+                if (!rename.options.multiple &&
+                    renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.multiple', { from: rename.from, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(target, rename.to) &&
+                    !rename.options.override &&
+                    !renamed[rename.to]) {
+
+                    errors.push(this.createError('object.rename.override', { from: rename.from, to: rename.to }, state, options));
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+
+                if (target[rename.from] === undefined) {
+                    delete target[rename.to];
+                }
+                else {
+                    target[rename.to] = target[rename.from];
+                }
+
+                renamed[rename.to] = true;
+
+                if (!rename.options.alias) {
+                    delete target[rename.from];
+                }
+            }
+        }
+
+        // Validate schema
+
+        if (!this._inner.children &&            // null allows any keys
+            !this._inner.patterns.length &&
+            !this._inner.dependencies.length) {
+
+            return finish();
+        }
+
+        const unprocessed = new Set(Object.keys(target));
+
+        if (this._inner.children) {
+            const stripProps = [];
+
+            for (let i = 0; i < this._inner.children.length; ++i) {
+                const child = this._inner.children[i];
+                const key = child.key;
+                const item = target[key];
+
+                unprocessed.delete(key);
+
+                const localState = new State(key, [...state.path, key], target, state.reference);
+                const result = child.schema._validate(item, localState, options);
+                if (result.errors) {
+                    errors.push(this.createError('object.child', { key, child: child.schema._getLabel(key), reason: result.errors }, localState, options));
+
+                    if (options.abortEarly) {
+                        return finish();
+                    }
+                }
+                else {
+                    if (child.schema._flags.strip || (result.value === undefined && result.value !== item)) {
+                        stripProps.push(key);
+                        target[key] = result.finalValue;
+                    }
+                    else if (result.value !== undefined) {
+                        target[key] = result.value;
+                    }
+                }
+            }
+
+            for (let i = 0; i < stripProps.length; ++i) {
+                delete target[stripProps[i]];
+            }
+        }
+
+        // Unknown keys
+
+        if (unprocessed.size && this._inner.patterns.length) {
+
+            for (const key of unprocessed) {
+                const localState = new State(key, [...state.path, key], target, state.reference);
+                const item = target[key];
+
+                for (let i = 0; i < this._inner.patterns.length; ++i) {
+                    const pattern = this._inner.patterns[i];
+
+                    if (pattern.regex ?
+                        pattern.regex.test(key) :
+                        !pattern.schema._validate(key, state, { ...options, abortEarly:true }).errors) {
+
+                        unprocessed.delete(key);
+
+                        const result = pattern.rule._validate(item, localState, options);
+                        if (result.errors) {
+                            errors.push(this.createError('object.child', {
+                                key,
+                                child: pattern.rule._getLabel(key),
+                                reason: result.errors
+                            }, localState, options));
+
+                            if (options.abortEarly) {
+                                return finish();
+                            }
+                        }
+
+                        target[key] = result.value;
+                    }
+                }
+            }
+        }
+
+        if (unprocessed.size && (this._inner.children || this._inner.patterns.length)) {
+            if ((options.stripUnknown && this._flags.allowUnknown !== true) ||
+                options.skipFunctions) {
+
+                const stripUnknown = options.stripUnknown
+                    ? (options.stripUnknown === true ? true : !!options.stripUnknown.objects)
+                    : false;
+
+
+                for (const key of unprocessed) {
+                    if (stripUnknown) {
+                        delete target[key];
+                        unprocessed.delete(key);
+                    }
+                    else if (typeof target[key] === 'function') {
+                        unprocessed.delete(key);
+                    }
+                }
+            }
+
+            if ((this._flags.allowUnknown !== undefined ? !this._flags.allowUnknown : !options.allowUnknown)) {
+
+                for (const unprocessedKey of unprocessed) {
+                    errors.push(this.createError('object.allowUnknown', { child: unprocessedKey, value: target[unprocessedKey] }, {
+                        key: unprocessedKey,
+                        path: [...state.path, unprocessedKey]
+                    }, options, {}));
+                }
+            }
+        }
+
+        // Validate dependencies
+
+        for (let i = 0; i < this._inner.dependencies.length; ++i) {
+            const dep = this._inner.dependencies[i];
+            const hasKey = dep.key !== null;
+            const splitKey = hasKey && dep.key.split('.');
+            const localState = hasKey ? new State(splitKey[splitKey.length - 1], [...state.path, ...splitKey]) : new State(null, state.path);
+            const err = internals[dep.type].call(this, dep.key, hasKey && Hoek.reach(target, dep.key, { functions: true }), dep.peers, target, localState, options);
+            if (err instanceof Errors.Err) {
+                errors.push(err);
+                if (options.abortEarly) {
+                    return finish();
+                }
+            }
+        }
+
+        return finish();
+    }
+
+    keys(schema) {
+
+        Hoek.assert(schema === null || schema === undefined || typeof schema === 'object', 'Object schema must be a valid object');
+        Hoek.assert(!schema || !(schema instanceof Any), 'Object schema cannot be a joi schema');
+
+        const obj = this.clone();
+
+        if (!schema) {
+            obj._inner.children = null;
+            return obj;
+        }
+
+        const children = Object.keys(schema);
+
+        if (!children.length) {
+            obj._inner.children = [];
+            return obj;
+        }
+
+        const topo = new Topo();
+        if (obj._inner.children) {
+            for (let i = 0; i < obj._inner.children.length; ++i) {
+                const child = obj._inner.children[i];
+
+                // Only add the key if we are not going to replace it later
+                if (!children.includes(child.key)) {
+                    topo.add(child, { after: child._refs, group: child.key });
+                }
+            }
+        }
+
+        for (let i = 0; i < children.length; ++i) {
+            const key = children[i];
+            const child = schema[key];
+            try {
+                const cast = Cast.schema(this._currentJoi, child);
+                topo.add({ key, schema: cast }, { after: cast._refs, group: key });
+            }
+            catch (castErr) {
+                if (castErr.hasOwnProperty('path')) {
+                    castErr.path = key + '.' + castErr.path;
+                }
+                else {
+                    castErr.path = key;
+                }
+
+                throw castErr;
+            }
+        }
+
+        obj._inner.children = topo.nodes;
+
+        return obj;
+    }
+
+    append(schema) {
+        // Skip any changes
+        if (schema === null || schema === undefined || Object.keys(schema).length === 0) {
+            return this;
+        }
+
+        return this.keys(schema);
+    }
+
+    unknown(allow) {
+
+        const value = allow !== false;
+
+        if (this._flags.allowUnknown === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.allowUnknown = value;
+        return obj;
+    }
+
+    length(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('length', limit, function (value, state, options) {
+
+            if (Object.keys(value).length === limit) {
+                return value;
+            }
+
+            return this.createError('object.length', { limit, value }, state, options);
+        });
+    }
+
+    min(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('min', limit, function (value, state, options) {
+
+            if (Object.keys(value).length >= limit) {
+                return value;
+            }
+
+            return this.createError('object.min', { limit, value }, state, options);
+        });
+    }
+
+    max(limit) {
+
+        Hoek.assert(Number.isSafeInteger(limit) && limit >= 0, 'limit must be a positive integer');
+
+        return this._test('max', limit, function (value, state, options) {
+
+            if (Object.keys(value).length <= limit) {
+                return value;
+            }
+
+            return this.createError('object.max', { limit, value }, state, options);
+        });
+    }
+
+    pattern(pattern, schema) {
+
+        const isRegExp = pattern instanceof RegExp;
+        Hoek.assert(isRegExp || pattern instanceof Any, 'pattern must be a regex or schema');
+        Hoek.assert(schema !== undefined, 'Invalid rule');
+
+        if (isRegExp) {
+            Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
+        }
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        const obj = this.clone();
+        if (isRegExp) {
+            obj._inner.patterns.push({ regex: pattern, rule: schema });
+        }
+        else {
+            obj._inner.patterns.push({ schema: pattern, rule: schema });
+        }
+
+        return obj;
+    }
+
+    schema() {
+
+        return this._test('schema', null, function (value, state, options) {
+
+            if (value instanceof Any) {
+                return value;
+            }
+
+            return this.createError('object.schema', null, state, options);
+        });
+    }
+
+    with(key, peers) {
+
+        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
+
+        return this._dependency('with', key, peers);
+    }
+
+    without(key, peers) {
+
+        Hoek.assert(arguments.length === 2, 'Invalid number of arguments, expected 2.');
+
+        return this._dependency('without', key, peers);
+    }
+
+    xor(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('xor', null, peers);
+    }
+
+    oxor(...peers) {
+
+        return this._dependency('oxor', null, peers);
+    }
+
+    or(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('or', null, peers);
+    }
+
+    and(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('and', null, peers);
+    }
+
+    nand(...peers) {
+
+        peers = Hoek.flatten(peers);
+        return this._dependency('nand', null, peers);
+    }
+
+    requiredKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'required');
+    }
+
+    optionalKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'optional');
+    }
+
+    forbiddenKeys(...children) {
+
+        children = Hoek.flatten(children);
+        return this.applyFunctionToChildren(children, 'forbidden');
+    }
+
+    rename(from, to, options) {
+
+        Hoek.assert(typeof from === 'string' || from instanceof RegExp, 'Rename missing the from argument');
+        Hoek.assert(typeof to === 'string', 'Rename missing the to argument');
+        Hoek.assert(to !== from, 'Cannot rename key to same name:', from);
+
+        for (let i = 0; i < this._inner.renames.length; ++i) {
+            Hoek.assert(this._inner.renames[i].from !== from, 'Cannot rename the same key multiple times');
+        }
+
+        const obj = this.clone();
+
+        obj._inner.renames.push({
+            from,
+            to,
+            options: Hoek.applyToDefaults(internals.renameDefaults, options || {}),
+            isRegExp: from instanceof RegExp
+        });
+
+        return obj;
+    }
+
+    applyFunctionToChildren(children, fn, args = [], root) {
+
+        children = [].concat(children);
+        Hoek.assert(children.length > 0, 'expected at least one children');
+
+        const groupedChildren = internals.groupChildren(children);
+        let obj;
+
+        if ('' in groupedChildren) {
+            obj = this[fn](...args);
+            delete groupedChildren[''];
+        }
+        else {
+            obj = this.clone();
+        }
+
+        if (obj._inner.children) {
+            root = root ? (root + '.') : '';
+
+            for (let i = 0; i < obj._inner.children.length; ++i) {
+                const child = obj._inner.children[i];
+                const group = groupedChildren[child.key];
+
+                if (group) {
+                    obj._inner.children[i] = {
+                        key: child.key,
+                        _refs: child._refs,
+                        schema: child.schema.applyFunctionToChildren(group, fn, args, root + child.key)
+                    };
+
+                    delete groupedChildren[child.key];
+                }
+            }
+        }
+
+        const remaining = Object.keys(groupedChildren);
+        Hoek.assert(remaining.length === 0, 'unknown key(s)', remaining.join(', '));
+
+        return obj;
+    }
+
+    _dependency(type, key, peers) {
+
+        peers = [].concat(peers);
+        for (let i = 0; i < peers.length; ++i) {
+            Hoek.assert(typeof peers[i] === 'string', type, 'peers must be a string or array of strings');
+        }
+
+        const obj = this.clone();
+        obj._inner.dependencies.push({ type, key, peers });
+        return obj;
+    }
+
+    describe(shallow) {
+
+        const description = super.describe();
+
+        if (description.rules) {
+            for (let i = 0; i < description.rules.length; ++i) {
+                const rule = description.rules[i];
+                // Coverage off for future-proof descriptions, only object().assert() is use right now
+                if (/* $lab:coverage:off$ */rule.arg &&
+                    typeof rule.arg === 'object' &&
+                    rule.arg.schema &&
+                    rule.arg.ref /* $lab:coverage:on$ */) {
+                    rule.arg = {
+                        schema: rule.arg.schema.describe(),
+                        ref: rule.arg.ref.toString()
+                    };
+                }
+            }
+        }
+
+        if (this._inner.children &&
+            !shallow) {
+
+            description.children = {};
+            for (let i = 0; i < this._inner.children.length; ++i) {
+                const child = this._inner.children[i];
+                description.children[child.key] = child.schema.describe();
+            }
+        }
+
+        if (this._inner.dependencies.length) {
+            description.dependencies = Hoek.clone(this._inner.dependencies);
+        }
+
+        if (this._inner.patterns.length) {
+            description.patterns = [];
+
+            for (let i = 0; i < this._inner.patterns.length; ++i) {
+                const pattern = this._inner.patterns[i];
+                if (pattern.regex) {
+                    description.patterns.push({ regex: pattern.regex.toString(), rule: pattern.rule.describe() });
+                }
+                else {
+                    description.patterns.push({ schema: pattern.schema.describe(), rule: pattern.rule.describe() });
+                }
+            }
+        }
+
+        if (this._inner.renames.length > 0) {
+            description.renames = Hoek.clone(this._inner.renames);
+        }
+
+        return description;
+    }
+
+    assert(ref, schema, message) {
+
+        ref = Cast.ref(ref);
+        Hoek.assert(ref.isContext || ref.depth > 1, 'Cannot use assertions for root level references - use direct key rules instead');
+        message = message || 'pass the assertion test';
+        Hoek.assert(typeof message === 'string', 'Message must be a string');
+
+        try {
+            schema = Cast.schema(this._currentJoi, schema);
+        }
+        catch (castErr) {
+            if (castErr.hasOwnProperty('path')) {
+                castErr.message = `${castErr.message}(${castErr.path})`;
+            }
+
+            throw castErr;
+        }
+
+        const key = ref.path[ref.path.length - 1];
+        const path = ref.path.join('.');
+
+        return this._test('assert', { schema, ref }, function (value, state, options) {
+
+            const result = schema._validate(ref(value), null, options, value);
+            if (!result.errors) {
+                return value;
+            }
+
+            const localState = new State(key, ref.path, state.parent, state.reference);
+            return this.createError('object.assert', { ref: path, message }, localState, options);
+        });
+    }
+
+    type(constructor, name = constructor.name) {
+
+        Hoek.assert(typeof constructor === 'function', 'type must be a constructor function');
+        const typeData = {
+            name,
+            ctor: constructor
+        };
+
+        return this._test('type', typeData, function (value, state, options) {
+
+            if (value instanceof constructor) {
+                return value;
+            }
+
+            return this.createError('object.type', { type: typeData.name, value }, state, options);
+        });
+    }
+};
+
+
+internals.renameDefaults = {
+    alias: false,                   // Keep old value in place
+    multiple: false,                // Allow renaming multiple keys into the same target
+    override: false                 // Overrides an existing key
+};
+
+
+internals.groupChildren = function (children) {
+
+    children.sort();
+
+    const grouped = {};
+
+    for (let i = 0; i < children.length; ++i) {
+        const child = children[i];
+        Hoek.assert(typeof child === 'string', 'children must be strings');
+        const group = child.split('.')[0];
+        const childGroup = grouped[group] = (grouped[group] || []);
+        childGroup.push(child.substring(group.length + 1));
+    }
+
+    return grouped;
+};
+
+
+internals.keysToLabels = function (schema, keys) {
+
+    const children = schema._inner.children;
+
+    if (!children) {
+        return keys;
+    }
+
+    const findLabel = function (key) {
+
+        const matchingChild = schema._currentJoi.reach(schema, key);
+        return matchingChild ? matchingChild._getLabel(key) : key;
+    };
+
+    if (Array.isArray(keys)) {
+        return keys.map(findLabel);
+    }
+
+    return findLabel(keys);
+};
+
+
+internals.with = function (key, value, peers, parent, state, options) {
+
+    if (value === undefined) {
+        return;
+    }
+
+    for (let i = 0; i < peers.length; ++i) {
+
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist === undefined) {
+
+            return this.createError('object.with', {
+                main: key,
+                mainWithLabel: internals.keysToLabels(this, key),
+                peer,
+                peerWithLabel: internals.keysToLabels(this, peer)
+            }, state, options);
+        }
+    }
+};
+
+
+internals.without = function (key, value, peers, parent, state, options) {
+
+    if (value === undefined) {
+        return;
+    }
+
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+
+            return this.createError('object.without', {
+                main: key,
+                mainWithLabel: internals.keysToLabels(this, key),
+                peer,
+                peerWithLabel: internals.keysToLabels(this, peer)
+            }, state, options);
+        }
+    }
+};
+
+
+internals.xor = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            present.push(peer);
+        }
+    }
+
+    if (present.length === 1) {
+        return;
+    }
+
+    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
+
+    if (present.length === 0) {
+        return this.createError('object.missing', context, state, options);
+    }
+
+    context.present = present;
+    context.presentWithLabels = internals.keysToLabels(this, present);
+
+    return this.createError('object.xor', context, state, options);
+};
+
+
+internals.oxor = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            present.push(peer);
+        }
+    }
+
+    if (!present.length ||
+        present.length === 1) {
+
+        return;
+    }
+
+    const context = { peers, peersWithLabels: internals.keysToLabels(this, peers) };
+    context.present = present;
+    context.presentWithLabels = internals.keysToLabels(this, present);
+
+    return this.createError('object.oxor', context, state, options);
+};
+
+
+internals.or = function (key, value, peers, parent, state, options) {
+
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+            return;
+        }
+    }
+
+    return this.createError('object.missing', {
+        peers,
+        peersWithLabels: internals.keysToLabels(this, peers)
+    }, state, options);
+};
+
+
+internals.and = function (key, value, peers, parent, state, options) {
+
+    const missing = [];
+    const present = [];
+    const count = peers.length;
+    for (let i = 0; i < count; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist === undefined) {
+
+            missing.push(peer);
+        }
+        else {
+            present.push(peer);
+        }
+    }
+
+    const aon = (missing.length === count || present.length === count);
+
+    if (!aon) {
+
+        return this.createError('object.and', {
+            present,
+            presentWithLabels: internals.keysToLabels(this, present),
+            missing,
+            missingWithLabels: internals.keysToLabels(this, missing)
+        }, state, options);
+    }
+};
+
+
+internals.nand = function (key, value, peers, parent, state, options) {
+
+    const present = [];
+    for (let i = 0; i < peers.length; ++i) {
+        const peer = peers[i];
+        const keysExist = Hoek.reach(parent, peer, { functions: true });
+        if (keysExist !== undefined) {
+
+            present.push(peer);
+        }
+    }
+
+    const main = peers[0];
+    const values = peers.slice(1);
+    const allPresent = (present.length === peers.length);
+    return allPresent ? this.createError('object.nand', {
+        main,
+        mainWithLabel: internals.keysToLabels(this, main),
+        peers: values,
+        peersWithLabels: internals.keysToLabels(this, values)
+    }, state, options) : null;
+};
+
+
+module.exports = new internals.Object();
+
+},{"../../cast":238,"../../errors":239,"../any":246,"../state":256,"@hapi/bourne":212,"@hapi/hoek":227,"@hapi/topo":264}],256:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = class {
+    constructor(key, path, parent, reference) {
+
+        this.key = key;
+        this.path = path;
+        this.parent = parent;
+        this.reference = reference;
+    }
+};
+
+},{}],257:[function(require,module,exports){
+(function (Buffer){
+'use strict';
+
+const Net = require('net');
+
+const Address = require('@hapi/address');
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+const Ref = require('../../ref');
+const JoiDate = require('../date');
+
+const Uri = require('./uri');
+const Ip = require('./ip');
+
+
+const internals = {
+    uriRegex: Uri.createUriRegex(),
+    ipRegex: Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], 'optional'),
+    guidBrackets: {
+        '{': '}', '[': ']', '(': ')', '': ''
+    },
+    guidVersions: {
+        uuidv1: '1',
+        uuidv2: '2',
+        uuidv3: '3',
+        uuidv4: '4',
+        uuidv5: '5'
+    },
+    cidrPresences: ['required', 'optional', 'forbidden'],
+    normalizationForms: ['NFC', 'NFD', 'NFKC', 'NFKD']
+};
+
+
+internals.String = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'string';
+        this._invalids.add('');
+    }
+
+    _base(value, state, options) {
+
+        if (typeof value === 'string' &&
+            options.convert) {
+
+            if (this._flags.normalize) {
+                value = value.normalize(this._flags.normalize);
+            }
+
+            if (this._flags.case) {
+                value = (this._flags.case === 'upper' ? value.toLocaleUpperCase() : value.toLocaleLowerCase());
+            }
+
+            if (this._flags.trim) {
+                value = value.trim();
+            }
+
+            if (this._inner.replacements) {
+
+                for (let i = 0; i < this._inner.replacements.length; ++i) {
+                    const replacement = this._inner.replacements[i];
+                    value = value.replace(replacement.pattern, replacement.replacement);
+                }
+            }
+
+            if (this._flags.truncate) {
+                for (let i = 0; i < this._tests.length; ++i) {
+                    const test = this._tests[i];
+                    if (test.name === 'max') {
+                        value = value.slice(0, test.arg);
+                        break;
+                    }
+                }
+            }
+
+            if (this._flags.byteAligned && value.length % 2 !== 0) {
+                value = `0${value}`;
+            }
+        }
+
+        return {
+            value,
+            errors: (typeof value === 'string') ? null : this.createError('string.base', { value }, state, options)
+        };
+    }
+
+    insensitive() {
+
+        if (this._flags.insensitive) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.insensitive = true;
+        return obj;
+    }
+
+    creditCard() {
+
+        return this._test('creditCard', undefined, function (value, state, options) {
+
+            let i = value.length;
+            let sum = 0;
+            let mul = 1;
+
+            while (i--) {
+                const char = value.charAt(i) * mul;
+                sum = sum + (char - (char > 9) * 9);
+                mul = mul ^ 3;
+            }
+
+            const check = (sum % 10 === 0) && (sum > 0);
+            return check ? value : this.createError('string.creditCard', { value }, state, options);
+        });
+    }
+
+    regex(pattern, patternOptions) {
+
+        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
+        Hoek.assert(!pattern.flags.includes('g') && !pattern.flags.includes('y'), 'pattern should not use global or sticky mode');
+
+        const patternObject = { pattern };
+
+        if (typeof patternOptions === 'string') {
+            patternObject.name = patternOptions;
+        }
+        else if (typeof patternOptions === 'object') {
+            patternObject.invert = !!patternOptions.invert;
+
+            if (patternOptions.name) {
+                patternObject.name = patternOptions.name;
+            }
+        }
+
+        const errorCode = ['string.regex', patternObject.invert ? '.invert' : '', patternObject.name ? '.name' : '.base'].join('');
+
+        return this._test('regex', patternObject, function (value, state, options) {
+
+            const patternMatch = patternObject.pattern.test(value);
+
+            if (patternMatch ^ patternObject.invert) {
+                return value;
+            }
+
+            return this.createError(errorCode, { name: patternObject.name, pattern: patternObject.pattern, value }, state, options);
+        });
+    }
+
+    alphanum() {
+
+        return this._test('alphanum', undefined, function (value, state, options) {
+
+            if (/^[a-zA-Z0-9]+$/.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.alphanum', { value }, state, options);
+        });
+    }
+
+    token() {
+
+        return this._test('token', undefined, function (value, state, options) {
+
+            if (/^\w+$/.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.token', { value }, state, options);
+        });
+    }
+
+    email(validationOptions) {
+
+        if (validationOptions) {
+            Hoek.assert(typeof validationOptions === 'object', 'email options must be an object');
+
+            // Migration validation for unsupported options
+
+            Hoek.assert(validationOptions.checkDNS === undefined, 'checkDNS option is not supported');
+            Hoek.assert(validationOptions.errorLevel === undefined, 'errorLevel option is not supported');
+            Hoek.assert(validationOptions.minDomainAtoms === undefined, 'minDomainAtoms option is not supported, use minDomainSegments instead');
+            Hoek.assert(validationOptions.tldBlacklist === undefined, 'tldBlacklist option is not supported, use tlds.deny instead');
+            Hoek.assert(validationOptions.tldWhitelist === undefined, 'tldWhitelist option is not supported, use tlds.allow instead');
+
+            // Validate options
+
+            if (validationOptions.tlds &&
+                typeof validationOptions.tlds === 'object') {
+
+                Hoek.assert(validationOptions.tlds.allow === undefined ||
+                    validationOptions.tlds.allow === false ||
+                    validationOptions.tlds.allow === true ||
+                    Array.isArray(validationOptions.tlds.allow) ||
+                    validationOptions.tlds.allow instanceof Set, 'tlds.allow must be an array, Set, or boolean');
+
+                Hoek.assert(validationOptions.tlds.deny === undefined ||
+                    Array.isArray(validationOptions.tlds.deny) ||
+                    validationOptions.tlds.deny instanceof Set, 'tlds.deny must be an array or Set');
+
+                const normalizeTable = (table) => {
+
+                    if (table === undefined ||
+                        typeof table === 'boolean' ||
+                        table instanceof Set) {
+
+                        return table;
+                    }
+
+                    return new Set(table);
+                };
+
+                validationOptions = Object.assign({}, validationOptions);       // Shallow cloned
+                validationOptions.tlds = {
+                    allow: normalizeTable(validationOptions.tlds.allow),
+                    deny: normalizeTable(validationOptions.tlds.deny)
+                };
+            }
+
+            Hoek.assert(validationOptions.minDomainSegments === undefined ||
+                Number.isSafeInteger(validationOptions.minDomainSegments) && validationOptions.minDomainSegments > 0, 'minDomainSegments must be a positive integer');
+        }
+
+        return this._test('email', validationOptions, function (value, state, options) {
+
+            if (Address.email.isValid(value, validationOptions)) {
+                return value;
+            }
+
+            return this.createError('string.email', { value }, state, options);
+        });
+    }
+
+    ip(ipOptions = {}) {
+
+        let regex = internals.ipRegex;
+        Hoek.assert(typeof ipOptions === 'object', 'options must be an object');
+
+        if (ipOptions.cidr) {
+            Hoek.assert(typeof ipOptions.cidr === 'string', 'cidr must be a string');
+            ipOptions.cidr = ipOptions.cidr.toLowerCase();
+
+            Hoek.assert(Hoek.contain(internals.cidrPresences, ipOptions.cidr), 'cidr must be one of ' + internals.cidrPresences.join(', '));
+
+            // If we only received a `cidr` setting, create a regex for it. But we don't need to create one if `cidr` is "optional" since that is the default
+            if (!ipOptions.version && ipOptions.cidr !== 'optional') {
+                regex = Ip.createIpRegex(['ipv4', 'ipv6', 'ipvfuture'], ipOptions.cidr);
+            }
+        }
+        else {
+
+            // Set our default cidr strategy
+            ipOptions.cidr = 'optional';
+        }
+
+        let versions;
+        if (ipOptions.version) {
+            if (!Array.isArray(ipOptions.version)) {
+                ipOptions.version = [ipOptions.version];
+            }
+
+            Hoek.assert(ipOptions.version.length >= 1, 'version must have at least 1 version specified');
+
+            versions = [];
+            for (let i = 0; i < ipOptions.version.length; ++i) {
+                let version = ipOptions.version[i];
+                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
+                version = version.toLowerCase();
+                Hoek.assert(Ip.versions[version], 'version at position ' + i + ' must be one of ' + Object.keys(Ip.versions).join(', '));
+                versions.push(version);
+            }
+
+            // Make sure we have a set of versions
+            versions = Array.from(new Set(versions));
+
+            regex = Ip.createIpRegex(versions, ipOptions.cidr);
+        }
+
+        return this._test('ip', ipOptions, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            if (versions) {
+                return this.createError('string.ipVersion', { value, cidr: ipOptions.cidr, version: versions }, state, options);
+            }
+
+            return this.createError('string.ip', { value, cidr: ipOptions.cidr }, state, options);
+        });
+    }
+
+    uri(uriOptions) {
+
+        let customScheme = '';
+        let allowRelative = false;
+        let relativeOnly = false;
+        let allowQuerySquareBrackets = false;
+        let regex = internals.uriRegex;
+
+        if (uriOptions) {
+            Hoek.assert(typeof uriOptions === 'object', 'options must be an object');
+
+            const unknownOptions = Object.keys(uriOptions).filter((key) => !['scheme', 'allowRelative', 'relativeOnly', 'allowQuerySquareBrackets'].includes(key));
+            Hoek.assert(unknownOptions.length === 0, `options contain unknown keys: ${unknownOptions}`);
+
+            if (uriOptions.scheme) {
+                Hoek.assert(uriOptions.scheme instanceof RegExp || typeof uriOptions.scheme === 'string' || Array.isArray(uriOptions.scheme), 'scheme must be a RegExp, String, or Array');
+
+                if (!Array.isArray(uriOptions.scheme)) {
+                    uriOptions.scheme = [uriOptions.scheme];
+                }
+
+                Hoek.assert(uriOptions.scheme.length >= 1, 'scheme must have at least 1 scheme specified');
+
+                // Flatten the array into a string to be used to match the schemes.
+                for (let i = 0; i < uriOptions.scheme.length; ++i) {
+                    const scheme = uriOptions.scheme[i];
+                    Hoek.assert(scheme instanceof RegExp || typeof scheme === 'string', 'scheme at position ' + i + ' must be a RegExp or String');
+
+                    // Add OR separators if a value already exists
+                    customScheme = customScheme + (customScheme ? '|' : '');
+
+                    // If someone wants to match HTTP or HTTPS for example then we need to support both RegExp and String so we don't escape their pattern unknowingly.
+                    if (scheme instanceof RegExp) {
+                        customScheme = customScheme + scheme.source;
+                    }
+                    else {
+                        Hoek.assert(/[a-zA-Z][a-zA-Z0-9+-\.]*/.test(scheme), 'scheme at position ' + i + ' must be a valid scheme');
+                        customScheme = customScheme + Hoek.escapeRegex(scheme);
+                    }
+                }
+            }
+
+            if (uriOptions.allowRelative) {
+                allowRelative = true;
+            }
+
+            if (uriOptions.relativeOnly) {
+                relativeOnly = true;
+            }
+
+            if (uriOptions.allowQuerySquareBrackets) {
+                allowQuerySquareBrackets = true;
+            }
+        }
+
+        if (customScheme || allowRelative || relativeOnly || allowQuerySquareBrackets) {
+            regex = Uri.createUriRegex(customScheme, allowRelative, relativeOnly, allowQuerySquareBrackets);
+        }
+
+        return this._test('uri', uriOptions, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            if (relativeOnly) {
+                return this.createError('string.uriRelativeOnly', { value }, state, options);
+            }
+
+            if (customScheme) {
+                return this.createError('string.uriCustomScheme', { scheme: customScheme, value }, state, options);
+            }
+
+            return this.createError('string.uri', { value }, state, options);
+        });
+    }
+
+    isoDate() {
+
+        return this._test('isoDate', undefined, function (value, state, options) {
+
+            if (JoiDate._isIsoDate(value)) {
+                if (!options.convert) {
+                    return value;
+                }
+
+                const d = new Date(value);
+                if (!isNaN(d.getTime())) {
+                    return d.toISOString();
+                }
+            }
+
+            return this.createError('string.isoDate', { value }, state, options);
+        });
+    }
+
+    guid(guidOptions) {
+
+        let versionNumbers = '';
+
+        if (guidOptions && guidOptions.version) {
+            if (!Array.isArray(guidOptions.version)) {
+                guidOptions.version = [guidOptions.version];
+            }
+
+            Hoek.assert(guidOptions.version.length >= 1, 'version must have at least 1 valid version specified');
+            const versions = new Set();
+
+            for (let i = 0; i < guidOptions.version.length; ++i) {
+                let version = guidOptions.version[i];
+                Hoek.assert(typeof version === 'string', 'version at position ' + i + ' must be a string');
+                version = version.toLowerCase();
+                const versionNumber = internals.guidVersions[version];
+                Hoek.assert(versionNumber, 'version at position ' + i + ' must be one of ' + Object.keys(internals.guidVersions).join(', '));
+                Hoek.assert(!(versions.has(versionNumber)), 'version at position ' + i + ' must not be a duplicate.');
+
+                versionNumbers += versionNumber;
+                versions.add(versionNumber);
+            }
+        }
+
+        const guidRegex = new RegExp(`^([\\[{\\(]?)[0-9A-F]{8}([:-]?)[0-9A-F]{4}\\2?[${versionNumbers || '0-9A-F'}][0-9A-F]{3}\\2?[${versionNumbers ? '89AB' : '0-9A-F'}][0-9A-F]{3}\\2?[0-9A-F]{12}([\\]}\\)]?)$`, 'i');
+
+        return this._test('guid', guidOptions, function (value, state, options) {
+
+            const results = guidRegex.exec(value);
+
+            if (!results) {
+                return this.createError('string.guid', { value }, state, options);
+            }
+
+            // Matching braces
+            if (internals.guidBrackets[results[1]] !== results[results.length - 1]) {
+                return this.createError('string.guid', { value }, state, options);
+            }
+
+            return value;
+        });
+    }
+
+    hex(hexOptions = {}) {
+
+        Hoek.assert(typeof hexOptions === 'object', 'hex options must be an object');
+        Hoek.assert(typeof hexOptions.byteAligned === 'undefined' || typeof hexOptions.byteAligned === 'boolean',
+            'byteAligned must be boolean');
+
+        const byteAligned = hexOptions.byteAligned === true;
+        const regex = /^[a-f0-9]+$/i;
+
+        const obj = this._test('hex', regex, function (value, state, options) {
+
+            if (regex.test(value)) {
+                if (byteAligned && value.length % 2 !== 0) {
+                    return this.createError('string.hexAlign', { value }, state, options);
+                }
+
+                return value;
+            }
+
+            return this.createError('string.hex', { value }, state, options);
+        });
+
+        if (byteAligned) {
+            obj._flags.byteAligned = true;
+        }
+
+        return obj;
+    }
+
+    base64(base64Options = {}) {
+
+        // Validation.
+        Hoek.assert(typeof base64Options === 'object', 'base64 options must be an object');
+        Hoek.assert(typeof base64Options.paddingRequired === 'undefined' || typeof base64Options.paddingRequired === 'boolean',
+            'paddingRequired must be boolean');
+
+        // Determine if padding is required.
+        const paddingRequired = base64Options.paddingRequired === false ?
+            base64Options.paddingRequired
+            : base64Options.paddingRequired || true;
+
+        // Set validation based on preference.
+        const regex = paddingRequired ?
+            // Padding is required.
+            /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+            // Padding is optional.
+            : /^(?:[A-Za-z0-9+\/]{2}[A-Za-z0-9+\/]{2})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
+
+        return this._test('base64', regex, function (value, state, options) {
+
+            if (regex.test(value)) {
+                return value;
+            }
+
+            return this.createError('string.base64', { value }, state, options);
+        });
+    }
+
+    dataUri(dataUriOptions = {}) {
+
+        const regex = /^data:[\w+.-]+\/[\w+.-]+;((charset=[\w-]+|base64),)?(.*)$/;
+
+        // Determine if padding is required.
+        const paddingRequired = dataUriOptions.paddingRequired === false ?
+            dataUriOptions.paddingRequired
+            : dataUriOptions.paddingRequired || true;
+
+        const base64regex = paddingRequired ?
+            /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+            : /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}(==)?|[A-Za-z0-9+\/]{3}=?)?$/;
+
+        return this._test('dataUri', regex, function (value, state, options) {
+
+            const matches = value.match(regex);
+
+            if (matches) {
+                if (!matches[2]) {
+                    return value;
+                }
+
+                if (matches[2] !== 'base64') {
+                    return value;
+                }
+
+                if (base64regex.test(matches[3])) {
+                    return value;
+                }
+            }
+
+            return this.createError('string.dataUri', { value }, state, options);
+        });
+    }
+
+    hostname() {
+
+        const regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+
+        return this._test('hostname', undefined, function (value, state, options) {
+
+            if ((value.length <= 255 && regex.test(value)) ||
+                Net.isIPv6(value)) {
+
+                return value;
+            }
+
+            return this.createError('string.hostname', { value }, state, options);
+        });
+    }
+
+    normalize(form = 'NFC') {
+
+        Hoek.assert(Hoek.contain(internals.normalizationForms, form), 'normalization form must be one of ' + internals.normalizationForms.join(', '));
+
+        const obj = this._test('normalize', form, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.normalize(form)) {
+
+                return value;
+            }
+
+            return this.createError('string.normalize', { value, form }, state, options);
+        });
+
+        obj._flags.normalize = form;
+        return obj;
+    }
+
+    lowercase() {
+
+        const obj = this._test('lowercase', undefined, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.toLocaleLowerCase()) {
+
+                return value;
+            }
+
+            return this.createError('string.lowercase', { value }, state, options);
+        });
+
+        obj._flags.case = 'lower';
+        return obj;
+    }
+
+    uppercase() {
+
+        const obj = this._test('uppercase', undefined, function (value, state, options) {
+
+            if (options.convert ||
+                value === value.toLocaleUpperCase()) {
+
+                return value;
+            }
+
+            return this.createError('string.uppercase', { value }, state, options);
+        });
+
+        obj._flags.case = 'upper';
+        return obj;
+    }
+
+    trim(enabled = true) {
+
+        Hoek.assert(typeof enabled === 'boolean', 'option must be a boolean');
+
+        if ((this._flags.trim && enabled) || (!this._flags.trim && !enabled)) {
+            return this;
+        }
+
+        let obj;
+        if (enabled) {
+            obj = this._test('trim', undefined, function (value, state, options) {
+
+                if (options.convert ||
+                    value === value.trim()) {
+
+                    return value;
+                }
+
+                return this.createError('string.trim', { value }, state, options);
+            });
+        }
+        else {
+            obj = this.clone();
+            obj._tests = obj._tests.filter((test) => test.name !== 'trim');
+        }
+
+        obj._flags.trim = enabled;
+        return obj;
+    }
+
+    replace(pattern, replacement) {
+
+        if (typeof pattern === 'string') {
+            pattern = new RegExp(Hoek.escapeRegex(pattern), 'g');
+        }
+
+        Hoek.assert(pattern instanceof RegExp, 'pattern must be a RegExp');
+        Hoek.assert(typeof replacement === 'string', 'replacement must be a String');
+
+        // This can not be considere a test like trim, we can't "reject"
+        // anything from this rule, so just clone the current object
+        const obj = this.clone();
+
+        if (!obj._inner.replacements) {
+            obj._inner.replacements = [];
+        }
+
+        obj._inner.replacements.push({
+            pattern,
+            replacement
+        });
+
+        return obj;
+    }
+
+    truncate(enabled) {
+
+        const value = enabled === undefined ? true : !!enabled;
+
+        if (this._flags.truncate === value) {
+            return this;
+        }
+
+        const obj = this.clone();
+        obj._flags.truncate = value;
+        return obj;
+    }
+
+};
+
+internals.compare = function (type, compare) {
+
+    return function (limit, encoding) {
+
+        const isRef = Ref.isRef(limit);
+
+        Hoek.assert((Number.isSafeInteger(limit) && limit >= 0) || isRef, 'limit must be a positive integer or reference');
+        Hoek.assert(!encoding || Buffer.isEncoding(encoding), 'Invalid encoding:', encoding);
+
+        return this._test(type, limit, function (value, state, options) {
+
+            let compareTo;
+            if (isRef) {
+                compareTo = limit(state.reference || state.parent, options);
+
+                if (!Number.isSafeInteger(compareTo)) {
+                    return this.createError('string.ref', { ref: limit, value: compareTo }, state, options);
+                }
+            }
+            else {
+                compareTo = limit;
+            }
+
+            if (compare(value, compareTo, encoding)) {
+                return value;
+            }
+
+            return this.createError('string.' + type, { limit: compareTo, value, encoding }, state, options);
+        });
+    };
+};
+
+
+internals.String.prototype.min = internals.compare('min', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length >= limit;
+});
+
+
+internals.String.prototype.max = internals.compare('max', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length <= limit;
+});
+
+
+internals.String.prototype.length = internals.compare('length', (value, limit, encoding) => {
+
+    const length = encoding ? Buffer.byteLength(value, encoding) : value.length;
+    return length === limit;
+});
+
+// Aliases
+
+internals.String.prototype.uuid = internals.String.prototype.guid;
+
+module.exports = new internals.String();
+
+}).call(this,require("buffer").Buffer)
+},{"../../ref":242,"../any":246,"../date":251,"./ip":258,"./uri":260,"@hapi/address":210,"@hapi/hoek":227,"buffer":49,"net":47}],258:[function(require,module,exports){
+'use strict';
+
+const RFC3986 = require('./rfc3986');
+
+
+const internals = {
+    Ip: {
+        cidrs: {
+            ipv4: {
+                required: '\\/(?:' + RFC3986.ipv4Cidr + ')',
+                optional: '(?:\\/(?:' + RFC3986.ipv4Cidr + '))?',
+                forbidden: ''
+            },
+            ipv6: {
+                required: '\\/' + RFC3986.ipv6Cidr,
+                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
+                forbidden: ''
+            },
+            ipvfuture: {
+                required: '\\/' + RFC3986.ipv6Cidr,
+                optional: '(?:\\/' + RFC3986.ipv6Cidr + ')?',
+                forbidden: ''
+            }
+        },
+        versions: {
+            ipv4: RFC3986.IPv4address,
+            ipv6: RFC3986.IPv6address,
+            ipvfuture: RFC3986.IPvFuture
+        }
+    }
+};
+
+
+internals.Ip.createIpRegex = function (versions, cidr) {
+
+    let regex;
+    for (let i = 0; i < versions.length; ++i) {
+        const version = versions[i];
+        if (!regex) {
+            regex = '^(?:' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
+        }
+        else {
+            regex += '|' + internals.Ip.versions[version] + internals.Ip.cidrs[version][cidr];
+        }
+    }
+
+    return new RegExp(regex + ')$');
+};
+
+module.exports = internals.Ip;
+
+},{"./rfc3986":259}],259:[function(require,module,exports){
+'use strict';
+
+const internals = {
+    rfc3986: {}
+};
+
+
+internals.generate = function () {
+
+    /**
+     * elements separated by forward slash ("/") are alternatives.
+     */
+    const or = '|';
+
+    /**
+     * Rule to support zero-padded addresses.
+     */
+    const zeroPad = '0?';
+
+    /**
+     * DIGIT = %x30-39 ; 0-9
+     */
+    const digit = '0-9';
+    const digitOnly = '[' + digit + ']';
+
+    /**
+     * ALPHA = %x41-5A / %x61-7A   ; A-Z / a-z
+     */
+    const alpha = 'a-zA-Z';
+    const alphaOnly = '[' + alpha + ']';
+
+    /**
+     * IPv4
+     * cidr       = DIGIT                ; 0-9
+     *            / %x31-32 DIGIT         ; 10-29
+     *            / "3" %x30-32           ; 30-32
+     */
+    internals.rfc3986.ipv4Cidr = digitOnly + or + '[1-2]' + digitOnly + or + '3' + '[0-2]';
+
+    /**
+     * IPv6
+     * cidr       = DIGIT                 ; 0-9
+     *            / %x31-39 DIGIT         ; 10-99
+     *            / "1" %x0-1 DIGIT       ; 100-119
+     *            / "12" %x0-8            ; 120-128
+     */
+    internals.rfc3986.ipv6Cidr = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + '[01]' + digitOnly + or + '12[0-8])';
+
+    /**
+     * HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+     */
+    const hexDigit = digit + 'A-Fa-f';
+    const hexDigitOnly = '[' + hexDigit + ']';
+
+    /**
+     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+     */
+    const unreserved = alpha + digit + '-\\._~';
+
+    /**
+     * sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+     */
+    const subDelims = '!\\$&\'\\(\\)\\*\\+,;=';
+
+    /**
+     * pct-encoded = "%" HEXDIG HEXDIG
+     */
+    const pctEncoded = '%' + hexDigit;
+
+    /**
+     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+     */
+    const pchar = unreserved + pctEncoded + subDelims + ':@';
+    const pcharOnly = '[' + pchar + ']';
+
+    /**
+     * squareBrackets example: []
+     */
+    const squareBrackets = '\\[\\]';
+
+    /**
+     * dec-octet   = DIGIT                 ; 0-9
+     *            / %x31-39 DIGIT         ; 10-99
+     *            / "1" 2DIGIT            ; 100-199
+     *            / "2" %x30-34 DIGIT     ; 200-249
+     *            / "25" %x30-35          ; 250-255
+     */
+    const decOctect = '(?:' + zeroPad + zeroPad + digitOnly + or + zeroPad + '[1-9]' + digitOnly + or + '1' + digitOnly + digitOnly + or + '2' + '[0-4]' + digitOnly + or + '25' + '[0-5])';
+
+    /**
+     * IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+     */
+    internals.rfc3986.IPv4address = '(?:' + decOctect + '\\.){3}' + decOctect;
+
+    /**
+     * h16 = 1*4HEXDIG ; 16 bits of address represented in hexadecimal
+     * ls32 = ( h16 ":" h16 ) / IPv4address ; least-significant 32 bits of address
+     * IPv6address =                            6( h16 ":" ) ls32
+     *             /                       "::" 5( h16 ":" ) ls32
+     *             / [               h16 ] "::" 4( h16 ":" ) ls32
+     *             / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+     *             / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+     *             / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
+     *             / [ *4( h16 ":" ) h16 ] "::"              ls32
+     *             / [ *5( h16 ":" ) h16 ] "::"              h16
+     *             / [ *6( h16 ":" ) h16 ] "::"
+     */
+    const h16 = hexDigitOnly + '{1,4}';
+    const ls32 = '(?:' + h16 + ':' + h16 + '|' + internals.rfc3986.IPv4address + ')';
+    const IPv6SixHex = '(?:' + h16 + ':){6}' + ls32;
+    const IPv6FiveHex = '::(?:' + h16 + ':){5}' + ls32;
+    const IPv6FourHex = '(?:' + h16 + ')?::(?:' + h16 + ':){4}' + ls32;
+    const IPv6ThreeHex = '(?:(?:' + h16 + ':){0,1}' + h16 + ')?::(?:' + h16 + ':){3}' + ls32;
+    const IPv6TwoHex = '(?:(?:' + h16 + ':){0,2}' + h16 + ')?::(?:' + h16 + ':){2}' + ls32;
+    const IPv6OneHex = '(?:(?:' + h16 + ':){0,3}' + h16 + ')?::' + h16 + ':' + ls32;
+    const IPv6NoneHex = '(?:(?:' + h16 + ':){0,4}' + h16 + ')?::' + ls32;
+    const IPv6NoneHex2 = '(?:(?:' + h16 + ':){0,5}' + h16 + ')?::' + h16;
+    const IPv6NoneHex3 = '(?:(?:' + h16 + ':){0,6}' + h16 + ')?::';
+    internals.rfc3986.IPv6address = '(?:' + IPv6SixHex + or + IPv6FiveHex + or + IPv6FourHex + or + IPv6ThreeHex + or + IPv6TwoHex + or + IPv6OneHex + or + IPv6NoneHex + or + IPv6NoneHex2 + or + IPv6NoneHex3 + ')';
+
+    /**
+     * IPvFuture = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+     */
+    internals.rfc3986.IPvFuture = 'v' + hexDigitOnly + '+\\.[' + unreserved + subDelims + ':]+';
+
+    /**
+     * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+     */
+    internals.rfc3986.scheme = alphaOnly + '[' + alpha + digit + '+-\\.]*';
+
+    /**
+     * userinfo = *( unreserved / pct-encoded / sub-delims / ":" )
+     */
+    const userinfo = '[' + unreserved + pctEncoded + subDelims + ':]*';
+
+    /**
+     * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+     */
+    const IPLiteral = '\\[(?:' + internals.rfc3986.IPv6address + or + internals.rfc3986.IPvFuture + ')\\]';
+
+    /**
+     * reg-name = *( unreserved / pct-encoded / sub-delims )
+     */
+    const regName = '[' + unreserved + pctEncoded + subDelims + ']{0,255}';
+
+    /**
+     * host = IP-literal / IPv4address / reg-name
+     */
+    const host = '(?:' + IPLiteral + or + internals.rfc3986.IPv4address + or + regName + ')';
+
+    /**
+     * port = *DIGIT
+     */
+    const port = digitOnly + '*';
+
+    /**
+     * authority   = [ userinfo "@" ] host [ ":" port ]
+     */
+    const authority = '(?:' + userinfo + '@)?' + host + '(?::' + port + ')?';
+
+    /**
+     * segment       = *pchar
+     * segment-nz    = 1*pchar
+     * path          = path-abempty    ; begins with "/" or is empty
+     *               / path-absolute   ; begins with "/" but not "//"
+     *               / path-noscheme   ; begins with a non-colon segment
+     *               / path-rootless   ; begins with a segment
+     *               / path-empty      ; zero characters
+     * path-abempty  = *( "/" segment )
+     * path-absolute = "/" [ segment-nz *( "/" segment ) ]
+     * path-rootless = segment-nz *( "/" segment )
+     */
+    const segment = pcharOnly + '*';
+    const segmentNz = pcharOnly + '+';
+    const segmentNzNc = '[' + unreserved + pctEncoded + subDelims + '@' + ']+';
+    const pathEmpty = '';
+    const pathAbEmpty = '(?:\\/' + segment + ')*';
+    const pathAbsolute = '\\/(?:' + segmentNz + pathAbEmpty + ')?';
+    const pathRootless = segmentNz + pathAbEmpty;
+    const pathNoScheme = segmentNzNc + pathAbEmpty;
+
+    /**
+     * hier-part = "//" authority path
+     */
+    internals.rfc3986.hierPart = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty + ')' + or + pathAbsolute + or + pathRootless + ')';
+
+    /**
+     * relative-part = "//" authority path-abempty
+     *                 / path-absolute
+     *                 / path-noscheme
+     *                 / path-empty
+     */
+    internals.rfc3986.relativeRef = '(?:' + '(?:\\/\\/' + authority + pathAbEmpty  + ')' + or + pathAbsolute + or + pathNoScheme + or + pathEmpty + ')';
+
+    /**
+     * query = *( pchar / "/" / "?" )
+     */
+    internals.rfc3986.query = '[' + pchar + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
+
+    /**
+     * query = *( pchar / "[" / "]" / "/" / "?" )
+     */
+    internals.rfc3986.queryWithSquareBrackets = '[' + pchar + squareBrackets + '\\/\\?]*(?=#|$)'; //Finish matching either at the fragment part or end of the line.
+
+    /**
+     * fragment = *( pchar / "/" / "?" )
+     */
+    internals.rfc3986.fragment = '[' + pchar + '\\/\\?]*';
+};
+
+
+internals.generate();
+
+module.exports = internals.rfc3986;
+
+},{}],260:[function(require,module,exports){
+'use strict';
+
+const RFC3986 = require('./rfc3986');
+
+
+const internals = {
+    Uri: {
+        createUriRegex: function (optionalScheme, allowRelative, relativeOnly, allowQuerySquareBrackets) {
+
+            let scheme = RFC3986.scheme;
+            let prefix;
+
+            if (relativeOnly) {
+                prefix = '(?:' + RFC3986.relativeRef + ')';
+            }
+            else {
+                // If we were passed a scheme, use it instead of the generic one
+                if (optionalScheme) {
+
+                    // Have to put this in a non-capturing group to handle the OR statements
+                    scheme = '(?:' + optionalScheme + ')';
+                }
+
+                const withScheme = '(?:' + scheme + ':' + RFC3986.hierPart + ')';
+
+                prefix = allowRelative ? '(?:' + withScheme + '|' + RFC3986.relativeRef + ')' : withScheme;
+            }
+
+            /**
+             * URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+             *
+             * OR
+             *
+             * relative-ref = relative-part [ "?" query ] [ "#" fragment ]
+             */
+            return new RegExp('^' + prefix + '(?:\\?' + (allowQuerySquareBrackets ? RFC3986.queryWithSquareBrackets : RFC3986.query) + ')?' + '(?:#' + RFC3986.fragment + ')?$');
+        }
+    }
+};
+
+module.exports = internals.Uri;
+
+},{"./rfc3986":259}],261:[function(require,module,exports){
+'use strict';
+
+const Util = require('util');
+
+const Hoek = require('@hapi/hoek');
+
+const Any = require('../any');
+
+
+const internals = {};
+
+
+internals.Map = class extends Map {
+
+    slice() {
+
+        return new internals.Map(this);
+    }
+
+    toString() {
+
+        return Util.inspect(this);
+    }
+};
+
+
+internals.Symbol = class extends Any {
+
+    constructor() {
+
+        super();
+        this._type = 'symbol';
+        this._inner.map = new internals.Map();
+    }
+
+    _base(value, state, options) {
+
+        if (options.convert) {
+            const lookup = this._inner.map.get(value);
+            if (lookup) {
+                value = lookup;
+            }
+
+            if (this._flags.allowOnly) {
+                return {
+                    value,
+                    errors: (typeof value === 'symbol') ? null : this.createError('symbol.map', { value, map: this._inner.map }, state, options)
+                };
+            }
+        }
+
+        return {
+            value,
+            errors: (typeof value === 'symbol') ? null : this.createError('symbol.base', { value }, state, options)
+        };
+    }
+
+    map(iterable) {
+
+        if (iterable && !iterable[Symbol.iterator] && typeof iterable === 'object') {
+            iterable = Object.entries(iterable);
+        }
+
+        Hoek.assert(iterable && iterable[Symbol.iterator], 'Iterable must be an iterable or object');
+        const obj = this.clone();
+
+        const symbols = [];
+        for (const entry of iterable) {
+            Hoek.assert(entry && entry[Symbol.iterator], 'Entry must be an iterable');
+            const [key, value] = entry;
+
+            Hoek.assert(typeof key !== 'object' && typeof key !== 'function' && typeof key !== 'symbol', 'Key must not be an object, function, or Symbol');
+            Hoek.assert(typeof value === 'symbol', 'Value must be a Symbol');
+            obj._inner.map.set(key, value);
+            symbols.push(value);
+        }
+
+        return obj.valid(...symbols);
+    }
+
+    describe() {
+
+        const description = super.describe();
+        description.map = new Map(this._inner.map);
+        return description;
+    }
+};
+
+
+module.exports = new internals.Symbol();
+
+},{"../any":246,"@hapi/hoek":227,"util":270}],262:[function(require,module,exports){
+'use strict';
+
+const internals = {};
+
+
+module.exports = {
+    settingsCache: Symbol('settingsCache')
+};
+
+},{}],263:[function(require,module,exports){
+module.exports={
+  "_from": "@hapi/joi@^15.1.1",
+  "_id": "@hapi/joi@15.1.1",
+  "_inBundle": false,
+  "_integrity": "sha512-entf8ZMOK8sc+8YfeOlM8pCfg3b5+WZIKBfUaaJT8UsjAAPjartzxIYm3TIbjvA4u+u++KbcXD38k682nVHDAQ==",
+  "_location": "/use-plugin/@hapi/joi",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "@hapi/joi@^15.1.1",
+    "name": "@hapi/joi",
+    "escapedName": "@hapi%2fjoi",
+    "scope": "@hapi",
+    "rawSpec": "^15.1.1",
+    "saveSpec": null,
+    "fetchSpec": "^15.1.1"
+  },
+  "_requiredBy": [
+    "/use-plugin/optioner"
+  ],
+  "_resolved": "http://localhost:4873/@hapi%2fjoi/-/joi-15.1.1.tgz",
+  "_shasum": "c675b8a71296f02833f8d6d243b34c57b8ce19d7",
+  "_spec": "@hapi/joi@^15.1.1",
+  "_where": "/Users/richard/Projects/seneca/browser/node_modules/use-plugin/node_modules/optioner",
+  "bugs": {
+    "url": "https://github.com/hapijs/joi/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "@hapi/address": "2.x.x",
+    "@hapi/bourne": "1.x.x",
+    "@hapi/hoek": "8.x.x",
+    "@hapi/topo": "3.x.x"
+  },
+  "deprecated": false,
+  "description": "Object schema validation",
+  "devDependencies": {
+    "@hapi/code": "6.x.x",
+    "@hapi/lab": "20.x.x"
+  },
+  "homepage": "https://github.com/hapijs/joi",
+  "keywords": [
+    "schema",
+    "validation"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "lib/index.js",
+  "name": "@hapi/joi",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hapijs/joi.git"
+  },
+  "scripts": {
+    "test": "lab -t 100 -a @hapi/code -L",
+    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code"
+  },
+  "version": "15.1.1"
+}
+
+},{}],264:[function(require,module,exports){
+'use strict';
+
+const Assert = require('@hapi/hoek/lib/assert');
+
+
+const internals = {};
+
+
+module.exports = class Topo {
+
+    constructor() {
+
+        this._items = [];
+        this.nodes = [];
+    }
+
+    add(nodes, options) {
+
+        options = options || {};
+
+        // Validate rules
+
+        const before = [].concat(options.before || []);
+        const after = [].concat(options.after || []);
+        const group = options.group || '?';
+        const sort = options.sort || 0;                   // Used for merging only
+
+        Assert(!before.includes(group), `Item cannot come before itself: ${group}`);
+        Assert(!before.includes('?'), 'Item cannot come before unassociated items');
+        Assert(!after.includes(group), `Item cannot come after itself: ${group}`);
+        Assert(!after.includes('?'), 'Item cannot come after unassociated items');
+
+        if (!Array.isArray(nodes)) {
+            nodes = [nodes];
+        }
+
+        for (const node of nodes) {
+            const item = {
+                seq: this._items.length,
+                sort,
+                before,
+                after,
+                group,
+                node
+            };
+
+            this._items.push(item);
+        }
+
+        // Insert event
+
+        const valid = this._sort();
+        Assert(valid, 'item', group !== '?' ? `added into group ${group}` : '', 'created a dependencies error');
+
+        return this.nodes;
+    }
+
+    merge(others) {
+
+        if (!Array.isArray(others)) {
+            others = [others];
+        }
+
+        for (const other of others) {
+            if (other) {
+                for (const item of other._items) {
+                    this._items.push(Object.assign({}, item));      // Shallow cloned
+                }
+            }
+        }
+
+        // Sort items
+
+        this._items.sort(internals.mergeSort);
+        for (let i = 0; i < this._items.length; ++i) {
+            this._items[i].seq = i;
+        }
+
+        const valid = this._sort();
+        Assert(valid, 'merge created a dependencies error');
+
+        return this.nodes;
+    }
+
+    _sort() {
+
+        // Construct graph
+
+        const graph = {};
+        const graphAfters = Object.create(null);            // A prototype can bungle lookups w/ false positives
+        const groups = Object.create(null);
+
+        for (const item of this._items) {
+            const seq = item.seq;                           // Unique across all items
+            const group = item.group;
+
+            // Determine Groups
+
+            groups[group] = groups[group] || [];
+            groups[group].push(seq);
+
+            // Build intermediary graph using 'before'
+
+            graph[seq] = item.before;
+
+            // Build second intermediary graph with 'after'
+
+            for (const after of item.after) {
+                graphAfters[after] = graphAfters[after] || [];
+                graphAfters[after].push(seq);
+            }
+        }
+
+        // Expand intermediary graph
+
+        for (const node in graph) {
+            const expandedGroups = [];
+
+            for (const graphNodeItem in graph[node]) {
+                const group = graph[node][graphNodeItem];
+                groups[group] = groups[group] || [];
+                expandedGroups.push(...groups[group]);
+            }
+
+            graph[node] = expandedGroups;
+        }
+
+        // Merge intermediary graph using graphAfters into final graph
+
+        for (const group in graphAfters) {
+            if (groups[group]) {
+                for (const node of groups[group]) {
+                    graph[node].push(...graphAfters[group]);
+                }
+            }
+        }
+
+        // Compile ancestors
+
+        const ancestors = {};
+        for (const node in graph) {
+            const children = graph[node];
+            for (const child of children) {
+                ancestors[child] = ancestors[child] || [];
+                ancestors[child].push(node);
+            }
+        }
+
+        // Topo sort
+
+        const visited = {};
+        const sorted = [];
+
+        for (let i = 0; i < this._items.length; ++i) {          // Looping through item.seq values out of order
+            let next = i;
+
+            if (ancestors[i]) {
+                next = null;
+                for (let j = 0; j < this._items.length; ++j) {  // As above, these are item.seq values
+                    if (visited[j] === true) {
+                        continue;
+                    }
+
+                    if (!ancestors[j]) {
+                        ancestors[j] = [];
+                    }
+
+                    const shouldSeeCount = ancestors[j].length;
+                    let seenCount = 0;
+                    for (let k = 0; k < shouldSeeCount; ++k) {
+                        if (visited[ancestors[j][k]]) {
+                            ++seenCount;
+                        }
+                    }
+
+                    if (seenCount === shouldSeeCount) {
+                        next = j;
+                        break;
+                    }
+                }
+            }
+
+            if (next !== null) {
+                visited[next] = true;
+                sorted.push(next);
+            }
+        }
+
+        if (sorted.length !== this._items.length) {
+            return false;
+        }
+
+        const seqIndex = {};
+        for (const item of this._items) {
+            seqIndex[item.seq] = item;
+        }
+
+        this._items = [];
+        this.nodes = [];
+
+        for (const value of sorted) {
+            const sortedItem = seqIndex[value];
+            this.nodes.push(sortedItem.node);
+            this._items.push(sortedItem);
+        }
+
+        return true;
+    }
+};
+
+
+internals.mergeSort = (a, b) => {
+
+    return a.sort === b.sort ? 0 : (a.sort < b.sort ? -1 : 1);
+};
+
+},{"@hapi/hoek/lib/assert":214}],265:[function(require,module,exports){
+/* Copyright (c) 2017-2019 Richard Rodger and other contributors, MIT License */
+'use strict'
+
+var Util = require('util')
+
+var Joi = require('@hapi/joi')
+var Hoek = require('@hapi/hoek')
+
+module.exports = function(spec, options) {
+  return make_optioner(spec, options)
+}
+module.exports.Joi = Joi
+module.exports.inject = inject
+module.exports.arr2obj = arr2obj
+module.exports.obj2arr = obj2arr
+
+function make_optioner(spec, options) {
+  var opts = options || {}
+  opts.allow_unknown = null == opts.allow_unknown ? true : !!opts.allow_unknown
+
+  var ctxt = { arrpaths: [] }
+  var joispec = prepare_spec(spec, opts, ctxt)
+  var schema = Joi.compile(joispec)
+
+  function validate(input, done) {
+    var work = Hoek.clone(input) || {}
+
+    // converts arrays to objects so that validation can be performed on a
+    // per-element basis
+    work = arr2obj(work, ctxt)
+
+    if (null == done) {
+      var result = Joi.validate(work, schema)
+      result.value = obj2arr(result.value, ctxt)
+      return result
+    } else {
+      Joi.validate(work, schema, function(err, out) {
+        done(err, obj2arr(out, ctxt))
+      })
+    }
+  }
+
+  validate.check = function check(input) {
+    var result = validate(input)
+    if (result.error) throw result.error
+    return result.value
+  }
+
+  return validate
+}
+
+function prepare_spec(spec, opts, ctxt) {
+  var joiobj = Joi.object()
+
+  if (opts.allow_unknown) {
+    joiobj = joiobj.unknown()
+  }
+
+  var joi = walk(joiobj, spec, '', opts, ctxt, function(valspec) {
+    if (valspec && valspec.isJoi) {
+      return valspec
+    } else {
+      var typecheck = typeof valspec
+      typecheck = 'function' === typecheck ? 'func' : typecheck
+
+      if (opts.must_match_literals) {
+        return Joi.any()
+          .required()
+          .valid(valspec)
+      } else {
+        if (null == valspec) {
+          return Joi.default(valspec)
+        } else if ('number' === typecheck && Number.isInteger(valspec)) {
+          return Joi.number()
+            .integer()
+            .default(valspec)
+        } else {
+          return Joi[typecheck]().default(valspec)
+        }
+      }
+    }
+  })
+
+  return joi
+}
+
+function walk(joi, obj, path, opts, ctxt, mod) {
+  if (Util.isArray(obj)) {
+    ctxt.arrpaths.push(path)
+  }
+
+  for (var p in obj) {
+    var v = obj[p]
+    var t = typeof v
+
+    var kv = {}
+
+    if (null != v && !v.isJoi && 'object' === t) {
+      var np = '' === path ? p : path + '.' + p
+
+      var joiobj = Joi.object().default()
+
+      if (opts.allow_unknown) {
+        joiobj = joiobj.unknown()
+      }
+
+      kv[p] = walk(joiobj, v, np, opts, ctxt, mod)
+    } else {
+      kv[p] = mod(v)
+    }
+
+    joi = joi.keys(kv)
+  }
+
+  return joi
+}
+
+function inject(path, val, obj) {
+  var top = obj
+
+  if (null == obj) return obj
+
+  var pp = ('string' === typeof path ? path : '').split('.')
+
+  for (var i = 0; i < pp.length - 1; ++i) {
+    var n = obj[pp[i]]
+    if (null == n) {
+      n = obj[pp[i]] = isNaN(parseInt(pp[i + 1], 10)) ? {} : []
+    }
+    obj = n
+  }
+
+  if ('' === pp[i]) {
+    top = val
+  } else {
+    obj[pp[i]] = val
+  }
+
+  return top
+}
+
+function arr2obj(work, ctxt) {
+  if (null == work) return work
+
+  for (var apI = 0; apI < ctxt.arrpaths.length; ++apI) {
+    var ap = ctxt.arrpaths[apI]
+    var arr = '' === ap ? work : Hoek.reach(work, ap)
+
+    if (Util.isArray(arr)) {
+      var obj = {}
+
+      for (var i = 0; i < arr.length; ++i) {
+        obj[i] = arr[i]
+      }
+
+      work = inject(ap, obj, work)
+    }
+  }
+
+  return work
+}
+
+function obj2arr(work, ctxt) {
+  if (null == work) return work
+
+  for (var apI = 0; apI < ctxt.arrpaths.length; ++apI) {
+    var ap = ctxt.arrpaths[apI]
+    var obj = '' === ap ? work : Hoek.reach(work, ap)
+
+    if (!Util.isArray(obj)) {
+      var arr = []
+
+      for (var p in obj) {
+        var i = parseInt(p, 10)
+        if (!isNaN(i) && 0 <= i) {
+          arr[i] = obj[p]
+        }
+      }
+
+      work = inject(ap, arr, work)
+    }
+  }
+
+  return work
+}
+
+},{"@hapi/hoek":227,"@hapi/joi":240,"util":270}],266:[function(require,module,exports){
 /* Copyright © 2014-2019 Richard Rodger and other contributors, MIT License. */
 'use strict'
 
@@ -71491,7 +71577,7 @@ const intern = (module.exports.intern = {
   }
 })
 
-},{"eraro":51,"module":46,"nid":75,"norma":77,"optioner":136,"path":150,"util":325}],322:[function(require,module,exports){
+},{"eraro":52,"module":47,"nid":76,"norma":78,"optioner":265,"path":94,"util":270}],267:[function(require,module,exports){
 (function (global){
 
 /**
@@ -71562,13 +71648,13 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],323:[function(require,module,exports){
-arguments[4][33][0].apply(exports,arguments)
-},{"dup":33}],324:[function(require,module,exports){
+},{}],268:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
-},{"dup":34}],325:[function(require,module,exports){
+},{"dup":34}],269:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
-},{"./support/isBuffer":324,"_process":156,"dup":35,"inherits":323}],326:[function(require,module,exports){
+},{"dup":35}],270:[function(require,module,exports){
+arguments[4][36][0].apply(exports,arguments)
+},{"./support/isBuffer":269,"_process":100,"dup":36,"inherits":268}],271:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -71589,7 +71675,7 @@ function extend() {
     return target
 }
 
-},{}],327:[function(require,module,exports){
+},{}],272:[function(require,module,exports){
 'use strict'
 module.exports = function (Yallist) {
   Yallist.prototype[Symbol.iterator] = function* () {
@@ -71599,7 +71685,7 @@ module.exports = function (Yallist) {
   }
 }
 
-},{}],328:[function(require,module,exports){
+},{}],273:[function(require,module,exports){
 'use strict'
 module.exports = Yallist
 
@@ -72027,7 +72113,7 @@ try {
   require('./iterator.js')(Yallist)
 } catch (er) {}
 
-},{"./iterator.js":327}],329:[function(require,module,exports){
+},{"./iterator.js":272}],274:[function(require,module,exports){
 (function (global){
 /* Copyright (c) Richard Rodger 2019, MIT license. */
 
@@ -72089,5 +72175,5 @@ SenecaExport.prototype = SenecaModule.prototype
 module.exports = SenecaExport
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"seneca":294,"timers":318}]},{},[329])(329)
+},{"seneca":181,"timers":205}]},{},[274])(274)
 });
