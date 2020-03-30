@@ -1,17 +1,22 @@
-/* Copyright (c) Richard Rodger 2019, MIT license. */
+/* Copyright (c) Richard Rodger 2019-2020, MIT license. */
 
+require('util.promisify/shim')()
 var Timers = require('timers')
 var SenecaModule = require('seneca')
+var SenecaPromisify = require('seneca-promisify')
+
+console.log('SP', SenecaPromisify)
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
 var SenecaExport = function(options, more_options) {
   options = options || {}
-  options.legacy = options.legacy || {}
-  options.legacy.transport = false
+  options.legacy = options.legacy || false
 
   var seneca = SenecaModule(options, more_options)
 
+  seneca.use(SenecaPromisify)
+  
   seneca.use({
     name: 'browser',
     init: function browser(options) {

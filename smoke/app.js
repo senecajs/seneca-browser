@@ -2,7 +2,7 @@ function show_res(code,pass) {
   document.getElementById('res_'+code).innerHTML = pass ? 'PASS' : 'FAIL'
 }
 
-Seneca()
+var si0 = Seneca()
   .test('print')
   .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*', 'd:*'] })
 
@@ -42,9 +42,11 @@ Seneca()
   })
 
 
+
+
 var exp = []
 
-var si = Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
+var si1 = Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
   .test('print')
   .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*'] })
 
@@ -55,3 +57,16 @@ var si = Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
   })
 
 
+// Promises
+
+si0.post('a:1,x:1').then((out)=>{
+  show_res('006',out.x===2)
+})
+
+
+async function run_async() {
+  var out = await si0.post('a:1,x:1')
+  show_res('007',out.x===2)
+}
+
+run_async()

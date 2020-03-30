@@ -6,7 +6,7 @@
   "scripts": {
     "test": "lab -P test -I jsonic,patrun,fetch",
     "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
-    "browserify": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
+    "browserify": "browserify -g uglifyify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify",
     "smoke": "node smoke/server.js",
     "reset": "npm run clean && npm i && npm test",
@@ -27,19 +27,21 @@
   "dependencies": {},
   "devDependencies": {
     "@hapi/code": "^8.0.1",
-    "@hapi/hapi": "^18.4.0",
-    "@hapi/inert": "^5.2.2",
-    "@hapi/joi": "^17.1.0",
-    "@hapi/lab": "^22.0.3",
+    "@hapi/hapi": "^19.1.1",
+    "@hapi/inert": "^6.0.1",
+    "@hapi/joi": "^17.1.1",
+    "@hapi/lab": "^22.0.4",
     "@seneca/external": "^1.1.0",
     "@seneca/hapi": "^1.0.0",
-    "browserify": "^16.5.0",
+    "browserify": "^16.5.1",
     "browserify-fs": "^1.0.0",
     "browserify-header": "^1.0.1",
-    "prettier": "^1.19.1",
-    "seneca": "^3.20.0",
+    "prettier": "^2.0.2",
+    "seneca": "^3.20.3",
     "seneca-promisify": "^1.2.0",
-    "timers": "^0.1.1"
+    "timers": "^0.1.1",
+    "uglifyify": "^5.0.2",
+    "util.promisify": "^1.0.1"
   },
   "files": [
     "README.md",
