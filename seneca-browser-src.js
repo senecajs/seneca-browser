@@ -9,14 +9,14 @@ console.log('SP', SenecaPromisify)
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
-var SenecaExport = function(options, more_options) {
+var SenecaExport = function (options, more_options) {
   options = options || {}
   options.legacy = options.legacy || false
 
   var seneca = SenecaModule(options, more_options)
 
   seneca.use(SenecaPromisify)
-  
+
   seneca.use({
     name: 'browser',
     init: function browser(options) {
@@ -29,14 +29,14 @@ var SenecaExport = function(options, more_options) {
         var seneca = this
 
         reply({
-          send: function(msg, reply, meta) {
+          send: function (msg, reply, meta) {
             fetch(options.endpoint, {
               // TODO: set content-type header to json
               credentials: 'same-origin',
               method: 'post',
-              body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta))
+              body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta)),
             })
-              .then(function(response) {
+              .then(function (response) {
                 if (response.ok) {
                   return response.json()
                 } else {
@@ -44,15 +44,15 @@ var SenecaExport = function(options, more_options) {
                   return null
                 }
               })
-              .then(function(json) {
+              .then(function (json) {
                 // FIX: seneca.reply broken in browser
                 var rep = tu.internalize_reply(seneca, json)
                 reply(rep.err, rep.out, rep.meta)
               })
-          }
+          },
         })
       }
-    }
+    },
   })
 
   return seneca

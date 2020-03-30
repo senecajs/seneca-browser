@@ -1,6 +1,6 @@
 {
   "name": "seneca-browser",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
