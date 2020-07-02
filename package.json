@@ -38,7 +38,7 @@
     "browserify-fs": "^1.0.0",
     "browserify-header": "^1.0.1",
     "prettier": "^2.0.5",
-    "seneca": "^3.21.2",
+    "seneca": "^3.22.0",
     "seneca-promisify": "^2.0.0",
     "timers": "^0.1.1",
     "uglifyify": "^5.0.2",
