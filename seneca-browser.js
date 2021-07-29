@@ -644,29 +644,35 @@ var buffer=require("buffer"),Buffer=buffer.Buffer;function copyProps(f,e){for(va
 }).call(this,require("buffer").Buffer)
 },{"./common":181,"@hapi/wreck":29,"buffer":49,"http":197,"https":91,"jsonic":99,"qs":146,"url":219,"util":228}],193:[function(require,module,exports){
 module.exports={
-  "_from": "seneca@^3.22.0",
+  "_args": [
+    [
+      "seneca@3.22.0",
+      "/home/lilsweetcaligula/Documents/sandbox/seneca-browser"
+    ]
+  ],
+  "_development": true,
+  "_from": "seneca@3.22.0",
   "_id": "seneca@3.22.0",
   "_inBundle": false,
   "_integrity": "sha512-QsqkCJugJIJE77l1vNR3xEEegCmS5po23s6jnfTKCa9hq+7ZKwP4j3TLkihB/p4zMblk55CsXx5axONp5Ujzsw==",
   "_location": "/seneca",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "seneca@^3.22.0",
+    "raw": "seneca@3.22.0",
     "name": "seneca",
     "escapedName": "seneca",
-    "rawSpec": "^3.22.0",
+    "rawSpec": "3.22.0",
     "saveSpec": null,
-    "fetchSpec": "^3.22.0"
+    "fetchSpec": "3.22.0"
   },
   "_requiredBy": [
     "#DEV:/"
   ],
   "_resolved": "http://localhost:4873/seneca/-/seneca-3.22.0.tgz",
-  "_shasum": "8fd72504f08e5262ec86c9aff9d12aa392298064",
-  "_spec": "seneca@^3.22.0",
-  "_where": "/Users/richard/Projects/seneca/browser",
+  "_spec": "3.22.0",
+  "_where": "/home/lilsweetcaligula/Documents/sandbox/seneca-browser",
   "author": {
     "name": "Richard Rodger",
     "url": "http://richardrodger.com/"
@@ -674,7 +680,6 @@ module.exports={
   "bugs": {
     "url": "https://github.com/senecajs/seneca/issues"
   },
-  "bundleDependencies": false,
   "contributors": [
     {
       "name": "Adrien Becchis",
@@ -815,7 +820,6 @@ module.exports={
     "seneca-transport": "^6.0.0",
     "use-plugin": "^8.2.0"
   },
-  "deprecated": false,
   "description": "A Microservices Framework for Node.js",
   "devDependencies": {
     "@hapi/code": "^8.0.1",
@@ -1031,7 +1035,7 @@ module.exports=extend;var hasOwnProperty=Object.prototype.hasOwnProperty;functio
 
 },{"./iterator.js":230}],232:[function(require,module,exports){
 (function (global){
-require("util.promisify/shim")();var Timers=require("timers"),SenecaModule=require("seneca"),SenecaPromisify=require("seneca-promisify");console.log("SP",SenecaPromisify),global.setImmediate=global.setImmediate||Timers.setImmediate;var SenecaExport=function(e,r){(e=e||{}).legacy=e.legacy||!1;var t=SenecaModule(e,r);return t.use(SenecaPromisify),t.use({name:"browser",init:function(e){e.endpoint=e.endpoint||"/seneca",this.add("role:transport,hook:client,type:browser",function(t,n){var i=this;n({send:function(t,n,o){fetch(e.endpoint,{credentials:"same-origin",method:"post",body:r.stringifyJSON(r.externalize_msg(i,t,o))}).then(function(e){return e.ok?e.json():null}).then(function(e){var t=r.internalize_reply(i,e);n(t.err,t.out,t.meta)})}})});var r=this.export("transport/utils")}}),t};SenecaExport.prototype=SenecaModule.prototype,module.exports=SenecaExport;
+require("util.promisify/shim")();var Timers=require("timers"),SenecaModule=require("seneca"),SenecaPromisify=require("seneca-promisify");global.setImmediate=global.setImmediate||Timers.setImmediate;var SenecaExport=function(e,t){(e=e||{}).legacy=e.legacy||!1;var n=SenecaModule(e,t);return n.use(SenecaPromisify),n.use({name:"browser",init:function(e){e.endpoint=e.endpoint||"/seneca",this.add("role:transport,hook:client,type:browser",function(n,r){var i=this;r({send:function(n,r,o){fetch(e.endpoint,{headers:{"Content-Type":"application/json"},credentials:"same-origin",method:"post",body:t.stringifyJSON(t.externalize_msg(i,n,o))}).then(function(e){return e.ok?e.json():null}).then(function(e){var n=t.internalize_reply(i,e);r(n.err,n.out,n.meta)})}})});var t=this.export("transport/utils")}}),n};SenecaExport.prototype=SenecaModule.prototype,module.exports=SenecaExport;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"seneca":194,"seneca-promisify":171,"timers":218,"util.promisify/shim":225}]},{},[232])(232)

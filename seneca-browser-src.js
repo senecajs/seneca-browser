@@ -5,8 +5,6 @@ var Timers = require('timers')
 var SenecaModule = require('seneca')
 var SenecaPromisify = require('seneca-promisify')
 
-console.log('SP', SenecaPromisify)
-
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
 var SenecaExport = function (options, more_options) {
@@ -31,7 +29,9 @@ var SenecaExport = function (options, more_options) {
         reply({
           send: function (msg, reply, meta) {
             fetch(options.endpoint, {
-              // TODO: set content-type header to json
+              headers: {
+                'Content-Type': 'application/json'
+              },
               credentials: 'same-origin',
               method: 'post',
               body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta)),
