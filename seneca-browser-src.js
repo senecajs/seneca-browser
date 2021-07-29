@@ -5,8 +5,6 @@ var Timers = require('timers')
 var SenecaModule = require('seneca')
 var SenecaPromisify = require('seneca-promisify')
 
-console.log('SP', SenecaPromisify)
-
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
 var SenecaExport = function (options, more_options) {
