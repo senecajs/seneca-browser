@@ -5,7 +5,7 @@ var Timers = require('timers')
 var SenecaModule = require('seneca')
 var SenecaPromisify = require('seneca-promisify')
 
-console.log('SenecaBrowser 04')
+// console.log('SenecaBrowser 04')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
@@ -61,12 +61,12 @@ var SenecaExport = function (options, more_options) {
                 // FIX: seneca.reply broken in browser
 
                 // TODO: transport should handle this
-                if(Array.isArray(json)) {
-                  json.meta$ = {id:'ID'}
+                if (Array.isArray(json)) {
+                  json.meta$ = { id: 'ID' }
                 }
-                console.log('REPLY JSON', json)
+                // console.log('REPLY JSON', json)
                 var rep = tu.internalize_reply(seneca, json)
-                console.log('REPLY INT', rep)
+                // console.log('REPLY INT', rep)
                 reply(rep.err, rep.out, rep.meta)
               })
           },
@@ -75,23 +75,20 @@ var SenecaExport = function (options, more_options) {
     },
   })
 
-  
   async function resolveHeaders(headers) {
     let names = Object.keys(headers)
-    for(let h of names) {
+    for (let h of names) {
       let v = headers[h]
-      if('function'===typeof(v)) {
+      if ('function' === typeof v) {
         headers[h] = await v()
-      }
-      else {
+      } else {
         headers[h] = v
       }
     }
-    console.log('RH', headers)
+    // console.log('RH', headers)
     return headers
   }
 
-  
   return seneca
 }
 
