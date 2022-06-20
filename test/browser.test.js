@@ -1,7 +1,3 @@
 describe('browser', () => {
-
-  test('happy', async () => {
-
-  })
-
+  test('happy', async () => {})
 })
