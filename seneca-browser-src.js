@@ -72,14 +72,19 @@ let SenecaExport = function (options, more_options) {
               let spec = pathMapper.find(msg)
               if (spec) {
                 endpoint =
-                  null != spec.endpoint ? spec.endpoint :
-                  (null == spec.prefix ? '' :
-                   ('function' === typeof spec.prefix ?
-                    spec.prefix.call(seneca, msg, config, meta) : spec.prefix)) +
-                  endpoint +
-                  (null == spec.suffix ? '' :
-                   ('function' === typeof spec.suffix ?
-                    spec.suffix.call(seneca, msg, config, meta) : spec.suffix))
+                  null != spec.endpoint
+                    ? spec.endpoint
+                    : (null == spec.prefix
+                        ? ''
+                        : 'function' === typeof spec.prefix
+                        ? spec.prefix.call(seneca, msg, config, meta)
+                        : spec.prefix) +
+                      endpoint +
+                      (null == spec.suffix
+                        ? ''
+                        : 'function' === typeof spec.suffix
+                        ? spec.suffix.call(seneca, msg, config, meta)
+                        : spec.suffix)
               }
             }
 
