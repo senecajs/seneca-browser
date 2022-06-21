@@ -1,6 +1,6 @@
 {
   "name": "seneca-browser",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "clean": "rm -rf node_modules package-lock.json yarn.lock",
     "repo-tag": "REPO_VERSION=`node -e \"console.log(require('./package').version)\"` && echo TAG: v$REPO_VERSION && git commit -a -m v$REPO_VERSION && git push && git tag v$REPO_VERSION && git push --tags",
     "repo-publish": "yarn run clean && yarn i --registry https://registry.npmjs.org && yarn run repo-publish-quick",
-    "repo-publish-quick": "yarn run prettier && yarn run build && yarn test && yarn run repo-tag && yarn publish --access public --registry https://registry.npmjs.org"
+    "repo-publish-quick": "yarn run prettier && yarn run build && yarn test && yarn run repo-tag && npm publish --access public --registry https://registry.npmjs.org"
   },
   "repository": {
     "type": "git",
