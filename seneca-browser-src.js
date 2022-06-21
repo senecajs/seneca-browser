@@ -1,35 +1,55 @@
-/* Copyright (c) Richard Rodger 2019-2020, MIT license. */
+/* Copyright (c) Richard Rodger 2019-2022, MIT license. */
 
 require('util.promisify/shim')()
-var Timers = require('timers')
-var SenecaModule = require('seneca')
-var SenecaPromisify = require('seneca-promisify')
-
-// console.log('SenecaBrowser 04')
+let Timers = require('timers')
+let SenecaModule = require('seneca')
+let SenecaPromisify = require('seneca-promisify')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
-var SenecaExport = function (options, more_options) {
+let SenecaExport = function (options, more_options) {
   options = options || {}
   options.legacy = options.legacy || false
 
-  var seneca = SenecaModule(options, more_options)
+  let seneca = SenecaModule(options, more_options)
 
   seneca.use(SenecaPromisify)
 
   seneca.use({
     name: 'browser',
     init: function browser(options) {
+
+      // endpoint:
+      // - string: endpoint string
+      // - function(msg, config, meta): returns endpoint string, can modify config
+
       options.endpoint = options.endpoint || '/seneca'
+      // options.pathmap = { 'a:1,b:2': { endpoint, suffix, prefix } }
+
       options.fetch = options.fetch || {}
       options.headers = options.headers || {}
 
       this.add('role:transport,hook:client,type:browser', hook_client_browser)
 
-      var tu = this.export('transport/utils')
+      let tu = this.export('transport/utils')
 
+
+      let pathMapper
+      // { 'a:1,b:2': { endpoint, suffix, prefix } }
+      if('object' === typeof options.pathmap) {
+        pathMapper = seneca.util.Patrun({gex:true})
+        Object.entries(options.pathmap).forEach(entry=>{
+          pathMapper.add(seneca.util.Jsonic(entry[0]),entry[1])
+        })
+
+        if(options.debug) {
+          console.log('SENECA','pathmap',''+pathMapper)
+        }
+      }
+
+      
       function hook_client_browser(msg, reply) {
-        var seneca = this
+        let seneca = this
 
         reply({
           send: async function (msg, reply, meta) {
@@ -46,8 +66,25 @@ var SenecaExport = function (options, more_options) {
               }),
               body: tu.stringifyJSON(tu.externalize_msg(seneca, msg, meta)),
             }
-            // console.log('FETCH', options.endpoint, JSON.stringify(config))
-            fetch(options.endpoint, config)
+
+            let endpoint = options.endpoint
+
+
+            if('function' === typeof endpoint) {
+              endpoint = endpoint.call(seneca, msg, config, meta)
+            }
+            else if(pathMapper) {
+              let spec = pathMapper.find(msg)
+              if(spec) {
+                endpoint = null != spec.endpoint ? spec.endpoint :
+                  (( null == spec.prefix ? '' : spec.prefix ) +
+                   endpoint +
+                   ( null == spec.suffix ? '' : spec.suffix ))
+              }
+            }
+
+            
+            fetch(endpoint, config)
               .then(function (response) {
                 if (response.ok) {
                   return response.json()
@@ -64,9 +101,7 @@ var SenecaExport = function (options, more_options) {
                 if (Array.isArray(json)) {
                   json.meta$ = { id: 'ID' }
                 }
-                // console.log('REPLY JSON', json)
-                var rep = tu.internalize_reply(seneca, json)
-                // console.log('REPLY INT', rep)
+                let rep = tu.internalize_reply(seneca, json)
                 reply(rep.err, rep.out, rep.meta)
               })
           },
@@ -85,13 +120,14 @@ var SenecaExport = function (options, more_options) {
         headers[h] = v
       }
     }
-    // console.log('RH', headers)
     return headers
   }
 
   return seneca
 }
 
+SenecaExport.util = SenecaModule.util
+SenecaExport.valid = SenecaModule.valid
 SenecaExport.prototype = SenecaModule.prototype
 
 module.exports = SenecaExport

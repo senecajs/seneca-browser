@@ -18,8 +18,12 @@ async function run() {
   })
     .test('print')
     .use('promisify')
-    .use('gateway')
+
+      .use('gateway')
     .use('gateway-express')
+
+      .use('gateway$mapper')
+    .use('gateway-express$mapper')
 
   //    .use('@seneca/external',{pins:['a:*', 'c:*', 'd:*']})
 
@@ -48,6 +52,16 @@ async function run() {
         },1000)
       })
 
+      .add('e:1,p:foo', function(msg, reply) {
+        reply(this.util.clean({...msg, x:11+msg.x}))
+      })
+      .add('e:2,p:bar', function(msg, reply) {
+        reply(this.util.clean({...msg, x:22+msg.x}))
+      })
+      .add('e:3', function(msg, reply) {
+        reply(this.util.clean({...msg, x:33+msg.x}))
+      })
+
   
   await seneca.ready()
   
@@ -61,6 +75,9 @@ async function run() {
     })
     .post('/seneca', seneca.export('gateway-express/handler'))
     .post('/api/seneca', seneca.export('gateway-express/handler'))
+
+    .post('/api/mapper/:end', seneca.export('gateway-express$mapper/handler'))
+  
     .listen(PORT)
 
   seneca.log.info('SITE','http://localhost:'+PORT)

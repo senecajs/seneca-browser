@@ -77,3 +77,45 @@ async function run_async() {
 
 run_async()
 
+
+
+setTimeout(function() {
+  var mapper = Seneca({
+    tag:'mapper',
+    plugin: {
+      browser: {
+        debug: true,
+        endpoint: '/api/mapper',
+        pathmap: {
+          'p:foo': { suffix: '/foo?q=1' },
+          'p:bar': { suffix: '/bar' },
+          'p:*': { suffix: '/zed' },
+        }
+      }
+    }
+  })
+      .test('print')
+      .client({
+        type: 'browser',
+        pin: ['e:*'],
+      })
+
+      .act('e:1,p:foo,x:1', function(err, out) {
+        console.log('100', err, err && err.code, err && err.message, out)
+        show_res('100', null == err && 'foo'===out.p && 12===out.x &&
+                 'foo' === out.gateway.params.end &&
+                 '1' === out.gateway.query.q)        
+      })
+      .act('e:2,p:bar,x:2', function(err, out) {
+        console.log('101', err, err && err.code, err && err.message, out)
+        show_res('101', null == err && 'bar'===out.p && 24===out.x &&
+                 'bar' === out.gateway.params.end)        
+      })
+      .act('e:3,p:qaz,x:3', function(err, out) {
+        console.log('102', err, err && err.code, err && err.message, out)
+        show_res('102', null == err && 'qaz'===out.p && 36===out.x &&
+                 'zed' === out.gateway.params.end)        
+      })
+
+  
+},222)

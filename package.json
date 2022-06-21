@@ -31,7 +31,7 @@
   "devDependencies": {
     "@hapi/wreck": "17",
     "@seneca/gateway": "^0.4.0",
-    "@seneca/gateway-express": "^0.3.0",
+    "@seneca/gateway-express": "^0.4.0",
     "browserify": "^17.0.0",
     "browserify-fs": "^1.0.0",
     "browserify-header": "^1.1.0",
