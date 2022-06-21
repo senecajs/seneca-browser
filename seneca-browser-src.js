@@ -18,7 +18,6 @@ let SenecaExport = function (options, more_options) {
   seneca.use({
     name: 'browser',
     init: function browser(options) {
-
       // endpoint:
       // - string: endpoint string
       // - function(msg, config, meta): returns endpoint string, can modify config
@@ -33,21 +32,19 @@ let SenecaExport = function (options, more_options) {
 
       let tu = this.export('transport/utils')
 
-
       let pathMapper
       // { 'a:1,b:2': { endpoint, suffix, prefix } }
-      if('object' === typeof options.pathmap) {
-        pathMapper = seneca.util.Patrun({gex:true})
-        Object.entries(options.pathmap).forEach(entry=>{
-          pathMapper.add(seneca.util.Jsonic(entry[0]),entry[1])
+      if ('object' === typeof options.pathmap) {
+        pathMapper = seneca.util.Patrun({ gex: true })
+        Object.entries(options.pathmap).forEach((entry) => {
+          pathMapper.add(seneca.util.Jsonic(entry[0]), entry[1])
         })
 
-        if(options.debug) {
-          console.log('SENECA','pathmap',''+pathMapper)
+        if (options.debug) {
+          console.log('SENECA', 'pathmap', '' + pathMapper)
         }
       }
 
-      
       function hook_client_browser(msg, reply) {
         let seneca = this
 
@@ -69,21 +66,20 @@ let SenecaExport = function (options, more_options) {
 
             let endpoint = options.endpoint
 
-
-            if('function' === typeof endpoint) {
+            if ('function' === typeof endpoint) {
               endpoint = endpoint.call(seneca, msg, config, meta)
-            }
-            else if(pathMapper) {
+            } else if (pathMapper) {
               let spec = pathMapper.find(msg)
-              if(spec) {
-                endpoint = null != spec.endpoint ? spec.endpoint :
-                  (( null == spec.prefix ? '' : spec.prefix ) +
-                   endpoint +
-                   ( null == spec.suffix ? '' : spec.suffix ))
+              if (spec) {
+                endpoint =
+                  null != spec.endpoint
+                    ? spec.endpoint
+                    : (null == spec.prefix ? '' : spec.prefix) +
+                      endpoint +
+                      (null == spec.suffix ? '' : spec.suffix)
               }
             }
 
-            
             fetch(endpoint, config)
               .then(function (response) {
                 if (response.ok) {
