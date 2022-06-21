@@ -88,7 +88,7 @@ setTimeout(function() {
         endpoint: '/api/mapper',
         pathmap: {
           'p:foo': { suffix: '/foo?q=1' },
-          'p:bar': { suffix: '/bar' },
+          'p:bar': { suffix: (msg)=>'/'+msg.p },
           'p:*': { suffix: '/zed' },
         }
       }
