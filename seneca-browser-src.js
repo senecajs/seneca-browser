@@ -133,5 +133,8 @@ let SenecaExport = function (options, more_options) {
 SenecaExport.util = SenecaModule.util
 SenecaExport.valid = SenecaModule.valid
 SenecaExport.prototype = SenecaModule.prototype
+SenecaExport.browser = {
+  version: '4.0.1',
+}
 
 module.exports = SenecaExport
