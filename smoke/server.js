@@ -64,6 +64,9 @@ async function run() {
 
   
   await seneca.ready()
+
+
+  console.log(await seneca.post({d:1,x:2,timeout$:2000}))
   
   let app = Express()
 

@@ -2,7 +2,7 @@
 
 require('util.promisify/shim')()
 let Timers = require('timers')
-let SenecaModule = require('seneca')
+let SenecaModule = require('seneca4')
 let SenecaPromisify = require('seneca-promisify')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
