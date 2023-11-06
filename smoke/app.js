@@ -7,9 +7,10 @@ var si0 = Seneca()
   .client({ type: 'browser', pin: ['a:*', 'b:*', 'c:*', 'd:*'] })
 
 
+
   // ok
   .act('a:1,x:1', function(err, out) {
-    // console.log('000', err, out)
+    console.log('000', err, out)
     show_res('000',out.x===2)
   })
 
@@ -21,15 +22,18 @@ var si0 = Seneca()
   })
 
 
-/*
+
+/* FIX: standardize gateway error handling so aligned with
+   transport externalize msg
+  
   // fail - no extended timeout
   .act('d:1,x:3', function(err, out) {
     console.log('002', err, err && err.code, out)
     show_res('002', err && err.code === 'action_timeout')
   })
-*/
 
-/*
+
+
 
 // unsafe
   .act('b:1,x:2', function(err, out) {
@@ -64,6 +68,7 @@ var si1 = Seneca({ plugin: { browser: { endpoint: '/api/seneca' } } })
 
 
 // Promises
+
 
 si0.post('a:1,x:1').then((out)=>{
   show_res('006',out.x===2)
@@ -100,6 +105,7 @@ setTimeout(function() {
         pin: ['e:*'],
       })
 
+  
       .act('e:1,p:foo,x:1', function(err, out) {
         console.log('100', err, err && err.code, err && err.message, out)
         show_res('100', null == err && 'foo'===out.p && 12===out.x &&
@@ -119,3 +125,4 @@ setTimeout(function() {
 
   
 },222)
+

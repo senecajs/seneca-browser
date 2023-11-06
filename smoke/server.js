@@ -16,14 +16,19 @@ async function run() {
     timeout: 500,
     legacy: false,
   })
-    .test('print')
-    .use('promisify')
+      .test('print')
+      .use('promisify')
 
-      .use('gateway')
-    .use('gateway-express')
+      .use('gateway', {
+        timeout: {
+          client: true,
+          max: 2000,
+        }
+      })
+      .use('gateway-express', {error:{next:false}})
 
       .use('gateway$mapper')
-    .use('gateway-express$mapper')
+      .use('gateway-express$mapper')
 
   //    .use('@seneca/external',{pins:['a:*', 'c:*', 'd:*']})
 
