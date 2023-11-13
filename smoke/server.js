@@ -1,7 +1,8 @@
 
 const Fs = require('fs')
 
-const Seneca = require('seneca')
+// const Seneca = require('seneca')
+const Seneca = require('seneca4')
 const Express = require('express')
 
 
