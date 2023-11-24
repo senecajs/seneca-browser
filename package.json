@@ -1,6 +1,6 @@
 {
   "name": "seneca-browser",
-  "version": "6.4.0",
+  "version": "6.5.1",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
   "scripts": {
@@ -40,7 +40,7 @@
     "seneca": "^3.33.0",
     "seneca-entity": "^25.1.0",
     "seneca-promisify": "^3.7.1",
-    "seneca4": "github:senecajs/seneca#v4.0.0-t.2.p.5",
+    "seneca4": "github:senecajs/seneca#v4.0.0-t.2.p.6",
     "timers": "^0.1.1",
     "tinyify": "^4.0.0",
     "uglifyify": "^5.0.2",
