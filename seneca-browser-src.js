@@ -1,4 +1,4 @@
-/* Copyright (c) Richard Rodger 2019-2022, MIT license. */
+/* Copyright (c) Richard Rodger 2019-2023, MIT license. */
 
 require('util.promisify/shim')()
 let Timers = require('timers')
@@ -6,6 +6,8 @@ let SenecaModule = require('seneca4')
 let SenecaPromisify = require('seneca-promisify')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
+
+console.log('SB01')
 
 let SenecaExport = function (options, more_options) {
   options = options || {}
@@ -90,12 +92,17 @@ let SenecaExport = function (options, more_options) {
 
             fetch(endpoint, config)
               .then(function (response) {
-                if (response.ok) {
-                  return response.json()
-                } else {
-                  // FIX: handle transport errors
-                  // return null
-                  return reply(new Error(JSON.stringify(response)))
+                try {
+                  let json = response.json()
+                  return json
+                } catch (e) {
+                  e.message =
+                    response.status +
+                    ': ' +
+                    response.statusText +
+                    ': ' +
+                    e.message
+                  return reply(e)
                 }
               })
               .then(function (json) {
@@ -106,6 +113,7 @@ let SenecaExport = function (options, more_options) {
                   json.meta$ = { id: 'ID' }
                 }
                 let rep = tu.internalize_reply(seneca, json)
+
                 reply(rep.err, rep.out, rep.meta)
               })
           },
@@ -134,7 +142,7 @@ SenecaExport.util = SenecaModule.util
 SenecaExport.valid = SenecaModule.valid
 SenecaExport.prototype = SenecaModule.prototype
 SenecaExport.browser = {
-  version: '4.0.1',
+  version: '7.0.0',
 }
 
 module.exports = SenecaExport
