@@ -7,8 +7,6 @@ let SenecaPromisify = require('seneca-promisify')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
-console.log('SB01')
-
 let SenecaExport = function (options, more_options) {
   options = options || {}
   options.legacy = options.legacy || false
@@ -142,7 +140,7 @@ SenecaExport.util = SenecaModule.util
 SenecaExport.valid = SenecaModule.valid
 SenecaExport.prototype = SenecaModule.prototype
 SenecaExport.browser = {
-  version: '7.0.0',
+  version: '7.0.1',
 }
 
 module.exports = SenecaExport
