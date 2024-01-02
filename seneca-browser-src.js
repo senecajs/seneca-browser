@@ -1,4 +1,4 @@
-/* Copyright (c) Richard Rodger 2019-2023, MIT license. */
+/* Copyright (c) Richard Rodger 2019-2024, MIT license. */
 
 require('util.promisify/shim')()
 let Timers = require('timers')
@@ -23,7 +23,6 @@ let SenecaExport = function (options, more_options) {
       // - function(msg, config, meta): returns endpoint string, can modify config
 
       options.endpoint = options.endpoint || '/seneca'
-      // options.pathmap = { 'a:1,b:2': { endpoint, suffix, prefix } }
 
       options.fetch = options.fetch || {}
       options.headers = options.headers || {}
@@ -133,6 +132,40 @@ let SenecaExport = function (options, more_options) {
     return headers
   }
 
+  seneca.root.order.inward.add({
+    name: 'debounce',
+    before: 'inward_msg_modify',
+    exec: function (spec) {
+      let msg = spec.data.msg
+
+      if (msg.debounce$) {
+        let log = spec.ctx.seneca.status().history.log
+
+        let actdef = spec.ctx.seneca.find(msg)
+        if (!actdef) return null
+
+        for (let i = log.length - 1; -1 < i; i--) {
+          if (
+            log[i].meta.pattern === actdef.pattern &&
+            // Only drop if there's a previous inflight
+            0 === log[i].result.length
+          ) {
+            return {
+              // TODO: need a `drop` operation
+              op: 'stop',
+              out: {
+                kind: 'result',
+                result: {},
+              },
+            }
+          }
+        }
+      }
+
+      return null
+    },
+  })
+
   return seneca
 }
 
@@ -140,7 +173,7 @@ SenecaExport.util = SenecaModule.util
 SenecaExport.valid = SenecaModule.valid
 SenecaExport.prototype = SenecaModule.prototype
 SenecaExport.browser = {
-  version: '7.0.1',
+  version: '7.1.0',
 }
 
 module.exports = SenecaExport
