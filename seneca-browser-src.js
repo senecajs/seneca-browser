@@ -141,6 +141,8 @@ let SenecaExport = function (options, more_options) {
       if (msg.debounce$) {
         let log = spec.ctx.seneca.status().history.log
 
+        // TODO: just using pattern is not sufficient - conflates
+        // unrelated messages - need to check params too...
         let actdef = spec.ctx.seneca.find(msg)
         if (!actdef) return null
 
