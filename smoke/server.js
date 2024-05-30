@@ -59,13 +59,13 @@ async function run() {
       })
 
       .add('e:1,p:foo', function(msg, reply) {
-        reply(this.util.clean({...msg, x:11+msg.x}))
+        reply(this.util.clean({e:msg.e, x:11+msg.x}))
       })
       .add('e:2,p:bar', function(msg, reply) {
-        reply(this.util.clean({...msg, x:22+msg.x}))
+        reply(this.util.clean({e:msg.e, x:22+msg.x}))
       })
       .add('e:3', function(msg, reply) {
-        reply(this.util.clean({...msg, x:33+msg.x}))
+        reply(this.util.clean({e:msg.e, x:33+msg.x}))
       })
 
   

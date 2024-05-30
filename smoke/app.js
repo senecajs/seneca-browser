@@ -83,6 +83,13 @@ async function run_async() {
 run_async()
 
 
+si0.add('f:1', function(msg) {
+  return {x:msg.x+1}
+})
+
+let out = si0.direct('f:1,x:1')
+show_res('008',out.x===2)
+
 
 setTimeout(function() {
   var mapper = Seneca({
@@ -104,6 +111,7 @@ setTimeout(function() {
         type: 'browser',
         pin: ['e:*'],
       })
+
 
   
       .act('e:1,p:foo,x:1', function(err, out) {
