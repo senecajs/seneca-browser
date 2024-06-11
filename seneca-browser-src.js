@@ -3,7 +3,7 @@
 require('util.promisify/shim')()
 let Timers = require('timers')
 let SenecaModule = require('seneca4')
-let SenecaPromisify = require('seneca-promisify')
+// let SenecaPromisify = require('seneca-promisify')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
@@ -13,7 +13,7 @@ let SenecaExport = function (options, more_options) {
 
   let seneca = SenecaModule(options, more_options)
 
-  seneca.use(SenecaPromisify)
+  // seneca.use(SenecaPromisify)
 
   seneca.use({
     name: 'browser',
