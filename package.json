@@ -8,7 +8,7 @@
     "test-some": "jest -t",
     "test-watch": "jest --coverage --watchAll",
     "prettier": "prettier --write --no-semi --single-quote seneca-browser-src.js test/*.js",
-    "browserify-prod": "browserify -g uglifyify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
+    "browserify-prod": "browserify -g @browserify/uglifyify -p browser-pack-flat/plugin -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "browserify-test": "browserify -o seneca-browser.js -e seneca-browser-src.js -s Seneca",
     "build": "npm run browserify-prod",
     "smoke": "node smoke/server.js",
@@ -45,6 +45,9 @@
     "tinyify": "^4.0.0",
     "uglifyify": "^5.0.2",
     "util.promisify": "^1.1.2"
+  },
+  "overrides": {
+    "gubu":"8.0.2"
   },
   "files": [
     "README.md",

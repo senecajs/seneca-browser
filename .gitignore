@@ -65,3 +65,4 @@ package-lock.json
 yarn.lock
 
 
+seneca-browser.js.tmp*
