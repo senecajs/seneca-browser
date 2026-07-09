@@ -1,5 +1,5 @@
 {
-  "name": "seneca-browser",
+  "name": "@seneca/browser",
   "version": "8.0.0rc4",
   "description": "Seneca for the browser.",
   "main": "seneca-browser.js",
