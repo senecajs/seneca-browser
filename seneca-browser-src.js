@@ -1,10 +1,11 @@
 /* Copyright (c) Richard Rodger 2019-2026, MIT license. */
 
 // Seneca reports deprecations with process.emitWarning. The process shim
-// of browserify (and of webpack 5, esbuild and Vite) has no emitWarning, so
-// a deprecation would throw a TypeError inside the bundle. Give the shim an
-// emitWarning that writes to console.warn, before Seneca is loaded, so that
-// deprecations stay visible and are never fatal. Node.js has its own.
+// that browserify puts in the bundle (process/browser.js) has no
+// emitWarning, so a deprecation would throw a TypeError inside the bundle.
+// Give the shim an emitWarning that writes to console.warn, before Seneca
+// is loaded, so that deprecations stay visible and are never fatal.
+// Node.js has its own.
 if ('function' !== typeof process.emitWarning) {
   process.emitWarning = function emitWarning(warning, type, code) {
     let opts = null != type && 'object' === typeof type ? type : { type, code }
