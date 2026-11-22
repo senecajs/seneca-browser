@@ -1,9 +1,26 @@
-/* Copyright (c) Richard Rodger 2019-2024, MIT license. */
+/* Copyright (c) Richard Rodger 2019-2026, MIT license. */
 
-require('util.promisify/shim')()
+// Seneca reports deprecations with process.emitWarning. The process shim
+// of browserify (and of webpack 5, esbuild and Vite) has no emitWarning, so
+// a deprecation would throw a TypeError inside the bundle. Give the shim an
+// emitWarning that writes to console.warn, before Seneca is loaded, so that
+// deprecations stay visible and are never fatal. Node.js has its own.
+if ('function' !== typeof process.emitWarning) {
+  process.emitWarning = function emitWarning(warning, type, code) {
+    let opts = null != type && 'object' === typeof type ? type : { type, code }
+    let isError = null != warning && 'object' === typeof warning
+    let name = opts.type || (isError && warning.name) || 'Warning'
+    let text = isError ? warning.message : String(warning)
+    if ('undefined' !== typeof console && console.warn) {
+      console.warn(
+        (opts.code ? '[' + opts.code + '] ' : '') + name + ': ' + text,
+      )
+    }
+  }
+}
+
 let Timers = require('timers')
-let SenecaModule = require('seneca4')
-// let SenecaPromisify = require('seneca-promisify')
+let SenecaModule = require('seneca')
 
 global.setImmediate = global.setImmediate || Timers.setImmediate
 
@@ -13,11 +30,9 @@ let SenecaExport = function (options, more_options) {
 
   let seneca = SenecaModule(options, more_options)
 
-  // seneca.use(SenecaPromisify)
-
   seneca.use({
     name: 'browser',
-    init: function browser(options) {
+    define: function browser(options) {
       // endpoint:
       // - string: endpoint string
       // - function(msg, config, meta): returns endpoint string, can modify config
@@ -175,7 +190,7 @@ SenecaExport.util = SenecaModule.util
 SenecaExport.valid = SenecaModule.valid
 SenecaExport.prototype = SenecaModule.prototype
 SenecaExport.browser = {
-  version: '7.1.0',
+  version: require('./package.json').version,
 }
 
 module.exports = SenecaExport
