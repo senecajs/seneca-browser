@@ -36,7 +36,9 @@ history.
   `debounce$`, the deprecation regression, and the `browser` client
   transport against a local gateway (express with `@seneca/gateway` and
   `@seneca/gateway-express`), including remote errors (the error crash of
-  8.0.0-rc3 and rc4), headers, endpoint functions and `pathmap`.
+  8.0.0-rc3 and rc4), headers, endpoint functions and `pathmap`. One test
+  loads the bundle as a classic script, as a `<script>` tag does, into a
+  context with browser globals only and none of Node.js.
 * Not tested: no test runs in a real browser. The tests run the bundle in
   Node.js, with the global `fetch` of Node.js. The manual page of
   `npm run smoke` was not run in a browser for this release.
