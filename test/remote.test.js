@@ -51,6 +51,10 @@ before(async () => {
   await new Promise((resolve, reject) => {
     server = app.listen(0, '127.0.0.1', resolve).on('error', reject)
   })
+  // When a name pattern filters out every test of this file, the root
+  // after hook runs only once the event loop is empty, so the server must
+  // not hold the process open.
+  server.unref()
   base = 'http://127.0.0.1:' + server.address().port
 })
 
