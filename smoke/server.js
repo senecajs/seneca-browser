@@ -1,8 +1,7 @@
 
 const Fs = require('fs')
 
-// const Seneca = require('seneca')
-const Seneca = require('seneca4')
+const Seneca = require('seneca')
 const Express = require('express')
 
 
@@ -18,18 +17,17 @@ async function run() {
     legacy: false,
   })
       .test('print')
-      .use('promisify')
 
-      .use('gateway', {
+      .use('@seneca/gateway', {
         timeout: {
           client: true,
           max: 2000,
         }
       })
-      .use('gateway-express', {error:{next:false}})
+      .use('@seneca/gateway-express', {error:{next:false}})
 
-      .use('gateway$mapper')
-      .use('gateway-express$mapper')
+      .use('@seneca/gateway$mapper')
+      .use('@seneca/gateway-express$mapper')
 
   //    .use('@seneca/external',{pins:['a:*', 'c:*', 'd:*']})
 
